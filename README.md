@@ -27,4 +27,19 @@ java -jar target/HouseHoldBudgetTracker-0.0.1-SNAPSHOT.jar   # UI + API auf :808
 ```
 
 Das Profil `frontend` baut die Angular-App und legt sie unter `classpath:/static` ins JAR.
-Die GitHub-Action `.github/workflows/ci.yml` baut und testet beide Teile und stellt das JAR als Artefakt bereit.
+
+## Docker-Image
+
+```bash
+docker build -t household-budget-tracker .
+docker run -p 8080:8080 household-budget-tracker
+```
+
+Die GitHub-Action `.github/workflows/ci.yml` baut und testet beide Teile und pusht anschließend ein Image nach
+`ghcr.io/johcier/householdbudgettracker-ai`:
+
+| Auslöser         | Tags                              |
+|------------------|-----------------------------------|
+| Push auf master  | `latest`, `sha-<commit>`          |
+| Git-Tag `v1.2.3` | `1.2.3`, `1.2`, `sha-<commit>`    |
+| Pull Request     | nur Build, kein Push              |
