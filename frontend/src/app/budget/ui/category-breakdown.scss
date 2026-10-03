@@ -1,0 +1,42 @@
+@use '@angular/material' as mat;
+
+mat-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 16px;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.row-header {
+  display: flex;
+  justify-content: space-between;
+  font: var(--mat-sys-title-small);
+}
+
+.total {
+  font-variant-numeric: tabular-nums;
+}
+
+.ratio {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.exceeded {
+  @include mat.progress-bar-overrides(
+    (
+      active-indicator-color: var(--mat-sys-error),
+      track-color: var(--mat-sys-error-container),
+    )
+  );
+
+  .ratio {
+    color: var(--mat-sys-error);
+  }
+}

@@ -1,0 +1,56 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
+import { firstValueFrom } from 'rxjs';
+import { BudgetApi } from './budget-api';
+
+describe('BudgetApi', () => {
+  let api: BudgetApi;
+  let http: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    api = TestBed.inject(BudgetApi);
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => http.verify());
+
+  it('posts an income', async () => {
+    const result = firstValueFrom(api.addIncome({ description: 'Gehalt', amount: 2000 }));
+
+    const req = http.expectOne('/api/budget/incomes');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ description: 'Gehalt', amount: 2000 });
+    req.flush({ id: 'abc' });
+
+    expect(await result).toEqual({ id: 'abc' });
+  });
+
+  it('posts an expense with category', () => {
+    api.addExpense({ description: 'Miete', amount: 1000, category: 'LEBENSUNTERHALT' }).subscribe();
+
+    const req = http.expectOne('/api/budget/expenses');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ description: 'Miete', amount: 1000, category: 'LEBENSUNTERHALT' });
+    req.flush({ id: 'abc' });
+  });
+
+  it('deletes an item by id', () => {
+    api.removeItem('123e4567-e89b-12d3-a456-426614174000').subscribe();
+
+    const req = http.expectOne('/api/budget/items/123e4567-e89b-12d3-a456-426614174000');
+    expect(req.request.method).toBe('DELETE');
+    req.flush(null, { status: 204, statusText: 'No Content' });
+  });
+
+  it('lists items and fetches the overview', () => {
+    api.listItems().subscribe();
+    api.getOverview().subscribe();
+
+    expect(http.expectOne('/api/budget/items').request.method).toBe('GET');
+    expect(http.expectOne('/api/budget/overview').request.method).toBe('GET');
+  });
+});

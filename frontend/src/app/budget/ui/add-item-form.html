@@ -1,0 +1,46 @@
+<mat-card appearance="outlined">
+  <mat-card-header>
+    <mat-card-title>Neuer Eintrag</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <mat-button-toggle-group formControlName="type" aria-label="Art des Eintrags">
+        <mat-button-toggle value="EXPENSE">Ausgabe</mat-button-toggle>
+        <mat-button-toggle value="INCOME">Einnahme</mat-button-toggle>
+      </mat-button-toggle-group>
+
+      <mat-form-field>
+        <mat-label>Beschreibung</mat-label>
+        <input matInput formControlName="description" autocomplete="off" />
+        @if (form.controls.description.invalid) {
+          <mat-error>Bitte eine Beschreibung angeben.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Betrag</mat-label>
+        <input matInput type="number" inputmode="decimal" min="0.01" step="0.01" formControlName="amount" />
+        <span matTextSuffix>€</span>
+        @if (form.controls.amount.invalid) {
+          <mat-error>Bitte einen positiven Betrag angeben.</mat-error>
+        }
+      </mat-form-field>
+
+      @if (isExpense) {
+        <mat-form-field>
+          <mat-label>Kategorie</mat-label>
+          <mat-select formControlName="category">
+            @for (category of categories; track category.value) {
+              <mat-option [value]="category.value">{{ category.label }}</mat-option>
+            }
+          </mat-select>
+          @if (form.controls.category.invalid) {
+            <mat-error>Bitte eine Kategorie wählen.</mat-error>
+          }
+        </mat-form-field>
+      }
+
+      <button matButton="filled" type="submit" [disabled]="submitting()">Hinzufügen</button>
+    </form>
+  </mat-card-content>
+</mat-card>
