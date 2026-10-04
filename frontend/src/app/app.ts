@@ -1,5 +1,4 @@
-import { Component, inject } from '@angular/core';
-import { MatIconRegistry } from '@angular/material/icon';
+import { Component } from '@angular/core';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { BudgetDashboard } from './budget/budget-dashboard';
 
@@ -25,9 +24,4 @@ import { BudgetDashboard } from './budget/budget-dashboard';
     }
   `,
 })
-export class App {
-  constructor() {
-    // index.html loads the "Material Symbols Outlined" icon font.
-    inject(MatIconRegistry).setDefaultFontSetClass('material-symbols-outlined');
-  }
-}
+export class App {}

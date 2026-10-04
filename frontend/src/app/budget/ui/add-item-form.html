@@ -11,7 +11,7 @@
 
       <mat-form-field>
         <mat-label>Beschreibung</mat-label>
-        <input matInput formControlName="description" autocomplete="off" />
+        <input matInput formControlName="description" autocomplete="off" maxlength="255" />
         @if (form.controls.description.invalid) {
           <mat-error>Bitte eine Beschreibung angeben.</mat-error>
         }
@@ -19,10 +19,27 @@
 
       <mat-form-field>
         <mat-label>Betrag</mat-label>
-        <input matInput type="number" inputmode="decimal" min="0.01" step="0.01" formControlName="amount" />
+        <input
+          matInput
+          type="number"
+          inputmode="decimal"
+          min="0.01"
+          step="0.01"
+          formControlName="amount"
+        />
         <span matTextSuffix>€</span>
-        @if (form.controls.amount.invalid) {
+        @if (form.controls.amount.hasError('decimals')) {
+          <mat-error>Höchstens zwei Nachkommastellen.</mat-error>
+        } @else if (form.controls.amount.invalid) {
           <mat-error>Bitte einen positiven Betrag angeben.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Datum</mat-label>
+        <input matInput type="date" formControlName="bookingDate" />
+        @if (form.controls.bookingDate.invalid) {
+          <mat-error>Bitte ein Datum angeben.</mat-error>
         }
       </mat-form-field>
 

@@ -1,5 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
@@ -9,6 +15,13 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { EXPENSE_CATEGORIES, ExpenseCategory, ItemType } from '../budget.model';
 import { BudgetStore } from '../data-access/budget-store';
+import { today } from '../month';
+
+/** Amounts are stored in cents, so more than two decimal places are rejected. */
+function maxTwoDecimals(control: AbstractControl<number | null>): ValidationErrors | null {
+  const value = control.value;
+  return value === null || /^\d+(\.\d{1,2})?$/.test(String(value)) ? null : { decimals: true };
+}
 
 @Component({
   selector: 'app-add-item-form',
@@ -49,7 +62,12 @@ export class AddItemForm {
   protected readonly form = this.fb.group({
     type: this.fb.control<ItemType>('EXPENSE'),
     description: this.fb.control('', [Validators.required, Validators.pattern(/\S/)]),
-    amount: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]),
+    amount: this.fb.control<number | null>(null, [
+      Validators.required,
+      Validators.min(0.01),
+      maxTwoDecimals,
+    ]),
+    bookingDate: this.fb.control(today(), Validators.required),
     category: this.fb.control<ExpenseCategory | null>(null, Validators.required),
   });
 
@@ -74,8 +92,8 @@ export class AddItemForm {
       this.form.markAllAsTouched();
       return;
     }
-    const { type, description, amount, category } = this.form.getRawValue();
-    const request = { description: description.trim(), amount: amount! };
+    const { type, description, amount, bookingDate, category } = this.form.getRawValue();
+    const request = { description: description.trim(), amount: String(amount), bookingDate };
 
     this.submitting.set(true);
     try {
@@ -84,10 +102,14 @@ export class AddItemForm {
       } else {
         await this.store.addExpense({ ...request, category: category! });
       }
-      this.form.reset({ type, description: '', amount: null, category: null });
-      this.snackBar.open(type === 'INCOME' ? 'Einnahme hinzugefügt' : 'Ausgabe hinzugefügt', undefined, {
-        duration: 3000,
-      });
+      this.form.reset({ type, description: '', amount: null, bookingDate, category: null });
+      this.snackBar.open(
+        type === 'INCOME' ? 'Einnahme hinzugefügt' : 'Ausgabe hinzugefügt',
+        undefined,
+        {
+          duration: 3000,
+        },
+      );
     } catch (error) {
       this.snackBar.open((error as Error).message, 'OK', { duration: 6000 });
     } finally {

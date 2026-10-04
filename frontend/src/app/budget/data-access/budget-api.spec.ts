@@ -19,22 +19,29 @@ describe('BudgetApi', () => {
   afterEach(() => http.verify());
 
   it('posts an income', async () => {
-    const result = firstValueFrom(api.addIncome({ description: 'Gehalt', amount: 2000 }));
+    const request = { description: 'Gehalt', amount: '2000', bookingDate: '2026-10-01' };
+    const result = firstValueFrom(api.addIncome(request));
 
     const req = http.expectOne('/api/budget/incomes');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ description: 'Gehalt', amount: 2000 });
+    expect(req.request.body).toEqual(request);
     req.flush({ id: 'abc' });
 
     expect(await result).toEqual({ id: 'abc' });
   });
 
   it('posts an expense with category', () => {
-    api.addExpense({ description: 'Miete', amount: 1000, category: 'LEBENSUNTERHALT' }).subscribe();
+    const request = {
+      description: 'Miete',
+      amount: '1000',
+      category: 'LEBENSUNTERHALT' as const,
+      bookingDate: '2026-10-03',
+    };
+    api.addExpense(request).subscribe();
 
     const req = http.expectOne('/api/budget/expenses');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ description: 'Miete', amount: 1000, category: 'LEBENSUNTERHALT' });
+    expect(req.request.body).toEqual(request);
     req.flush({ id: 'abc' });
   });
 
@@ -46,11 +53,11 @@ describe('BudgetApi', () => {
     req.flush(null, { status: 204, statusText: 'No Content' });
   });
 
-  it('lists items and fetches the overview', () => {
-    api.listItems().subscribe();
-    api.getOverview().subscribe();
+  it('lists items and fetches the overview of a month', () => {
+    api.listItems('2026-10').subscribe();
+    api.getOverview('2026-10').subscribe();
 
-    expect(http.expectOne('/api/budget/items').request.method).toBe('GET');
-    expect(http.expectOne('/api/budget/overview').request.method).toBe('GET');
+    expect(http.expectOne('/api/budget/items?month=2026-10').request.method).toBe('GET');
+    expect(http.expectOne('/api/budget/overview?month=2026-10').request.method).toBe('GET');
   });
 });

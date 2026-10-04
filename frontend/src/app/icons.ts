@@ -1,0 +1,27 @@
+import { inject } from '@angular/core';
+import { MatIconRegistry } from '@angular/material/icon';
+import { DomSanitizer } from '@angular/platform-browser';
+
+/**
+ * The few icons the app needs, inlined as SVG (Material Icons, Apache 2.0) so that no
+ * icon font has to be loaded from a third-party CDN.
+ */
+const ICONS: Record<string, string> = {
+  delete: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
+  warning: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z',
+  chevron_left: 'M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z',
+  chevron_right: 'M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z',
+};
+
+export function registerIcons(): void {
+  const registry = inject(MatIconRegistry);
+  const sanitizer = inject(DomSanitizer);
+  for (const [name, path] of Object.entries(ICONS)) {
+    registry.addSvgIconLiteral(
+      name,
+      sanitizer.bypassSecurityTrustHtml(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="${path}"/></svg>`,
+      ),
+    );
+  }
+}
