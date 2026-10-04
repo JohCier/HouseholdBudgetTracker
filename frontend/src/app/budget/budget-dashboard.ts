@@ -1,9 +1,12 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { Component, OnInit, computed, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BudgetItem } from './budget.model';
 import { BudgetStore } from './data-access/budget-store';
+import { monthStart } from './month';
 import { AddItemForm } from './ui/add-item-form';
 import { BudgetItemTable } from './ui/budget-item-table';
 import { CategoryBreakdownCard } from './ui/category-breakdown';
@@ -12,7 +15,9 @@ import { OverviewSummary } from './ui/overview-summary';
 @Component({
   selector: 'app-budget-dashboard',
   imports: [
+    DatePipe,
     MatButtonModule,
+    MatIconModule,
     MatProgressBarModule,
     AddItemForm,
     BudgetItemTable,
@@ -23,6 +28,21 @@ import { OverviewSummary } from './ui/overview-summary';
     @if (store.loading()) {
       <mat-progress-bar mode="indeterminate" class="loading" />
     }
+
+    <nav class="month" aria-label="Monat wählen">
+      <button
+        matIconButton
+        type="button"
+        aria-label="Vorheriger Monat"
+        (click)="store.previousMonth()"
+      >
+        <mat-icon svgIcon="chevron_left" />
+      </button>
+      <h1>{{ monthDate() | date: 'MMMM yyyy' }}</h1>
+      <button matIconButton type="button" aria-label="Nächster Monat" (click)="store.nextMonth()">
+        <mat-icon svgIcon="chevron_right" />
+      </button>
+    </nav>
 
     @if (store.loadError(); as error) {
       <div class="load-error" role="alert">
@@ -58,6 +78,17 @@ import { OverviewSummary } from './ui/overview-summary';
       right: 0;
       z-index: 10;
     }
+    .month {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .month h1 {
+      margin: 0;
+      min-width: 10ch;
+      text-align: center;
+      font: var(--mat-sys-headline-small);
+    }
     .load-error {
       display: flex;
       align-items: center;
@@ -90,6 +121,8 @@ export class BudgetDashboard implements OnInit {
   protected readonly store = inject(BudgetStore);
   private readonly snackBar = inject(MatSnackBar);
 
+  protected readonly monthDate = computed(() => monthStart(this.store.month()));
+
   ngOnInit(): void {
     void this.store.load();
   }
@@ -97,7 +130,19 @@ export class BudgetDashboard implements OnInit {
   protected async remove(item: BudgetItem): Promise<void> {
     try {
       await this.store.removeItem(item.id);
-      this.snackBar.open(`„${item.description}" gelöscht`, undefined, { duration: 3000 });
+    } catch (error) {
+      this.snackBar.open((error as Error).message, 'OK', { duration: 6000 });
+      return;
+    }
+    const undo = this.snackBar.open(`„${item.description}" gelöscht`, 'Rückgängig', {
+      duration: 6000,
+    });
+    undo.onAction().subscribe(() => void this.restore(item));
+  }
+
+  private async restore(item: BudgetItem): Promise<void> {
+    try {
+      await this.store.restoreItem(item);
     } catch (error) {
       this.snackBar.open((error as Error).message, 'OK', { duration: 6000 });
     }

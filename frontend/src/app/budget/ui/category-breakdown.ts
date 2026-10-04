@@ -4,7 +4,10 @@ import { MatCardModule } from '@angular/material/card';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { CategoryBreakdown, categoryLabel } from '../budget.model';
 
-/** Visualizes actual spend per category against its 50/30/20 target share of income. */
+/**
+ * Visualizes actual spend per category against its 50/30/20 target share of income.
+ * Living costs and leisure have a ceiling, savings a floor.
+ */
 @Component({
   selector: 'app-category-breakdown',
   imports: [CurrencyPipe, DecimalPipe, MatCardModule, MatProgressBarModule],
@@ -12,11 +15,11 @@ import { CategoryBreakdown, categoryLabel } from '../budget.model';
     <mat-card appearance="outlined">
       <mat-card-header>
         <mat-card-title>50/30/20-Regel</mat-card-title>
-        <mat-card-subtitle>Anteil der Ausgaben am Einkommen je Kategorie</mat-card-subtitle>
+        <mat-card-subtitle>Anteil am Monatseinkommen je Kategorie</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
         @for (breakdown of breakdowns(); track breakdown.category) {
-          <div class="row" [class.exceeded]="!breakdown.withinTarget">
+          <div class="row" [class.missed]="!breakdown.targetMet">
             <div class="row-header">
               <span class="name">{{ label(breakdown) }}</span>
               <span class="total">{{ breakdown.total | currency: 'EUR' }}</span>
@@ -28,9 +31,15 @@ import { CategoryBreakdown, categoryLabel } from '../budget.model';
             />
             <span class="ratio">
               {{ breakdown.actualPercentageOfIncome | number: '1.0-2' }} % von
+              {{ breakdown.targetDirection === 'AT_LEAST' ? 'mind.' : 'max.' }}
               {{ breakdown.targetPercentageOfIncome }} %
-              @if (!breakdown.withinTarget) {
-                · Ziel überschritten
+              @if (!breakdown.targetMet) {
+                ·
+                {{
+                  breakdown.targetDirection === 'AT_LEAST'
+                    ? 'Ziel nicht erreicht'
+                    : 'Ziel überschritten'
+                }}
               }
             </span>
           </div>
@@ -52,6 +61,9 @@ export class CategoryBreakdownCard {
     if (breakdown.targetPercentageOfIncome <= 0) {
       return 0;
     }
-    return Math.min(100, (breakdown.actualPercentageOfIncome / breakdown.targetPercentageOfIncome) * 100);
+    return Math.min(
+      100,
+      (breakdown.actualPercentageOfIncome / breakdown.targetPercentageOfIncome) * 100,
+    );
   }
 }

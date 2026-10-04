@@ -19,14 +19,14 @@ import { BudgetOverview } from '../budget.model';
       </mat-card>
       <mat-card appearance="outlined" class="tile">
         <span class="label">Saldo</span>
-        <span class="value" [class.expense]="overview().balance < 0">
+        <span class="value" [class.expense]="overview().balance.startsWith('-')">
           {{ overview().balance | currency: 'EUR' }}
         </span>
       </mat-card>
     </div>
     @if (overview().expensesExceedIncome) {
       <div class="warning" role="alert">
-        <mat-icon>warning</mat-icon>
+        <mat-icon svgIcon="warning" />
         Deine Ausgaben übersteigen deine Einnahmen.
       </div>
     }

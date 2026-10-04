@@ -1,0 +1,310 @@
+{
+  "openapi" : "3.0.1",
+  "info" : {
+    "title" : "OpenAPI definition",
+    "version" : "v0"
+  },
+  "servers" : [ {
+    "url" : "http://localhost",
+    "description" : "Generated server url"
+  } ],
+  "paths" : {
+    "/api/budget/expenses" : {
+      "post" : {
+        "operationId" : "addExpense",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AddExpenseRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BudgetItemIdResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "budget" ]
+      }
+    },
+    "/api/budget/incomes" : {
+      "post" : {
+        "operationId" : "addIncome",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AddIncomeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BudgetItemIdResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "budget" ]
+      }
+    },
+    "/api/budget/items" : {
+      "get" : {
+        "operationId" : "listItems",
+        "parameters" : [ {
+          "example" : "2026-10",
+          "in" : "query",
+          "name" : "month",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/BudgetItemResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "budget" ]
+      }
+    },
+    "/api/budget/items/{id}" : {
+      "delete" : {
+        "operationId" : "removeItem",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "budget" ]
+      }
+    },
+    "/api/budget/overview" : {
+      "get" : {
+        "operationId" : "overview",
+        "parameters" : [ {
+          "example" : "2026-10",
+          "in" : "query",
+          "name" : "month",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BudgetOverviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "budget" ]
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "AddExpenseRequest" : {
+        "required" : [ "amount", "bookingDate", "category", "description" ],
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "850.0"
+          },
+          "bookingDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "category" : {
+            "$ref" : "#/components/schemas/ExpenseCategory"
+          },
+          "description" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        }
+      },
+      "AddIncomeRequest" : {
+        "required" : [ "amount", "bookingDate", "description" ],
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "2500.0"
+          },
+          "bookingDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "description" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        }
+      },
+      "BudgetItemIdResponse" : {
+        "required" : [ "id" ],
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }
+      },
+      "BudgetItemResponse" : {
+        "required" : [ "amount", "bookingDate", "category", "description", "id", "type" ],
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "850.0"
+          },
+          "bookingDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "category" : {
+            "description" : "Only set for expenses",
+            "nullable" : true,
+            "allOf" : [ {
+              "$ref" : "#/components/schemas/ExpenseCategory"
+            } ]
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "type" : {
+            "$ref" : "#/components/schemas/ItemType"
+          }
+        }
+      },
+      "BudgetOverviewResponse" : {
+        "required" : [ "balance", "categoryBreakdowns", "expensesExceedIncome", "month", "totalExpense", "totalIncome" ],
+        "type" : "object",
+        "properties" : {
+          "balance" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "700.0"
+          },
+          "categoryBreakdowns" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CategoryBreakdownResponse"
+            }
+          },
+          "expensesExceedIncome" : {
+            "type" : "boolean"
+          },
+          "month" : {
+            "pattern" : "^\\d{4}-\\d{2}$",
+            "type" : "string",
+            "example" : "2026-10"
+          },
+          "totalExpense" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "1800.0"
+          },
+          "totalIncome" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "2500.0"
+          }
+        }
+      },
+      "CategoryBreakdownResponse" : {
+        "required" : [ "actualPercentageOfIncome", "category", "targetDirection", "targetMet", "targetPercentageOfIncome", "total" ],
+        "type" : "object",
+        "properties" : {
+          "actualPercentageOfIncome" : {
+            "type" : "number",
+            "example" : 34.0
+          },
+          "category" : {
+            "$ref" : "#/components/schemas/ExpenseCategory"
+          },
+          "targetDirection" : {
+            "$ref" : "#/components/schemas/TargetDirection"
+          },
+          "targetMet" : {
+            "type" : "boolean"
+          },
+          "targetPercentageOfIncome" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "total" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "850.0"
+          }
+        }
+      },
+      "ExpenseCategory" : {
+        "type" : "string",
+        "enum" : [ "LEBENSUNTERHALT", "FREIZEIT_SPASS", "SPAREN_INVESTIEREN" ]
+      },
+      "ItemType" : {
+        "type" : "string",
+        "enum" : [ "INCOME", "EXPENSE" ]
+      },
+      "TargetDirection" : {
+        "type" : "string",
+        "enum" : [ "AT_MOST", "AT_LEAST" ]
+      }
+    }
+  }
+}

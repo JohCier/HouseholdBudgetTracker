@@ -28,7 +28,7 @@ mat-card-content {
   color: var(--mat-sys-on-surface-variant);
 }
 
-.exceeded {
+.missed {
   @include mat.progress-bar-overrides(
     (
       active-indicator-color: var(--mat-sys-error),

@@ -1,4 +1,4 @@
-import { CurrencyPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -9,7 +9,15 @@ import { BudgetItem, categoryLabel } from '../budget.model';
 
 @Component({
   selector: 'app-budget-item-table',
-  imports: [CurrencyPipe, MatButtonModule, MatCardModule, MatIconModule, MatTableModule, MatTooltipModule],
+  imports: [
+    CurrencyPipe,
+    DatePipe,
+    MatButtonModule,
+    MatCardModule,
+    MatIconModule,
+    MatTableModule,
+    MatTooltipModule,
+  ],
   template: `
     <mat-card appearance="outlined">
       <mat-card-header>
@@ -17,9 +25,15 @@ import { BudgetItem, categoryLabel } from '../budget.model';
       </mat-card-header>
       <mat-card-content>
         @if (items().length === 0) {
-          <p class="empty">Noch keine Einträge vorhanden.</p>
+          <p class="empty">Keine Einträge in diesem Monat.</p>
         } @else {
           <table mat-table [dataSource]="items()">
+            <ng-container matColumnDef="bookingDate">
+              <th mat-header-cell *matHeaderCellDef>Datum</th>
+              <td mat-cell *matCellDef="let item" class="date">
+                {{ item.bookingDate | date: 'dd.MM.' }}
+              </td>
+            </ng-container>
             <ng-container matColumnDef="type">
               <th mat-header-cell *matHeaderCellDef>Art</th>
               <td mat-cell *matCellDef="let item">
@@ -56,7 +70,7 @@ import { BudgetItem, categoryLabel } from '../budget.model';
                   [attr.aria-label]="'Eintrag ' + item.description + ' löschen'"
                   (click)="remove.emit(item)"
                 >
-                  <mat-icon>delete</mat-icon>
+                  <mat-icon svgIcon="delete" />
                 </button>
               </td>
             </ng-container>
@@ -84,6 +98,10 @@ import { BudgetItem, categoryLabel } from '../budget.model';
     .expense {
       color: var(--mat-sys-error);
     }
+    .date {
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
     .actions {
       width: 48px;
     }
@@ -97,7 +115,14 @@ export class BudgetItemTable {
   readonly items = input.required<BudgetItem[]>();
   readonly remove = output<BudgetItem>();
 
-  protected readonly columns = ['type', 'description', 'category', 'amount', 'actions'];
+  protected readonly columns = [
+    'bookingDate',
+    'type',
+    'description',
+    'category',
+    'amount',
+    'actions',
+  ];
 
   protected label(item: BudgetItem): string {
     return categoryLabel(item.category);
