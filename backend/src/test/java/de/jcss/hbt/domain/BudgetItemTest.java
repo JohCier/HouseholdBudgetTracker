@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.YearMonth;
+import java.time.Year;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -82,11 +82,11 @@ class BudgetItemTest {
     }
 
     @Test
-    void knowsItsBookingMonth() {
+    void knowsItsBookingYear() {
         BudgetItem item = BudgetItem.income(id, "Gehalt", amount, DATE);
 
-        assertThat(item.isBookedIn(YearMonth.of(2026, 10))).isTrue();
-        assertThat(item.isBookedIn(YearMonth.of(2026, 11))).isFalse();
+        assertThat(item.isBookedIn(Year.of(2026))).isTrue();
+        assertThat(item.isBookedIn(Year.of(2027))).isFalse();
     }
 
     @Test

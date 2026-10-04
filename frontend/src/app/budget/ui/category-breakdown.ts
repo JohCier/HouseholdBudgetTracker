@@ -15,7 +15,7 @@ import { CategoryBreakdown, categoryLabel } from '../budget.model';
     <mat-card appearance="outlined">
       <mat-card-header>
         <mat-card-title>50/30/20-Regel</mat-card-title>
-        <mat-card-subtitle>Anteil am Monatseinkommen je Kategorie</mat-card-subtitle>
+        <mat-card-subtitle>Anteil am Jahreseinkommen je Kategorie</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
         @for (breakdown of breakdowns(); track breakdown.category) {

@@ -11,7 +11,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
-import java.time.YearMonth;
+import java.time.Year;
 import java.util.List;
 import java.util.UUID;
 
@@ -64,15 +64,15 @@ public class JdbcBudgetItemRepository implements BudgetItemRepository {
     }
 
     @Override
-    public List<BudgetItem> findByMonth(YearMonth month) {
+    public List<BudgetItem> findByYear(Year year) {
         return jdbcClient.sql("""
                         SELECT id, description, amount, type, category, booking_date
                         FROM budget_item
                         WHERE booking_date BETWEEN :from AND :to
                         ORDER BY booking_date DESC, created_at DESC
                         """)
-                .param("from", month.atDay(1))
-                .param("to", month.atEndOfMonth())
+                .param("from", year.atDay(1))
+                .param("to", year.atMonth(12).atEndOfMonth())
                 .query(ROW_MAPPER)
                 .list();
     }

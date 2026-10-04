@@ -10,6 +10,7 @@ import de.jcss.hbt.application.port.in.BudgetUseCases.AddExpenseCommand;
 import de.jcss.hbt.application.port.in.BudgetUseCases.AddIncomeCommand;
 import de.jcss.hbt.domain.BudgetItemId;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
@@ -24,7 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.YearMonth;
+import java.time.Year;
 import java.util.List;
 import java.util.UUID;
 
@@ -67,12 +68,14 @@ public class BudgetController {
     }
 
     @GetMapping("/items")
-    public List<BudgetItemResponse> listItems(@RequestParam @Parameter(example = "2026-10") YearMonth month) {
-        return budget.listItems(month).stream().map(BudgetItemResponse::from).toList();
+    public List<BudgetItemResponse> listItems(
+            @RequestParam @Parameter(schema = @Schema(type = "integer", format = "int32", example = "2026")) Year year) {
+        return budget.listItems(year).stream().map(BudgetItemResponse::from).toList();
     }
 
     @GetMapping("/overview")
-    public BudgetOverviewResponse overview(@RequestParam @Parameter(example = "2026-10") YearMonth month) {
-        return BudgetOverviewResponse.from(budget.getOverview(month));
+    public BudgetOverviewResponse overview(
+            @RequestParam @Parameter(schema = @Schema(type = "integer", format = "int32", example = "2026")) Year year) {
+        return BudgetOverviewResponse.from(budget.getOverview(year));
     }
 }

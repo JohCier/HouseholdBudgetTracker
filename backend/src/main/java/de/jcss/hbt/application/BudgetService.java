@@ -10,7 +10,7 @@ import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.YearMonth;
+import java.time.Year;
 import java.util.List;
 import java.util.Objects;
 
@@ -51,13 +51,13 @@ public class BudgetService implements BudgetUseCases {
     }
 
     @Override
-    public List<BudgetItem> listItems(YearMonth month) {
-        return repository.findByMonth(month);
+    public List<BudgetItem> listItems(Year year) {
+        return repository.findByYear(year);
     }
 
     @Override
-    public BudgetOverview getOverview(YearMonth month) {
-        return BudgetOverview.of(month, repository.findByMonth(month));
+    public BudgetOverview getOverview(Year year) {
+        return BudgetOverview.of(year, repository.findByYear(year));
     }
 
     private static Money toMoney(BigDecimal amount) {

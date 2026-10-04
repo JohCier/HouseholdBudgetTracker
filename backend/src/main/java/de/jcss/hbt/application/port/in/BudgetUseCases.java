@@ -7,7 +7,7 @@ import de.jcss.hbt.domain.ExpenseCategory;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.YearMonth;
+import java.time.Year;
 import java.util.List;
 
 /**
@@ -21,11 +21,11 @@ public interface BudgetUseCases {
 
     void removeItem(BudgetItemId id);
 
-    /** Items booked in the given month, newest first. */
-    List<BudgetItem> listItems(YearMonth month);
+    /** Items booked in the given year, newest first. */
+    List<BudgetItem> listItems(Year year);
 
-    /** Totals and 50/30/20 category breakdown for the given month. */
-    BudgetOverview getOverview(YearMonth month);
+    /** Totals and 50/30/20 category breakdown for the given year. */
+    BudgetOverview getOverview(Year year);
 
     record AddIncomeCommand(String description, BigDecimal amount, LocalDate bookingDate) {
     }

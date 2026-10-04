@@ -3,7 +3,7 @@ package de.jcss.hbt.domain;
 import de.jcss.hbt.domain.exception.InvalidBudgetItemException;
 
 import java.time.LocalDate;
-import java.time.YearMonth;
+import java.time.Year;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -103,8 +103,8 @@ public final class BudgetItem {
         return bookingDate;
     }
 
-    public boolean isBookedIn(YearMonth month) {
-        return YearMonth.from(bookingDate).equals(month);
+    public boolean isBookedIn(Year year) {
+        return Year.from(bookingDate).equals(year);
     }
 
     @Override

@@ -7,7 +7,7 @@ import {
   BudgetItem,
   BudgetItemIdResponse,
   BudgetOverview,
-  Month,
+  Year,
 } from '../budget.model';
 
 /** Thin HTTP adapter for the backend's /api/budget endpoints. */
@@ -28,11 +28,11 @@ export class BudgetApi {
     return this.http.delete<void>(`${this.baseUrl}/items/${encodeURIComponent(id)}`);
   }
 
-  listItems(month: Month): Observable<BudgetItem[]> {
-    return this.http.get<BudgetItem[]>(`${this.baseUrl}/items`, { params: { month } });
+  listItems(year: Year): Observable<BudgetItem[]> {
+    return this.http.get<BudgetItem[]>(`${this.baseUrl}/items`, { params: { year } });
   }
 
-  getOverview(month: Month): Observable<BudgetOverview> {
-    return this.http.get<BudgetOverview>(`${this.baseUrl}/overview`, { params: { month } });
+  getOverview(year: Year): Observable<BudgetOverview> {
+    return this.http.get<BudgetOverview>(`${this.baseUrl}/overview`, { params: { year } });
   }
 }

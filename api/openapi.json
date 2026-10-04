@@ -69,12 +69,13 @@
       "get" : {
         "operationId" : "listItems",
         "parameters" : [ {
-          "example" : "2026-10",
           "in" : "query",
-          "name" : "month",
+          "name" : "year",
           "required" : true,
           "schema" : {
-            "type" : "string"
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 2026
           }
         } ],
         "responses" : {
@@ -119,12 +120,13 @@
       "get" : {
         "operationId" : "overview",
         "parameters" : [ {
-          "example" : "2026-10",
           "in" : "query",
-          "name" : "month",
+          "name" : "year",
           "required" : true,
           "schema" : {
-            "type" : "string"
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 2026
           }
         } ],
         "responses" : {
@@ -231,7 +233,7 @@
         }
       },
       "BudgetOverviewResponse" : {
-        "required" : [ "balance", "categoryBreakdowns", "expensesExceedIncome", "month", "totalExpense", "totalIncome" ],
+        "required" : [ "balance", "categoryBreakdowns", "expensesExceedIncome", "totalExpense", "totalIncome", "year" ],
         "type" : "object",
         "properties" : {
           "balance" : {
@@ -248,11 +250,6 @@
           "expensesExceedIncome" : {
             "type" : "boolean"
           },
-          "month" : {
-            "pattern" : "^\\d{4}-\\d{2}$",
-            "type" : "string",
-            "example" : "2026-10"
-          },
           "totalExpense" : {
             "type" : "string",
             "format" : "decimal",
@@ -262,6 +259,11 @@
             "type" : "string",
             "format" : "decimal",
             "example" : "2500.0"
+          },
+          "year" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 2026
           }
         }
       },

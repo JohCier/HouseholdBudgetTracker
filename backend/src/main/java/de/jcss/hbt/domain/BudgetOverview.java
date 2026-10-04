@@ -2,17 +2,17 @@ package de.jcss.hbt.domain;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.YearMonth;
+import java.time.Year;
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * Value object summarizing the bookings of one month: total income, total expenses, the
+ * Value object summarizing the bookings of one year: total income, total expenses, the
  * resulting balance, and a breakdown per {@link ExpenseCategory} comparing actual spend
- * against the 50/30/20 target share of that month's income.
+ * against the 50/30/20 target share of that year's income.
  */
 public record BudgetOverview(
-        YearMonth month,
+        Year year,
         Money totalIncome,
         Money totalExpense,
         Money balance,
@@ -21,14 +21,14 @@ public record BudgetOverview(
 ) {
 
     /**
-     * @throws IllegalArgumentException if an item is not booked in the given month
+     * @throws IllegalArgumentException if an item is not booked in the given year
      */
-    public static BudgetOverview of(YearMonth month, List<BudgetItem> items) {
+    public static BudgetOverview of(Year year, List<BudgetItem> items) {
         items.stream()
-                .filter(item -> !item.isBookedIn(month))
+                .filter(item -> !item.isBookedIn(year))
                 .findAny()
                 .ifPresent(item -> {
-                    throw new IllegalArgumentException("item %s is not booked in %s".formatted(item.id(), month));
+                    throw new IllegalArgumentException("item %s is not booked in %s".formatted(item.id(), year));
                 });
 
         Money totalIncome = sum(items, ItemType.INCOME);
@@ -39,7 +39,7 @@ public record BudgetOverview(
                 .map(category -> breakdownFor(category, items, totalIncome))
                 .toList();
 
-        return new BudgetOverview(month, totalIncome, totalExpense, balance,
+        return new BudgetOverview(year, totalIncome, totalExpense, balance,
                 totalExpense.compareTo(totalIncome) > 0, breakdowns);
     }
 

@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Subject, of, throwError } from 'rxjs';
 import { BudgetItem, BudgetOverview } from '../budget.model';
-import { currentMonth } from '../month';
+import { currentYear } from '../year';
 import { BudgetApi } from './budget-api';
 import { BudgetStore } from './budget-store';
 
@@ -14,8 +14,8 @@ const item: BudgetItem = {
   category: null,
   bookingDate: '2026-10-01',
 };
-const overview = (month: string): BudgetOverview => ({
-  month,
+const overview = (year: number): BudgetOverview => ({
+  year,
   totalIncome: '2000.00',
   totalExpense: '0.00',
   balance: '2000.00',
@@ -33,61 +33,61 @@ describe('BudgetStore', () => {
       addExpense: vi.fn(() => of({ id: '2' })),
       removeItem: vi.fn(() => of(undefined)),
       listItems: vi.fn(() => of([item])),
-      getOverview: vi.fn((month: string) => of(overview(month))),
+      getOverview: vi.fn((year: number) => of(overview(year))),
     };
     TestBed.configureTestingModule({ providers: [{ provide: BudgetApi, useValue: api }] });
     store = TestBed.inject(BudgetStore);
   });
 
-  it('starts with the current month and loads its items and overview', async () => {
+  it('starts with the current year and loads its items and overview', async () => {
     await store.load();
 
-    expect(store.month()).toBe(currentMonth());
-    expect(api.listItems).toHaveBeenCalledWith(currentMonth());
+    expect(store.year()).toBe(currentYear());
+    expect(api.listItems).toHaveBeenCalledWith(currentYear());
     expect(store.items()).toEqual([item]);
-    expect(store.overview()).toEqual(overview(currentMonth()));
+    expect(store.overview()).toEqual(overview(currentYear()));
     expect(store.loading()).toBe(false);
     expect(store.loadError()).toBeNull();
   });
 
-  it('navigates between months across year boundaries', async () => {
-    await store.selectMonth('2026-12');
-    await store.nextMonth();
-    expect(store.month()).toBe('2027-01');
+  it('navigates between years', async () => {
+    await store.selectYear(2026);
+    await store.nextYear();
+    expect(store.year()).toBe(2027);
 
-    await store.previousMonth();
-    await store.previousMonth();
-    expect(store.month()).toBe('2026-11');
-    expect(api.getOverview).toHaveBeenLastCalledWith('2026-11');
+    await store.previousYear();
+    await store.previousYear();
+    expect(store.year()).toBe(2025);
+    expect(api.getOverview).toHaveBeenLastCalledWith(2025);
   });
 
-  it('switches to the booking month after adding an item', async () => {
-    await store.selectMonth('2026-10');
+  it('switches to the booking year after adding an item', async () => {
+    await store.selectYear(2026);
 
-    await store.addIncome({ description: 'Gehalt', amount: '2000', bookingDate: '2026-11-01' });
+    await store.addIncome({ description: 'Gehalt', amount: '2000', bookingDate: '2027-01-01' });
 
     expect(api.addIncome).toHaveBeenCalledWith({
       description: 'Gehalt',
       amount: '2000',
-      bookingDate: '2026-11-01',
+      bookingDate: '2027-01-01',
     });
-    expect(store.month()).toBe('2026-11');
-    expect(api.listItems).toHaveBeenLastCalledWith('2026-11');
+    expect(store.year()).toBe(2027);
+    expect(api.listItems).toHaveBeenLastCalledWith(2027);
   });
 
   it('ignores responses of outdated loads', async () => {
     const slowItems = new Subject<BudgetItem[]>();
     api.listItems.mockReturnValueOnce(slowItems);
 
-    const outdated = store.selectMonth('2026-09');
-    await store.selectMonth('2026-10');
+    const outdated = store.selectYear(2025);
+    await store.selectYear(2026);
     slowItems.next([{ ...item, description: 'veraltet' }]);
     slowItems.complete();
     await outdated;
 
-    expect(store.month()).toBe('2026-10');
+    expect(store.year()).toBe(2026);
     expect(store.items()).toEqual([item]);
-    expect(store.overview()?.month).toBe('2026-10');
+    expect(store.overview()?.year).toBe(2026);
   });
 
   it('restores a removed expense with its original data', async () => {

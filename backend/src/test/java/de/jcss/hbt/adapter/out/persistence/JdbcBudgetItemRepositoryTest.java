@@ -14,7 +14,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.YearMonth;
+import java.time.Year;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,19 +42,19 @@ class JdbcBudgetItemRepositoryTest {
         repository.add(income);
         repository.add(expense);
 
-        assertThat(repository.findByMonth(YearMonth.of(2026, 10)))
+        assertThat(repository.findByYear(Year.of(2026)))
                 .usingRecursiveFieldByFieldElementComparator()
                 .containsExactly(expense, income);
     }
 
     @Test
-    void findsOnlyItemsOfTheRequestedMonthIncludingItsBoundaries() {
-        repository.add(income("September", LocalDate.of(2026, 9, 30)));
-        repository.add(income("Erster", LocalDate.of(2026, 10, 1)));
-        repository.add(income("Letzter", LocalDate.of(2026, 10, 31)));
-        repository.add(income("November", LocalDate.of(2026, 11, 1)));
+    void findsOnlyItemsOfTheRequestedYearIncludingItsBoundaries() {
+        repository.add(income("Vorjahr", LocalDate.of(2025, 12, 31)));
+        repository.add(income("Erster", LocalDate.of(2026, 1, 1)));
+        repository.add(income("Letzter", LocalDate.of(2026, 12, 31)));
+        repository.add(income("Folgejahr", LocalDate.of(2027, 1, 1)));
 
-        assertThat(repository.findByMonth(YearMonth.of(2026, 10)))
+        assertThat(repository.findByYear(Year.of(2026)))
                 .extracting(BudgetItem::description)
                 .containsExactly("Letzter", "Erster");
     }
@@ -66,7 +66,7 @@ class JdbcBudgetItemRepositoryTest {
 
         assertThat(repository.remove(item.id())).isTrue();
         assertThat(repository.remove(item.id())).isFalse();
-        assertThat(repository.findByMonth(YearMonth.of(2026, 10))).isEmpty();
+        assertThat(repository.findByYear(Year.of(2026))).isEmpty();
     }
 
     private static BudgetItem income(String description, LocalDate date) {

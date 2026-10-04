@@ -41,7 +41,7 @@ class BudgetIntegrationTest {
     }
 
     @Test
-    void tracksIncomeAndExpensesAndComputesMonthlyOverview() throws Exception {
+    void tracksIncomeAndExpensesAndComputesYearlyOverview() throws Exception {
         post("/api/budget/incomes", """
                 {"description":"Gehalt","amount":"2000.00","bookingDate":"2026-10-01"}""");
         post("/api/budget/expenses", """
@@ -49,21 +49,21 @@ class BudgetIntegrationTest {
         post("/api/budget/expenses", """
                 {"description":"Konzert","amount":"300.00","category":"FREIZEIT_SPASS","bookingDate":"2026-10-20"}""");
         post("/api/budget/expenses", """
-                {"description":"Urlaub","amount":"900.00","category":"FREIZEIT_SPASS","bookingDate":"2026-11-02"}""");
+                {"description":"Urlaub","amount":"900.00","category":"FREIZEIT_SPASS","bookingDate":"2027-01-02"}""");
 
-        mockMvc.perform(get("/api/budget/items").param("month", "2026-10"))
+        mockMvc.perform(get("/api/budget/items").param("year", "2026"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(3))
                 .andExpect(jsonPath("$[0].description").value("Konzert"));
 
-        mockMvc.perform(get("/api/budget/overview").param("month", "2026-10"))
+        mockMvc.perform(get("/api/budget/overview").param("year", "2026"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalIncome").value("2000.00"))
                 .andExpect(jsonPath("$.totalExpense").value("1300.00"))
                 .andExpect(jsonPath("$.balance").value("700.00"))
                 .andExpect(jsonPath("$.expensesExceedIncome").value(false));
 
-        mockMvc.perform(get("/api/budget/overview").param("month", "2026-11"))
+        mockMvc.perform(get("/api/budget/overview").param("year", "2027"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalExpense").value("900.00"))
                 .andExpect(jsonPath("$.expensesExceedIncome").value(true));
@@ -78,7 +78,7 @@ class BudgetIntegrationTest {
         mockMvc.perform(delete("/api/budget/items/{id}", id))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/budget/items").param("month", "2026-10"))
+        mockMvc.perform(get("/api/budget/items").param("year", "2026"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }

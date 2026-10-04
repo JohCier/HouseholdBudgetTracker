@@ -20,7 +20,7 @@ describe('BudgetDashboard', () => {
     const undo = new Subject<void>();
     const snackBar = { open: vi.fn(() => ({ onAction: () => undo })) };
     const store = {
-      month: signal('2026-10'),
+      year: signal(2026),
       items: signal([item]),
       overview: signal(null),
       loading: signal(false),

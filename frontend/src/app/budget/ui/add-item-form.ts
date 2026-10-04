@@ -15,7 +15,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { EXPENSE_CATEGORIES, ExpenseCategory, ItemType } from '../budget.model';
 import { BudgetStore } from '../data-access/budget-store';
-import { today } from '../month';
+import { today } from '../year';
 
 /** Amounts are stored in cents, so more than two decimal places are rejected. */
 function maxTwoDecimals(control: AbstractControl<number | null>): ValidationErrors | null {

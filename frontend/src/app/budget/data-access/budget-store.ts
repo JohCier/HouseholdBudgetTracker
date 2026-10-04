@@ -6,55 +6,55 @@ import {
   AddIncomeRequest,
   BudgetItem,
   BudgetOverview,
-  Month,
+  Year,
 } from '../budget.model';
-import { addMonths, currentMonth, monthOf } from '../month';
+import { currentYear, yearOf } from '../year';
 import { BudgetApi } from './budget-api';
 
 /**
- * Signal-based state holder for the budget of the selected month. The overview is derived
+ * Signal-based state holder for the budget of the selected year. The overview is derived
  * on the server, so every mutation is followed by a reload of items and overview.
  * Only the response of the latest load is applied, so overlapping reloads (e.g. quick
- * successive deletes or month changes) cannot leave stale data behind.
+ * successive deletes or year changes) cannot leave stale data behind.
  * Mutations reject with an Error carrying a user-facing message.
  */
 @Injectable({ providedIn: 'root' })
 export class BudgetStore {
   private readonly api = inject(BudgetApi);
 
-  private readonly _month = signal<Month>(currentMonth());
+  private readonly _year = signal<Year>(currentYear());
   private readonly _items = signal<BudgetItem[]>([]);
   private readonly _overview = signal<BudgetOverview | null>(null);
   private readonly _loading = signal(false);
   private readonly _loadError = signal<string | null>(null);
   private latestLoad = 0;
 
-  readonly month = this._month.asReadonly();
+  readonly year = this._year.asReadonly();
   readonly items = this._items.asReadonly();
   readonly overview = this._overview.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly loadError = this._loadError.asReadonly();
 
-  selectMonth(month: Month): Promise<void> {
-    this._month.set(month);
+  selectYear(year: Year): Promise<void> {
+    this._year.set(year);
     return this.load();
   }
 
-  previousMonth(): Promise<void> {
-    return this.selectMonth(addMonths(this._month(), -1));
+  previousYear(): Promise<void> {
+    return this.selectYear(this._year() - 1);
   }
 
-  nextMonth(): Promise<void> {
-    return this.selectMonth(addMonths(this._month(), 1));
+  nextYear(): Promise<void> {
+    return this.selectYear(this._year() + 1);
   }
 
   async load(): Promise<void> {
     const loadId = ++this.latestLoad;
-    const month = this._month();
+    const year = this._year();
     this._loading.set(true);
     try {
       const { items, overview } = await firstValueFrom(
-        forkJoin({ items: this.api.listItems(month), overview: this.api.getOverview(month) }),
+        forkJoin({ items: this.api.listItems(year), overview: this.api.getOverview(year) }),
       );
       if (loadId === this.latestLoad) {
         this._items.set(items);
@@ -72,14 +72,14 @@ export class BudgetStore {
     }
   }
 
-  /** Adds an income and switches to the month it is booked in. */
+  /** Adds an income and switches to the year it is booked in. */
   addIncome(request: AddIncomeRequest): Promise<void> {
-    return this.mutate(this.api.addIncome(request), monthOf(request.bookingDate));
+    return this.mutate(this.api.addIncome(request), yearOf(request.bookingDate));
   }
 
-  /** Adds an expense and switches to the month it is booked in. */
+  /** Adds an expense and switches to the year it is booked in. */
   addExpense(request: AddExpenseRequest): Promise<void> {
-    return this.mutate(this.api.addExpense(request), monthOf(request.bookingDate));
+    return this.mutate(this.api.addExpense(request), yearOf(request.bookingDate));
   }
 
   removeItem(id: string): Promise<void> {
@@ -98,13 +98,13 @@ export class BudgetStore {
       : this.addExpense({ ...request, category: item.category });
   }
 
-  private async mutate(request: Observable<unknown>, month: Month = this._month()): Promise<void> {
+  private async mutate(request: Observable<unknown>, year: Year = this._year()): Promise<void> {
     try {
       await firstValueFrom(request, { defaultValue: undefined });
     } catch (error) {
       throw new Error(toMessage(error));
     }
-    await this.selectMonth(month);
+    await this.selectYear(year);
   }
 }
 

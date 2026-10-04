@@ -18,8 +18,8 @@ export type AddIncomeRequest = Schemas['AddIncomeRequest'];
 export type AddExpenseRequest = Schemas['AddExpenseRequest'];
 export type BudgetItemIdResponse = Schemas['BudgetItemIdResponse'];
 
-/** A calendar month in ISO format, e.g. "2026-10". */
-export type Month = string;
+/** A calendar year, e.g. 2026. */
+export type Year = number;
 
 export interface CategoryInfo {
   value: ExpenseCategory;

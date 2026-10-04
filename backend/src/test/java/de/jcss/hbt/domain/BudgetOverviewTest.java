@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.YearMonth;
+import java.time.Year;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -12,14 +12,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class BudgetOverviewTest {
 
-    private static final YearMonth OCTOBER = YearMonth.of(2026, 10);
-    private static final LocalDate DATE = OCTOBER.atDay(4);
+    private static final Year YEAR = Year.of(2026);
+    private static final LocalDate DATE = LocalDate.of(2026, 10, 4);
 
     @Test
     void withNoItemsEverythingIsZeroAndNoTargetIsMissed() {
-        BudgetOverview overview = BudgetOverview.of(OCTOBER, List.of());
+        BudgetOverview overview = BudgetOverview.of(YEAR, List.of());
 
-        assertThat(overview.month()).isEqualTo(OCTOBER);
+        assertThat(overview.year()).isEqualTo(YEAR);
         assertThat(overview.totalIncome().isZero()).isTrue();
         assertThat(overview.totalExpense().isZero()).isTrue();
         assertThat(overview.balance().isZero()).isTrue();
@@ -33,7 +33,7 @@ class BudgetOverviewTest {
 
     @Test
     void calculatesTotalsAndBalance() {
-        BudgetOverview overview = BudgetOverview.of(OCTOBER, List.of(
+        BudgetOverview overview = BudgetOverview.of(YEAR, List.of(
                 income("2000.00"),
                 expense("1000.00", ExpenseCategory.LEBENSUNTERHALT),
                 expense("100.00", ExpenseCategory.FREIZEIT_SPASS)
@@ -47,7 +47,7 @@ class BudgetOverviewTest {
 
     @Test
     void flagsWhenExpensesExceedIncome() {
-        BudgetOverview overview = BudgetOverview.of(OCTOBER, List.of(
+        BudgetOverview overview = BudgetOverview.of(YEAR, List.of(
                 income("500.00"),
                 expense("800.00", ExpenseCategory.LEBENSUNTERHALT)
         ));
@@ -58,7 +58,7 @@ class BudgetOverviewTest {
 
     @Test
     void ceilingsAreMetUpToTheTargetShare() {
-        BudgetOverview overview = BudgetOverview.of(OCTOBER, List.of(
+        BudgetOverview overview = BudgetOverview.of(YEAR, List.of(
                 income("1000.00"),
                 // exactly at the 50% ceiling
                 expense("500.00", ExpenseCategory.LEBENSUNTERHALT),
@@ -80,9 +80,9 @@ class BudgetOverviewTest {
 
     @Test
     void savingsAreAFloorThatMayBeExceeded() {
-        BudgetOverview belowFloor = BudgetOverview.of(OCTOBER, List.of(
+        BudgetOverview belowFloor = BudgetOverview.of(YEAR, List.of(
                 income("1000.00"), expense("100.00", ExpenseCategory.SPAREN_INVESTIEREN)));
-        BudgetOverview aboveFloor = BudgetOverview.of(OCTOBER, List.of(
+        BudgetOverview aboveFloor = BudgetOverview.of(YEAR, List.of(
                 income("1000.00"), expense("300.00", ExpenseCategory.SPAREN_INVESTIEREN)));
 
         CategoryBreakdown tooLittle = breakdownFor(belowFloor, ExpenseCategory.SPAREN_INVESTIEREN);
@@ -97,7 +97,7 @@ class BudgetOverviewTest {
 
     @Test
     void spendingWithoutIncomeMissesCeilings() {
-        BudgetOverview overview = BudgetOverview.of(OCTOBER, List.of(expense("50.00", ExpenseCategory.FREIZEIT_SPASS)));
+        BudgetOverview overview = BudgetOverview.of(YEAR, List.of(expense("50.00", ExpenseCategory.FREIZEIT_SPASS)));
 
         assertThat(breakdownFor(overview, ExpenseCategory.FREIZEIT_SPASS).targetMet()).isFalse();
         assertThat(breakdownFor(overview, ExpenseCategory.LEBENSUNTERHALT).targetMet()).isTrue();
@@ -105,11 +105,11 @@ class BudgetOverviewTest {
     }
 
     @Test
-    void rejectsItemsOfAnotherMonth() {
-        BudgetItem november = BudgetItem.income(BudgetItemId.generate(), "Gehalt",
-                Money.of(new BigDecimal("1.00")), LocalDate.of(2026, 11, 1));
+    void rejectsItemsOfAnotherYear() {
+        BudgetItem nextYear = BudgetItem.income(BudgetItemId.generate(), "Gehalt",
+                Money.of(new BigDecimal("1.00")), LocalDate.of(2027, 1, 1));
 
-        assertThatThrownBy(() -> BudgetOverview.of(OCTOBER, List.of(november)))
+        assertThatThrownBy(() -> BudgetOverview.of(YEAR, List.of(nextYear)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

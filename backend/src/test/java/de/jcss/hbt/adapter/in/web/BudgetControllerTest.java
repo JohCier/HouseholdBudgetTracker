@@ -18,7 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.YearMonth;
+import java.time.Year;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,8 +39,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(BudgetController.class)
 class BudgetControllerTest {
 
-    private static final YearMonth OCTOBER = YearMonth.of(2026, 10);
-    private static final LocalDate DATE = OCTOBER.atDay(4);
+    private static final Year YEAR = Year.of(2026);
+    private static final LocalDate DATE = LocalDate.of(2026, 10, 4);
 
     @Autowired
     private MockMvc mockMvc;
@@ -140,11 +140,11 @@ class BudgetControllerTest {
     }
 
     @Test
-    void listItemsReturnsItemsOfTheMonthWithAmountsAsStrings() throws Exception {
+    void listItemsReturnsItemsOfTheYearWithAmountsAsStrings() throws Exception {
         BudgetItem item = BudgetItem.income(BudgetItemId.generate(), "Gehalt", Money.of(new BigDecimal("2000")), DATE);
-        when(budget.listItems(OCTOBER)).thenReturn(List.of(item));
+        when(budget.listItems(YEAR)).thenReturn(List.of(item));
 
-        mockMvc.perform(get("/api/budget/items").param("month", "2026-10"))
+        mockMvc.perform(get("/api/budget/items").param("year", "2026"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].description").value("Gehalt"))
                 .andExpect(jsonPath("$[0].type").value("INCOME"))
@@ -154,22 +154,22 @@ class BudgetControllerTest {
     }
 
     @Test
-    void listItemsRequiresMonth() throws Exception {
+    void listItemsRequiresYear() throws Exception {
         mockMvc.perform(get("/api/budget/items"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void overviewReturnsAggregatedSummary() throws Exception {
-        when(budget.getOverview(OCTOBER)).thenReturn(BudgetOverview.of(OCTOBER, List.of(
+        when(budget.getOverview(YEAR)).thenReturn(BudgetOverview.of(YEAR, List.of(
                 BudgetItem.income(BudgetItemId.generate(), "Gehalt", Money.of(new BigDecimal("1000.00")), DATE),
                 BudgetItem.expense(BudgetItemId.generate(), "ETF", Money.of(new BigDecimal("500.00")),
                         ExpenseCategory.SPAREN_INVESTIEREN, DATE)
         )));
 
-        mockMvc.perform(get("/api/budget/overview").param("month", "2026-10"))
+        mockMvc.perform(get("/api/budget/overview").param("year", "2026"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.month").value("2026-10"))
+                .andExpect(jsonPath("$.year").value(2026))
                 .andExpect(jsonPath("$.totalIncome").value("1000.00"))
                 .andExpect(jsonPath("$.totalExpense").value("500.00"))
                 .andExpect(jsonPath("$.balance").value("500.00"))

@@ -25,7 +25,7 @@ import { BudgetItem, categoryLabel } from '../budget.model';
       </mat-card-header>
       <mat-card-content>
         @if (items().length === 0) {
-          <p class="empty">Keine Einträge in diesem Monat.</p>
+          <p class="empty">Keine Einträge in diesem Jahr.</p>
         } @else {
           <table mat-table [dataSource]="items()">
             <ng-container matColumnDef="bookingDate">

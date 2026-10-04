@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.YearMonth;
+import java.time.Year;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -70,14 +70,14 @@ class BudgetServiceTest {
     }
 
     @Test
-    void listsAndSummarizesOnlyTheRequestedMonth() {
-        service.addIncome(new AddIncomeCommand("Gehalt Oktober", new BigDecimal("2000.00"), OCTOBER_4));
-        service.addIncome(new AddIncomeCommand("Gehalt November", new BigDecimal("3000.00"), LocalDate.of(2026, 11, 1)));
+    void listsAndSummarizesOnlyTheRequestedYear() {
+        service.addIncome(new AddIncomeCommand("Gehalt 2026", new BigDecimal("2000.00"), OCTOBER_4));
+        service.addIncome(new AddIncomeCommand("Gehalt 2027", new BigDecimal("3000.00"), LocalDate.of(2027, 1, 1)));
 
-        assertThat(service.listItems(YearMonth.of(2026, 10)))
+        assertThat(service.listItems(Year.of(2026)))
                 .extracting(BudgetItem::description)
-                .containsExactly("Gehalt Oktober");
-        assertThat(service.getOverview(YearMonth.of(2026, 10)).totalIncome().value()).isEqualByComparingTo("2000.00");
+                .containsExactly("Gehalt 2026");
+        assertThat(service.getOverview(Year.of(2026)).totalIncome().value()).isEqualByComparingTo("2000.00");
     }
 
     private static final class FakeRepository implements BudgetItemRepository {
@@ -95,9 +95,9 @@ class BudgetServiceTest {
         }
 
         @Override
-        public List<BudgetItem> findByMonth(YearMonth month) {
+        public List<BudgetItem> findByYear(Year year) {
             return items.values().stream()
-                    .filter(item -> item.isBookedIn(month))
+                    .filter(item -> item.isBookedIn(year))
                     .sorted(Comparator.comparing(BudgetItem::bookingDate).reversed())
                     .toList();
         }

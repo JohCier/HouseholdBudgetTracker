@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record BudgetOverviewResponse(
-        @Schema(type = "string", pattern = "^\\d{4}-\\d{2}$", example = "2026-10") String month,
+        @Schema(example = "2026") int year,
         @JsonFormat(shape = JsonFormat.Shape.STRING)
         @Schema(implementation = String.class, format = "decimal", example = "2500.00") BigDecimal totalIncome,
         @JsonFormat(shape = JsonFormat.Shape.STRING)
@@ -21,7 +21,7 @@ public record BudgetOverviewResponse(
 
     public static BudgetOverviewResponse from(BudgetOverview overview) {
         return new BudgetOverviewResponse(
-                overview.month().toString(),
+                overview.year().getValue(),
                 overview.totalIncome().value(),
                 overview.totalExpense().value(),
                 overview.balance().value(),

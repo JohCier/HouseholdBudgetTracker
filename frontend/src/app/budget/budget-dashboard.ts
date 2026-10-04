@@ -1,12 +1,10 @@
-import { DatePipe } from '@angular/common';
-import { Component, OnInit, computed, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BudgetItem } from './budget.model';
 import { BudgetStore } from './data-access/budget-store';
-import { monthStart } from './month';
 import { AddItemForm } from './ui/add-item-form';
 import { BudgetItemTable } from './ui/budget-item-table';
 import { CategoryBreakdownCard } from './ui/category-breakdown';
@@ -15,7 +13,6 @@ import { OverviewSummary } from './ui/overview-summary';
 @Component({
   selector: 'app-budget-dashboard',
   imports: [
-    DatePipe,
     MatButtonModule,
     MatIconModule,
     MatProgressBarModule,
@@ -29,17 +26,17 @@ import { OverviewSummary } from './ui/overview-summary';
       <mat-progress-bar mode="indeterminate" class="loading" />
     }
 
-    <nav class="month" aria-label="Monat wählen">
+    <nav class="year" aria-label="Jahr wählen">
       <button
         matIconButton
         type="button"
-        aria-label="Vorheriger Monat"
-        (click)="store.previousMonth()"
+        aria-label="Vorheriges Jahr"
+        (click)="store.previousYear()"
       >
         <mat-icon svgIcon="chevron_left" />
       </button>
-      <h1>{{ monthDate() | date: 'MMMM yyyy' }}</h1>
-      <button matIconButton type="button" aria-label="Nächster Monat" (click)="store.nextMonth()">
+      <h1>{{ store.year() }}</h1>
+      <button matIconButton type="button" aria-label="Nächstes Jahr" (click)="store.nextYear()">
         <mat-icon svgIcon="chevron_right" />
       </button>
     </nav>
@@ -78,14 +75,14 @@ import { OverviewSummary } from './ui/overview-summary';
       right: 0;
       z-index: 10;
     }
-    .month {
+    .year {
       display: flex;
       align-items: center;
       gap: 8px;
     }
-    .month h1 {
+    .year h1 {
       margin: 0;
-      min-width: 10ch;
+      min-width: 6ch;
       text-align: center;
       font: var(--mat-sys-headline-small);
     }
@@ -120,8 +117,6 @@ import { OverviewSummary } from './ui/overview-summary';
 export class BudgetDashboard implements OnInit {
   protected readonly store = inject(BudgetStore);
   private readonly snackBar = inject(MatSnackBar);
-
-  protected readonly monthDate = computed(() => monthStart(this.store.month()));
 
   ngOnInit(): void {
     void this.store.load();

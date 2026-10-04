@@ -53,11 +53,11 @@ describe('BudgetApi', () => {
     req.flush(null, { status: 204, statusText: 'No Content' });
   });
 
-  it('lists items and fetches the overview of a month', () => {
-    api.listItems('2026-10').subscribe();
-    api.getOverview('2026-10').subscribe();
+  it('lists items and fetches the overview of a year', () => {
+    api.listItems(2026).subscribe();
+    api.getOverview(2026).subscribe();
 
-    expect(http.expectOne('/api/budget/items?month=2026-10').request.method).toBe('GET');
-    expect(http.expectOne('/api/budget/overview?month=2026-10').request.method).toBe('GET');
+    expect(http.expectOne('/api/budget/items?year=2026').request.method).toBe('GET');
+    expect(http.expectOne('/api/budget/overview?year=2026').request.method).toBe('GET');
   });
 });

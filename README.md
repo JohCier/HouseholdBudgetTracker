@@ -1,6 +1,6 @@
 # Household Budget Tracker
 
-Haushaltsbuch nach der 50/30/20-Regel: höchstens 50 % des Monatseinkommens für den Lebensunterhalt,
+Haushaltsbuch nach der 50/30/20-Regel: höchstens 50 % des Jahreseinkommens für den Lebensunterhalt,
 höchstens 30 % für Freizeit & Spaß, mindestens 20 % für Sparen & Investieren.
 
 | Ordner      | Inhalt                                                                                   |

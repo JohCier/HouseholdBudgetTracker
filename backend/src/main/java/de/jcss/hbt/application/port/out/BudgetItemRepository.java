@@ -3,7 +3,7 @@ package de.jcss.hbt.application.port.out;
 import de.jcss.hbt.domain.BudgetItem;
 import de.jcss.hbt.domain.BudgetItemId;
 
-import java.time.YearMonth;
+import java.time.Year;
 import java.util.List;
 
 /**
@@ -16,6 +16,6 @@ public interface BudgetItemRepository {
     /** @return {@code false} if no item with this id exists */
     boolean remove(BudgetItemId id);
 
-    /** Items booked in the given month, newest booking date first. */
-    List<BudgetItem> findByMonth(YearMonth month);
+    /** Items booked in the given year, newest booking date first. */
+    List<BudgetItem> findByYear(Year year);
 }
