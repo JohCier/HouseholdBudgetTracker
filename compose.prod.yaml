@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hbt
+      POSTGRES_USER: hbt
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hbt -d hbt"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # kein "ports:" -> nur intern erreichbar
+
+  app:
+    image: gghcr.io/johcier/householdbudgettracker-ai:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hbt
+      SPRING_DATASOURCE_USERNAME: hbt
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "80:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
