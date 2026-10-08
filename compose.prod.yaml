@@ -16,7 +16,7 @@ services:
     # kein "ports:" -> nur intern erreichbar
 
   app:
-    image: gghcr.io/johcier/householdbudgettracker-ai:${IMAGE_TAG:-latest}
+    image: ghcr.io/johcier/householdbudgettracker-ai:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hbt
