@@ -27,7 +27,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: deploy
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: compose.prod.yml
+          source: compose.prod.yaml
           target: /opt/hbt
 
       - name: Neue Version starten
@@ -42,6 +42,6 @@ jobs:
             cd /opt/hbt
             sed -i '/^IMAGE_TAG=/d' .env
             echo "IMAGE_TAG=$TAG" >> .env
-            docker compose -f compose.prod.yml pull app
-            docker compose -f compose.prod.yml up -d
+            docker compose -f compose.prod.yaml pull app
+            docker compose -f compose.prod.yaml up -d
             docker image prune -f
