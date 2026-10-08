@@ -6,20 +6,15 @@ on:
     types: [completed]
     branches: [master]
   workflow_dispatch:
-    inputs:
-      tag:
-        description: "Image-Tag (Commit-SHA oder latest)"
-        required: true
-        default: latest
 
 jobs:
   deploy:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    env:
-      TAG: ${{ github.event.inputs.tag || github.event.workflow_run.head_sha }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Compose-Datei auf den Server kopieren
         uses: appleboy/scp-action@v0.1.7
@@ -36,12 +31,9 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: deploy
           key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: TAG
           script: |
             set -e
             cd /opt/hbt
-            sed -i '/^IMAGE_TAG=/d' .env
-            echo "IMAGE_TAG=$TAG" >> .env
             docker compose -f compose.prod.yaml pull app
             docker compose -f compose.prod.yaml up -d
             docker image prune -f
