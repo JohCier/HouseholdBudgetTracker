@@ -79,7 +79,7 @@ Das Image allein erwartet eine Datenbank über `SPRING_DATASOURCE_URL`, `SPRING_
 (Docker-`HEALTHCHECK`).
 
 Die GitHub-Action `.github/workflows/ci.yml` baut und testet beide Teile und pusht anschließend ein Image nach
-`ghcr.io/johcier/householdbudgettracker-ai`:
+`ghcr.io/johcier/householdbudgettracker`:
 
 | Auslöser         | Tags                              |
 |------------------|-----------------------------------|
