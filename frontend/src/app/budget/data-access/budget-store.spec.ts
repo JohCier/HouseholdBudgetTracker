@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Subject, of, throwError } from 'rxjs';
-import { BudgetItem, BudgetOverview } from '../budget.model';
+import { BudgetItem, HouseholdPlanOverview } from '../budget.model';
 import { currentYear } from '../year';
 import { BudgetApi } from './budget-api';
 import { BudgetStore } from './budget-store';
@@ -12,38 +12,42 @@ const item: BudgetItem = {
   amount: '2000.00',
   type: 'INCOME',
   category: null,
-  bookingDate: '2026-10-01',
 };
-const overview = (year: number): BudgetOverview => ({
+const overview = (year: number, items = [item]): HouseholdPlanOverview => ({
+  id: `plan-${year}`,
   year,
   totalIncome: '2000.00',
   totalExpense: '0.00',
   balance: '2000.00',
   expensesExceedIncome: false,
   categoryBreakdowns: [],
+  items,
 });
 
 describe('BudgetStore', () => {
   let api: { [K in keyof BudgetApi]: ReturnType<typeof vi.fn> };
   let store: BudgetStore;
+  let plannedYears: number[];
 
   beforeEach(() => {
+    plannedYears = [2025, 2026, 2027, currentYear()];
     api = {
+      getOverview: vi.fn((year: number) => of(plannedYears.includes(year) ? overview(year) : null)),
+      createPlan: vi.fn(() => of({ id: 'new-plan' })),
       addIncome: vi.fn(() => of({ id: '1' })),
       addExpense: vi.fn(() => of({ id: '2' })),
       removeItem: vi.fn(() => of(undefined)),
-      listItems: vi.fn(() => of([item])),
-      getOverview: vi.fn((year: number) => of(overview(year))),
     };
     TestBed.configureTestingModule({ providers: [{ provide: BudgetApi, useValue: api }] });
     store = TestBed.inject(BudgetStore);
   });
 
-  it('starts with the current year and loads its items and overview', async () => {
+  it('starts with the current year and loads the overview of its plan', async () => {
     await store.load();
 
     expect(store.year()).toBe(currentYear());
-    expect(api.listItems).toHaveBeenCalledWith(currentYear());
+    expect(api.getOverview).toHaveBeenCalledWith(currentYear());
+    expect(store.planId()).toBe(`plan-${currentYear()}`);
     expect(store.items()).toEqual([item]);
     expect(store.overview()).toEqual(overview(currentYear()));
     expect(store.loading()).toBe(false);
@@ -61,28 +65,51 @@ describe('BudgetStore', () => {
     expect(api.getOverview).toHaveBeenLastCalledWith(2025);
   });
 
-  it('switches to the booking year after adding an item', async () => {
+  it('knows when a year has no plan yet and can create one', async () => {
+    await store.selectYear(2030);
+
+    expect(store.planId()).toBeNull();
+    expect(store.planMissing()).toBe(true);
+    expect(store.items()).toEqual([]);
+    expect(store.overview()).toBeNull();
+
+    plannedYears.push(2030);
+    await store.createPlan();
+
+    expect(api.createPlan).toHaveBeenCalledWith(2030);
+    expect(store.planId()).toBe('plan-2030');
+    expect(store.planMissing()).toBe(false);
+  });
+
+  it('adds items to the plan of the selected year', async () => {
     await store.selectYear(2026);
 
-    await store.addIncome({ description: 'Gehalt', amount: '2000', bookingDate: '2027-01-01' });
+    await store.addIncome({ description: 'Gehalt', amount: '2000' });
 
-    expect(api.addIncome).toHaveBeenCalledWith({
+    expect(api.addIncome).toHaveBeenCalledWith('plan-2026', {
       description: 'Gehalt',
       amount: '2000',
-      bookingDate: '2027-01-01',
     });
-    expect(store.year()).toBe(2027);
-    expect(api.listItems).toHaveBeenLastCalledWith(2027);
+    expect(api.getOverview).toHaveBeenLastCalledWith(2026);
+  });
+
+  it('rejects adding an item while the year has no plan', async () => {
+    await store.selectYear(2030);
+
+    await expect(store.addIncome({ description: 'Gehalt', amount: '2000' })).rejects.toThrow(
+      'Für 2030 gibt es noch keinen Haushaltsplan.',
+    );
+    expect(api.addIncome).not.toHaveBeenCalled();
   });
 
   it('ignores responses of outdated loads', async () => {
-    const slowItems = new Subject<BudgetItem[]>();
-    api.listItems.mockReturnValueOnce(slowItems);
+    const slowOverview = new Subject<HouseholdPlanOverview>();
+    api.getOverview.mockReturnValueOnce(slowOverview);
 
     const outdated = store.selectYear(2025);
     await store.selectYear(2026);
-    slowItems.next([{ ...item, description: 'veraltet' }]);
-    slowItems.complete();
+    slowOverview.next(overview(2025, [{ ...item, description: 'veraltet' }]));
+    slowOverview.complete();
     await outdated;
 
     expect(store.year()).toBe(2026);
@@ -90,7 +117,8 @@ describe('BudgetStore', () => {
     expect(store.overview()?.year).toBe(2026);
   });
 
-  it('restores a removed expense with its original data', async () => {
+  it('restores a removed expense into the plan it was removed from', async () => {
+    await store.selectYear(2027);
     const expense: BudgetItem = {
       ...item,
       type: 'EXPENSE',
@@ -98,17 +126,18 @@ describe('BudgetStore', () => {
       description: 'Kino',
     };
 
-    await store.restoreItem(expense);
+    await store.restoreItem('plan-2026', expense);
 
-    expect(api.addExpense).toHaveBeenCalledWith({
+    expect(api.addExpense).toHaveBeenCalledWith('plan-2026', {
       description: 'Kino',
       amount: '2000.00',
       category: 'FREIZEIT_SPASS',
-      bookingDate: '2026-10-01',
     });
   });
 
   it('surfaces the problem detail on a failed mutation', async () => {
+    await store.selectYear(2026);
+    api.getOverview.mockClear();
     api.addExpense.mockReturnValue(
       throwError(
         () =>
@@ -120,18 +149,13 @@ describe('BudgetStore', () => {
     );
 
     await expect(
-      store.addExpense({
-        description: 'Miete',
-        amount: '-1',
-        category: 'LEBENSUNTERHALT',
-        bookingDate: '2026-10-01',
-      }),
+      store.addExpense({ description: 'Miete', amount: '-1', category: 'LEBENSUNTERHALT' }),
     ).rejects.toThrow('amount must be positive');
-    expect(api.listItems).not.toHaveBeenCalled();
+    expect(api.getOverview).not.toHaveBeenCalled();
   });
 
   it('records a load error', async () => {
-    api.listItems.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
+    api.getOverview.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
 
     await store.load();
 

@@ -15,7 +15,6 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { EXPENSE_CATEGORIES, ExpenseCategory, ItemType } from '../budget.model';
 import { BudgetStore } from '../data-access/budget-store';
-import { today } from '../year';
 
 /** Amounts are stored in cents, so more than two decimal places are rejected. */
 function maxTwoDecimals(control: AbstractControl<number | null>): ValidationErrors | null {
@@ -67,7 +66,6 @@ export class AddItemForm {
       Validators.min(0.01),
       maxTwoDecimals,
     ]),
-    bookingDate: this.fb.control(today(), Validators.required),
     category: this.fb.control<ExpenseCategory | null>(null, Validators.required),
   });
 
@@ -92,8 +90,8 @@ export class AddItemForm {
       this.form.markAllAsTouched();
       return;
     }
-    const { type, description, amount, bookingDate, category } = this.form.getRawValue();
-    const request = { description: description.trim(), amount: String(amount), bookingDate };
+    const { type, description, amount, category } = this.form.getRawValue();
+    const request = { description: description.trim(), amount: String(amount) };
 
     this.submitting.set(true);
     try {
@@ -102,7 +100,7 @@ export class AddItemForm {
       } else {
         await this.store.addExpense({ ...request, category: category! });
       }
-      this.form.reset({ type, description: '', amount: null, bookingDate, category: null });
+      this.form.reset({ type, description: '', amount: null, category: null });
       this.snackBar.open(
         type === 'INCOME' ? 'Einnahme hinzugefügt' : 'Ausgabe hinzugefügt',
         undefined,

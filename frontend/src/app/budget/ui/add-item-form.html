@@ -35,14 +35,6 @@
         }
       </mat-form-field>
 
-      <mat-form-field>
-        <mat-label>Datum</mat-label>
-        <input matInput type="date" formControlName="bookingDate" />
-        @if (form.controls.bookingDate.invalid) {
-          <mat-error>Bitte ein Datum angeben.</mat-error>
-        }
-      </mat-form-field>
-
       @if (isExpense) {
         <mat-form-field>
           <mat-label>Kategorie</mat-label>

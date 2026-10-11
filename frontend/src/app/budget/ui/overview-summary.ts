@@ -2,7 +2,7 @@ import { CurrencyPipe } from '@angular/common';
 import { Component, input } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-import { BudgetOverview } from '../budget.model';
+import { HouseholdPlanOverview } from '../budget.model';
 
 @Component({
   selector: 'app-overview-summary',
@@ -70,5 +70,5 @@ import { BudgetOverview } from '../budget.model';
   `,
 })
 export class OverviewSummary {
-  readonly overview = input.required<BudgetOverview>();
+  readonly overview = input.required<HouseholdPlanOverview>();
 }

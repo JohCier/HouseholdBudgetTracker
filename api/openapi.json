@@ -9,9 +9,71 @@
     "description" : "Generated server url"
   } ],
   "paths" : {
-    "/api/budget/expenses" : {
+    "/api/plans" : {
+      "get" : {
+        "operationId" : "overview",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HouseholdPlanOverviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "household-plans" ]
+      },
+      "post" : {
+        "operationId" : "createPlan",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateHouseholdPlanRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HouseholdPlanIdResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "household-plans" ]
+      }
+    },
+    "/api/plans/{planId}/expenses" : {
       "post" : {
         "operationId" : "addExpense",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "planId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -34,12 +96,21 @@
             "description" : "Created"
           }
         },
-        "tags" : [ "budget" ]
+        "tags" : [ "household-plans" ]
       }
     },
-    "/api/budget/incomes" : {
+    "/api/plans/{planId}/incomes" : {
       "post" : {
         "operationId" : "addIncome",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "planId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -62,46 +133,23 @@
             "description" : "Created"
           }
         },
-        "tags" : [ "budget" ]
+        "tags" : [ "household-plans" ]
       }
     },
-    "/api/budget/items" : {
-      "get" : {
-        "operationId" : "listItems",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "year",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "example" : 2026
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/BudgetItemResponse"
-                  }
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "budget" ]
-      }
-    },
-    "/api/budget/items/{id}" : {
+    "/api/plans/{planId}/items/{itemId}" : {
       "delete" : {
         "operationId" : "removeItem",
         "parameters" : [ {
           "in" : "path",
-          "name" : "id",
+          "name" : "planId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "itemId",
           "required" : true,
           "schema" : {
             "type" : "string",
@@ -113,52 +161,20 @@
             "description" : "No Content"
           }
         },
-        "tags" : [ "budget" ]
-      }
-    },
-    "/api/budget/overview" : {
-      "get" : {
-        "operationId" : "overview",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "year",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "example" : 2026
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/BudgetOverviewResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "budget" ]
+        "tags" : [ "household-plans" ]
       }
     }
   },
   "components" : {
     "schemas" : {
       "AddExpenseRequest" : {
-        "required" : [ "amount", "bookingDate", "category", "description" ],
+        "required" : [ "amount", "category", "description" ],
         "type" : "object",
         "properties" : {
           "amount" : {
             "type" : "string",
             "format" : "decimal",
             "example" : "850.0"
-          },
-          "bookingDate" : {
-            "type" : "string",
-            "format" : "date"
           },
           "category" : {
             "$ref" : "#/components/schemas/ExpenseCategory"
@@ -171,17 +187,13 @@
         }
       },
       "AddIncomeRequest" : {
-        "required" : [ "amount", "bookingDate", "description" ],
+        "required" : [ "amount", "description" ],
         "type" : "object",
         "properties" : {
           "amount" : {
             "type" : "string",
             "format" : "decimal",
             "example" : "2500.0"
-          },
-          "bookingDate" : {
-            "type" : "string",
-            "format" : "date"
           },
           "description" : {
             "maxLength" : 255,
@@ -201,17 +213,13 @@
         }
       },
       "BudgetItemResponse" : {
-        "required" : [ "amount", "bookingDate", "category", "description", "id", "type" ],
+        "required" : [ "amount", "category", "description", "id", "type" ],
         "type" : "object",
         "properties" : {
           "amount" : {
             "type" : "string",
             "format" : "decimal",
             "example" : "850.0"
-          },
-          "bookingDate" : {
-            "type" : "string",
-            "format" : "date"
           },
           "category" : {
             "description" : "Only set for expenses",
@@ -230,42 +238,8 @@
           "type" : {
             "$ref" : "#/components/schemas/ItemType"
           }
-        }
-      },
-      "BudgetOverviewResponse" : {
-        "required" : [ "balance", "categoryBreakdowns", "expensesExceedIncome", "totalExpense", "totalIncome", "year" ],
-        "type" : "object",
-        "properties" : {
-          "balance" : {
-            "type" : "string",
-            "format" : "decimal",
-            "example" : "700.0"
-          },
-          "categoryBreakdowns" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/CategoryBreakdownResponse"
-            }
-          },
-          "expensesExceedIncome" : {
-            "type" : "boolean"
-          },
-          "totalExpense" : {
-            "type" : "string",
-            "format" : "decimal",
-            "example" : "1800.0"
-          },
-          "totalIncome" : {
-            "type" : "string",
-            "format" : "decimal",
-            "example" : "2500.0"
-          },
-          "year" : {
-            "type" : "integer",
-            "format" : "int32",
-            "example" : 2026
-          }
-        }
+        },
+        "description" : "Most recently added first"
       },
       "CategoryBreakdownResponse" : {
         "required" : [ "actualPercentageOfIncome", "category", "targetDirection", "targetMet", "targetPercentageOfIncome", "total" ],
@@ -295,9 +269,78 @@
           }
         }
       },
+      "CreateHouseholdPlanRequest" : {
+        "required" : [ "year" ],
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "maximum" : 9999,
+            "minimum" : 1,
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 2026
+          }
+        }
+      },
       "ExpenseCategory" : {
         "type" : "string",
         "enum" : [ "LEBENSUNTERHALT", "FREIZEIT_SPASS", "SPAREN_INVESTIEREN" ]
+      },
+      "HouseholdPlanIdResponse" : {
+        "required" : [ "id" ],
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }
+      },
+      "HouseholdPlanOverviewResponse" : {
+        "required" : [ "balance", "categoryBreakdowns", "expensesExceedIncome", "id", "items", "totalExpense", "totalIncome", "year" ],
+        "type" : "object",
+        "properties" : {
+          "balance" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "700.0"
+          },
+          "categoryBreakdowns" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CategoryBreakdownResponse"
+            }
+          },
+          "expensesExceedIncome" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "items" : {
+            "type" : "array",
+            "description" : "Most recently added first",
+            "items" : {
+              "$ref" : "#/components/schemas/BudgetItemResponse"
+            }
+          },
+          "totalExpense" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "1800.0"
+          },
+          "totalIncome" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "2500.0"
+          },
+          "year" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 2026
+          }
+        }
       },
       "ItemType" : {
         "type" : "string",

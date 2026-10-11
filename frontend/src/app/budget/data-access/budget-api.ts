@@ -1,38 +1,51 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, catchError, of, throwError } from 'rxjs';
 import {
   AddExpenseRequest,
   AddIncomeRequest,
-  BudgetItem,
   BudgetItemIdResponse,
-  BudgetOverview,
+  HouseholdPlanIdResponse,
+  HouseholdPlanOverview,
   Year,
 } from '../budget.model';
 
-/** Thin HTTP adapter for the backend's /api/budget endpoints. */
+/** Thin HTTP adapter for the backend's /api/plans endpoints. */
 @Injectable({ providedIn: 'root' })
 export class BudgetApi {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = '/api/budget';
+  private readonly baseUrl = '/api/plans';
 
-  addIncome(request: AddIncomeRequest): Observable<BudgetItemIdResponse> {
-    return this.http.post<BudgetItemIdResponse>(`${this.baseUrl}/incomes`, request);
+  /** The overview of the plan of a year including its items, or `null` if there is no plan for it. */
+  getOverview(year: Year): Observable<HouseholdPlanOverview | null> {
+    return this.http
+      .get<HouseholdPlanOverview>(this.baseUrl, { params: { year } })
+      .pipe(
+        catchError((error: unknown) =>
+          error instanceof HttpErrorResponse && error.status === HttpStatusCode.NotFound
+            ? of(null)
+            : throwError(() => error),
+        ),
+      );
   }
 
-  addExpense(request: AddExpenseRequest): Observable<BudgetItemIdResponse> {
-    return this.http.post<BudgetItemIdResponse>(`${this.baseUrl}/expenses`, request);
+  createPlan(year: Year): Observable<HouseholdPlanIdResponse> {
+    return this.http.post<HouseholdPlanIdResponse>(this.baseUrl, { year });
   }
 
-  removeItem(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/items/${encodeURIComponent(id)}`);
+  addIncome(planId: string, request: AddIncomeRequest): Observable<BudgetItemIdResponse> {
+    return this.http.post<BudgetItemIdResponse>(`${this.planUrl(planId)}/incomes`, request);
   }
 
-  listItems(year: Year): Observable<BudgetItem[]> {
-    return this.http.get<BudgetItem[]>(`${this.baseUrl}/items`, { params: { year } });
+  addExpense(planId: string, request: AddExpenseRequest): Observable<BudgetItemIdResponse> {
+    return this.http.post<BudgetItemIdResponse>(`${this.planUrl(planId)}/expenses`, request);
   }
 
-  getOverview(year: Year): Observable<BudgetOverview> {
-    return this.http.get<BudgetOverview>(`${this.baseUrl}/overview`, { params: { year } });
+  removeItem(planId: string, itemId: string): Observable<void> {
+    return this.http.delete<void>(`${this.planUrl(planId)}/items/${encodeURIComponent(itemId)}`);
+  }
+
+  private planUrl(planId: string): string {
+    return `${this.baseUrl}/${encodeURIComponent(planId)}`;
   }
 }

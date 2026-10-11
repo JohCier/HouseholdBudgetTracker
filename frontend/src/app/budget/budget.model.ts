@@ -13,10 +13,12 @@ export type ExpenseCategory = Schemas['ExpenseCategory'];
 export type TargetDirection = Schemas['TargetDirection'];
 export type BudgetItem = Schemas['BudgetItemResponse'];
 export type CategoryBreakdown = Schemas['CategoryBreakdownResponse'];
-export type BudgetOverview = Schemas['BudgetOverviewResponse'];
+export type HouseholdPlanOverview = Schemas['HouseholdPlanOverviewResponse'];
 export type AddIncomeRequest = Schemas['AddIncomeRequest'];
 export type AddExpenseRequest = Schemas['AddExpenseRequest'];
 export type BudgetItemIdResponse = Schemas['BudgetItemIdResponse'];
+export type CreateHouseholdPlanRequest = Schemas['CreateHouseholdPlanRequest'];
+export type HouseholdPlanIdResponse = Schemas['HouseholdPlanIdResponse'];
 
 /** A calendar year, e.g. 2026. */
 export type Year = number;

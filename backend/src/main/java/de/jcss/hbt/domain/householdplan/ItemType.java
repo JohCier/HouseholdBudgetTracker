@@ -1,0 +1,12 @@
+package de.jcss.hbt.domain.householdplan;
+
+import de.jcss.hbt.domain.shared.ValueObject;
+
+/**
+ * Distinguishes whether a {@link BudgetItem} contributes to income or expenses.
+ */
+@ValueObject
+public enum ItemType {
+    INCOME,
+    EXPENSE
+}

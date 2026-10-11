@@ -1,5 +1,6 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -14,6 +15,7 @@ import { OverviewSummary } from './ui/overview-summary';
   selector: 'app-budget-dashboard',
   imports: [
     MatButtonModule,
+    MatCardModule,
     MatIconModule,
     MatProgressBarModule,
     AddItemForm,
@@ -52,15 +54,26 @@ import { OverviewSummary } from './ui/overview-summary';
       <app-overview-summary [overview]="overview" />
     }
 
-    <div class="grid">
-      <div class="side">
-        <app-add-item-form />
-        @if (store.overview(); as overview) {
-          <app-category-breakdown [breakdowns]="overview.categoryBreakdowns" />
-        }
+    @if (store.planId()) {
+      <div class="grid">
+        <div class="side">
+          <app-add-item-form />
+          @if (store.overview(); as overview) {
+            <app-category-breakdown [breakdowns]="overview.categoryBreakdowns" />
+          }
+        </div>
+        <app-budget-item-table [items]="store.items()" (remove)="remove($event)" />
       </div>
-      <app-budget-item-table [items]="store.items()" (remove)="remove($event)" />
-    </div>
+    } @else if (store.planMissing() && !store.loadError()) {
+      <mat-card appearance="outlined" class="no-plan">
+        <mat-card-content>
+          <p>Für {{ store.year() }} gibt es noch keinen Haushaltsplan.</p>
+          <button matButton="filled" type="button" [disabled]="creating()" (click)="createPlan()">
+            Haushaltsplan anlegen
+          </button>
+        </mat-card-content>
+      </mat-card>
+    }
   `,
   styles: `
     :host {
@@ -102,6 +115,13 @@ import { OverviewSummary } from './ui/overview-summary';
       gap: 24px;
       align-items: start;
     }
+    .no-plan mat-card-content {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+      padding-top: 16px;
+    }
     .side {
       display: flex;
       flex-direction: column;
@@ -118,11 +138,25 @@ export class BudgetDashboard implements OnInit {
   protected readonly store = inject(BudgetStore);
   private readonly snackBar = inject(MatSnackBar);
 
+  protected readonly creating = signal(false);
+
   ngOnInit(): void {
     void this.store.load();
   }
 
+  protected async createPlan(): Promise<void> {
+    this.creating.set(true);
+    try {
+      await this.store.createPlan();
+    } catch (error) {
+      this.snackBar.open((error as Error).message, 'OK', { duration: 6000 });
+    } finally {
+      this.creating.set(false);
+    }
+  }
+
   protected async remove(item: BudgetItem): Promise<void> {
+    const planId = this.store.planId()!;
     try {
       await this.store.removeItem(item.id);
     } catch (error) {
@@ -132,12 +166,12 @@ export class BudgetDashboard implements OnInit {
     const undo = this.snackBar.open(`„${item.description}" gelöscht`, 'Rückgängig', {
       duration: 6000,
     });
-    undo.onAction().subscribe(() => void this.restore(item));
+    undo.onAction().subscribe(() => void this.restore(planId, item));
   }
 
-  private async restore(item: BudgetItem): Promise<void> {
+  private async restore(planId: string, item: BudgetItem): Promise<void> {
     try {
-      await this.store.restoreItem(item);
+      await this.store.restoreItem(planId, item);
     } catch (error) {
       this.snackBar.open((error as Error).message, 'OK', { duration: 6000 });
     }
