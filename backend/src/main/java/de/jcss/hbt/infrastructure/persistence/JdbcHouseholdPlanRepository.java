@@ -25,19 +25,22 @@ import java.util.UUID;
  * {@code budget_item} tables. Items are rebuilt through the domain factories, so stored
  * data passes the same invariants as new input. Expects to run within the transaction of
  * the calling application service.
+ * <p>
+ * Concurrent changes are prevented by locking the plan row in {@link #findById}
+ * ({@code SELECT ... FOR UPDATE}) until the transaction ends: a second transaction
+ * loading the same plan waits and then sees the stored changes, so none get lost.
  */
 @Repository
 public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
 
     private static final RowMapper<BudgetItem> ITEM_ROW_MAPPER = (rs, rowNum) -> {
-        BudgetItemId id = BudgetItemId.of(rs.getObject("id", UUID.class));
-        BudgetItemDescription description = BudgetItemDescription.of(rs.getString("description"));
-        Money amount = Money.of(rs.getBigDecimal("amount"));
-        return switch (ItemType.valueOf(rs.getString("type"))) {
-            case INCOME -> BudgetItem.income(id, description, amount);
-            case EXPENSE -> BudgetItem.expense(id, description, amount,
-                    ExpenseCategory.valueOf(rs.getString("category")));
-        };
+        String category = rs.getString("category");
+        return BudgetItem.reconstitute(
+                BudgetItemId.of(rs.getObject("id", UUID.class)),
+                BudgetItemDescription.of(rs.getString("description")),
+                Money.of(rs.getBigDecimal("amount")),
+                ItemType.valueOf(rs.getString("type")),
+                category == null ? null : ExpenseCategory.valueOf(category));
     };
 
     private final JdbcClient jdbcClient;
@@ -48,7 +51,7 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
 
     @Override
     public Optional<HouseholdPlan> findById(HouseholdPlanId id) {
-        return jdbcClient.sql("SELECT year FROM household_plan WHERE id = :id")
+        return jdbcClient.sql("SELECT year FROM household_plan WHERE id = :id FOR UPDATE")
                 .param("id", id.value())
                 .query(Integer.class)
                 .optional()
@@ -75,26 +78,27 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                 .single();
     }
 
-    /**
-     * Items are immutable, so bringing them up to date only means deleting the removed
-     * ones and inserting the new ones.
-     */
     @Override
-    public void save(HouseholdPlan plan) {
-        insertPlanIfNew(plan);
-        deleteRemovedItems(plan);
-        plan.items().forEach(item -> insertItemIfNew(plan.id(), item));
-    }
-
-    private void insertPlanIfNew(HouseholdPlan plan) {
+    public void add(HouseholdPlan plan) {
         try {
-            jdbcClient.sql("INSERT INTO household_plan (id, year) VALUES (:id, :year) ON CONFLICT (id) DO NOTHING")
+            jdbcClient.sql("INSERT INTO household_plan (id, year) VALUES (:id, :year)")
                     .param("id", plan.id().value())
                     .param("year", plan.year().getValue())
                     .update();
         } catch (DuplicateKeyException e) {
             throw new HouseholdPlanAlreadyExistsException(plan.year());
         }
+        plan.items().forEach(item -> insertItemIfNew(plan.id(), item));
+    }
+
+    /**
+     * Items are immutable, so bringing them up to date only means deleting the removed
+     * ones and inserting the new ones.
+     */
+    @Override
+    public void save(HouseholdPlan plan) {
+        deleteRemovedItems(plan);
+        plan.items().forEach(item -> insertItemIfNew(plan.id(), item));
     }
 
     private void deleteRemovedItems(HouseholdPlan plan) {

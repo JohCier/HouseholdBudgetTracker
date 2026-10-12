@@ -17,11 +17,12 @@ de.jcss.hbt
 │   ├── shared              DDD-Bausteine: @AggregateRoot, @DomainEntity, @ValueObject, @ReadModel, @QueryHandler,
 │                           DomainEvent, DomainCommand
 │   └── householdplan       HouseholdPlan (Aggregate Root, ein Plan pro Jahr) mit BudgetItems (Entities),
-│                           Money, ExpenseCategory, HouseholdPlanRepository, Events in .event
+│                           Value Objects (Money, BudgetSummary, ExpenseCategory, …), HouseholdPlanRepository,
+│                           Commands in .command, Events in .event
 │                           Leseseite (.overview): Read Model HouseholdPlanOverview und HouseholdPlanOverviewQueryHandler
 ├── application
 │   ├── shared              @ApplicationService
-│   └── householdplan       HouseholdPlanApplicationService + Commands in .command
+│   └── householdplan       HouseholdPlanApplicationService
 └── infrastructure
     ├── web                 REST-Controller, DTOs, Fehler als RFC 9457 Problem Details
     ├── persistence         HouseholdPlanRepository und HouseholdPlanOverviewQueryHandler über JdbcClient,
@@ -30,16 +31,20 @@ de.jcss.hbt
 ```
 
 **Schreibseite:** Der `HouseholdPlanApplicationService` lädt pro Command den `HouseholdPlan` über das Repository,
-ruft dessen Verhalten auf und speichert ihn. Der Plan sammelt dabei Domain Events (`HouseholdPlanCreated`,
+ruft dessen Verhalten auf und speichert ihn. Neue Pläne kommen per `add` ins Repository, geänderte per `save`. Beim
+Laden sperrt das Repository den Plan bis zum Ende der Transaktion (`SELECT … FOR UPDATE`), sodass gleichzeitige
+Änderungen am selben Plan nacheinander statt gegeneinander laufen. Der Plan sammelt dabei Domain Events (`HouseholdPlanCreated`,
 `IncomeAdded`, `ExpenseAdded`, `BudgetItemRemoved`), die der Service nach dem Speichern über Springs
 `ApplicationEventPublisher` veröffentlicht. Listener wie `AuditLogListener` reagieren per
 `@TransactionalEventListener` erst nach dem Commit und in einer eigenen Transaktion.
 
 **Leseseite:** Es gibt ein Read Model, die `HouseholdPlanOverview` eines Jahres mit Einträgen, Summen und
-50/30/20-Aufteilung. Der ApplicationService liefert sie über `getOverview(year)` und lädt sie dafür über den
+50/30/20-Aufteilung. Summen, Saldo und die Bewertung nach 50/30/20 rechnet das Value Object `BudgetSummary` aus der
+Domäne; das Read Model befüllt es nur und gibt die Werte weiter. Der ApplicationService liefert sie über `getOverview(year)` und lädt sie dafür über den
 `HouseholdPlanOverviewQueryHandler`. Dessen JDBC-Implementierung liest direkt per SQL, ohne Aggregat oder Repository.
 
-Abhängigkeitsregeln (Infrastructure → Application → Domain, Domain ohne Frameworks), die Lage der Bausteine und die
+Abhängigkeitsregeln (Infrastructure → Application → Domain, Domain ohne Frameworks), Lage und Form der Bausteine
+(keine Setter, nur finale Felder, Value Objects als Records/Enums, Gleichheit von Entities über ihre ID) und die
 Trennung von Schreib- und Leseseite prüft `ArchitectureTest` (ArchUnit).
 
 ## Lokale Entwicklung

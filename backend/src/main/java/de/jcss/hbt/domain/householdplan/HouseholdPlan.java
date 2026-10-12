@@ -8,11 +8,14 @@ import de.jcss.hbt.domain.householdplan.event.IncomeAdded;
 import de.jcss.hbt.domain.shared.AggregateRoot;
 import de.jcss.hbt.domain.shared.DomainEvent;
 
+import java.time.Instant;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Aggregate root holding the income and expense positions ({@link BudgetItem}s) planned
@@ -40,13 +43,25 @@ public final class HouseholdPlan {
     private HouseholdPlan(HouseholdPlanId id, Year year, List<BudgetItem> items) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.year = Objects.requireNonNull(year, "year must not be null");
-        this.items = new ArrayList<>(items);
+        this.items = new ArrayList<>(requireDistinctItems(items));
+    }
+
+    private static List<BudgetItem> requireDistinctItems(List<BudgetItem> items) {
+        Objects.requireNonNull(items, "items must not be null");
+        Set<BudgetItemId> ids = new HashSet<>();
+        for (BudgetItem item : items) {
+            Objects.requireNonNull(item, "items must not contain null");
+            if (!ids.add(item.id())) {
+                throw new IllegalArgumentException("items must not contain %s twice".formatted(item.id()));
+            }
+        }
+        return items;
     }
 
     /** Starts a new, empty plan for the given year. */
     public static HouseholdPlan create(HouseholdPlanId id, Year year) {
         HouseholdPlan plan = new HouseholdPlan(id, year, List.of());
-        plan.record(new HouseholdPlanCreated(id, year));
+        plan.record(new HouseholdPlanCreated(id, year, Instant.now()));
         return plan;
     }
 
@@ -58,14 +73,14 @@ public final class HouseholdPlan {
     public BudgetItemId addIncome(BudgetItemDescription description, Money amount) {
         BudgetItem item = BudgetItem.income(BudgetItemId.generate(), description, amount);
         items.add(item);
-        record(new IncomeAdded(id, item.id()));
+        record(new IncomeAdded(id, item.id(), Instant.now()));
         return item.id();
     }
 
     public BudgetItemId addExpense(BudgetItemDescription description, Money amount, ExpenseCategory category) {
         BudgetItem item = BudgetItem.expense(BudgetItemId.generate(), description, amount, category);
         items.add(item);
-        record(new ExpenseAdded(id, item.id()));
+        record(new ExpenseAdded(id, item.id(), Instant.now()));
         return item.id();
     }
 
@@ -76,7 +91,16 @@ public final class HouseholdPlan {
         if (!items.removeIf(item -> item.hasId(itemId))) {
             throw new BudgetItemNotFoundException(itemId);
         }
-        record(new BudgetItemRemoved(id, itemId));
+        record(new BudgetItemRemoved(id, itemId, Instant.now()));
+    }
+
+    /** Income, expenses per category and balance of all items of this plan. */
+    public BudgetSummary summary() {
+        BudgetSummary summary = BudgetSummary.EMPTY;
+        for (BudgetItem item : items) {
+            summary = item.addTo(summary);
+        }
+        return summary;
     }
 
     /**

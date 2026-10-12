@@ -47,10 +47,10 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), Year.of(2026));
         BudgetItemId income = plan.addIncome(description("Gehalt"), money("2000.00"));
         BudgetItemId expense = plan.addExpense(description("Miete"), money("850.50"), ExpenseCategory.LEBENSUNTERHALT);
-        repository.save(plan);
+        repository.add(plan);
         HouseholdPlan otherPlan = HouseholdPlan.create(HouseholdPlanId.generate(), Year.of(2027));
         otherPlan.addIncome(description("Anderes Jahr"), money("1.00"));
-        repository.save(otherPlan);
+        repository.add(otherPlan);
 
         HouseholdPlanOverview overview = queryHandler.findByYear(Year.of(2026)).orElseThrow();
 
@@ -66,7 +66,7 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
 
     @Test
     void emptyPlanHasNoItemsAndAZeroOverview() {
-        repository.save(HouseholdPlan.create(HouseholdPlanId.generate(), Year.of(2026)));
+        repository.add(HouseholdPlan.create(HouseholdPlanId.generate(), Year.of(2026)));
 
         HouseholdPlanOverview overview = queryHandler.findByYear(Year.of(2026)).orElseThrow();
 

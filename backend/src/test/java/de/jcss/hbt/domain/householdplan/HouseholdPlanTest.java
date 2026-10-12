@@ -9,7 +9,9 @@ import de.jcss.hbt.domain.householdplan.event.IncomeAdded;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.Year;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,7 +33,9 @@ class HouseholdPlanTest {
         assertThat(plan.id()).isEqualTo(planId);
         assertThat(plan.year()).isEqualTo(YEAR);
         assertThat(plan.items()).isEmpty();
-        assertThat(plan.pullDomainEvents()).containsExactly(new HouseholdPlanCreated(planId, YEAR));
+        assertThat(plan.pullDomainEvents())
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("occurredAt")
+                .containsExactly(new HouseholdPlanCreated(planId, YEAR, Instant.now()));
     }
 
     @Test
@@ -45,6 +49,51 @@ class HouseholdPlanTest {
     }
 
     @Test
+    void eventsRecordWhenTheChangeWasMade() {
+        Instant before = Instant.now();
+
+        HouseholdPlan plan = HouseholdPlan.create(planId, YEAR);
+
+        assertThat(plan.pullDomainEvents()).singleElement()
+                .satisfies(event -> assertThat(event.occurredAt()).isBetween(before, Instant.now()));
+    }
+
+    @Test
+    void reconstituteRejectsMissingItems() {
+        assertThatThrownBy(() -> HouseholdPlan.reconstitute(planId, YEAR, null))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> HouseholdPlan.reconstitute(planId, YEAR, Arrays.asList((BudgetItem) null)))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void reconstituteRejectsTheSameItemTwice() {
+        BudgetItem item = BudgetItem.income(BudgetItemId.generate(), salary, amount);
+
+        assertThatThrownBy(() -> HouseholdPlan.reconstitute(planId, YEAR, List.of(item, item)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("twice");
+    }
+
+    @Test
+    void summarizesItsItems() {
+        HouseholdPlan plan = emptyPlan();
+        plan.addIncome(salary, Money.of(new BigDecimal("1000.00")));
+        plan.addExpense(rent, Money.of(new BigDecimal("600.00")), ExpenseCategory.LEBENSUNTERHALT);
+
+        BudgetSummary summary = plan.summary();
+
+        assertThat(summary.totalIncome()).isEqualTo(Money.of(new BigDecimal("1000.00")));
+        assertThat(summary.expensesIn(ExpenseCategory.LEBENSUNTERHALT)).isEqualTo(Money.of(new BigDecimal("600.00")));
+        assertThat(summary.isTargetMet(ExpenseCategory.LEBENSUNTERHALT)).isFalse();
+    }
+
+    @Test
+    void summaryOfAnEmptyPlanIsEmpty() {
+        assertThat(emptyPlan().summary()).isEqualTo(BudgetSummary.EMPTY);
+    }
+
+    @Test
     void addsIncomeAndExpenseInOrderAndRecordsEachChange() {
         HouseholdPlan plan = emptyPlan();
 
@@ -53,9 +102,11 @@ class HouseholdPlanTest {
 
         assertThat(plan.items()).extracting(BudgetItem::id).containsExactly(incomeId, expenseId);
         assertThat(plan.items().get(1).category()).contains(ExpenseCategory.LEBENSUNTERHALT);
-        assertThat(plan.pullDomainEvents()).containsExactly(
-                new IncomeAdded(planId, incomeId),
-                new ExpenseAdded(planId, expenseId));
+        assertThat(plan.pullDomainEvents())
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("occurredAt")
+                .containsExactly(
+                        new IncomeAdded(planId, incomeId, Instant.now()),
+                        new ExpenseAdded(planId, expenseId, Instant.now()));
     }
 
     @Test
@@ -78,7 +129,9 @@ class HouseholdPlanTest {
         plan.removeItem(itemId);
 
         assertThat(plan.items()).isEmpty();
-        assertThat(plan.pullDomainEvents()).containsExactly(new BudgetItemRemoved(planId, itemId));
+        assertThat(plan.pullDomainEvents())
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("occurredAt")
+                .containsExactly(new BudgetItemRemoved(planId, itemId, Instant.now()));
     }
 
     @Test

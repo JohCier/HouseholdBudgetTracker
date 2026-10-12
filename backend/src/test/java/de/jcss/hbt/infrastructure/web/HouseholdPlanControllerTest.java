@@ -230,6 +230,16 @@ class HouseholdPlanControllerTest {
     }
 
     @Test
+    void overviewRejectsYearOutOfRange() throws Exception {
+        mockMvc.perform(get("/api/plans").param("year", "0"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/plans").param("year", "10000"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(plans);
+    }
+
+    @Test
     void overviewRequiresYear() throws Exception {
         mockMvc.perform(get("/api/plans"))
                 .andExpect(status().isBadRequest());

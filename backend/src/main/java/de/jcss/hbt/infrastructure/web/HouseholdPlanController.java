@@ -17,6 +17,8 @@ import de.jcss.hbt.infrastructure.web.dto.HouseholdPlanIdResponse;
 import de.jcss.hbt.infrastructure.web.dto.HouseholdPlanOverviewResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -56,7 +58,7 @@ public class HouseholdPlanController {
 
     /** The overview of the plan of a year, including its items; 404 if there is no plan for it. */
     @GetMapping
-    public HouseholdPlanOverviewResponse overview(@RequestParam int year) {
+    public HouseholdPlanOverviewResponse overview(@RequestParam @Min(1) @Max(9999) int year) {
         return HouseholdPlanOverviewResponse.from(plans.getOverview(Year.of(year)));
     }
 

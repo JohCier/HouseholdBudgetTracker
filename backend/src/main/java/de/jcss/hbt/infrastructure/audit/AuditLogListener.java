@@ -8,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.sql.Timestamp;
+
 /**
  * Example of reacting to a domain event in a transaction of its own: records every
  * removed budget item in the {@code audit_log} table.
@@ -30,12 +32,13 @@ public class AuditLogListener {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void on(BudgetItemRemoved event) {
         jdbcClient.sql("""
-                        INSERT INTO audit_log (event_type, household_plan_id, budget_item_id)
-                        VALUES (:eventType, :planId, :itemId)
+                        INSERT INTO audit_log (event_type, household_plan_id, budget_item_id, occurred_at)
+                        VALUES (:eventType, :planId, :itemId, :occurredAt)
                         """)
                 .param("eventType", BudgetItemRemoved.class.getSimpleName())
                 .param("planId", event.planId().value())
                 .param("itemId", event.itemId().value())
+                .param("occurredAt", Timestamp.from(event.occurredAt()))
                 .update();
     }
 }

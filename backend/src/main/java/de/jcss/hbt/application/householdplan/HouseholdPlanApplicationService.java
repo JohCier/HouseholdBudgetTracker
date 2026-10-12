@@ -35,7 +35,8 @@ import java.util.Objects;
  * Contains no business rules of its own. The only check it makes, that there is no plan
  * for the year yet, is a process step before creating one: it spans several aggregates
  * and gives a clear error early, while the unique constraint behind
- * {@link HouseholdPlanRepository#save} remains the actual safeguard against races.
+ * {@link HouseholdPlanRepository#add} remains the actual safeguard against races.
+ * Concurrent changes to the same plan are serialized by {@link HouseholdPlanRepository#findById}.
  */
 @ApplicationService
 @Service
@@ -59,7 +60,8 @@ public class HouseholdPlanApplicationService {
             throw new HouseholdPlanAlreadyExistsException(command.year());
         }
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), command.year());
-        saveAndPublishEvents(plan);
+        repository.add(plan);
+        publishEvents(plan);
         return plan.id();
     }
 
@@ -97,6 +99,10 @@ public class HouseholdPlanApplicationService {
 
     private void saveAndPublishEvents(HouseholdPlan plan) {
         repository.save(plan);
+        publishEvents(plan);
+    }
+
+    private void publishEvents(HouseholdPlan plan) {
         plan.pullDomainEvents().forEach(eventPublisher::publishEvent);
     }
 }

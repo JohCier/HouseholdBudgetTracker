@@ -15,9 +15,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.Year;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,6 +42,9 @@ class JdbcHouseholdPlanRepositoryTest {
     @Autowired
     private JdbcClient jdbcClient;
 
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
     @BeforeEach
     void cleanUp() {
         jdbcClient.sql("DELETE FROM household_plan").update();
@@ -45,7 +56,7 @@ class JdbcHouseholdPlanRepositoryTest {
         plan.addIncome(description("Gehalt"), money("2500.00"));
         plan.addExpense(description("Miete"), money("850.50"), ExpenseCategory.LEBENSUNTERHALT);
 
-        repository.save(plan);
+        repository.add(plan);
 
         HouseholdPlan restored = repository.findById(plan.id()).orElseThrow();
         assertThat(restored.year()).isEqualTo(YEAR);
@@ -59,7 +70,7 @@ class JdbcHouseholdPlanRepositoryTest {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), YEAR);
         BudgetItemId kept = plan.addIncome(description("Gehalt"), money("100.00"));
         BudgetItemId removed = plan.addIncome(description("Bonus"), money("50.00"));
-        repository.save(plan);
+        repository.add(plan);
 
         HouseholdPlan loaded = repository.findById(plan.id()).orElseThrow();
         loaded.removeItem(removed);
@@ -76,12 +87,45 @@ class JdbcHouseholdPlanRepositoryTest {
     void removingTheLastItemLeavesAnEmptyPlan() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), YEAR);
         BudgetItemId itemId = plan.addIncome(description("Gehalt"), money("100.00"));
-        repository.save(plan);
+        repository.add(plan);
 
         plan.removeItem(itemId);
         repository.save(plan);
 
         assertThat(repository.findById(plan.id()).orElseThrow().items()).isEmpty();
+    }
+
+    /**
+     * Without the lock taken by findById, the second transaction would load the plan
+     * without the first one's item and delete it again when saving.
+     */
+    @Test
+    void concurrentChangesToAPlanAreAppliedOneAfterTheOther() throws Exception {
+        HouseholdPlanId planId = HouseholdPlanId.generate();
+        repository.add(HouseholdPlan.create(planId, YEAR));
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+        AtomicReference<Future<?>> second = new AtomicReference<>();
+
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            transaction.executeWithoutResult(status -> {
+                HouseholdPlan first = repository.findById(planId).orElseThrow();
+                second.set(executor.submit(() -> transaction.executeWithoutResult(otherStatus -> {
+                    HouseholdPlan other = repository.findById(planId).orElseThrow();
+                    other.addIncome(description("Bonus"), money("50.00"));
+                    repository.save(other);
+                })));
+                assertThatThrownBy(() -> second.get().get(500, TimeUnit.MILLISECONDS))
+                        .as("second transaction waits for the first one")
+                        .isInstanceOf(TimeoutException.class);
+                first.addIncome(description("Gehalt"), money("100.00"));
+                repository.save(first);
+            });
+            second.get().get(10, TimeUnit.SECONDS);
+        }
+
+        assertThat(repository.findById(planId).orElseThrow().items())
+                .extracting(item -> item.description().value())
+                .containsExactly("Gehalt", "Bonus");
     }
 
     @Test
@@ -91,7 +135,7 @@ class JdbcHouseholdPlanRepositoryTest {
 
     @Test
     void knowsWhetherAYearHasAPlan() {
-        repository.save(HouseholdPlan.create(HouseholdPlanId.generate(), YEAR));
+        repository.add(HouseholdPlan.create(HouseholdPlanId.generate(), YEAR));
 
         assertThat(repository.existsForYear(YEAR)).isTrue();
         assertThat(repository.existsForYear(Year.of(2027))).isFalse();
@@ -99,9 +143,9 @@ class JdbcHouseholdPlanRepositoryTest {
 
     @Test
     void rejectsSecondPlanForTheSameYear() {
-        repository.save(HouseholdPlan.create(HouseholdPlanId.generate(), YEAR));
+        repository.add(HouseholdPlan.create(HouseholdPlanId.generate(), YEAR));
 
-        assertThatThrownBy(() -> repository.save(HouseholdPlan.create(HouseholdPlanId.generate(), YEAR)))
+        assertThatThrownBy(() -> repository.add(HouseholdPlan.create(HouseholdPlanId.generate(), YEAR)))
                 .isInstanceOf(HouseholdPlanAlreadyExistsException.class);
     }
 

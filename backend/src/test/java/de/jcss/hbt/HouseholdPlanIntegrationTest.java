@@ -112,6 +112,9 @@ class HouseholdPlanIntegrationTest {
                         "event_type", "BudgetItemRemoved",
                         "household_plan_id", UUID.fromString(planId),
                         "budget_item_id", UUID.fromString(itemId)));
+        assertThat(jdbcClient.sql("SELECT occurred_at <= recorded_at FROM audit_log").query(Boolean.class).single())
+                .as("removal happened before it was logged")
+                .isTrue();
     }
 
     @Test

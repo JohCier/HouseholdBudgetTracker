@@ -64,6 +64,40 @@ class BudgetItemTest {
     }
 
     @Test
+    void reconstitutesIncomeAndExpense() {
+        BudgetItem income = BudgetItem.reconstitute(id, SALARY, amount, ItemType.INCOME, null);
+        BudgetItem expense = BudgetItem.reconstitute(id, RENT, amount, ItemType.EXPENSE, ExpenseCategory.FREIZEIT_SPASS);
+
+        assertThat(income).usingRecursiveComparison().isEqualTo(BudgetItem.income(id, SALARY, amount));
+        assertThat(expense).usingRecursiveComparison()
+                .isEqualTo(BudgetItem.expense(id, RENT, amount, ExpenseCategory.FREIZEIT_SPASS));
+    }
+
+    @Test
+    void reconstituteEnforcesTheSameRules() {
+        assertThatThrownBy(() -> BudgetItem.reconstitute(id, SALARY, amount, ItemType.INCOME,
+                ExpenseCategory.LEBENSUNTERHALT))
+                .isInstanceOf(InvalidBudgetItemException.class)
+                .hasMessageContaining("category");
+        assertThatThrownBy(() -> BudgetItem.reconstitute(id, RENT, amount, ItemType.EXPENSE, null))
+                .isInstanceOf(InvalidBudgetItemException.class)
+                .hasMessageContaining("category");
+        assertThatThrownBy(() -> BudgetItem.reconstitute(id, SALARY, Money.ZERO, ItemType.INCOME, null))
+                .isInstanceOf(InvalidBudgetItemException.class)
+                .hasMessageContaining("amount");
+    }
+
+    @Test
+    void addsItsAmountToTheSummary() {
+        BudgetSummary summary = BudgetItem.expense(id, RENT, amount, ExpenseCategory.LEBENSUNTERHALT)
+                .addTo(BudgetItem.income(BudgetItemId.generate(), SALARY, amount).addTo(BudgetSummary.EMPTY));
+
+        assertThat(summary.totalIncome()).isEqualTo(amount);
+        assertThat(summary.expensesIn(ExpenseCategory.LEBENSUNTERHALT)).isEqualTo(amount);
+        assertThat(summary.totalExpense()).isEqualTo(amount);
+    }
+
+    @Test
     void equalityIsBasedOnIdOnly() {
         BudgetItem first = BudgetItem.income(id, SALARY, amount);
         BudgetItem second = BudgetItem.income(id, BudgetItemDescription.of("Andere Beschreibung"),

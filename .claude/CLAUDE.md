@@ -28,7 +28,7 @@
 
 - Selbstvalidierung: Ein Value Object darf niemals in einem ungültigen Zustand existieren; prüfe alle fachlichen Regeln direkt im Konstruktor
 
-- Keine Primitive Obsession: Nutze keine einfachen Datentypen (String, Integer) für fachliche Konzepte; erstelle stattdessen Value Objects, die ihre eigene Logik mitbringen
+- Keine Primitive Obsession: Nutze keine einfachen Datentypen (String, Integer) für fachliche Konzepte; erstelle stattdessen Value Objects, die ihre eigene Logik mitbringen. Nicht jedes Datenfeld in einem Aggregate muss ein Value Object sein, nur dort wo sich auch fachliche Regeln mit verbinden lassen, unnötigen Overhead gilt es hier zu vermeiden
 
 - Nebenwirkungsfreie Methoden: Methoden in Value Objects dürfen niemals den Zustand verändern, sondern geben immer ein neues Value Object zurück
 

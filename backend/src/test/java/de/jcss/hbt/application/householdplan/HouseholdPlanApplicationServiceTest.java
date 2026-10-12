@@ -62,7 +62,11 @@ class HouseholdPlanApplicationServiceTest {
     @Test
     void createPlanStoresItAndPublishesCreation() {
         assertThat(repository.plans.get(planId).year()).isEqualTo(YEAR);
-        assertThat(publishedEvents).containsExactly(new HouseholdPlanCreated(planId, YEAR));
+        assertThat(publishedEvents).singleElement()
+                .isInstanceOfSatisfying(HouseholdPlanCreated.class, event -> {
+                    assertThat(event.planId()).isEqualTo(planId);
+                    assertThat(event.year()).isEqualTo(YEAR);
+                });
     }
 
     @Test
@@ -77,7 +81,8 @@ class HouseholdPlanApplicationServiceTest {
         BudgetItemId itemId = service.addIncome(new AddIncomeCommand(planId, SALARY, money("2000.00")));
 
         assertThat(storedItems()).extracting(BudgetItem::id).containsExactly(itemId);
-        assertThat(publishedEvents).endsWith(new IncomeAdded(planId, itemId));
+        assertThat(publishedEvents.getLast()).isInstanceOfSatisfying(IncomeAdded.class,
+                event -> assertThat(event.itemId()).isEqualTo(itemId));
     }
 
     @Test
@@ -86,7 +91,8 @@ class HouseholdPlanApplicationServiceTest {
                 planId, BudgetItemDescription.of("Miete"), money("800.00"), ExpenseCategory.LEBENSUNTERHALT));
 
         assertThat(storedItems().getFirst().category()).contains(ExpenseCategory.LEBENSUNTERHALT);
-        assertThat(publishedEvents).endsWith(new ExpenseAdded(planId, itemId));
+        assertThat(publishedEvents.getLast()).isInstanceOfSatisfying(ExpenseAdded.class,
+                event -> assertThat(event.itemId()).isEqualTo(itemId));
     }
 
     @Test
@@ -106,7 +112,8 @@ class HouseholdPlanApplicationServiceTest {
         service.removeItem(new RemoveBudgetItemCommand(planId, itemId));
 
         assertThat(storedItems()).isEmpty();
-        assertThat(publishedEvents).endsWith(new BudgetItemRemoved(planId, itemId));
+        assertThat(publishedEvents.getLast()).isInstanceOfSatisfying(BudgetItemRemoved.class,
+                event -> assertThat(event.itemId()).isEqualTo(itemId));
     }
 
     @Test
@@ -163,6 +170,14 @@ class HouseholdPlanApplicationServiceTest {
         @Override
         public boolean existsForYear(Year year) {
             return plans.values().stream().anyMatch(plan -> plan.year().equals(year));
+        }
+
+        @Override
+        public void add(HouseholdPlan plan) {
+            if (existsForYear(plan.year())) {
+                throw new HouseholdPlanAlreadyExistsException(plan.year());
+            }
+            save(plan);
         }
 
         @Override

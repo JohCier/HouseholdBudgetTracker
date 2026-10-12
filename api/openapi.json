@@ -17,6 +17,8 @@
           "name" : "year",
           "required" : true,
           "schema" : {
+            "maximum" : 9999,
+            "minimum" : 1,
             "type" : "integer",
             "format" : "int32"
           }
