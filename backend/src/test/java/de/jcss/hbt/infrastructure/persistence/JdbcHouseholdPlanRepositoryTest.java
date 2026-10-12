@@ -3,6 +3,7 @@ package de.jcss.hbt.infrastructure.persistence;
 import de.jcss.hbt.TestcontainersConfiguration;
 import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
 import de.jcss.hbt.domain.householdplan.BudgetItem;
+import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
@@ -41,8 +42,8 @@ class JdbcHouseholdPlanRepositoryTest {
     @Test
     void storesAndRestoresPlanWithAllItemAttributesInOrder() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), YEAR);
-        plan.addIncome("Gehalt", money("2500.00"));
-        plan.addExpense("Miete", money("850.50"), ExpenseCategory.LEBENSUNTERHALT);
+        plan.addIncome(description("Gehalt"), money("2500.00"));
+        plan.addExpense(description("Miete"), money("850.50"), ExpenseCategory.LEBENSUNTERHALT);
 
         repository.save(plan);
 
@@ -56,13 +57,14 @@ class JdbcHouseholdPlanRepositoryTest {
     @Test
     void savingAgainAddsNewAndDeletesRemovedItems() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), YEAR);
-        BudgetItemId kept = plan.addIncome("Gehalt", money("100.00"));
-        BudgetItemId removed = plan.addIncome("Bonus", money("50.00"));
+        BudgetItemId kept = plan.addIncome(description("Gehalt"), money("100.00"));
+        BudgetItemId removed = plan.addIncome(description("Bonus"), money("50.00"));
         repository.save(plan);
 
         HouseholdPlan loaded = repository.findById(plan.id()).orElseThrow();
         loaded.removeItem(removed);
-        BudgetItemId added = loaded.addExpense("ETF", money("20.00"), ExpenseCategory.SPAREN_INVESTIEREN);
+        BudgetItemId added =
+                loaded.addExpense(description("ETF"), money("20.00"), ExpenseCategory.SPAREN_INVESTIEREN);
         repository.save(loaded);
 
         assertThat(repository.findById(plan.id()).orElseThrow().items())
@@ -73,7 +75,7 @@ class JdbcHouseholdPlanRepositoryTest {
     @Test
     void removingTheLastItemLeavesAnEmptyPlan() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), YEAR);
-        BudgetItemId itemId = plan.addIncome("Gehalt", money("100.00"));
+        BudgetItemId itemId = plan.addIncome(description("Gehalt"), money("100.00"));
         repository.save(plan);
 
         plan.removeItem(itemId);
@@ -101,6 +103,10 @@ class JdbcHouseholdPlanRepositoryTest {
 
         assertThatThrownBy(() -> repository.save(HouseholdPlan.create(HouseholdPlanId.generate(), YEAR)))
                 .isInstanceOf(HouseholdPlanAlreadyExistsException.class);
+    }
+
+    private static BudgetItemDescription description(String value) {
+        return BudgetItemDescription.of(value);
     }
 
     private static Money money(String value) {

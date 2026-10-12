@@ -20,6 +20,10 @@ import java.util.Objects;
  * them as a {@link DomainEvent}. The recorded events are collected until the application
  * layer saves the plan and takes them via {@link #pullDomainEvents()} to publish them.
  * <p>
+ * The items can be read from outside (e.g. by a repository to store them), but only be
+ * changed through this class: the list handed out is unmodifiable, the items themselves
+ * are immutable.
+ * <p>
  * That there is at most one plan per year spans several aggregates and is therefore
  * ensured by the application layer, not by this class.
  * <p>
@@ -51,14 +55,14 @@ public final class HouseholdPlan {
         return new HouseholdPlan(id, year, items);
     }
 
-    public BudgetItemId addIncome(String description, Money amount) {
+    public BudgetItemId addIncome(BudgetItemDescription description, Money amount) {
         BudgetItem item = BudgetItem.income(BudgetItemId.generate(), description, amount);
         items.add(item);
         record(new IncomeAdded(id, item.id()));
         return item.id();
     }
 
-    public BudgetItemId addExpense(String description, Money amount, ExpenseCategory category) {
+    public BudgetItemId addExpense(BudgetItemDescription description, Money amount, ExpenseCategory category) {
         BudgetItem item = BudgetItem.expense(BudgetItemId.generate(), description, amount, category);
         items.add(item);
         record(new ExpenseAdded(id, item.id()));
@@ -69,7 +73,7 @@ public final class HouseholdPlan {
      * @throws BudgetItemNotFoundException if the item is not part of this plan
      */
     public void removeItem(BudgetItemId itemId) {
-        if (!items.removeIf(item -> item.id().equals(itemId))) {
+        if (!items.removeIf(item -> item.hasId(itemId))) {
             throw new BudgetItemNotFoundException(itemId);
         }
         record(new BudgetItemRemoved(id, itemId));

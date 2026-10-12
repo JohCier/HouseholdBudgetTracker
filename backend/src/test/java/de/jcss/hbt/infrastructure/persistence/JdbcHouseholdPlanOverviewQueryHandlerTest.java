@@ -1,6 +1,7 @@
 package de.jcss.hbt.infrastructure.persistence;
 
 import de.jcss.hbt.TestcontainersConfiguration;
+import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
@@ -44,11 +45,11 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
     @Test
     void loadsThePlanOfTheYearWithItsItemsMostRecentlyAddedFirst() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), Year.of(2026));
-        BudgetItemId income = plan.addIncome("Gehalt", money("2000.00"));
-        BudgetItemId expense = plan.addExpense("Miete", money("850.50"), ExpenseCategory.LEBENSUNTERHALT);
+        BudgetItemId income = plan.addIncome(description("Gehalt"), money("2000.00"));
+        BudgetItemId expense = plan.addExpense(description("Miete"), money("850.50"), ExpenseCategory.LEBENSUNTERHALT);
         repository.save(plan);
         HouseholdPlan otherPlan = HouseholdPlan.create(HouseholdPlanId.generate(), Year.of(2027));
-        otherPlan.addIncome("Anderes Jahr", money("1.00"));
+        otherPlan.addIncome(description("Anderes Jahr"), money("1.00"));
         repository.save(otherPlan);
 
         HouseholdPlanOverview overview = queryHandler.findByYear(Year.of(2026)).orElseThrow();
@@ -56,8 +57,9 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
         assertThat(overview.planId()).isEqualTo(plan.id());
         assertThat(overview.year()).isEqualTo(Year.of(2026));
         assertThat(overview.items()).containsExactly(
-                new OverviewItem(expense, "Miete", money("850.50"), ItemType.EXPENSE, ExpenseCategory.LEBENSUNTERHALT),
-                new OverviewItem(income, "Gehalt", money("2000.00"), ItemType.INCOME, null));
+                new OverviewItem(expense, description("Miete"), money("850.50"), ItemType.EXPENSE,
+                        ExpenseCategory.LEBENSUNTERHALT),
+                new OverviewItem(income, description("Gehalt"), money("2000.00"), ItemType.INCOME, null));
         assertThat(overview.totalIncome()).isEqualTo(money("2000.00"));
         assertThat(overview.totalExpense()).isEqualTo(money("850.50"));
     }
@@ -76,6 +78,10 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
     @Test
     void yearWithoutPlanHasNoOverview() {
         assertThat(queryHandler.findByYear(Year.of(2026))).isEmpty();
+    }
+
+    private static BudgetItemDescription description(String value) {
+        return BudgetItemDescription.of(value);
     }
 
     private static Money money(String value) {

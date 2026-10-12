@@ -1,12 +1,14 @@
 package de.jcss.hbt.infrastructure.web;
 
 import de.jcss.hbt.application.householdplan.HouseholdPlanApplicationService;
-import de.jcss.hbt.application.householdplan.command.AddExpenseCommand;
-import de.jcss.hbt.application.householdplan.command.AddIncomeCommand;
-import de.jcss.hbt.application.householdplan.command.CreateHouseholdPlanCommand;
-import de.jcss.hbt.application.householdplan.command.RemoveBudgetItemCommand;
+import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.Money;
+import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
+import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
+import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
+import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.infrastructure.web.dto.AddExpenseRequest;
 import de.jcss.hbt.infrastructure.web.dto.AddIncomeRequest;
 import de.jcss.hbt.infrastructure.web.dto.BudgetItemIdResponse;
@@ -61,16 +63,17 @@ public class HouseholdPlanController {
     @PostMapping("/{planId}/incomes")
     @ResponseStatus(HttpStatus.CREATED)
     public BudgetItemIdResponse addIncome(@PathVariable UUID planId, @Valid @RequestBody AddIncomeRequest request) {
-        BudgetItemId id = plans.addIncome(
-                new AddIncomeCommand(HouseholdPlanId.of(planId), request.description(), request.amount()));
+        BudgetItemId id = plans.addIncome(new AddIncomeCommand(
+                HouseholdPlanId.of(planId), BudgetItemDescription.of(request.description()), Money.of(request.amount())));
         return BudgetItemIdResponse.from(id);
     }
 
     @PostMapping("/{planId}/expenses")
     @ResponseStatus(HttpStatus.CREATED)
     public BudgetItemIdResponse addExpense(@PathVariable UUID planId, @Valid @RequestBody AddExpenseRequest request) {
-        BudgetItemId id = plans.addExpense(new AddExpenseCommand(
-                HouseholdPlanId.of(planId), request.description(), request.amount(), request.category().toDomain()));
+        BudgetItemId id = plans.addExpense(new AddExpenseCommand(HouseholdPlanId.of(planId),
+                BudgetItemDescription.of(request.description()), Money.of(request.amount()),
+                request.category().toDomain()));
         return BudgetItemIdResponse.from(id);
     }
 

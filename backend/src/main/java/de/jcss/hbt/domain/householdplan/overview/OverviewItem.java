@@ -1,5 +1,6 @@
 package de.jcss.hbt.domain.householdplan.overview;
 
+import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.ItemType;
@@ -13,7 +14,7 @@ import de.jcss.hbt.domain.householdplan.Money;
  */
 public record OverviewItem(
         BudgetItemId id,
-        String description,
+        BudgetItemDescription description,
         Money amount,
         ItemType type,
         ExpenseCategory category

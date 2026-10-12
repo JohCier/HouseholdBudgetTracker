@@ -4,11 +4,9 @@ import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.householdplan.TargetDirection;
+import de.jcss.hbt.domain.householdplan.Percentage;
 import de.jcss.hbt.domain.shared.ReadModel;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Year;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -19,6 +17,9 @@ import java.util.Map;
  * Read model of the household plan of one year: its items, total income, total expenses,
  * the resulting balance, and a breakdown per {@link ExpenseCategory} comparing actual
  * spend against the 50/30/20 target share of that year's income.
+ * <p>
+ * Only sums up the items; percentages and whether a target is met are worked out by the
+ * value objects {@link Percentage} and {@link ExpenseCategory}.
  */
 @ReadModel
 public record HouseholdPlanOverview(
@@ -65,29 +66,8 @@ public record HouseholdPlanOverview(
     }
 
     private static CategoryBreakdown breakdownFor(ExpenseCategory category, Money categoryTotal, Money totalIncome) {
-        BigDecimal actualPercentage = percentageOf(categoryTotal, totalIncome);
-        return new CategoryBreakdown(category, categoryTotal, actualPercentage, category.targetPercentageOfIncome(),
-                category.targetDirection(), isTargetMet(category, categoryTotal, totalIncome, actualPercentage));
-    }
-
-    /**
-     * Without income no share can be computed: spending anything then breaks a ceiling,
-     * while a savings floor cannot be missed.
-     */
-    private static boolean isTargetMet(ExpenseCategory category, Money categoryTotal, Money totalIncome,
-                                       BigDecimal actualPercentage) {
-        if (totalIncome.isZero()) {
-            return category.targetDirection() == TargetDirection.AT_LEAST || categoryTotal.isZero();
-        }
-        return category.targetDirection().isMet(actualPercentage, category.targetPercentageOfIncome());
-    }
-
-    private static BigDecimal percentageOf(Money part, Money whole) {
-        if (whole.isZero()) {
-            return BigDecimal.ZERO.setScale(2);
-        }
-        return part.value()
-                .multiply(BigDecimal.valueOf(100))
-                .divide(whole.value(), 2, RoundingMode.HALF_UP);
+        return new CategoryBreakdown(category, categoryTotal, Percentage.shareOf(categoryTotal, totalIncome),
+                category.targetPercentageOfIncome(), category.targetDirection(),
+                category.isTargetMet(categoryTotal, totalIncome));
     }
 }

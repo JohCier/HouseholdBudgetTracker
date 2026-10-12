@@ -1,9 +1,5 @@
 package de.jcss.hbt.application.householdplan;
 
-import de.jcss.hbt.application.householdplan.command.AddExpenseCommand;
-import de.jcss.hbt.application.householdplan.command.AddIncomeCommand;
-import de.jcss.hbt.application.householdplan.command.CreateHouseholdPlanCommand;
-import de.jcss.hbt.application.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.application.shared.ApplicationService;
 import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
 import de.jcss.hbt.domain.exception.HouseholdPlanNotFoundException;
@@ -11,14 +7,16 @@ import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanRepository;
-import de.jcss.hbt.domain.householdplan.Money;
+import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
+import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
+import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
+import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverviewQueryHandler;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.Year;
 import java.util.Objects;
 
@@ -34,8 +32,10 @@ import java.util.Objects;
  * Read side: the {@link HouseholdPlanOverview} read model is loaded through its
  * {@link HouseholdPlanOverviewQueryHandler}, bypassing the aggregate and its repository.
  * <p>
- * Contains no business rules of its own, apart from the cross-aggregate rule that there
- * is at most one plan per year.
+ * Contains no business rules of its own. The only check it makes, that there is no plan
+ * for the year yet, is a process step before creating one: it spans several aggregates
+ * and gives a clear error early, while the unique constraint behind
+ * {@link HouseholdPlanRepository#save} remains the actual safeguard against races.
  */
 @ApplicationService
 @Service
@@ -65,14 +65,14 @@ public class HouseholdPlanApplicationService {
 
     public BudgetItemId addIncome(AddIncomeCommand command) {
         HouseholdPlan plan = load(command.planId());
-        BudgetItemId itemId = plan.addIncome(command.description(), toMoney(command.amount()));
+        BudgetItemId itemId = plan.addIncome(command.description(), command.amount());
         saveAndPublishEvents(plan);
         return itemId;
     }
 
     public BudgetItemId addExpense(AddExpenseCommand command) {
         HouseholdPlan plan = load(command.planId());
-        BudgetItemId itemId = plan.addExpense(command.description(), toMoney(command.amount()), command.category());
+        BudgetItemId itemId = plan.addExpense(command.description(), command.amount(), command.category());
         saveAndPublishEvents(plan);
         return itemId;
     }
@@ -98,9 +98,5 @@ public class HouseholdPlanApplicationService {
     private void saveAndPublishEvents(HouseholdPlan plan) {
         repository.save(plan);
         plan.pullDomainEvents().forEach(eventPublisher::publishEvent);
-    }
-
-    private static Money toMoney(BigDecimal amount) {
-        return amount == null ? null : Money.of(amount);
     }
 }

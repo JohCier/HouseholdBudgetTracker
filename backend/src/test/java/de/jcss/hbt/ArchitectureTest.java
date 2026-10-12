@@ -55,10 +55,10 @@ class ArchitectureTest {
             .should().beRecords();
 
     @ArchTest
-    static final ArchRule commandsAreRecordsInTheApplicationLayer = classes()
+    static final ArchRule commandsAreRecordsInTheDomain = classes()
             .that().implement(DomainCommand.class)
             .should().beRecords()
-            .andShould().resideInAPackage("de.jcss.hbt.application..command..");
+            .andShould().resideInAPackage("de.jcss.hbt.domain..command..");
 
     @ArchTest
     static final ArchRule applicationServicesLiveInTheApplicationLayer = classes()
@@ -91,7 +91,6 @@ class ArchitectureTest {
     static final ArchRule writeSideDoesNotUseTheReadSide = noClasses()
             .that().resideInAPackage("de.jcss.hbt.domain..")
             .and().resideOutsideOfPackage("de.jcss.hbt.domain..overview..")
-            .or().resideInAPackage("de.jcss.hbt.application..command..")
             .or().implement(HouseholdPlanRepository.class)
             .should().dependOnClassesThat().resideInAPackage("de.jcss.hbt.domain..overview..");
 }

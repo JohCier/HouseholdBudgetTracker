@@ -1,18 +1,19 @@
 package de.jcss.hbt.infrastructure.web;
 
 import de.jcss.hbt.application.householdplan.HouseholdPlanApplicationService;
-import de.jcss.hbt.application.householdplan.command.AddExpenseCommand;
-import de.jcss.hbt.application.householdplan.command.CreateHouseholdPlanCommand;
-import de.jcss.hbt.application.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
 import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
 import de.jcss.hbt.domain.exception.HouseholdPlanNotFoundException;
 import de.jcss.hbt.domain.exception.InvalidMoneyException;
+import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
+import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
+import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
+import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
 import org.junit.jupiter.api.Test;
@@ -114,8 +115,8 @@ class HouseholdPlanControllerTest {
                                 """))
                 .andExpect(status().isCreated());
 
-        verify(plans).addExpense(new AddExpenseCommand(
-                PLAN_ID, "Miete", new BigDecimal("800"), ExpenseCategory.LEBENSUNTERHALT));
+        verify(plans).addExpense(new AddExpenseCommand(PLAN_ID, BudgetItemDescription.of("Miete"),
+                Money.of(new BigDecimal("800")), ExpenseCategory.LEBENSUNTERHALT));
     }
 
     @Test
@@ -196,10 +197,10 @@ class HouseholdPlanControllerTest {
     void overviewOfAYearReturnsTotalsBreakdownsAndItems() throws Exception {
         BudgetItemId itemId = BudgetItemId.generate();
         when(plans.getOverview(Year.of(2026))).thenReturn(HouseholdPlanOverview.of(PLAN_ID, Year.of(2026), List.of(
-                new OverviewItem(itemId, "ETF", Money.of(new BigDecimal("500")), ItemType.EXPENSE,
-                        ExpenseCategory.SPAREN_INVESTIEREN),
-                new OverviewItem(BudgetItemId.generate(), "Gehalt", Money.of(new BigDecimal("1000")), ItemType.INCOME,
-                        null))));
+                new OverviewItem(itemId, BudgetItemDescription.of("ETF"), Money.of(new BigDecimal("500")),
+                        ItemType.EXPENSE, ExpenseCategory.SPAREN_INVESTIEREN),
+                new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Gehalt"),
+                        Money.of(new BigDecimal("1000")), ItemType.INCOME, null))));
 
         mockMvc.perform(get("/api/plans").param("year", "2026"))
                 .andExpect(status().isOk())

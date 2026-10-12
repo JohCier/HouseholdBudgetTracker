@@ -20,7 +20,7 @@ public record BudgetItemResponse(
     public static BudgetItemResponse from(OverviewItem item) {
         return new BudgetItemResponse(
                 item.id().value(),
-                item.description(),
+                item.description().value(),
                 item.amount().value(),
                 ItemTypeDto.from(item.type()),
                 item.category() == null ? null : ExpenseCategoryDto.from(item.category())

@@ -2,6 +2,7 @@ package de.jcss.hbt.infrastructure.persistence;
 
 import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
 import de.jcss.hbt.domain.householdplan.BudgetItem;
+import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
@@ -30,7 +31,7 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
 
     private static final RowMapper<BudgetItem> ITEM_ROW_MAPPER = (rs, rowNum) -> {
         BudgetItemId id = BudgetItemId.of(rs.getObject("id", UUID.class));
-        String description = rs.getString("description");
+        BudgetItemDescription description = BudgetItemDescription.of(rs.getString("description"));
         Money amount = Money.of(rs.getBigDecimal("amount"));
         return switch (ItemType.valueOf(rs.getString("type"))) {
             case INCOME -> BudgetItem.income(id, description, amount);
@@ -118,7 +119,7 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                         """)
                 .param("id", item.id().value())
                 .param("planId", planId.value())
-                .param("description", item.description())
+                .param("description", item.description().value())
                 .param("amount", item.amount().value())
                 .param("type", item.type().name())
                 .param("category", item.category().map(Enum::name).orElse(null))

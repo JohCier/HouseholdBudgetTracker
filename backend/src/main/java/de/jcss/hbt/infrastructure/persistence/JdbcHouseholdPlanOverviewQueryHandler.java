@@ -1,5 +1,6 @@
 package de.jcss.hbt.infrastructure.persistence;
 
+import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
@@ -28,7 +29,7 @@ public class JdbcHouseholdPlanOverviewQueryHandler implements HouseholdPlanOverv
         String category = rs.getString("category");
         return new OverviewItem(
                 BudgetItemId.of(rs.getObject("id", UUID.class)),
-                rs.getString("description"),
+                BudgetItemDescription.of(rs.getString("description")),
                 Money.of(rs.getBigDecimal("amount")),
                 ItemType.valueOf(rs.getString("type")),
                 category == null ? null : ExpenseCategory.valueOf(category));

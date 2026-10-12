@@ -21,6 +21,8 @@ class HouseholdPlanTest {
 
     private final HouseholdPlanId planId = HouseholdPlanId.generate();
     private final Money amount = Money.of(new BigDecimal("100.00"));
+    private final BudgetItemDescription salary = BudgetItemDescription.of("Gehalt");
+    private final BudgetItemDescription rent = BudgetItemDescription.of("Miete");
 
     @Test
     void createStartsAnEmptyPlanAndRecordsIt() {
@@ -34,7 +36,7 @@ class HouseholdPlanTest {
 
     @Test
     void reconstituteRecordsNoEvents() {
-        BudgetItem item = BudgetItem.income(BudgetItemId.generate(), "Gehalt", amount);
+        BudgetItem item = BudgetItem.income(BudgetItemId.generate(), salary, amount);
 
         HouseholdPlan plan = HouseholdPlan.reconstitute(planId, YEAR, List.of(item));
 
@@ -46,8 +48,8 @@ class HouseholdPlanTest {
     void addsIncomeAndExpenseInOrderAndRecordsEachChange() {
         HouseholdPlan plan = emptyPlan();
 
-        BudgetItemId incomeId = plan.addIncome("Gehalt", amount);
-        BudgetItemId expenseId = plan.addExpense("Miete", amount, ExpenseCategory.LEBENSUNTERHALT);
+        BudgetItemId incomeId = plan.addIncome(salary, amount);
+        BudgetItemId expenseId = plan.addExpense(rent, amount, ExpenseCategory.LEBENSUNTERHALT);
 
         assertThat(plan.items()).extracting(BudgetItem::id).containsExactly(incomeId, expenseId);
         assertThat(plan.items().get(1).category()).contains(ExpenseCategory.LEBENSUNTERHALT);
@@ -60,7 +62,7 @@ class HouseholdPlanTest {
     void invalidItemIsNeitherAddedNorRecorded() {
         HouseholdPlan plan = emptyPlan();
 
-        assertThatThrownBy(() -> plan.addExpense("Miete", amount, null))
+        assertThatThrownBy(() -> plan.addExpense(rent, amount, null))
                 .isInstanceOf(InvalidBudgetItemException.class);
 
         assertThat(plan.items()).isEmpty();
@@ -70,7 +72,7 @@ class HouseholdPlanTest {
     @Test
     void removesItemAndRecordsIt() {
         HouseholdPlan plan = emptyPlan();
-        BudgetItemId itemId = plan.addIncome("Gehalt", amount);
+        BudgetItemId itemId = plan.addIncome(salary, amount);
         plan.pullDomainEvents();
 
         plan.removeItem(itemId);
@@ -100,7 +102,7 @@ class HouseholdPlanTest {
     void itemsCannotBeChangedFromOutside() {
         HouseholdPlan plan = emptyPlan();
 
-        assertThatThrownBy(() -> plan.items().add(BudgetItem.income(BudgetItemId.generate(), "Gehalt", amount)))
+        assertThatThrownBy(() -> plan.items().add(BudgetItem.income(BudgetItemId.generate(), salary, amount)))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 

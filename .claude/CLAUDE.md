@@ -36,7 +36,7 @@
 
 - Global eindeutige Identität: Jede Entity besitzt eine eigene, global eindeutige Identität (typisierte ID), der Vergleich von Entities erfolgt ausschließlich über diese ID
 
-- Kapselung durch die Root: Interne Entities sind nach außen hin „unsichtbar“; Kein externer Dienst darf eine Referenz auf eine interne Entity halten oder diese direkt manipulieren, jede Interaktion erfolgt über die Aggregate Root
+- Kapselung durch die Root: Interne Entities dürfen ausschließlich über die Aggregate Root verändert werden; kein externer Dienst darf eine interne Entity direkt manipulieren. Die Entity-Klasse selbst darf public sein (z. B. damit Repositorys sie lesen und rekonstituieren können), ihre verändernden fachlichen Methoden sind aber in der Sichtbarkeit zu reduzieren (package-private), sodass nur die Aggregate Root sie aufrufen kann
 
 - Lebenszyklusabhängigkeit: Die Existenz einer internen Entity ist an die Aggregate Root gebunden; wird die Root gelöscht, verschwinden auch ihre Entities
 
@@ -80,7 +80,7 @@
 
 - Eindeutigkeit: Ein Domain Command repräsentiert genau eine fachliche Absicht und führt zu genau einer Transaktion.
 
-- Teil der Domäne: Domain Commands sind Teil der Domäne, sie können außerhalb bspw. aus einem Application Service erstellt werden, aber da sie Teil der Domäne sind, problemlos in den Core hereingereicht werden.
+- Teil der Domäne: Domain Commands sind Teil der Domäne, sie können außerhalb bspw. aus einem Application Service erstellt werden. Die Commands werden nicht direkt auf Aggregates angewandt, sondern die fachlichen Daten aus dem Command entnommen und auf die Fachmethode im Aggregate angewandt.
 
 ## Application Services und Domain Services
 

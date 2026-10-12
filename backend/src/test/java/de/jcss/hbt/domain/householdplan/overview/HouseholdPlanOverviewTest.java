@@ -1,10 +1,12 @@
 package de.jcss.hbt.domain.householdplan.overview;
 
+import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
+import de.jcss.hbt.domain.householdplan.Percentage;
 import de.jcss.hbt.domain.householdplan.TargetDirection;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +38,7 @@ class HouseholdPlanOverviewTest {
                 .containsExactly(ExpenseCategory.values());
         assertThat(overview.categoryBreakdowns()).allSatisfy(breakdown -> {
             assertThat(breakdown.total().isZero()).isTrue();
-            assertThat(breakdown.actualPercentageOfIncome()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(breakdown.actualPercentageOfIncome()).isEqualTo(Percentage.ZERO);
             assertThat(breakdown.targetMet()).isTrue();
         });
     }
@@ -72,13 +74,13 @@ class HouseholdPlanOverviewTest {
 
         CategoryBreakdown lebensunterhalt = breakdownFor(overview, ExpenseCategory.LEBENSUNTERHALT);
         assertThat(lebensunterhalt.total().value()).isEqualByComparingTo("500.00");
-        assertThat(lebensunterhalt.actualPercentageOfIncome()).isEqualByComparingTo("50.00");
-        assertThat(lebensunterhalt.targetPercentageOfIncome()).isEqualTo(50);
+        assertThat(lebensunterhalt.actualPercentageOfIncome()).isEqualTo(Percentage.of(50));
+        assertThat(lebensunterhalt.targetPercentageOfIncome()).isEqualTo(Percentage.of(50));
         assertThat(lebensunterhalt.targetDirection()).isEqualTo(TargetDirection.AT_MOST);
         assertThat(lebensunterhalt.targetMet()).isTrue();
 
         CategoryBreakdown freizeit = breakdownFor(overview, ExpenseCategory.FREIZEIT_SPASS);
-        assertThat(freizeit.actualPercentageOfIncome()).isEqualByComparingTo("35.00");
+        assertThat(freizeit.actualPercentageOfIncome()).isEqualTo(Percentage.of(35));
         assertThat(freizeit.targetMet()).isFalse();
     }
 
@@ -89,11 +91,11 @@ class HouseholdPlanOverviewTest {
 
         CategoryBreakdown tooLittle = breakdownFor(belowFloor, ExpenseCategory.SPAREN_INVESTIEREN);
         assertThat(tooLittle.targetDirection()).isEqualTo(TargetDirection.AT_LEAST);
-        assertThat(tooLittle.actualPercentageOfIncome()).isEqualByComparingTo("10.00");
+        assertThat(tooLittle.actualPercentageOfIncome()).isEqualTo(Percentage.of(10));
         assertThat(tooLittle.targetMet()).isFalse();
 
         CategoryBreakdown plenty = breakdownFor(aboveFloor, ExpenseCategory.SPAREN_INVESTIEREN);
-        assertThat(plenty.actualPercentageOfIncome()).isEqualByComparingTo("30.00");
+        assertThat(plenty.actualPercentageOfIncome()).isEqualTo(Percentage.of(30));
         assertThat(plenty.targetMet()).isTrue();
     }
 
@@ -131,11 +133,13 @@ class HouseholdPlanOverviewTest {
     }
 
     private static OverviewItem income(String amount) {
-        return new OverviewItem(BudgetItemId.generate(), "Einnahme", money(amount), ItemType.INCOME, null);
+        return new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Einnahme"), money(amount),
+                ItemType.INCOME, null);
     }
 
     private static OverviewItem expense(ExpenseCategory category, String amount) {
-        return new OverviewItem(BudgetItemId.generate(), "Ausgabe", money(amount), ItemType.EXPENSE, category);
+        return new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Ausgabe"), money(amount),
+                ItemType.EXPENSE, category);
     }
 
     private static Money money(String amount) {

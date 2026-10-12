@@ -1,25 +1,27 @@
 package de.jcss.hbt.application.householdplan;
 
-import de.jcss.hbt.application.householdplan.command.AddExpenseCommand;
-import de.jcss.hbt.application.householdplan.command.AddIncomeCommand;
-import de.jcss.hbt.application.householdplan.command.CreateHouseholdPlanCommand;
-import de.jcss.hbt.application.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
 import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
 import de.jcss.hbt.domain.exception.HouseholdPlanNotFoundException;
 import de.jcss.hbt.domain.exception.InvalidBudgetItemException;
 import de.jcss.hbt.domain.householdplan.BudgetItem;
+import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanRepository;
-import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
-import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
+import de.jcss.hbt.domain.householdplan.Money;
+import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
+import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
+import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
+import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCreated;
 import de.jcss.hbt.domain.householdplan.event.IncomeAdded;
+import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
+import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class HouseholdPlanApplicationServiceTest {
 
     private static final Year YEAR = Year.of(2026);
+    private static final BudgetItemDescription SALARY = BudgetItemDescription.of("Gehalt");
 
     private final FakeRepository repository = new FakeRepository();
     private final List<Object> publishedEvents = new ArrayList<>();
@@ -71,7 +74,7 @@ class HouseholdPlanApplicationServiceTest {
 
     @Test
     void addIncomeStoresItemAndPublishesEvent() {
-        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(planId, "Gehalt", new BigDecimal("2000.00")));
+        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(planId, SALARY, money("2000.00")));
 
         assertThat(storedItems()).extracting(BudgetItem::id).containsExactly(itemId);
         assertThat(publishedEvents).endsWith(new IncomeAdded(planId, itemId));
@@ -80,17 +83,17 @@ class HouseholdPlanApplicationServiceTest {
     @Test
     void addExpenseStoresItemAndPublishesEvent() {
         BudgetItemId itemId = service.addExpense(new AddExpenseCommand(
-                planId, "Miete", new BigDecimal("800.00"), ExpenseCategory.LEBENSUNTERHALT));
+                planId, BudgetItemDescription.of("Miete"), money("800.00"), ExpenseCategory.LEBENSUNTERHALT));
 
         assertThat(storedItems().getFirst().category()).contains(ExpenseCategory.LEBENSUNTERHALT);
         assertThat(publishedEvents).endsWith(new ExpenseAdded(planId, itemId));
     }
 
     @Test
-    void missingAmountIsADomainErrorAndPublishesNothing() {
+    void nonPositiveAmountIsADomainErrorAndPublishesNothing() {
         publishedEvents.clear();
 
-        assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(planId, "Gehalt", null)))
+        assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(planId, SALARY, Money.ZERO)))
                 .isInstanceOf(InvalidBudgetItemException.class);
         assertThat(storedItems()).isEmpty();
         assertThat(publishedEvents).isEmpty();
@@ -98,7 +101,7 @@ class HouseholdPlanApplicationServiceTest {
 
     @Test
     void removeItemDeletesItAndPublishesEvent() {
-        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(planId, "Gehalt", new BigDecimal("2000.00")));
+        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(planId, SALARY, money("2000.00")));
 
         service.removeItem(new RemoveBudgetItemCommand(planId, itemId));
 
@@ -116,13 +119,13 @@ class HouseholdPlanApplicationServiceTest {
     void commandsForUnknownPlanThrow() {
         HouseholdPlanId unknown = HouseholdPlanId.generate();
 
-        assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(unknown, "Gehalt", BigDecimal.TEN)))
+        assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(unknown, SALARY, money("10.00"))))
                 .isInstanceOf(HouseholdPlanNotFoundException.class);
     }
 
     @Test
     void overviewOfAYearContainsThePlanAndItsItems() {
-        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(planId, "Gehalt", new BigDecimal("2000.00")));
+        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(planId, SALARY, money("2000.00")));
 
         HouseholdPlanOverview overview = service.getOverview(YEAR);
 
@@ -140,6 +143,10 @@ class HouseholdPlanApplicationServiceTest {
 
     private List<BudgetItem> storedItems() {
         return repository.plans.get(planId).items();
+    }
+
+    private static Money money(String value) {
+        return Money.of(new BigDecimal(value));
     }
 
     /** Stores plans by rebuilding them, as a real repository would, so no state leaks between calls. */

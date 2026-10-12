@@ -10,22 +10,25 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class BudgetItemTest {
 
+    private static final BudgetItemDescription SALARY = BudgetItemDescription.of("Gehalt");
+    private static final BudgetItemDescription RENT = BudgetItemDescription.of("Miete");
+
     private final BudgetItemId id = BudgetItemId.generate();
     private final Money amount = Money.of(new BigDecimal("100.00"));
 
     @Test
     void createsIncomeWithoutCategory() {
-        BudgetItem item = BudgetItem.income(id, "Gehalt", amount);
+        BudgetItem item = BudgetItem.income(id, SALARY, amount);
 
         assertThat(item.type()).isEqualTo(ItemType.INCOME);
         assertThat(item.category()).isEmpty();
-        assertThat(item.description()).isEqualTo("Gehalt");
+        assertThat(item.description()).isEqualTo(SALARY);
         assertThat(item.amount()).isEqualTo(amount);
     }
 
     @Test
     void createsExpenseWithCategory() {
-        BudgetItem item = BudgetItem.expense(id, "Miete", amount, ExpenseCategory.LEBENSUNTERHALT);
+        BudgetItem item = BudgetItem.expense(id, RENT, amount, ExpenseCategory.LEBENSUNTERHALT);
 
         assertThat(item.type()).isEqualTo(ItemType.EXPENSE);
         assertThat(item.category()).contains(ExpenseCategory.LEBENSUNTERHALT);
@@ -33,46 +36,38 @@ class BudgetItemTest {
 
     @Test
     void expenseRequiresCategory() {
-        assertThatThrownBy(() -> BudgetItem.expense(id, "Miete", amount, null))
+        assertThatThrownBy(() -> BudgetItem.expense(id, RENT, amount, null))
                 .isInstanceOf(InvalidBudgetItemException.class)
                 .hasMessageContaining("category");
     }
 
     @Test
-    void rejectsBlankDescription() {
-        assertThatThrownBy(() -> BudgetItem.income(id, "  ", amount))
-                .isInstanceOf(InvalidBudgetItemException.class)
-                .hasMessageContaining("description");
-    }
-
-    @Test
-    void rejectsTooLongDescription() {
-        String tooLong = "x".repeat(BudgetItem.MAX_DESCRIPTION_LENGTH + 1);
-
-        assertThatThrownBy(() -> BudgetItem.income(id, tooLong, amount))
+    void requiresDescription() {
+        assertThatThrownBy(() -> BudgetItem.income(id, null, amount))
                 .isInstanceOf(InvalidBudgetItemException.class)
                 .hasMessageContaining("description");
     }
 
     @Test
     void rejectsMissingOrNonPositiveAmount() {
-        assertThatThrownBy(() -> BudgetItem.income(id, "Gehalt", null))
+        assertThatThrownBy(() -> BudgetItem.income(id, SALARY, null))
                 .isInstanceOf(InvalidBudgetItemException.class)
                 .hasMessageContaining("amount");
 
-        assertThatThrownBy(() -> BudgetItem.income(id, "Gehalt", Money.ZERO))
+        assertThatThrownBy(() -> BudgetItem.income(id, SALARY, Money.ZERO))
                 .isInstanceOf(InvalidBudgetItemException.class)
                 .hasMessageContaining("amount");
 
-        assertThatThrownBy(() -> BudgetItem.income(id, "Gehalt", Money.of(new BigDecimal("-1.00"))))
+        assertThatThrownBy(() -> BudgetItem.income(id, SALARY, Money.of(new BigDecimal("-1.00"))))
                 .isInstanceOf(InvalidBudgetItemException.class)
                 .hasMessageContaining("amount");
     }
 
     @Test
     void equalityIsBasedOnIdOnly() {
-        BudgetItem first = BudgetItem.income(id, "Gehalt", amount);
-        BudgetItem second = BudgetItem.income(id, "Andere Beschreibung", Money.of(new BigDecimal("1.00")));
+        BudgetItem first = BudgetItem.income(id, SALARY, amount);
+        BudgetItem second = BudgetItem.income(id, BudgetItemDescription.of("Andere Beschreibung"),
+                Money.of(new BigDecimal("1.00")));
 
         assertThat(first).isEqualTo(second);
         assertThat(first).hasSameHashCodeAs(second);

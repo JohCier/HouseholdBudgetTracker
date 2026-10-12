@@ -20,8 +20,8 @@ public record CategoryBreakdownResponse(
         return new CategoryBreakdownResponse(
                 ExpenseCategoryDto.from(breakdown.category()),
                 breakdown.total().value(),
-                breakdown.actualPercentageOfIncome(),
-                breakdown.targetPercentageOfIncome(),
+                breakdown.actualPercentageOfIncome().value(),
+                breakdown.targetPercentageOfIncome().value().intValueExact(),
                 TargetDirectionDto.from(breakdown.targetDirection()),
                 breakdown.targetMet()
         );
