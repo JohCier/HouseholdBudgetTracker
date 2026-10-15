@@ -1,3 +1,9 @@
+# Requires in .env next to this file (or the environment):
+#   DB_PASSWORD   password of the database user
+#   JWT_SECRET    secret for session tokens, at least 32 bytes, e.g. from `openssl rand -base64 48`
+# Optional:
+#   IMAGE_TAG     image version, defaults to latest
+#   SECURE_COOKIE set to true once the app is served over HTTPS
 services:
   postgres:
     image: postgres:18-alpine
@@ -15,17 +21,38 @@ services:
       retries: 10
     # kein "ports:" -> nur intern erreichbar
 
-  app:
-    image: ghcr.io/johcier/householdbudgettracker:${IMAGE_TAG:-latest}
+  backend:
+    image: ghcr.io/johcier/householdbudgettracker/backend:${IMAGE_TAG:-latest}
     restart: unless-stopped
-    environment:
+    environment: &app-environment
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hbt
       SPRING_DATASOURCE_USERNAME: hbt
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "80:8080"
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      # Der Server ist bisher nur per HTTP erreichbar; mit HTTPS SECURE_COOKIE=true setzen.
+      HBT_AUTH_SECURE_COOKIE: ${SECURE_COOKIE:-false}
     depends_on:
       postgres:
+        condition: service_healthy
+    # kein "ports:" -> nur über das Frontend erreichbar
+
+  users:
+    image: ghcr.io/johcier/householdbudgettracker/users:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment: *app-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    image: ghcr.io/johcier/householdbudgettracker/frontend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+      users:
         condition: service_healthy
 
 volumes:

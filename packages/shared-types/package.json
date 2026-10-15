@@ -1,0 +1,19 @@
+{
+  "name": "@hbt/shared-types",
+  "version": "0.0.0",
+  "private": true,
+  "description": "REST contracts (OpenAPI) of the backend and users apps and the TypeScript types generated from them",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts"
+    }
+  },
+  "scripts": {
+    "generate": "openapi-typescript openapi/plans.json -o generated/plans.d.ts && openapi-typescript openapi/users.json -o generated/users.d.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0",
+    "typescript": "~6.0.2"
+  }
+}
