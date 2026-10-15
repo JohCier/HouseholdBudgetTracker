@@ -5,6 +5,7 @@ on:
     branches: [master]
     tags: ['v*']
   pull_request:
+  workflow_dispatch:
 
 jobs:
   backend:
@@ -44,6 +45,8 @@ jobs:
   docker:
     name: Build & push Docker image
     needs: [backend, frontend]
+    # Dependabot PRs only run the tests, no image build
+    if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -78,3 +81,35 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy
+    needs: [docker]
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Compose-Datei auf den Server kopieren
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: deploy
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: compose.prod.yaml
+          target: /opt/hbt
+
+      - name: Neue Version starten
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: deploy
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/hbt
+            docker compose -f compose.prod.yaml pull app
+            docker compose -f compose.prod.yaml up -d
+            docker image prune -f
