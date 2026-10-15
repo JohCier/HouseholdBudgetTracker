@@ -1,9 +1,12 @@
+# Build context of apps/frontend/Dockerfile (the Java apps use their own directory as context)
 .git
 .github
 .idea
 .vscode
+apps/backend
+apps/users
 **/node_modules
 **/target
-frontend/dist
-frontend/.angular
-frontend/src/app/budget/data-access/api.generated.ts
+apps/frontend/dist
+apps/frontend/.angular
+packages/shared-types/generated

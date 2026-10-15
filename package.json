@@ -1,0 +1,17 @@
+{
+  "name": "household-budget-tracker",
+  "private": true,
+  "packageManager": "npm@10.9.8",
+  "workspaces": [
+    "apps/frontend",
+    "packages/shared-types"
+  ],
+  "scripts": {
+    "generate:api": "npm run generate --workspace=@hbt/shared-types"
+  },
+  "overrides": {
+    "openapi-typescript": {
+      "typescript": "~6.0.2"
+    }
+  }
+}

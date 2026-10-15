@@ -1,5 +1,6 @@
-# Local development:  cd backend && ./mvnw spring-boot:run   (starts only "postgres" automatically)
-# Full stack:         docker compose --profile app up --build
+# Local development:  cd apps/backend && ./mvnw spring-boot:run   (starts only "postgres" automatically)
+#                     cd apps/users && ./mvnw spring-boot:run     (uses the same "postgres")
+# Full stack:         JWT_SECRET=... docker compose --profile app up --build   -> http://localhost:8080
 services:
   postgres:
     image: postgres:18-alpine
@@ -17,18 +18,40 @@ services:
       timeout: 3s
       retries: 10
 
-  app:
+  backend:
     profiles: [app]
-    build: .
-    image: household-budget-tracker
-    environment:
+    build: apps/backend
+    image: household-budget-tracker-backend
+    environment: &app-environment
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hbt
       SPRING_DATASOURCE_USERNAME: hbt
       SPRING_DATASOURCE_PASSWORD: hbt
-    ports:
-      - "8080:8080"
+      JWT_SECRET: ${JWT_SECRET:-local-development-secret-do-not-use-in-production}
     depends_on:
       postgres:
+        condition: service_healthy
+
+  users:
+    profiles: [app]
+    build: apps/users
+    image: household-budget-tracker-users
+    environment: *app-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    image: household-budget-tracker-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+      users:
         condition: service_healthy
 
 volumes:
