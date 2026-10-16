@@ -13,6 +13,7 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanRepository;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverviewQueryHandler;
 import de.jcss.hbt.domain.shared.QueryHandler;
+import de.jcss.hbt.domain.shared.TimestampedDomainEvent;
 import org.jmolecules.architecture.cqrs.Command;
 import org.jmolecules.architecture.cqrs.QueryModel;
 import org.jmolecules.archunit.JMoleculesArchitectureRules;
@@ -22,8 +23,6 @@ import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.ValueObject;
 import org.jmolecules.event.types.DomainEvent;
-
-import java.time.Instant;
 
 import static com.tngtech.archunit.core.domain.properties.CanBeAnnotated.Predicates.annotatedWith;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
@@ -52,18 +51,6 @@ class ArchitectureTest {
                             && javaClass.tryGetMethod("hashCode").isPresent();
                     events.add(new SimpleConditionEvent(javaClass, declaresBoth,
                             javaClass.getName() + " does not declare both equals and hashCode"));
-                }
-            };
-
-    private static final ArchCondition<JavaClass> CARRY_A_TIMESTAMP =
-            new ArchCondition<>("carry an Instant timestamp") {
-                @Override
-                public void check(JavaClass javaClass, ConditionEvents events) {
-                    boolean hasTimestamp = javaClass.tryGetField("timestamp")
-                            .filter(field -> field.getRawType().isEquivalentTo(Instant.class))
-                            .isPresent();
-                    events.add(new SimpleConditionEvent(javaClass, hasTimestamp,
-                            javaClass.getName() + " has no field timestamp of type Instant"));
                 }
             };
 
@@ -117,10 +104,11 @@ class ArchitectureTest {
             .should().beRecords();
 
     @ArchTest
-    static final ArchRule eventsAreRecordsWithATimestamp = classes()
+    static final ArchRule eventsAreTimestampedRecords = classes()
             .that().implement(DomainEvent.class)
+            .and().areNotInterfaces()
             .should().beRecords()
-            .andShould(CARRY_A_TIMESTAMP);
+            .andShould().implement(TimestampedDomainEvent.class);
 
     @ArchTest
     static final ArchRule commandsAreRecordsInTheDomain = classes()

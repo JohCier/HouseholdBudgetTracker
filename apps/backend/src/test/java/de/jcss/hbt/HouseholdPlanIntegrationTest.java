@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -191,15 +192,42 @@ class HouseholdPlanIntegrationTest {
         mockMvc.perform(get("/api/plans").param("year", "2026").cookie(alice))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(0));
-        assertThat(jdbcClient.sql("SELECT event_type, household_plan_id, budget_item_id FROM audit_log")
+        assertThat(jdbcClient.sql("""
+                        SELECT event_type, household_plan_id, payload ->> 'itemId' AS item_id
+                        FROM audit_log WHERE event_type = 'BudgetItemRemoved'""")
                 .query().listOfRows())
                 .containsExactly(Map.of(
                         "event_type", "BudgetItemRemoved",
                         "household_plan_id", UUID.fromString(planId),
-                        "budget_item_id", UUID.fromString(itemId)));
-        assertThat(jdbcClient.sql("SELECT occurred_at <= recorded_at FROM audit_log").query(Boolean.class).single())
-                .as("removal happened before it was logged")
+                        "item_id", itemId));
+        assertThat(jdbcClient.sql("SELECT bool_and(occurred_at <= recorded_at) FROM audit_log").query(Boolean.class).single())
+                .as("changes happened before they were logged")
                 .isTrue();
+    }
+
+    @Test
+    void everyChangeIsAuditedWithTheFullEvent() throws Exception {
+        String planId = createPlan(2026);
+        String incomeId = JsonPath.read(post("/api/plans/" + planId + "/incomes", """
+                {"description":"Gehalt","amount":"1500.00"}"""), "$.id");
+        String expenseId = JsonPath.read(post("/api/plans/" + planId + "/expenses", """
+                {"description":"Miete","amount":"700.00","category":"LEBENSUNTERHALT"}"""), "$.id");
+
+        assertThat(jdbcClient.sql("""
+                        SELECT event_type, household_plan_id, payload ->> 'planId' AS payload_plan_id,
+                               payload ->> 'itemId' AS item_id
+                        FROM audit_log ORDER BY id""")
+                .query().listOfRows())
+                .extracting(row -> row.get("event_type"), row -> row.get("household_plan_id"),
+                        row -> row.get("payload_plan_id"), row -> row.get("item_id"))
+                .containsExactly(
+                        tuple("HouseholdPlanCreated", UUID.fromString(planId), planId, null),
+                        tuple("IncomeAdded", UUID.fromString(planId), planId, incomeId),
+                        tuple("ExpenseAdded", UUID.fromString(planId), planId, expenseId));
+        assertThat(jdbcClient.sql("""
+                        SELECT (payload ->> 'year')::int FROM audit_log WHERE event_type = 'HouseholdPlanCreated'""")
+                .query(Integer.class).single())
+                .isEqualTo(2026);
     }
 
     @Test
@@ -209,7 +237,8 @@ class HouseholdPlanIntegrationTest {
         mockMvc.perform(delete("/api/plans/{planId}/items/{itemId}", planId, UUID.randomUUID()).cookie(alice))
                 .andExpect(status().isNotFound());
 
-        assertThat(jdbcClient.sql("SELECT COUNT(*) FROM audit_log").query(Long.class).single()).isZero();
+        assertThat(jdbcClient.sql("SELECT COUNT(*) FROM audit_log WHERE event_type = 'BudgetItemRemoved'")
+                .query(Long.class).single()).isZero();
     }
 
     @Test

@@ -4,10 +4,10 @@ import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCreated;
+import de.jcss.hbt.domain.householdplan.event.HouseholdPlanEvent;
 import de.jcss.hbt.domain.householdplan.event.IncomeAdded;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
-import org.jmolecules.event.types.DomainEvent;
 
 import java.time.Instant;
 import java.time.Year;
@@ -22,7 +22,7 @@ import java.util.Set;
  * Aggregate root holding the income and expense positions ({@link BudgetItem}s) a user
  * plans for one year. The plan belongs to the user who created it, its {@link OwnerId owner};
  * only they may see or change it, see {@link #isOwnedBy}. All changes to the items go through this class, which records each of
- * them as a {@link DomainEvent}. The recorded events are collected until the application
+ * them as a {@link HouseholdPlanEvent}. The recorded events are collected until the application
  * layer saves the plan and takes them via {@link #pullDomainEvents()} to publish them.
  * <p>
  * The items can be read from outside (e.g. by a repository to store them), but only be
@@ -42,7 +42,7 @@ public final class HouseholdPlan {
     private final OwnerId owner;
     private final Year year;
     private final List<BudgetItem> items;
-    private final List<DomainEvent> domainEvents = new ArrayList<>();
+    private final List<HouseholdPlanEvent> domainEvents = new ArrayList<>();
 
     private HouseholdPlan(HouseholdPlanId id, OwnerId owner, Year year, List<BudgetItem> items) {
         this.id = Objects.requireNonNull(id, "id must not be null");
@@ -117,13 +117,13 @@ public final class HouseholdPlan {
      * Returns the events recorded since the last call and forgets them, so that each
      * event is published exactly once.
      */
-    public List<DomainEvent> pullDomainEvents() {
-        List<DomainEvent> pulled = List.copyOf(domainEvents);
+    public List<HouseholdPlanEvent> pullDomainEvents() {
+        List<HouseholdPlanEvent> pulled = List.copyOf(domainEvents);
         domainEvents.clear();
         return pulled;
     }
 
-    private void record(DomainEvent event) {
+    private void record(HouseholdPlanEvent event) {
         domainEvents.add(event);
     }
 
