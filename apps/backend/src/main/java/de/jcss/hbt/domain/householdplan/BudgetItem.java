@@ -1,7 +1,8 @@
 package de.jcss.hbt.domain.householdplan;
 
 import de.jcss.hbt.domain.exception.InvalidBudgetItemException;
-import de.jcss.hbt.domain.shared.DomainEntity;
+import org.jmolecules.ddd.annotation.Entity;
+import org.jmolecules.ddd.annotation.Identity;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -21,9 +22,10 @@ import java.util.Optional;
  * Identity (equals/hashCode) is based solely on the item id, as is appropriate for
  * a DDD entity.
  */
-@DomainEntity
+@Entity
 public final class BudgetItem {
 
+    @Identity
     private final BudgetItemId id;
     private final BudgetItemDescription description;
     private final Money amount;

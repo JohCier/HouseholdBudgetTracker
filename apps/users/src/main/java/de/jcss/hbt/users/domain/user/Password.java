@@ -1,7 +1,7 @@
 package de.jcss.hbt.users.domain.user;
 
 import de.jcss.hbt.users.domain.exception.InvalidPasswordException;
-import de.jcss.hbt.users.domain.shared.ValueObject;
+import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.nio.charset.StandardCharsets;
 

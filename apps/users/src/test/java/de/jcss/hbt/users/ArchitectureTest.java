@@ -10,21 +10,25 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
-import de.jcss.hbt.users.application.shared.ApplicationService;
-import de.jcss.hbt.users.domain.shared.AggregateRoot;
-import de.jcss.hbt.users.domain.shared.DomainCommand;
-import de.jcss.hbt.users.domain.shared.DomainEvent;
-import de.jcss.hbt.users.domain.shared.ValueObject;
+import org.jmolecules.architecture.cqrs.Command;
+import org.jmolecules.archunit.JMoleculesArchitectureRules;
+import org.jmolecules.archunit.JMoleculesArchitectureRules.StereotypeLookup;
+import org.jmolecules.archunit.JMoleculesDddRules;
+import org.jmolecules.ddd.annotation.AggregateRoot;
+import org.jmolecules.ddd.annotation.ValueObject;
+import org.jmolecules.event.types.DomainEvent;
+
+import java.time.Instant;
 
 import static com.tngtech.archunit.core.domain.properties.CanBeAnnotated.Predicates.annotatedWith;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
-import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 
 /**
- * Enforces the layering (infrastructure → application → domain) and the placement and
- * shape of the DDD building blocks, like {@code ArchitectureTest} of the backend.
+ * Enforces the layering (infrastructure → application → domain, declared per package as
+ * jMolecules onion rings), the placement and shape of the DDD building blocks and
+ * the DDD rules of jMolecules, like {@code ArchitectureTest} of the backend.
  */
 @AnalyzeClasses(packages = "de.jcss.hbt.users", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {
@@ -44,20 +48,30 @@ class ArchitectureTest {
                 }
             };
 
+    private static final ArchCondition<JavaClass> CARRY_A_TIMESTAMP =
+            new ArchCondition<>("carry an Instant timestamp") {
+                @Override
+                public void check(JavaClass javaClass, ConditionEvents events) {
+                    boolean hasTimestamp = javaClass.tryGetField("timestamp")
+                            .filter(field -> field.getRawType().isEquivalentTo(Instant.class))
+                            .isPresent();
+                    events.add(new SimpleConditionEvent(javaClass, hasTimestamp,
+                            javaClass.getName() + " has no field timestamp of type Instant"));
+                }
+            };
+
+    /** The rings are declared on the top-level packages (package-info), so sub-packages inherit them. */
     @ArchTest
-    static final ArchRule layersOnlyDependInwards = layeredArchitecture()
-            .consideringOnlyDependenciesInLayers()
-            .layer("Domain").definedBy("de.jcss.hbt.users.domain..")
-            .layer("Application").definedBy("de.jcss.hbt.users.application..")
-            .layer("Infrastructure").definedBy("de.jcss.hbt.users.infrastructure..")
-            .whereLayer("Infrastructure").mayNotBeAccessedByAnyLayer()
-            .whereLayer("Application").mayOnlyBeAccessedByLayers("Infrastructure")
-            .whereLayer("Domain").mayOnlyBeAccessedByLayers("Application", "Infrastructure");
+    static final ArchRule layersOnlyDependInwards = JMoleculesArchitectureRules.ensureOnionSimple(
+            StereotypeLookup.defaultLookup().withParentPackageTraversal());
+
+    @ArchTest
+    static final ArchRule dddRulesOfJMolecules = JMoleculesDddRules.all();
 
     @ArchTest
     static final ArchRule domainIsFrameworkFree = classes()
             .that().resideInAPackage("de.jcss.hbt.users.domain..")
-            .should().onlyDependOnClassesThat().resideInAnyPackage("de.jcss.hbt.users.domain..", "java..");
+            .should().onlyDependOnClassesThat().resideInAnyPackage("de.jcss.hbt.users.domain..", "org.jmolecules..", "java..");
 
     @ArchTest
     static final ArchRule domainBuildingBlocksLiveInTheDomain = classes()
@@ -89,18 +103,14 @@ class ArchitectureTest {
             .should(DECLARE_EQUALS_AND_HASH_CODE);
 
     @ArchTest
-    static final ArchRule eventsAreRecords = classes()
+    static final ArchRule eventsAreRecordsWithATimestamp = classes()
             .that().implement(DomainEvent.class)
-            .should().beRecords();
+            .should().beRecords()
+            .andShould(CARRY_A_TIMESTAMP);
 
     @ArchTest
     static final ArchRule commandsAreRecordsInTheDomain = classes()
-            .that().implement(DomainCommand.class)
+            .that().areAnnotatedWith(Command.class)
             .should().beRecords()
             .andShould().resideInAPackage("de.jcss.hbt.users.domain..command..");
-
-    @ArchTest
-    static final ArchRule applicationServicesLiveInTheApplicationLayer = classes()
-            .that().areAnnotatedWith(ApplicationService.class)
-            .should().resideInAPackage("de.jcss.hbt.users.application..");
 }

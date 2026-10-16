@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.householdplan;
 
-import de.jcss.hbt.domain.shared.ValueObject;
+import org.jmolecules.ddd.annotation.ValueObject;
 
 /**
  * Categories an expense item can be assigned to, carrying the target share of income

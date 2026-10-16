@@ -1,7 +1,7 @@
 package de.jcss.hbt.users.domain.user;
 
 import de.jcss.hbt.users.domain.exception.InvalidEmailAddressException;
-import de.jcss.hbt.users.domain.shared.ValueObject;
+import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.util.Locale;
 import java.util.regex.Pattern;

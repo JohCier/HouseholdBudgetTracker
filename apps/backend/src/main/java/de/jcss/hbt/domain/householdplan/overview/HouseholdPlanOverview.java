@@ -5,7 +5,7 @@ import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.shared.ReadModel;
+import org.jmolecules.architecture.cqrs.QueryModel;
 
 import java.time.Year;
 import java.util.Arrays;
@@ -19,7 +19,7 @@ import java.util.List;
  * Contains no business logic of its own: all figures are worked out by the value object
  * {@link BudgetSummary}, which the read model only fills with the items.
  */
-@ReadModel
+@QueryModel
 public record HouseholdPlanOverview(
         HouseholdPlanId planId,
         Year year,

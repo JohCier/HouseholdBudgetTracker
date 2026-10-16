@@ -26,7 +26,7 @@ class UserTest {
         assertThat(user.email()).isEqualTo(EMAIL);
         assertThat(user.passwordHash()).isEqualTo(hasher.hash(PASSWORD));
         assertThat(user.pullDomainEvents())
-                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("occurredAt")
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
                 .containsExactly(new UserRegistered(id, Instant.now()));
         assertThat(user.pullDomainEvents()).isEmpty();
     }

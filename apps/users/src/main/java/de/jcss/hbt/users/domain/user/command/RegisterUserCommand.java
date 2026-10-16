@@ -1,13 +1,14 @@
 package de.jcss.hbt.users.domain.user.command;
 
-import de.jcss.hbt.users.domain.shared.DomainCommand;
 import de.jcss.hbt.users.domain.user.EmailAddress;
 import de.jcss.hbt.users.domain.user.Password;
+import org.jmolecules.architecture.cqrs.Command;
 
 import java.util.Objects;
 
 /** Register a new user who signs in with the given e-mail address and password. */
-public record RegisterUserCommand(EmailAddress email, Password password) implements DomainCommand {
+@Command
+public record RegisterUserCommand(EmailAddress email, Password password) {
 
     public RegisterUserCommand {
         Objects.requireNonNull(email, "email must not be null");

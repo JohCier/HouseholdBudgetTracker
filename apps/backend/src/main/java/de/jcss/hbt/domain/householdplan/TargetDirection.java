@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.householdplan;
 
-import de.jcss.hbt.domain.shared.ValueObject;
+import org.jmolecules.ddd.annotation.ValueObject;
 
 /**
  * Whether the target share of an {@link ExpenseCategory} is a ceiling (spend at most)

@@ -5,8 +5,9 @@ import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCreated;
 import de.jcss.hbt.domain.householdplan.event.IncomeAdded;
-import de.jcss.hbt.domain.shared.AggregateRoot;
-import de.jcss.hbt.domain.shared.DomainEvent;
+import org.jmolecules.ddd.annotation.AggregateRoot;
+import org.jmolecules.ddd.annotation.Identity;
+import org.jmolecules.event.types.DomainEvent;
 
 import java.time.Instant;
 import java.time.Year;
@@ -36,6 +37,7 @@ import java.util.Set;
 @AggregateRoot
 public final class HouseholdPlan {
 
+    @Identity
     private final HouseholdPlanId id;
     private final OwnerId owner;
     private final Year year;
