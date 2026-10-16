@@ -38,7 +38,7 @@ public class AuditLogListener {
                 .param("eventType", BudgetItemRemoved.class.getSimpleName())
                 .param("planId", event.planId().value())
                 .param("itemId", event.itemId().value())
-                .param("occurredAt", Timestamp.from(event.occurredAt()))
+                .param("occurredAt", Timestamp.from(event.timestamp()))
                 .update();
     }
 }

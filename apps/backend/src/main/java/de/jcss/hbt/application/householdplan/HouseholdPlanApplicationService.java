@@ -1,6 +1,5 @@
 package de.jcss.hbt.application.householdplan;
 
-import de.jcss.hbt.application.shared.ApplicationService;
 import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
 import de.jcss.hbt.domain.exception.HouseholdPlanNotFoundException;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
@@ -44,7 +43,6 @@ import java.util.Objects;
  * {@link HouseholdPlanRepository#add} remains the actual safeguard against races.
  * Concurrent changes to the same plan are serialized by {@link HouseholdPlanRepository#findById}.
  */
-@ApplicationService
 @Service
 @Transactional
 public class HouseholdPlanApplicationService {

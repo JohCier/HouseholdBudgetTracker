@@ -5,14 +5,14 @@ import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.Percentage;
 import de.jcss.hbt.domain.householdplan.TargetDirection;
-import de.jcss.hbt.domain.shared.ReadModel;
+import org.jmolecules.architecture.cqrs.QueryModel;
 
 /**
  * Part of the {@link HouseholdPlanOverview} read model summarizing, for a single
  * {@link ExpenseCategory}, the actual spend and whether it meets the target share of
  * income defined by the 50/30/20 rule.
  */
-@ReadModel
+@QueryModel
 public record CategoryBreakdown(
         ExpenseCategory category,
         Money total,

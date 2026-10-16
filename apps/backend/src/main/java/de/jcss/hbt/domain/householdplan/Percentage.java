@@ -1,7 +1,7 @@
 package de.jcss.hbt.domain.householdplan;
 
 import de.jcss.hbt.domain.exception.InvalidPercentageException;
-import de.jcss.hbt.domain.shared.ValueObject;
+import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

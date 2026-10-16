@@ -1,6 +1,5 @@
 package de.jcss.hbt.users.application.user;
 
-import de.jcss.hbt.users.application.shared.ApplicationService;
 import de.jcss.hbt.users.domain.exception.EmailAddressAlreadyRegisteredException;
 import de.jcss.hbt.users.domain.exception.InvalidCredentialsException;
 import de.jcss.hbt.users.domain.user.EmailAddress;
@@ -25,7 +24,6 @@ import java.util.Objects;
  * aggregates and gives a clear error early, while the unique constraint behind
  * {@link UserRepository#add} remains the actual safeguard against races.
  */
-@ApplicationService
 @Service
 @Transactional
 public class UserApplicationService {

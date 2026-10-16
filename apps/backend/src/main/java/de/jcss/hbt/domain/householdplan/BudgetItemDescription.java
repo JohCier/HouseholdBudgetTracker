@@ -1,7 +1,7 @@
 package de.jcss.hbt.domain.householdplan;
 
 import de.jcss.hbt.domain.exception.InvalidBudgetItemException;
-import de.jcss.hbt.domain.shared.ValueObject;
+import org.jmolecules.ddd.annotation.ValueObject;
 
 /**
  * What a {@link BudgetItem} is about, e.g. "Miete". Must not be blank and at most

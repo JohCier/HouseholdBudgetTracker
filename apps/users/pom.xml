@@ -18,12 +18,48 @@
 		<java.version>25</java.version>
 		<springdoc.version>3.1.1</springdoc.version>
 		<archunit.version>1.5.1</archunit.version>
+		<jmolecules.version>2025.0.2</jmolecules.version>
 		<!-- Secret for session tokens in local development and tests only, shared with apps/backend;
 		     production gets its own via the JWT_SECRET environment variable. -->
 		<dev.jwt-secret>local-development-secret-do-not-use-in-production</dev.jwt-secret>
 	</properties>
 
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.jmolecules</groupId>
+				<artifactId>jmolecules-bom</artifactId>
+				<version>${jmolecules.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<!-- jmolecules-archunit brings an older ArchUnit along -->
+			<dependency>
+				<groupId>com.tngtech.archunit</groupId>
+				<artifactId>archunit</artifactId>
+				<version>${archunit.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<dependencies>
+		<!-- DDD building blocks (aggregates, entities, value objects, events, commands, query models, onion rings) -->
+		<dependency>
+			<groupId>org.jmolecules</groupId>
+			<artifactId>jmolecules-ddd</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.jmolecules</groupId>
+			<artifactId>jmolecules-events</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.jmolecules</groupId>
+			<artifactId>jmolecules-cqrs-architecture</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.jmolecules</groupId>
+			<artifactId>jmolecules-onion-architecture</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -106,6 +142,11 @@
 			<groupId>com.tngtech.archunit</groupId>
 			<artifactId>archunit-junit5</artifactId>
 			<version>${archunit.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.jmolecules.integrations</groupId>
+			<artifactId>jmolecules-archunit</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

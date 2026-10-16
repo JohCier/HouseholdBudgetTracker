@@ -38,15 +38,12 @@ Existenz nicht verraten wird.
 ```
 de.jcss.hbt
 ├── domain                  reines Java, ohne Frameworks
-│   ├── shared              DDD-Bausteine: @AggregateRoot, @DomainEntity, @ValueObject, @ReadModel, @QueryHandler,
-│                           DomainEvent, DomainCommand
+│   ├── shared              @QueryHandler (die übrigen DDD-Bausteine kommen aus jMolecules, s. u.)
 │   └── householdplan       HouseholdPlan (Aggregate Root, ein Plan pro Besitzer und Jahr) mit BudgetItems (Entities),
 │                           Value Objects (Money, OwnerId, BudgetSummary, ExpenseCategory, …), HouseholdPlanRepository,
 │                           Commands in .command, Events in .event
 │                           Leseseite (.overview): Read Model HouseholdPlanOverview und HouseholdPlanOverviewQueryHandler
-├── application
-│   ├── shared              @ApplicationService
-│   └── householdplan       HouseholdPlanApplicationService
+├── application/householdplan  HouseholdPlanApplicationService
 └── infrastructure
     ├── web                 REST-Controller, DTOs, Fehler als RFC 9457 Problem Details
     ├── security            Prüfung des Sitzungs-Cookies (Spring Security Resource Server)
@@ -75,7 +72,6 @@ liest direkt per SQL, ohne Aggregat oder Repository.
 ```
 de.jcss.hbt.users
 ├── domain
-│   ├── shared              DDD-Bausteine wie im Backend
 │   └── user                User (Aggregate Root), Value Objects (UserId, EmailAddress, Password, PasswordHash),
 │                           PasswordHasher (Port), UserRepository, RegisterUserCommand, Event UserRegistered
 ├── application/user        UserApplicationService (register, authenticate)
@@ -88,9 +84,15 @@ de.jcss.hbt.users
 Der `User` speichert nie das Passwort selbst, nur dessen Hash, und entscheidet selbst, ob ein Passwort stimmt
 (`authenticate`). E-Mail-Adressen werden kleingeschrieben gespeichert und sind eindeutig.
 
-In beiden Apps prüft `ArchitectureTest` (ArchUnit) die Abhängigkeitsregeln (Infrastructure → Application → Domain,
-Domain ohne Frameworks) sowie Lage und Form der Bausteine (keine Setter, nur finale Felder, Value Objects als
-Records/Enums, Gleichheit von Entities über ihre ID).
+Die DDD-Bausteine beider Apps stammen aus [jMolecules](https://github.com/xmolecules/jmolecules): `@AggregateRoot`,
+`@Entity` und `@ValueObject` (mit `@Identity` am ID-Feld), `DomainEvent`, `@Command` und `@QueryModel` (Read Models).
+Domain Events tragen ihren Zeitpunkt im Feld `timestamp` (`Instant`). Die Schichten sind als Onion-Ringe je Paket
+deklariert (`package-info.java` mit `@DomainRing`, `@ApplicationRing`, `@InfrastructureRing`).
+
+In beiden Apps prüft `ArchitectureTest` (ArchUnit) die Abhängigkeitsregeln (Infrastructure → Application → Domain
+über jMolecules' `ensureOnionSimple`, Domain ohne Frameworks außer jMolecules), die DDD-Regeln von jMolecules (u. a.
+Referenzen auf andere Aggregates nur über deren ID) sowie Lage und Form der Bausteine (keine Setter, nur finale Felder,
+Value Objects als Records/Enums, Events als Records mit `timestamp`, Gleichheit von Entities über ihre ID).
 
 ## Lokale Entwicklung
 

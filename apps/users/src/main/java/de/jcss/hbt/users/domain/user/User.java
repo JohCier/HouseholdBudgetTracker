@@ -1,9 +1,10 @@
 package de.jcss.hbt.users.domain.user;
 
 import de.jcss.hbt.users.domain.exception.InvalidCredentialsException;
-import de.jcss.hbt.users.domain.shared.AggregateRoot;
-import de.jcss.hbt.users.domain.shared.DomainEvent;
 import de.jcss.hbt.users.domain.user.event.UserRegistered;
+import org.jmolecules.ddd.annotation.AggregateRoot;
+import org.jmolecules.ddd.annotation.Identity;
+import org.jmolecules.event.types.DomainEvent;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ import java.util.Objects;
 @AggregateRoot
 public final class User {
 
+    @Identity
     private final UserId id;
     private final EmailAddress email;
     private final PasswordHash passwordHash;

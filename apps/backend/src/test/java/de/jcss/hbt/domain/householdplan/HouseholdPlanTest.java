@@ -37,7 +37,7 @@ class HouseholdPlanTest {
         assertThat(plan.year()).isEqualTo(YEAR);
         assertThat(plan.items()).isEmpty();
         assertThat(plan.pullDomainEvents())
-                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("occurredAt")
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
                 .containsExactly(new HouseholdPlanCreated(planId, OWNER, YEAR, Instant.now()));
     }
 
@@ -58,7 +58,8 @@ class HouseholdPlanTest {
         HouseholdPlan plan = HouseholdPlan.create(planId, OWNER, YEAR);
 
         assertThat(plan.pullDomainEvents()).singleElement()
-                .satisfies(event -> assertThat(event.occurredAt()).isBetween(before, Instant.now()));
+                .isInstanceOfSatisfying(HouseholdPlanCreated.class,
+                        event -> assertThat(event.timestamp()).isBetween(before, Instant.now()));
     }
 
     @Test
@@ -106,7 +107,7 @@ class HouseholdPlanTest {
         assertThat(plan.items()).extracting(BudgetItem::id).containsExactly(incomeId, expenseId);
         assertThat(plan.items().get(1).category()).contains(ExpenseCategory.LEBENSUNTERHALT);
         assertThat(plan.pullDomainEvents())
-                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("occurredAt")
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
                 .containsExactly(
                         new IncomeAdded(planId, incomeId, Instant.now()),
                         new ExpenseAdded(planId, expenseId, Instant.now()));
@@ -133,7 +134,7 @@ class HouseholdPlanTest {
 
         assertThat(plan.items()).isEmpty();
         assertThat(plan.pullDomainEvents())
-                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("occurredAt")
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
                 .containsExactly(new BudgetItemRemoved(planId, itemId, Instant.now()));
     }
 
