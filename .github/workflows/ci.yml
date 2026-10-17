@@ -1,3 +1,35 @@
+# CI/CD pipeline: tests all apps, builds and pushes Docker images of the changed apps, deploys to the server.
+#
+# Triggers:
+#   push to master       tests, build & push of the changed apps, deploy (only if at least one image was built)
+#   push of a tag v*     tests, build & push of all apps (every image gets the semver tag)
+#   pull_request         tests, build of the changed apps without push; Dependabot PRs only run the tests
+#   workflow_dispatch    like a push on the selected branch, but builds all apps (e.g. after a failed image build,
+#                        which the next push would not repeat because the app counts as unchanged then)
+#
+# Jobs:
+#   changes    dorny/paths-filter compares the changed files against the path filters per app
+#              (push: previous commit of the branch, pull_request: PR base) and lists the changed apps
+#   java       Maven (./mvnw verify) for backend and users, incl. Testcontainers and the OpenAPI contract check
+#   frontend   npm: tests and Angular build of the frontend
+#   docker     Docker Buildx builds one image per changed app and pushes it to ghcr.io (not for pull requests)
+#   deploy     copies compose.prod.yaml to the server via SCP and starts the new images via SSH (master only)
+#
+# Variables:
+#   needs.changes.outputs.apps     origin: job "changes"; JSON list of the apps to build (e.g. ["backend"]),
+#                                  for tags and workflow_dispatch always all apps; matrix of the job "docker"
+#   steps.filter.outputs.changes   origin: dorny/paths-filter; JSON list of the filters with changed files
+#   matrix.app                     origin: job matrix; app name = directory under apps/ and image name
+#   steps.node.outputs.version     origin: apps/frontend/.nvmrc; Node version as build arg NODE_VERSION of the
+#                                  frontend image
+#   steps.meta.outputs.tags        origin: docker/metadata-action; image tags (latest, sha-<commit>, semver)
+#   steps.meta.outputs.labels      origin: docker/metadata-action; OCI labels of the image
+#   github.repository, github.actor, github.event_name, github.ref, github.ref_type,
+#   github.event.pull_request.user.login
+#                                  origin: GitHub Actions context; image path, registry login, conditions
+#   secrets.GITHUB_TOKEN           origin: provided by GitHub Actions; login to ghcr.io (permission packages: write)
+#   secrets.SERVER_HOST            origin: repository secret; host name of the deploy server
+#   secrets.SERVER_SSH_KEY         origin: repository secret; private SSH key of the user "deploy" on the server
 name: CI
 
 on:
@@ -8,6 +40,38 @@ on:
   workflow_dispatch:
 
 jobs:
+  changes:
+    name: Detect changed apps
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # paths-filter reads the changed files of a pull request via the GitHub API
+      pull-requests: read
+    outputs:
+      apps: ${{ steps.filter.outputs.changes || '["backend","users","frontend"]' }}
+    steps:
+      - uses: actions/checkout@v7
+      # Tags and manual runs build everything, so the filter is skipped and the output falls back to all apps
+      - id: filter
+        if: github.ref_type != 'tag' && github.event_name != 'workflow_dispatch'
+        uses: dorny/paths-filter@v4
+        with:
+          # One filter per app: everything that ends up in its image. Changes to this workflow rebuild all apps.
+          filters: |
+            backend:
+              - 'apps/backend/**'
+              - '.github/workflows/ci.yml'
+            users:
+              - 'apps/users/**'
+              - '.github/workflows/ci.yml'
+            frontend:
+              - 'apps/frontend/**'
+              - 'packages/shared-types/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.dockerignore'
+              - '.github/workflows/ci.yml'
+
   java:
     name: ${{ matrix.app }} (build & test)
     runs-on: ubuntu-latest
@@ -46,19 +110,15 @@ jobs:
 
   docker:
     name: Build & push ${{ matrix.app }} image
-    needs: [java, frontend]
-    # Dependabot PRs only run the tests, no image build
-    if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
+    needs: [changes, java, frontend]
+    # Dependabot PRs only run the tests, no image build; without changed apps the (empty) matrix is skipped
+    if: >-
+      needs.changes.outputs.apps != '[]' &&
+      (github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]')
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
-          - app: backend
-            context: apps/backend
-          - app: users
-            context: apps/users
-          - app: frontend
-            context: .
+        app: ${{ fromJSON(needs.changes.outputs.apps) }}
     permissions:
       contents: read
       packages: write
@@ -84,7 +144,8 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
       - uses: docker/build-push-action@v7
         with:
-          context: ${{ matrix.context }}
+          # The frontend needs the npm workspace in the repository root, the Java apps use their own directory
+          context: ${{ matrix.app == 'frontend' && '.' || format('apps/{0}', matrix.app) }}
           file: apps/${{ matrix.app }}/Dockerfile
           platforms: linux/amd64
           build-args: NODE_VERSION=${{ steps.node.outputs.version }}
@@ -96,6 +157,7 @@ jobs:
 
   deploy:
     name: Deploy
+    # Skipped as well when "docker" was skipped, i.e. no image was built
     needs: [docker]
     if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
@@ -119,6 +181,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: deploy
           key: ${{ secrets.SERVER_SSH_KEY }}
+          # Unchanged images keep their "latest" tag, pulling them is a no-op
           script: |
             set -e
             cd /opt/hbt
