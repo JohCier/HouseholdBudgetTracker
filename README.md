@@ -118,14 +118,37 @@ Tests: `./mvnw verify` (in `apps/backend` bzw. `apps/users`, nutzt Testcontainer
 
 ## API-Verträge ändern
 
-Das Frontend importiert seine API-Typen aus `@hbt/shared-types`. Das Paket generiert sie aus
-`packages/shared-types/openapi/plans.json` und `users.json` (`npm run generate:api`, läuft automatisch vor `start`,
-`build` und `test` des Frontends). `OpenApiContractTest` der jeweiligen Java-App schlägt fehl, sobald die vom Server
-erzeugte Spezifikation davon abweicht. Nach einer gewollten API-Änderung in der betroffenen App:
+Die Java-Controller und ihre DTOs sind die einzige Quelle des Vertrags (Code-first). Alles Weitere wird daraus
+erzeugt, die Richtung ist immer Java → JSON → TypeScript:
 
-```bash
-./mvnw test -Dtest=OpenApiContractTest -Dopenapi.update=true
 ```
+Controller + DTOs (Java)
+   │  springdoc erzeugt zur Laufzeit die Spezifikation unter /v3/api-docs
+   │  OpenApiContractTest -Dopenapi.update=true schreibt sie in die Datei
+   ▼
+packages/shared-types/openapi/plans.json bzw. users.json   (eingecheckt, nie von Hand bearbeiten)
+   │  npm run generate:api – läuft automatisch vor start, build und test des Frontends
+   ▼
+TypeScript-Typen in @hbt/shared-types → Frontend
+```
+
+`OpenApiContractTest` der jeweiligen Java-App vergleicht die vom Server erzeugte Spezifikation mit der eingecheckten
+JSON-Datei und schlägt fehl, sobald beide voneinander abweichen. So fällt jede API-Änderung auf und muss bewusst
+übernommen werden.
+
+Vorgehen bei einer Änderung, z. B. ein neues Feld in einem Request-DTO:
+
+1. Controller bzw. DTO in der betroffenen App (`apps/backend` oder `apps/users`) ändern.
+2. `./mvnw test` – `OpenApiContractTest` schlägt mit „API changed …“ fehl; das ist erwartet.
+3. Die JSON-Datei aus dem Java-Code neu erzeugen:
+
+   ```bash
+   ./mvnw test -Dtest=OpenApiContractTest -Dopenapi.update=true
+   ```
+
+4. Frontend bauen oder testen – die TypeScript-Typen werden neu generiert, der Compiler zeigt die Stellen, die
+   angepasst werden müssen.
+5. Java-Änderung, JSON-Datei und Frontend-Anpassung gemeinsam committen.
 
 ## Docker
 
