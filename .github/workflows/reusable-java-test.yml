@@ -1,0 +1,45 @@
+# Wiederverwendbarer Workflow: Maven-Build inklusive Tests einer Java-App unter apps/
+#
+# Auslöser:
+#   - workflow_call: wird nur von den App-Workflows (backend.yml, users.yml) aufgerufen, nie direkt
+#
+# Ablauf:
+#   1. Repository auschecken (actions/checkout)
+#   2. JDK 25 (Temurin) einrichten, Maven-Abhängigkeiten werden über die pom.xml der App gecacht (actions/setup-java)
+#   3. ./mvnw -B verify: kompiliert, führt Unit- und Integrationstests aus, inklusive Testcontainers (PostgreSQL)
+#      und OpenApiContractTest gegen packages/shared-types/openapi
+#
+# Variablen:
+#   inputs.app  vom aufrufenden Workflow übergeben; Verzeichnisname unter apps/ (z. B. backend), bestimmt
+#               Arbeitsverzeichnis, Cache-Schlüssel und Job-Namen
+
+name: Java build & test
+
+on:
+  workflow_call:
+    inputs:
+      app:
+        description: Verzeichnisname der App unter apps/, z. B. backend
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: ${{ inputs.app }} (build & test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/${{ inputs.app }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: apps/${{ inputs.app }}/pom.xml
+      # Includes Testcontainers (PostgreSQL) and the OpenAPI contract check against packages/shared-types/openapi
+      - run: ./mvnw -B verify

@@ -1,0 +1,64 @@
+# Users: Build, Test und Docker-Image von apps/users
+#
+# Auslöser:
+#   - push auf master, pull_request: nur wenn sich mindestens eine Datei unter "paths" geändert hat
+#     (eingebauter Pfadfilter von GitHub Actions; verglichen wird beim Push mit dem vorherigen Stand von master,
+#     beim Pull Request mit dem Basis-Branch)
+#   - push eines Git-Tags v*: immer, denn GitHub wertet Pfadfilter bei Tag-Pushes nicht aus; so bekommt ein Release
+#     für alle Images ein Versions-Tag
+#   - workflow_dispatch: manueller Start, immer
+#
+# Ablauf:
+#   1. test:   Maven-Build inklusive Tests (reusable-java-test.yml)
+#   2. docker: Image bauen und nach ghcr.io pushen (reusable-docker-image.yml), nur wenn test grün ist;
+#              entfällt bei Pull Requests von Dependabot
+#   Nach einem erfolgreichen Lauf auf master rollt deploy.yml die neuen Images aus. deploy.yml erkennt diesen
+#   Workflow an seinem Namen ("Users"); bei einer Umbenennung dort mit anpassen.
+#
+# Variablen:
+#   github.event_name                     von GitHub gesetzt; Name des Auslösers, in docker.if zum Erkennen von PRs
+#   github.event.pull_request.user.login  von GitHub gesetzt (nur bei pull_request); Autor des PRs, in docker.if
+#                                         zum Erkennen von Dependabot
+
+name: Users
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+    paths: &paths
+      - 'apps/users/**'
+      - '.github/workflows/users.yml'
+      # Gemeinsam genutzte Dateien: stehen gleichlautend in backend.yml, users.yml und frontend.yml,
+      # eine Änderung daran baut also alle Apps neu
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.dockerignore'
+      - '.github/workflows/reusable-*.yml'
+  pull_request:
+    paths: *paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    uses: ./.github/workflows/reusable-java-test.yml
+    with:
+      app: users
+
+  docker:
+    name: Docker
+    needs: test
+    # Dependabot PRs only run the tests, no image build
+    if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/reusable-docker-image.yml
+    with:
+      app: users
+      context: apps/users

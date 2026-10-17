@@ -1,0 +1,79 @@
+# Deploy: rollt compose.prod.yaml und die latest-Images aller Dienste auf dem Server aus
+#
+# Auslöser:
+#   - push auf master: immer, auch wenn sich keine App geändert hat (z. B. nur compose.prod.yaml oder Doku).
+#     Ändert der Push zugleich eine App, läuft dieser Deploy schon vor deren Image-Build und zieht noch die bisherigen
+#     Images; die neuen bringt der folgende workflow_run-Deploy.
+#   - workflow_run: nach jedem Lauf von Backend, Users oder Frontend auf master; deployt nur, wenn der Lauf erfolgreich
+#     war und nicht von einem Pull Request stammt, so landet jedes neu gebaute Image auf dem Server.
+#     Git-Tags lösen keinen Deploy aus (der branches-Filter lässt nur master durch).
+#   - workflow_dispatch: manuelles Deployment
+#   Mehrere Deploys laufen nacheinander (concurrency); wartet bereits einer, ersetzt ihn der neuere, da jeder Deploy
+#   ohnehin den aktuellen Stand von master und die jeweils neuesten latest-Images ausrollt.
+#
+# Ablauf:
+#   1. Repository auschecken (actions/checkout); beim workflow_run-Auslöser ist das der aktuelle Stand von master
+#   2. compose.prod.yaml per SCP nach /opt/hbt auf den Server kopieren (appleboy/scp-action)
+#   3. Per SSH die Images ziehen und die Container neu starten (appleboy/ssh-action, docker compose);
+#      Dienste, deren Image sich nicht geändert hat, laufen unverändert weiter
+#
+# Variablen:
+#   github.event_name                     von GitHub gesetzt; Name des Auslösers, in deploy.if
+#   github.event.workflow_run.conclusion  von GitHub gesetzt (nur bei workflow_run); Ergebnis des App-Workflows,
+#                                         in deploy.if
+#   github.event.workflow_run.event       von GitHub gesetzt (nur bei workflow_run); Auslöser des App-Workflows
+#                                         (push, workflow_dispatch, pull_request), in deploy.if
+#   secrets.SERVER_HOST                   Repository-Secret; Hostname bzw. IP des Servers für SCP und SSH
+#   secrets.SERVER_SSH_KEY                Repository-Secret; privater SSH-Schlüssel des Benutzers "deploy"
+
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+  workflow_run:
+    # Namen der App-Workflows (Feld "name" in backend.yml, users.yml, frontend.yml)
+    workflows: [Backend, Users, Frontend]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event != 'pull_request')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Compose-Datei auf den Server kopieren
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: deploy
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: compose.prod.yaml
+          target: /opt/hbt
+
+      - name: Neue Version starten
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: deploy
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/hbt
+            docker compose -f compose.prod.yaml pull backend users frontend
+            # --remove-orphans: drops containers of services that no longer exist (e.g. the former "app")
+            docker compose -f compose.prod.yaml up -d --remove-orphans
+            docker image prune -f

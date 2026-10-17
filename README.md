@@ -142,14 +142,25 @@ ihren Zustand über `/actuator/health/readiness` (Docker-`HEALTHCHECK`). Das Sit
 `Secure`; solange die App nur per HTTP (nicht localhost) erreichbar ist, muss `HBT_AUTH_SECURE_COOKIE=false` gesetzt
 sein.
 
-Die GitHub-Action `.github/workflows/ci.yml` baut und testet alle Apps und pusht anschließend je ein Image nach
-`ghcr.io/johcier/householdbudgettracker/{backend,users,frontend}`:
+Jede App hat einen eigenen Workflow (`.github/workflows/{backend,users,frontend}.yml`), der sie baut, testet und
+anschließend ein Image nach `ghcr.io/johcier/householdbudgettracker/<app>` pusht. Bei Push und Pull Request läuft ein
+Workflow nur, wenn sich etwas unter `apps/<app>/` oder an gemeinsam genutzten Dateien geändert hat (`packages/`,
+`package.json`, `package-lock.json`, `.dockerignore`, `reusable-*.yml`); die Liste steht im `paths`-Filter des
+jeweiligen Workflows. Git-Tags und manuelle Starts (`workflow_dispatch`) bauen immer. Die gemeinsamen Schritte liegen in
+`reusable-java-test.yml` und `reusable-docker-image.yml`.
 
 | Auslöser         | Tags                              |
 |------------------|-----------------------------------|
 | Push auf master  | `latest`, `sha-<commit>`          |
 | Git-Tag `v1.2.3` | `1.2.3`, `1.2`, `sha-<commit>`    |
 | Pull Request     | nur Build, kein Push              |
+
+Unveränderte Apps bekommen kein neues Image, `sha-<commit>` gibt es also nur für die gebauten Apps. Schlägt ein Lauf auf
+master fehl, den fehlgeschlagenen Workflow neu starten: Ein späterer Push, der die App nicht berührt, baut sie nicht.
+Alle Apps neu bauen: `for w in backend users frontend; do gh workflow run $w.yml; done`.
+
+`deploy.yml` rollt bei jedem Push auf master sowie nach jedem erfolgreichen App-Workflow auf master
+(`workflow_run`) `compose.prod.yaml` und die `latest`-Images aus; Deploys laufen nacheinander.
 
 Für das Deployment (`compose.prod.yaml`) braucht der Server in `/opt/hbt/.env` neben `DB_PASSWORD` auch ein
 `JWT_SECRET` (z. B. `openssl rand -base64 48`). Optional schaltet `SECURE_COOKIE=true` das `Secure`-Flag ein, sobald

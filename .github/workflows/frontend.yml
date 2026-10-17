@@ -1,0 +1,76 @@
+# Frontend: Build, Test und Docker-Image von apps/frontend
+#
+# Auslöser:
+#   - push auf master, pull_request: nur wenn sich mindestens eine Datei unter "paths" geändert hat
+#     (eingebauter Pfadfilter von GitHub Actions; verglichen wird beim Push mit dem vorherigen Stand von master,
+#     beim Pull Request mit dem Basis-Branch)
+#   - push eines Git-Tags v*: immer, denn GitHub wertet Pfadfilter bei Tag-Pushes nicht aus; so bekommt ein Release
+#     für alle Images ein Versions-Tag
+#   - workflow_dispatch: manueller Start, immer
+#
+# Ablauf:
+#   1. test:   Node einrichten (Version aus apps/frontend/.nvmrc, npm-Cache über package-lock.json),
+#              npm ci im Workspace, Vitest-Tests über "ng test", danach Produktions-Build über "ng build";
+#              pretest/prebuild generieren vorher die API-Typen in packages/shared-types
+#   2. docker: Image bauen und nach ghcr.io pushen (reusable-docker-image.yml), nur wenn test grün ist;
+#              entfällt bei Pull Requests von Dependabot. Build-Kontext ist die Repository-Wurzel, weil der
+#              Build den npm-Workspace und packages/shared-types braucht
+#   Nach einem erfolgreichen Lauf auf master rollt deploy.yml die neuen Images aus. deploy.yml erkennt diesen
+#   Workflow an seinem Namen ("Frontend"); bei einer Umbenennung dort mit anpassen.
+#
+# Variablen:
+#   github.event_name                     von GitHub gesetzt; Name des Auslösers, in docker.if zum Erkennen von PRs
+#   github.event.pull_request.user.login  von GitHub gesetzt (nur bei pull_request); Autor des PRs, in docker.if
+#                                         zum Erkennen von Dependabot
+
+name: Frontend
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+    paths: &paths
+      - 'apps/frontend/**'
+      - '.github/workflows/frontend.yml'
+      # Gemeinsam genutzte Dateien: stehen gleichlautend in backend.yml, users.yml und frontend.yml,
+      # eine Änderung daran baut also alle Apps neu
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.dockerignore'
+      - '.github/workflows/reusable-*.yml'
+  pull_request:
+    paths: *paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Frontend (build & test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: apps/frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      # pretest/prebuild generate the API types in packages/shared-types
+      - run: npm test --workspace=frontend -- --watch=false
+      - run: npm run build --workspace=frontend
+
+  docker:
+    name: Docker
+    needs: test
+    # Dependabot PRs only run the tests, no image build
+    if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/reusable-docker-image.yml
+    with:
+      app: frontend
+      context: .
