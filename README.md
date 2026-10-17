@@ -165,14 +165,21 @@ ihren Zustand über `/actuator/health/readiness` (Docker-`HEALTHCHECK`). Das Sit
 `Secure`; solange die App nur per HTTP (nicht localhost) erreichbar ist, muss `HBT_AUTH_SECURE_COOKIE=false` gesetzt
 sein.
 
-Die GitHub-Action `.github/workflows/ci.yml` baut und testet alle Apps und pusht anschließend je ein Image nach
-`ghcr.io/johcier/householdbudgettracker/{backend,users,frontend}`:
+Die GitHub-Action `.github/workflows/ci.yml` baut und testet die geänderten Apps und pusht anschließend je ein Image
+nach `ghcr.io/johcier/householdbudgettracker/{backend,users,frontend}`. Das Frontend wird immer gebaut:
 
-| Auslöser         | Tags                              |
-|------------------|-----------------------------------|
-| Push auf master  | `latest`, `sha-<commit>`          |
-| Git-Tag `v1.2.3` | `1.2.3`, `1.2`, `sha-<commit>`    |
-| Pull Request     | nur Build, kein Push              |
+| Auslöser          | Gebaute Apps               | Tags                           |
+|-------------------|----------------------------|--------------------------------|
+| Push auf master   | geänderte Apps + Frontend  | `latest`, `sha-<commit>`       |
+| Git-Tag `v1.2.3`  | alle                       | `1.2.3`, `1.2`, `sha-<commit>` |
+| Pull Request      | geänderte Apps + Frontend  | nur Build, kein Push           |
+| Manueller Start   | alle                       | wie Push auf master            |
+
+Welche Dateien zu Backend und Users gehören, legen die Pfadfilter im Job `changes` fest (`apps/<app>/**` und der
+jeweilige OpenAPI-Vertrag in `packages/shared-types/openapi/`); eine Änderung an `ci.yml` baut alle Apps. Welche App
+gebaut oder übersprungen wurde, steht in der Zusammenfassung des Workflow-Laufs. Unveränderte Apps bekommen kein neues
+`sha-<commit>`-Tag, für `IMAGE_TAG` eignet sich daher nur `latest` oder eine Release-Version. Schlägt ein Build fehl,
+holt ihn der nächste Push nicht automatisch nach (die App gilt dann als unverändert); dafür die Action manuell starten.
 
 Bei jedem Lauf prüft Trivy die Abhängigkeiten (`pom.xml`, `package-lock.json`) auf bekannte Sicherheitslücken
 (CVEs). Funde der Schwere CRITICAL oder HIGH, für die es bereits einen Fix gibt, lassen den Job `cve-scan` fehlschlagen;

@@ -1,33 +1,50 @@
-# CI/CD pipeline: tests all apps, scans the dependencies for CVEs, builds and pushes the Docker images, deploys to
-# the server.
+# CI/CD pipeline: tests the changed apps, scans the dependencies for CVEs, builds and pushes the Docker images of the
+# changed apps, deploys to the server. The frontend is always tested and built.
 #
 # Triggers:
-#   push to master       tests, CVE scan, build & push of all apps, deploy
+#   push to master       tests, CVE scan, build & push of the changed apps, deploy
 #   push of a tag v*     tests, CVE scan, build & push of all apps (every image gets the semver tag)
-#   pull_request         tests, CVE scan, build without push; Dependabot PRs only run the tests and the CVE scan
-#   workflow_dispatch    like a push on the selected branch
+#   pull_request         tests, CVE scan, build without push of the changed apps; Dependabot PRs only run the tests and
+#                        the CVE scan
+#   workflow_dispatch    like a push on the selected branch, but builds all apps (e.g. to repeat a failed image build,
+#                        which the next push would skip because the app counts as unchanged then)
+#
+# Changed apps: dorny/paths-filter compares the changed files with the filters in the job "changes"
+# (push: previous commit of the branch, pull_request: target branch of the PR). The frontend has no filter, it is
+# always built. The job summary of the run lists which app was built and which was skipped.
 #
 # Jobs:
-#   java       Maven (./mvnw verify) for backend and users, incl. Testcontainers and the OpenAPI contract check
+#   changes    determines the Java apps to build (backend, users) and writes them into the job summary
+#   java       Maven (./mvnw verify) for the changed Java apps, incl. Testcontainers and the OpenAPI contract check;
+#              skipped if no Java app changed
 #   frontend   npm: tests and Angular build of the frontend
 #   cve-scan   Trivy scans the dependencies (pom.xml, package-lock.json) for known vulnerabilities (CVEs). Fails on
 #              CRITICAL/HIGH findings that already have a fix, but does not block docker/deploy (informative only).
 #              Accepted findings go into .trivyignore in the repository root (one CVE ID per line, with a reason).
-#   docker     Docker Buildx builds one image per app and pushes it to ghcr.io (not for pull requests)
+#   docker     Docker Buildx builds one image per changed app (frontend always) and pushes it to ghcr.io (not for
+#              pull requests). Unchanged apps keep their previous image and get no new sha-<commit> tag.
 #   deploy     copies compose.prod.yaml to the server via SCP and starts the new images via SSH (master only)
 #
 # Variables:
+#   steps.filter.outputs.changes   origin: dorny/paths-filter; JSON list of the filters with changed files,
+#                                  e.g. ["backend"]
+#   CHANGED                        origin: steps.filter.outputs.changes, for tags and manual runs (filter skipped)
+#                                  all Java apps; JSON list of the Java apps to build
+#   FILTERED                       origin: steps.filter.outcome; 'true' if the filter ran, used for the job summary
+#   needs.changes.outputs.java     origin: job "changes"; JSON list of the Java apps to build, matrix of the job "java"
+#   needs.changes.outputs.images   origin: job "changes"; needs.changes.outputs.java plus "frontend", matrix of the
+#                                  job "docker"
 #   matrix.app                     origin: job matrix; app name = directory under apps/ and image name
-#   matrix.context                 origin: job matrix; Docker build context of the app
 #   steps.node.outputs.version     origin: apps/frontend/.nvmrc; Node version as build arg NODE_VERSION of the
 #                                  frontend image
 #   steps.meta.outputs.tags        origin: docker/metadata-action; image tags (latest, sha-<commit>, semver)
 #   steps.meta.outputs.labels      origin: docker/metadata-action; OCI labels of the image
-#   github.repository, github.actor, github.event_name, github.ref, github.event.pull_request.user.login
+#   github.repository, github.actor, github.event_name, github.ref, github.ref_type,
+#   github.event.pull_request.user.login
 #                                  origin: GitHub Actions context; image path, registry login, conditions
-#   GITHUB_OUTPUT                  origin: set by the runner; file for step outputs (Node version)
+#   GITHUB_OUTPUT                  origin: set by the runner; file for step outputs (apps to build, Node version)
 #   GITHUB_STEP_SUMMARY            origin: set by the runner; file whose Markdown content becomes the job summary,
-#                                  receives the result of the CVE scan
+#                                  receives the list of built apps and the result of the CVE scan
 #   secrets.GITHUB_TOKEN           origin: provided by GitHub Actions; login to ghcr.io (permission packages: write)
 #   secrets.SERVER_HOST            origin: repository secret; host name of the deploy server
 #   secrets.SERVER_SSH_KEY         origin: repository secret; private SSH key of the user "deploy" on the server
@@ -41,13 +58,71 @@ on:
   workflow_dispatch:
 
 jobs:
+  changes:
+    name: Detect changed apps
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # paths-filter reads the changed files of a pull request via the GitHub API
+      pull-requests: read
+    outputs:
+      java: ${{ steps.apps.outputs.java }}
+      images: ${{ steps.apps.outputs.images }}
+    steps:
+      - uses: actions/checkout@v7
+      # Tags and manual runs build everything, so the filter is skipped. Its log lists the changed files per app.
+      - id: filter
+        if: github.ref_type != 'tag' && github.event_name != 'workflow_dispatch'
+        uses: dorny/paths-filter@v4
+        with:
+          # One filter per Java app: its directory and the OpenAPI contract its tests check.
+          # A change to this workflow rebuilds all apps.
+          filters: |
+            backend:
+              - 'apps/backend/**'
+              - 'packages/shared-types/openapi/plans.json'
+              - '.github/workflows/ci.yml'
+            users:
+              - 'apps/users/**'
+              - 'packages/shared-types/openapi/users.json'
+              - '.github/workflows/ci.yml'
+      - id: apps
+        name: Zu bauende Apps festlegen
+        env:
+          CHANGED: ${{ steps.filter.outputs.changes || '["backend","users"]' }}
+          FILTERED: ${{ steps.filter.outcome == 'success' }}
+        run: |
+          echo "java=$CHANGED" >> "$GITHUB_OUTPUT"
+          echo "images=$(jq -c '. + ["frontend"]' <<< "$CHANGED")" >> "$GITHUB_OUTPUT"
+          {
+            echo '### Gebaute Apps'
+            if [ "$FILTERED" = true ]; then
+              echo 'Grundlage: geänderte Dateien gegenüber dem vorherigen Commit (Push) bzw. dem Ziel-Branch (Pull Request).'
+            else
+              echo 'Tag oder manueller Start: alle Apps werden gebaut.'
+            fi
+            echo
+            echo '| App | Build, Test & Image |'
+            echo '|-----|---------------------|'
+            for app in backend users; do
+              if jq -e --arg app "$app" 'any(. == $app)' <<< "$CHANGED" > /dev/null; then
+                echo "| $app | ✅ gebaut |"
+              else
+                echo "| $app | ⏭️ übersprungen (keine Änderung) |"
+              fi
+            done
+            echo '| frontend | ✅ gebaut (immer) |'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
   java:
     name: ${{ matrix.app }} (build & test)
+    needs: [changes]
+    if: needs.changes.outputs.java != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        app: [backend, users]
+        app: ${{ fromJSON(needs.changes.outputs.java) }}
     defaults:
       run:
         working-directory: apps/${{ matrix.app }}
@@ -117,19 +192,16 @@ jobs:
 
   docker:
     name: Build & push ${{ matrix.app }} image
-    needs: [java, frontend]
-    # Dependabot PRs only run the tests, no image build
-    if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
+    needs: [changes, java, frontend]
+    # !failure() && !cancelled(): runs although "java" was skipped (no Java app changed), but not after a failed test.
+    # Dependabot PRs only run the tests, no image build.
+    if: >-
+      !failure() && !cancelled() &&
+      (github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]')
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
-          - app: backend
-            context: apps/backend
-          - app: users
-            context: apps/users
-          - app: frontend
-            context: .
+        app: ${{ fromJSON(needs.changes.outputs.images) }}
     permissions:
       contents: read
       packages: write
@@ -155,7 +227,8 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
       - uses: docker/build-push-action@v7
         with:
-          context: ${{ matrix.context }}
+          # The frontend needs the npm workspace in the repository root, the Java apps use their own directory
+          context: ${{ matrix.app == 'frontend' && '.' || format('apps/{0}', matrix.app) }}
           file: apps/${{ matrix.app }}/Dockerfile
           platforms: linux/amd64
           build-args: NODE_VERSION=${{ steps.node.outputs.version }}
@@ -168,7 +241,9 @@ jobs:
   deploy:
     name: Deploy
     needs: [docker]
-    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    # !failure() && !cancelled(): runs although "java" was skipped (no Java app changed), but not after a failed job
+    if: >-
+      !failure() && !cancelled() && github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -190,6 +265,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: deploy
           key: ${{ secrets.SERVER_SSH_KEY }}
+          # Unchanged apps keep their "latest" image, pulling it is a no-op
           script: |
             set -e
             cd /opt/hbt
