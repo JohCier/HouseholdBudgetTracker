@@ -174,6 +174,12 @@ Die GitHub-Action `.github/workflows/ci.yml` baut und testet alle Apps und pusht
 | Git-Tag `v1.2.3` | `1.2.3`, `1.2`, `sha-<commit>`    |
 | Pull Request     | nur Build, kein Push              |
 
+Bei jedem Lauf prüft Trivy die Abhängigkeiten (`pom.xml`, `package-lock.json`) auf bekannte Sicherheitslücken
+(CVEs). Funde der Schwere CRITICAL oder HIGH, für die es bereits einen Fix gibt, lassen den Job `cve-scan` fehlschlagen;
+Build, Push und Deploy laufen trotzdem weiter. Die Funde stehen in der Zusammenfassung des Workflow-Laufs. Bewusst
+akzeptierte Funde kommen mit Begründung in eine `.trivyignore` im Repository-Root (eine CVE-ID pro Zeile). Die
+Trivy-Version (`version` in `ci.yml`) aktualisiert Dependabot nicht, sie ist von Hand nachzuziehen.
+
 Für das Deployment (`compose.prod.yaml`) braucht der Server in `/opt/hbt/.env` neben `DB_PASSWORD` auch ein
 `JWT_SECRET` (z. B. `openssl rand -base64 48`). Optional schaltet `SECURE_COOKIE=true` das `Secure`-Flag ein, sobald
 der Server per HTTPS erreichbar ist.
