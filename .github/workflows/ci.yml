@@ -1,3 +1,36 @@
+# CI/CD pipeline: tests all apps, scans the dependencies for CVEs, builds and pushes the Docker images, deploys to
+# the server.
+#
+# Triggers:
+#   push to master       tests, CVE scan, build & push of all apps, deploy
+#   push of a tag v*     tests, CVE scan, build & push of all apps (every image gets the semver tag)
+#   pull_request         tests, CVE scan, build without push; Dependabot PRs only run the tests and the CVE scan
+#   workflow_dispatch    like a push on the selected branch
+#
+# Jobs:
+#   java       Maven (./mvnw verify) for backend and users, incl. Testcontainers and the OpenAPI contract check
+#   frontend   npm: tests and Angular build of the frontend
+#   cve-scan   Trivy scans the dependencies (pom.xml, package-lock.json) for known vulnerabilities (CVEs). Fails on
+#              CRITICAL/HIGH findings that already have a fix, but does not block docker/deploy (informative only).
+#              Accepted findings go into .trivyignore in the repository root (one CVE ID per line, with a reason).
+#   docker     Docker Buildx builds one image per app and pushes it to ghcr.io (not for pull requests)
+#   deploy     copies compose.prod.yaml to the server via SCP and starts the new images via SSH (master only)
+#
+# Variables:
+#   matrix.app                     origin: job matrix; app name = directory under apps/ and image name
+#   matrix.context                 origin: job matrix; Docker build context of the app
+#   steps.node.outputs.version     origin: apps/frontend/.nvmrc; Node version as build arg NODE_VERSION of the
+#                                  frontend image
+#   steps.meta.outputs.tags        origin: docker/metadata-action; image tags (latest, sha-<commit>, semver)
+#   steps.meta.outputs.labels      origin: docker/metadata-action; OCI labels of the image
+#   github.repository, github.actor, github.event_name, github.ref, github.event.pull_request.user.login
+#                                  origin: GitHub Actions context; image path, registry login, conditions
+#   GITHUB_OUTPUT                  origin: set by the runner; file for step outputs (Node version)
+#   GITHUB_STEP_SUMMARY            origin: set by the runner; file whose Markdown content becomes the job summary,
+#                                  receives the result of the CVE scan
+#   secrets.GITHUB_TOKEN           origin: provided by GitHub Actions; login to ghcr.io (permission packages: write)
+#   secrets.SERVER_HOST            origin: repository secret; host name of the deploy server
+#   secrets.SERVER_SSH_KEY         origin: repository secret; private SSH key of the user "deploy" on the server
 name: CI
 
 on:
@@ -43,6 +76,44 @@ jobs:
       # pretest/prebuild generate the API types in packages/shared-types
       - run: npm test --workspace=frontend -- --watch=false
       - run: npm run build --workspace=frontend
+
+  cve-scan:
+    name: CVE scan (Trivy)
+    # Not listed in docker.needs: a finding turns this job red, but images are still built and deployed
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: apps/*/pom.xml
+      # Trivy reads the transitive Maven dependencies from ~/.m2. Without this step it downloads them itself and
+      # gets blocked by Maven Central (429 Too Many Requests).
+      - name: Maven-Abhängigkeiten auflösen
+        run: for app in backend users; do (cd "apps/$app" && ./mvnw -B -q dependency:resolve); done
+      # Pinned to a commit because the tags of trivy-action were compromised and re-pushed in March 2026
+      - name: Trivy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.75.0
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          # .cache holds the Trivy database of the action itself
+          skip-dirs: .cache
+          exit-code: '1'
+          output: trivy.txt
+      - name: Ergebnis in die Job-Zusammenfassung
+        if: always()
+        run: |
+          { echo '### Trivy: CVEs in den Abhängigkeiten'; echo '```'; cat trivy.txt || echo 'Kein Ergebnis'; echo '```'; } \
+            | tee -a "$GITHUB_STEP_SUMMARY"
 
   docker:
     name: Build & push ${{ matrix.app }} image
