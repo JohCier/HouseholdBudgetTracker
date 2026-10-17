@@ -157,21 +157,6 @@ Apps. Deployt wird nur, wenn mindestens ein Image gebaut wurde. Weil unveränder
 bekommen, eignet sich für `IMAGE_TAG` nur `latest` oder eine Release-Version. Schlägt ein Image-Build fehl, baut der
 nächste Push die App nicht automatisch nach – dafür die Action manuell starten.
 
-Bei jedem Lauf prüfen drei Sicherheitsscans den Stand, bevor ein Image gepusht wird:
-
-| Scan                  | Tool       | Prüft                                                             |
-|-----------------------|------------|-------------------------------------------------------------------|
-| Abhängigkeiten        | Trivy      | bekannte Sicherheitslücken in `pom.xml` und `package-lock.json`   |
-| Secrets               | Trivy      | versehentlich eingecheckte Schlüssel und Passwörter im Repository |
-| SAST                  | Semgrep CE | unsichere Muster im eigenen Java- und TypeScript-Code             |
-| Image (je App)        | Trivy      | Betriebssystempakete und Bibliotheken im fertigen Docker-Image    |
-
-Funde der Schwere CRITICAL oder HIGH, für die es bereits einen Fix gibt, lassen die Pipeline fehlschlagen; es wird
-dann weder gepusht noch deployt. Die Ergebnisse stehen in der Zusammenfassung des Workflow-Laufs. Bewusst akzeptierte
-Trivy-Funde kommen mit Begründung in eine `.trivyignore` im Repository-Root (eine CVE-ID pro Zeile). Die Versionen
-von Trivy (`version`) und Semgrep (Container-Image) in `ci.yml` aktualisiert Dependabot nicht, sie sind von Hand
-nachzuziehen.
-
 Für das Deployment (`compose.prod.yaml`) braucht der Server in `/opt/hbt/.env` neben `DB_PASSWORD` auch ein
 `JWT_SECRET` (z. B. `openssl rand -base64 48`). Optional schaltet `SECURE_COOKIE=true` das `Secure`-Flag ein, sobald
 der Server per HTTPS erreichbar ist.
