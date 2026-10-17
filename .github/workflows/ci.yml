@@ -10,30 +10,27 @@
 #                        which the next push would skip because the app counts as unchanged then)
 #
 # Changed apps: dorny/paths-filter compares the changed files with the filters in the job "changes"
-# (push: previous commit of the branch, pull_request: target branch of the PR). The frontend has no filter, it is
-# always built. The job summary of the run lists which app was built and which was skipped.
+# (push: previous commit of the branch, pull_request: target branch of the PR). The frontend filter matches every
+# file, so the frontend is built on every change. Which app was built is visible in the job graph of the run
+# (unchanged apps have no job), the log of the filter step lists the changed files per app.
 #
 # Jobs:
-#   changes    determines the Java apps to build (backend, users) and writes them into the job summary
+#   changes    determines the apps to build
 #   java       Maven (./mvnw verify) for the changed Java apps, incl. Testcontainers and the OpenAPI contract check;
 #              skipped if no Java app changed
 #   frontend   npm: tests and Angular build of the frontend
 #   cve-scan   Trivy scans the dependencies (pom.xml, package-lock.json) for known vulnerabilities (CVEs). Fails on
 #              CRITICAL/HIGH findings that already have a fix, but does not block docker/deploy (informative only).
 #              Accepted findings go into .trivyignore in the repository root (one CVE ID per line, with a reason).
-#   docker     Docker Buildx builds one image per changed app (frontend always) and pushes it to ghcr.io (not for
-#              pull requests). Unchanged apps keep their previous image and get no new sha-<commit> tag.
+#   docker     Docker Buildx builds one image per changed app and pushes it to ghcr.io (not for pull requests).
+#              Unchanged apps keep their previous image and get no new sha-<commit> tag.
 #   deploy     copies compose.prod.yaml to the server via SCP and starts the new images via SSH (master only)
 #
 # Variables:
 #   steps.filter.outputs.changes   origin: dorny/paths-filter; JSON list of the filters with changed files,
-#                                  e.g. ["backend"]
-#   CHANGED                        origin: steps.filter.outputs.changes, for tags and manual runs (filter skipped)
-#                                  all Java apps; JSON list of the Java apps to build
-#   FILTERED                       origin: steps.filter.outcome; 'true' if the filter ran, used for the job summary
-#   needs.changes.outputs.java     origin: job "changes"; JSON list of the Java apps to build, matrix of the job "java"
-#   needs.changes.outputs.images   origin: job "changes"; needs.changes.outputs.java plus "frontend", matrix of the
-#                                  job "docker"
+#                                  e.g. ["backend","frontend"]
+#   needs.changes.outputs.apps     origin: job "changes"; steps.filter.outputs.changes, for tags and manual runs
+#                                  (filter skipped) all apps; matrix of the jobs "java" (without frontend) and "docker"
 #   matrix.app                     origin: job matrix; app name = directory under apps/ and image name
 #   steps.node.outputs.version     origin: apps/frontend/.nvmrc; Node version as build arg NODE_VERSION of the
 #                                  frontend image
@@ -42,9 +39,9 @@
 #   github.repository, github.actor, github.event_name, github.ref, github.ref_type,
 #   github.event.pull_request.user.login
 #                                  origin: GitHub Actions context; image path, registry login, conditions
-#   GITHUB_OUTPUT                  origin: set by the runner; file for step outputs (apps to build, Node version)
+#   GITHUB_OUTPUT                  origin: set by the runner; file for step outputs (Node version)
 #   GITHUB_STEP_SUMMARY            origin: set by the runner; file whose Markdown content becomes the job summary,
-#                                  receives the list of built apps and the result of the CVE scan
+#                                  receives the result of the CVE scan
 #   secrets.GITHUB_TOKEN           origin: provided by GitHub Actions; login to ghcr.io (permission packages: write)
 #   secrets.SERVER_HOST            origin: repository secret; host name of the deploy server
 #   secrets.SERVER_SSH_KEY         origin: repository secret; private SSH key of the user "deploy" on the server
@@ -66,8 +63,8 @@ jobs:
       # paths-filter reads the changed files of a pull request via the GitHub API
       pull-requests: read
     outputs:
-      java: ${{ steps.apps.outputs.java }}
-      images: ${{ steps.apps.outputs.images }}
+      # Tags and manual runs skip the filter (empty output) and build all apps
+      apps: ${{ steps.filter.outputs.changes || '["backend","users","frontend"]' }}
     steps:
       - uses: actions/checkout@v7
       # Tags and manual runs build everything, so the filter is skipped. Its log lists the changed files per app.
@@ -75,8 +72,8 @@ jobs:
         if: github.ref_type != 'tag' && github.event_name != 'workflow_dispatch'
         uses: dorny/paths-filter@v4
         with:
-          # One filter per Java app: its directory and the OpenAPI contract its tests check.
-          # A change to this workflow rebuilds all apps.
+          # backend/users: their directory and the OpenAPI contract their tests check; a change to this workflow
+          # rebuilds them. frontend: '**' matches every file, so the frontend is built on every change.
           filters: |
             backend:
               - 'apps/backend/**'
@@ -86,43 +83,23 @@ jobs:
               - 'apps/users/**'
               - 'packages/shared-types/openapi/users.json'
               - '.github/workflows/ci.yml'
-      - id: apps
-        name: Zu bauende Apps festlegen
-        env:
-          CHANGED: ${{ steps.filter.outputs.changes || '["backend","users"]' }}
-          FILTERED: ${{ steps.filter.outcome == 'success' }}
-        run: |
-          echo "java=$CHANGED" >> "$GITHUB_OUTPUT"
-          echo "images=$(jq -c '. + ["frontend"]' <<< "$CHANGED")" >> "$GITHUB_OUTPUT"
-          {
-            echo '### Gebaute Apps'
-            if [ "$FILTERED" = true ]; then
-              echo 'Grundlage: geänderte Dateien gegenüber dem vorherigen Commit (Push) bzw. dem Ziel-Branch (Pull Request).'
-            else
-              echo 'Tag oder manueller Start: alle Apps werden gebaut.'
-            fi
-            echo
-            echo '| App | Build, Test & Image |'
-            echo '|-----|---------------------|'
-            for app in backend users; do
-              if jq -e --arg app "$app" 'any(. == $app)' <<< "$CHANGED" > /dev/null; then
-                echo "| $app | ✅ gebaut |"
-              else
-                echo "| $app | ⏭️ übersprungen (keine Änderung) |"
-              fi
-            done
-            echo '| frontend | ✅ gebaut (immer) |'
-          } | tee -a "$GITHUB_STEP_SUMMARY"
+            frontend:
+              - '**'
 
   java:
     name: ${{ matrix.app }} (build & test)
     needs: [changes]
-    if: needs.changes.outputs.java != '[]'
+    if: >-
+      contains(fromJSON(needs.changes.outputs.apps), 'backend') ||
+      contains(fromJSON(needs.changes.outputs.apps), 'users')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        app: ${{ fromJSON(needs.changes.outputs.java) }}
+        app: ${{ fromJSON(needs.changes.outputs.apps) }}
+        # The frontend is tested in its own job "frontend"
+        exclude:
+          - app: frontend
     defaults:
       run:
         working-directory: apps/${{ matrix.app }}
@@ -194,14 +171,14 @@ jobs:
     name: Build & push ${{ matrix.app }} image
     needs: [changes, java, frontend]
     # !failure() && !cancelled(): runs although "java" was skipped (no Java app changed), but not after a failed test.
-    # Dependabot PRs only run the tests, no image build.
+    # Dependabot PRs only run the tests, no image build. Without changed files (empty commit) there is nothing to build.
     if: >-
-      !failure() && !cancelled() &&
+      !failure() && !cancelled() && needs.changes.outputs.apps != '[]' &&
       (github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]')
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: ${{ fromJSON(needs.changes.outputs.images) }}
+        app: ${{ fromJSON(needs.changes.outputs.apps) }}
     permissions:
       contents: read
       packages: write

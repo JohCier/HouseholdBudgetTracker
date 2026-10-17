@@ -177,7 +177,8 @@ nach `ghcr.io/johcier/householdbudgettracker/{backend,users,frontend}`. Das Fron
 
 Welche Dateien zu Backend und Users gehören, legen die Pfadfilter im Job `changes` fest (`apps/<app>/**` und der
 jeweilige OpenAPI-Vertrag in `packages/shared-types/openapi/`); eine Änderung an `ci.yml` baut alle Apps. Welche App
-gebaut oder übersprungen wurde, steht in der Zusammenfassung des Workflow-Laufs. Unveränderte Apps bekommen kein neues
+gebaut wurde, zeigt der Job-Graph des Workflow-Laufs (für unveränderte Apps gibt es keinen Job), welche Dateien
+geändert wurden, das Log des Filter-Schritts im Job `changes`. Unveränderte Apps bekommen kein neues
 `sha-<commit>`-Tag, für `IMAGE_TAG` eignet sich daher nur `latest` oder eine Release-Version. Schlägt ein Build fehl,
 holt ihn der nächste Push nicht automatisch nach (die App gilt dann als unverändert); dafür die Action manuell starten.
 
