@@ -8,6 +8,8 @@
 
 - Nachvollziehbarkeit: Lege für jede verwendete Variable in der Pipeline einen Kommentar im Kopfbereich an, der die Herkunft und die Verwendung der Variable beschreibt
 
+- Wartbarkeit: Vermeide komplexe Strukturen und Skripte. Suche den einfachsten und wartungsärmsten Ansatz.
+
 ## Aggregates, Entities, Value Objects
 
 ### Regeln für Aggregates
