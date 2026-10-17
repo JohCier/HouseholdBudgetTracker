@@ -168,17 +168,11 @@ sein.
 Die GitHub-Action `.github/workflows/ci.yml` baut und testet alle Apps und pusht anschließend je ein Image nach
 `ghcr.io/johcier/householdbudgettracker/{backend,users,frontend}`:
 
-| Auslöser          | Gebaute Images       | Tags                           |
-|-------------------|----------------------|--------------------------------|
-| Push auf master   | nur geänderte Apps   | `latest`, `sha-<commit>`       |
-| Git-Tag `v1.2.3`  | alle                 | `1.2.3`, `1.2`, `sha-<commit>` |
-| Pull Request      | nur geänderte Apps   | nur Build, kein Push           |
-| Manueller Start   | alle                 | wie Push auf master            |
-
-Welche Dateien zu welcher App gehören, legen die Pfadfilter im Job `changes` fest; eine Änderung an `ci.yml` baut alle
-Apps. Deployt wird nur, wenn mindestens ein Image gebaut wurde. Weil unveränderte Apps kein neues `sha-<commit>`-Tag
-bekommen, eignet sich für `IMAGE_TAG` nur `latest` oder eine Release-Version. Schlägt ein Image-Build fehl, baut der
-nächste Push die App nicht automatisch nach – dafür die Action manuell starten.
+| Auslöser         | Tags                              |
+|------------------|-----------------------------------|
+| Push auf master  | `latest`, `sha-<commit>`          |
+| Git-Tag `v1.2.3` | `1.2.3`, `1.2`, `sha-<commit>`    |
+| Pull Request     | nur Build, kein Push              |
 
 Für das Deployment (`compose.prod.yaml`) braucht der Server in `/opt/hbt/.env` neben `DB_PASSWORD` auch ein
 `JWT_SECRET` (z. B. `openssl rand -base64 48`). Optional schaltet `SECURE_COOKIE=true` das `Secure`-Flag ein, sobald
