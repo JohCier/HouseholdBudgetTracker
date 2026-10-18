@@ -179,6 +179,45 @@
           "session" : [ ]
         } ],
         "tags" : [ "household-plans" ]
+      },
+      "put" : {
+        "operationId" : "changeItem",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "planId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "itemId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangeBudgetItemRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "household-plans" ]
       }
     }
   },
@@ -286,6 +325,25 @@
           }
         }
       },
+      "ChangeBudgetItemRequest" : {
+        "required" : [ "amount", "description" ],
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "900.0"
+          },
+          "category" : {
+            "$ref" : "#/components/schemas/ExpenseCategory"
+          },
+          "description" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        }
+      },
       "CreateHouseholdPlanRequest" : {
         "required" : [ "year" ],
         "type" : "object",
@@ -301,6 +359,7 @@
       },
       "ExpenseCategory" : {
         "type" : "string",
+        "description" : "Required for an expense, must be absent for an income",
         "enum" : [ "LEBENSUNTERHALT", "FREIZEIT_SPASS", "SPAREN_INVESTIEREN" ]
       },
       "HouseholdPlanIdResponse" : {

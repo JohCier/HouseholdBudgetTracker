@@ -60,7 +60,7 @@ lädt pro Command den `HouseholdPlan` über das Repository, lässt den Plan prü
 (`isOwnedBy`), ruft dessen Verhalten auf und speichert ihn. Neue Pläne kommen per `add` ins Repository, geänderte per
 `save`. Beim Laden sperrt das Repository den Plan bis zum Ende der Transaktion (`SELECT … FOR UPDATE`), sodass
 gleichzeitige Änderungen am selben Plan nacheinander statt gegeneinander laufen. Der Plan sammelt dabei Domain Events
-(`HouseholdPlanCreated`, `IncomeAdded`, `ExpenseAdded`, `BudgetItemRemoved`), die der Service nach dem Speichern über
+(`HouseholdPlanCreated`, `IncomeAdded`, `ExpenseAdded`, `BudgetItemChanged`, `BudgetItemRemoved`), die der Service nach dem Speichern über
 Springs `ApplicationEventPublisher` veröffentlicht. Listener wie `AuditLogListener` reagieren per
 `@TransactionalEventListener` erst nach dem Commit und in einer eigenen Transaktion.
 

@@ -52,6 +52,53 @@ describe('BudgetDashboard', () => {
     expect(store.restoreItem).toHaveBeenCalledWith('plan-2026', item);
   });
 
+  // PB-1, PB-8
+  it('edits an item in a dialog and confirms the change without offering to undo it', async () => {
+    const snackBar = { open: vi.fn() };
+    const store = {
+      year: signal(2026),
+      planId: signal('plan-2026'),
+      planMissing: signal(false),
+      items: signal([item]),
+      overview: signal(null),
+      loading: signal(false),
+      loadError: signal(null),
+      load: vi.fn(async () => undefined),
+      changeItem: vi.fn(async () => undefined),
+    };
+    TestBed.configureTestingModule({
+      providers: [{ provide: MatSnackBar, useValue: snackBar }],
+    });
+    // The dashboard provides a store of its own, replace that with the fake.
+    TestBed.overrideComponent(BudgetDashboard, {
+      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+    });
+    const fixture = TestBed.createComponent(BudgetDashboard);
+    await fixture.whenStable();
+
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('button[aria-label="Eintrag Kino bearbeiten"]')!
+      .click();
+    await fixture.whenStable();
+    const dialog = document.querySelector('app-edit-item-dialog')!;
+    const amount = dialog.querySelector<HTMLInputElement>('input[formcontrolname="amount"]')!;
+    expect(amount.value).toBe('12.5');
+    amount.value = '15';
+    amount.dispatchEvent(new Event('input'));
+    dialog.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await fixture.whenStable();
+
+    expect(store.changeItem).toHaveBeenCalledWith('1', {
+      description: 'Kino',
+      amount: '15',
+      category: 'FREIZEIT_SPASS',
+    });
+    // The dialog reports the saved change only once its closing animation has finished.
+    await vi.waitFor(() =>
+      expect(snackBar.open).toHaveBeenCalledWith('Eintrag geändert', undefined, { duration: 3000 }),
+    );
+  });
+
   it('offers to create the plan of a year without one', async () => {
     const store = {
       year: signal(2030),

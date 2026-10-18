@@ -95,17 +95,17 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
         } catch (DuplicateKeyException e) {
             throw new HouseholdPlanAlreadyExistsException(plan.year());
         }
-        plan.items().forEach(item -> insertItemIfNew(plan.id(), item));
+        plan.items().forEach(item -> upsertItem(plan.id(), item));
     }
 
     /**
-     * Items are immutable, so bringing them up to date only means deleting the removed
-     * ones and inserting the new ones.
+     * Deletes the removed items, inserts the new ones and updates the changed ones. The
+     * creation time of an existing item is kept, so a changed item keeps its position.
      */
     @Override
     public void save(HouseholdPlan plan) {
         deleteRemovedItems(plan);
-        plan.items().forEach(item -> insertItemIfNew(plan.id(), item));
+        plan.items().forEach(item -> upsertItem(plan.id(), item));
     }
 
     private void deleteRemovedItems(HouseholdPlan plan) {
@@ -122,11 +122,15 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                 .update();
     }
 
-    private void insertItemIfNew(HouseholdPlanId planId, BudgetItem item) {
+    /** Unchanged items are left alone, so only new and changed items are written. */
+    private void upsertItem(HouseholdPlanId planId, BudgetItem item) {
         jdbcClient.sql("""
                         INSERT INTO budget_item (id, household_plan_id, description, amount, type, category)
                         VALUES (:id, :planId, :description, :amount, :type, :category)
-                        ON CONFLICT (id) DO NOTHING
+                        ON CONFLICT (id) DO UPDATE
+                        SET description = EXCLUDED.description, amount = EXCLUDED.amount, category = EXCLUDED.category
+                        WHERE (budget_item.description, budget_item.amount, budget_item.category)
+                              IS DISTINCT FROM (EXCLUDED.description, EXCLUDED.amount, EXCLUDED.category)
                         """)
                 .param("id", item.id().value())
                 .param("planId", planId.value())

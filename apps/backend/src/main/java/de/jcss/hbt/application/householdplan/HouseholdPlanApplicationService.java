@@ -9,6 +9,7 @@ import de.jcss.hbt.domain.householdplan.HouseholdPlanRepository;
 import de.jcss.hbt.domain.householdplan.OwnerId;
 import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
 import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
+import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
@@ -81,6 +82,12 @@ public class HouseholdPlanApplicationService {
         BudgetItemId itemId = plan.addExpense(command.description(), command.amount(), command.category());
         saveAndPublishEvents(plan);
         return itemId;
+    }
+
+    public void changeItem(ChangeBudgetItemCommand command) {
+        HouseholdPlan plan = load(command.planId(), command.owner());
+        plan.changeItem(command.itemId(), command.description(), command.amount(), command.category());
+        saveAndPublishEvents(plan);
     }
 
     public void removeItem(RemoveBudgetItemCommand command) {

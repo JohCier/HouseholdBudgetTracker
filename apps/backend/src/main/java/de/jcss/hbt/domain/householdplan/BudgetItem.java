@@ -10,10 +10,10 @@ import java.util.Optional;
 /**
  * Entity representing a single income or expense position of a {@link HouseholdPlan}. It
  * has no date of its own: it belongs to the year of the plan it lives in. Items are
- * immutable and only added to or removed from a plan through the plan itself: new items
- * are created by the package-private {@link #income} / {@link #expense} factories, which
- * only the plan calls; stored items are rebuilt by repositories via {@link #reconstitute}.
- * All factories enforce the domain rules:
+ * immutable and only added to, changed in or removed from a plan through the plan itself:
+ * new items are created by the package-private {@link #income} / {@link #expense} factories,
+ * changed ones by {@link #changedTo}, which only the plan calls; stored items are rebuilt by
+ * repositories via {@link #reconstitute}. All of them enforce the domain rules:
  * <ul>
  *     <li>description is required (its own rules are enforced by {@link BudgetItemDescription})</li>
  *     <li>amount must be positive</li>
@@ -69,6 +69,22 @@ public final class BudgetItem {
             }
             case EXPENSE -> expense(id, description, amount, category);
         };
+    }
+
+    /**
+     * Returns a copy of this item with the same id and type but the given values. The type
+     * itself cannot be changed: an income must not get a category, an expense needs one.
+     *
+     * @param category the new category of an expense; {@code null} for an income
+     */
+    BudgetItem changedTo(BudgetItemDescription description, Money amount, ExpenseCategory category) {
+        return reconstitute(id, description, amount, type, category);
+    }
+
+    /** Whether the other item has the same description, amount, type and category as this one. */
+    boolean hasSameValuesAs(BudgetItem other) {
+        return description.equals(other.description) && amount.equals(other.amount) && type == other.type
+                && Objects.equals(category, other.category);
     }
 
     private static BudgetItemDescription requireDescription(BudgetItemDescription description) {

@@ -59,6 +59,15 @@ import { BudgetItem, categoryLabel } from '../budget.model';
                 <button
                   matIconButton
                   type="button"
+                  matTooltip="Bearbeiten"
+                  [attr.aria-label]="'Eintrag ' + item.description + ' bearbeiten'"
+                  (click)="edit.emit(item)"
+                >
+                  <mat-icon svgIcon="edit" />
+                </button>
+                <button
+                  matIconButton
+                  type="button"
                   matTooltip="Löschen"
                   [attr.aria-label]="'Eintrag ' + item.description + ' löschen'"
                   (click)="remove.emit(item)"
@@ -92,7 +101,8 @@ import { BudgetItem, categoryLabel } from '../budget.model';
       color: var(--mat-sys-error);
     }
     .actions {
-      width: 48px;
+      width: 96px;
+      white-space: nowrap;
     }
     .empty {
       color: var(--mat-sys-on-surface-variant);
@@ -102,6 +112,7 @@ import { BudgetItem, categoryLabel } from '../budget.model';
 })
 export class BudgetItemTable {
   readonly items = input.required<BudgetItem[]>();
+  readonly edit = output<BudgetItem>();
   readonly remove = output<BudgetItem>();
 
   protected readonly columns = ['type', 'description', 'category', 'amount', 'actions'];

@@ -8,13 +8,16 @@ import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
 import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
 import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
+import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.infrastructure.web.dto.AddExpenseRequest;
 import de.jcss.hbt.infrastructure.web.dto.AddIncomeRequest;
 import de.jcss.hbt.infrastructure.web.dto.BudgetItemIdResponse;
+import de.jcss.hbt.infrastructure.web.dto.ChangeBudgetItemRequest;
 import de.jcss.hbt.infrastructure.web.dto.CreateHouseholdPlanRequest;
 import de.jcss.hbt.infrastructure.web.dto.HouseholdPlanIdResponse;
+import de.jcss.hbt.infrastructure.web.dto.ExpenseCategoryDto;
 import de.jcss.hbt.infrastructure.web.dto.HouseholdPlanOverviewResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -88,6 +92,17 @@ public class HouseholdPlanController {
                 BudgetItemDescription.of(request.description()), Money.of(request.amount()),
                 request.category().toDomain()));
         return BudgetItemIdResponse.from(id);
+    }
+
+    /** Gives an item new values; an expense needs a category, an income must not have one. */
+    @PutMapping("/{planId}/items/{itemId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changeItem(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId, @PathVariable UUID itemId,
+                           @Valid @RequestBody ChangeBudgetItemRequest request) {
+        ExpenseCategoryDto category = request.category();
+        plans.changeItem(new ChangeBudgetItemCommand(owner(user), HouseholdPlanId.of(planId), BudgetItemId.of(itemId),
+                BudgetItemDescription.of(request.description()), Money.of(request.amount()),
+                category == null ? null : category.toDomain()));
     }
 
     @DeleteMapping("/{planId}/items/{itemId}")

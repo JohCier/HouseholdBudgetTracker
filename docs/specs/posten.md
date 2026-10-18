@@ -16,9 +16,9 @@ ihnen ergibt sich die Auswertung nach der 50/30/20-Regel.
   abgelehnt, nicht gerundet.
 - **PO-5**: Eine Ausgabe hat genau eine Kategorie (Lebensunterhalt, Freizeit & Spaß, Sparen & Investieren). Eine
   Einnahme hat nie eine Kategorie.
-- **PO-6**: Posten werden nur über ihren Plan hinzugefügt oder gelöscht und nur vom Besitzer des Plans
+- **PO-6**: Posten werden nur über ihren Plan hinzugefügt, geändert oder gelöscht und nur vom Besitzer des Plans
   (siehe [HP-4](haushaltsplan.md)).
-- **PO-7**: Ein Posten kann nicht bearbeitet werden. Er wird gelöscht und neu angelegt.
+- **PO-7**: Entfallen. Posten lassen sich bearbeiten, siehe [posten-bearbeiten.md](posten-bearbeiten.md).
 - **PO-8**: Das Löschen eines Postens, der nicht (mehr) zum Plan gehört, wird abgelehnt.
 - **PO-9**: Nach dem Löschen kann der Benutzer das Löschen kurz rückgängig machen. Der Posten wird dann mit gleicher
   Beschreibung, gleichem Betrag und gleicher Kategorie, aber neuer ID wieder angelegt, auch wenn inzwischen ein anderes
@@ -40,7 +40,7 @@ ihnen ergibt sich die Auswertung nach der 50/30/20-Regel.
 
 ## Nicht im Umfang
 
-- Posten bearbeiten
+- Posten bearbeiten (eigene Spec: [posten-bearbeiten.md](posten-bearbeiten.md))
 - Posten mit Datum, wiederkehrende Posten, Monatsbeträge
 - Eigene Kategorien oder Unterkategorien
 - Andere Währungen als Euro

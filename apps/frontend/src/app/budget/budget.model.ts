@@ -14,6 +14,7 @@ export type CategoryBreakdown = Schemas['CategoryBreakdownResponse'];
 export type HouseholdPlanOverview = Schemas['HouseholdPlanOverviewResponse'];
 export type AddIncomeRequest = Schemas['AddIncomeRequest'];
 export type AddExpenseRequest = Schemas['AddExpenseRequest'];
+export type ChangeBudgetItemRequest = Schemas['ChangeBudgetItemRequest'];
 export type BudgetItemIdResponse = Schemas['BudgetItemIdResponse'];
 export type CreateHouseholdPlanRequest = Schemas['CreateHouseholdPlanRequest'];
 export type HouseholdPlanIdResponse = Schemas['HouseholdPlanIdResponse'];
