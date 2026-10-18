@@ -9,7 +9,7 @@ import {
   HouseholdPlanOverview,
   Year,
 } from '../budget.model';
-import { currentYear } from '../year';
+import { FIRST_YEAR, LAST_YEAR, currentYear } from '../year';
 import { BudgetApi } from './budget-api';
 
 /**
@@ -35,6 +35,9 @@ export class BudgetStore {
   private latestLoad = 0;
 
   readonly year = this._year.asReadonly();
+  /** Whether there is a year before resp. after the selected one that can have a plan (HP-1). */
+  readonly hasPreviousYear = computed(() => this._year() > FIRST_YEAR);
+  readonly hasNextYear = computed(() => this._year() < LAST_YEAR);
   readonly overview = computed(() => this._overview() ?? null);
   readonly planId = computed(() => this._overview()?.id ?? null);
   /** True once it is known that the selected year has no plan yet. */
@@ -48,12 +51,18 @@ export class BudgetStore {
     return this.load();
   }
 
-  previousYear(): Promise<void> {
-    return this.selectYear(this._year() - 1);
+  /** Selects the previous year; does nothing at the first year a plan can exist for. */
+  async previousYear(): Promise<void> {
+    if (this.hasPreviousYear()) {
+      await this.selectYear(this._year() - 1);
+    }
   }
 
-  nextYear(): Promise<void> {
-    return this.selectYear(this._year() + 1);
+  /** Selects the next year; does nothing at the last year a plan can exist for. */
+  async nextYear(): Promise<void> {
+    if (this.hasNextYear()) {
+      await this.selectYear(this._year() + 1);
+    }
   }
 
   async load(): Promise<void> {

@@ -2,6 +2,7 @@ package de.jcss.hbt.domain.householdplan;
 
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
 import de.jcss.hbt.domain.exception.InvalidBudgetItemException;
+import de.jcss.hbt.domain.exception.InvalidPlanYearException;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemChanged;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
@@ -40,6 +41,31 @@ class HouseholdPlanTest {
         assertThat(plan.pullDomainEvents())
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
                 .containsExactly(new HouseholdPlanCreated(planId, OWNER, YEAR, Instant.now()));
+    }
+
+    /** HP-1 */
+    @Test
+    void createAcceptsTheYears1900To2200() {
+        assertThat(HouseholdPlan.create(planId, OWNER, Year.of(1900)).year()).isEqualTo(Year.of(1900));
+        assertThat(HouseholdPlan.create(planId, OWNER, Year.of(2200)).year()).isEqualTo(Year.of(2200));
+    }
+
+    /** HP-1 */
+    @Test
+    void createRejectsYearsBefore1900OrAfter2200() {
+        assertThatThrownBy(() -> HouseholdPlan.create(planId, OWNER, Year.of(1899)))
+                .isInstanceOf(InvalidPlanYearException.class)
+                .hasMessage("year must be between 1900 and 2200, but was 1899");
+        assertThatThrownBy(() -> HouseholdPlan.create(planId, OWNER, Year.of(2201)))
+                .isInstanceOf(InvalidPlanYearException.class);
+    }
+
+    /** HP-1: stored plans of other years stay readable */
+    @Test
+    void reconstituteAcceptsYearsOutsideTheRangeForNewPlans() {
+        HouseholdPlan plan = HouseholdPlan.reconstitute(planId, OWNER, Year.of(1850), List.of());
+
+        assertThat(plan.year()).isEqualTo(Year.of(1850));
     }
 
     @Test
