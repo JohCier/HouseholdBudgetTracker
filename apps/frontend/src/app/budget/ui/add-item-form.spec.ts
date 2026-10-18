@@ -26,7 +26,9 @@ describe('AddItemForm', () => {
   });
 
   function input(name: string): HTMLInputElement {
-    return element.querySelector<HTMLInputElement>(`input[formcontrolname="${name}"]`)!;
+    return element.querySelector<HTMLInputElement>(
+      `input[formcontrolname="${name}"], textarea[formcontrolname="${name}"]`,
+    )!;
   }
 
   async function type(name: string, value: string) {
@@ -85,6 +87,45 @@ describe('AddItemForm', () => {
       duration: 3000,
     });
     expect(element.querySelector('mat-select')).toBeNull();
+  });
+
+  it('adds an item with its note and clears it (PN-1, PN-3)', async () => {
+    await chooseType('Einnahme');
+    await type('description', 'Gehalt');
+    await type('amount', '3000');
+    await type('note', '  netto,\nnach Steuern  ');
+
+    await submit();
+
+    expect(store.addIncome).toHaveBeenCalledWith({
+      description: 'Gehalt',
+      amount: '3000',
+      note: 'netto,\nnach Steuern',
+    });
+    expect(input('note').value).toBe('');
+  });
+
+  it('sends no note for a blank one (PN-3)', async () => {
+    await chooseType('Einnahme');
+    await type('description', 'Gehalt');
+    await type('amount', '3000');
+    await type('note', '   ');
+
+    await submit();
+
+    expect(store.addIncome).toHaveBeenCalledWith({ description: 'Gehalt', amount: '3000' });
+  });
+
+  it('rejects a note longer than 1000 characters (PN-2)', async () => {
+    await chooseType('Einnahme');
+    await type('description', 'Gehalt');
+    await type('amount', '3000');
+    await type('note', 'x'.repeat(1001));
+
+    await submit();
+
+    expect(store.addIncome).not.toHaveBeenCalled();
+    expect(element.querySelector('mat-error')?.textContent).toContain('Höchstens 1000 Zeichen.');
   });
 
   it('does not send an incomplete expense', async () => {

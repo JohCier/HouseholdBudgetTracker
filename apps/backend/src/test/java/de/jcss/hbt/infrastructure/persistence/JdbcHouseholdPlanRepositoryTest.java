@@ -5,6 +5,7 @@ import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
 import de.jcss.hbt.domain.householdplan.BudgetItem;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.BudgetItemNote;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
@@ -20,6 +21,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.Year;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -54,8 +56,8 @@ class JdbcHouseholdPlanRepositoryTest {
     @Test
     void storesAndRestoresPlanWithAllItemAttributesInOrder() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
-        plan.addIncome(description("Gehalt"), money("2500.00"));
-        plan.addExpense(description("Miete"), money("850.50"), ExpenseCategory.LEBENSUNTERHALT);
+        plan.addIncome(description("Gehalt"), money("2500.00"), null);
+        plan.addExpense(description("Miete"), money("850.50"), ExpenseCategory.LEBENSUNTERHALT, null);
 
         repository.add(plan);
 
@@ -70,14 +72,14 @@ class JdbcHouseholdPlanRepositoryTest {
     @Test
     void savingAgainAddsNewAndDeletesRemovedItems() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
-        BudgetItemId kept = plan.addIncome(description("Gehalt"), money("100.00"));
-        BudgetItemId removed = plan.addIncome(description("Bonus"), money("50.00"));
+        BudgetItemId kept = plan.addIncome(description("Gehalt"), money("100.00"), null);
+        BudgetItemId removed = plan.addIncome(description("Bonus"), money("50.00"), null);
         repository.add(plan);
 
         HouseholdPlan loaded = repository.findById(plan.id()).orElseThrow();
         loaded.removeItem(removed);
         BudgetItemId added =
-                loaded.addExpense(description("ETF"), money("20.00"), ExpenseCategory.SPAREN_INVESTIEREN);
+                loaded.addExpense(description("ETF"), money("20.00"), ExpenseCategory.SPAREN_INVESTIEREN, null);
         repository.save(loaded);
 
         assertThat(repository.findById(plan.id()).orElseThrow().items())
@@ -89,13 +91,13 @@ class JdbcHouseholdPlanRepositoryTest {
     @Test
     void savingAChangedItemUpdatesItAndKeepsItsCreationTime() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
-        BudgetItemId changed = plan.addExpense(description("Miete"), money("850.00"), ExpenseCategory.LEBENSUNTERHALT);
-        BudgetItemId later = plan.addIncome(description("Gehalt"), money("2500.00"));
+        BudgetItemId changed = plan.addExpense(description("Miete"), money("850.00"), ExpenseCategory.LEBENSUNTERHALT, null);
+        BudgetItemId later = plan.addIncome(description("Gehalt"), money("2500.00"), null);
         repository.add(plan);
         Instant createdAt = createdAtOf(changed);
 
         HouseholdPlan loaded = repository.findById(plan.id()).orElseThrow();
-        loaded.changeItem(changed, description("Warmmiete"), money("900.00"), ExpenseCategory.FREIZEIT_SPASS);
+        loaded.changeItem(changed, description("Warmmiete"), money("900.00"), ExpenseCategory.FREIZEIT_SPASS, null);
         repository.save(loaded);
 
         HouseholdPlan restored = repository.findById(plan.id()).orElseThrow();
@@ -108,10 +110,31 @@ class JdbcHouseholdPlanRepositoryTest {
         assertThat(createdAtOf(changed)).isEqualTo(createdAt);
     }
 
+    /** PN-1, PN-4 */
+    @Test
+    void storesAddedChangedAndRemovedNotes() {
+        HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
+        BudgetItemId rent = plan.addExpense(description("Miete"), money("850.00"), ExpenseCategory.LEBENSUNTERHALT,
+                new BudgetItemNote("Warmmiete\ninkl. Nebenkosten"));
+        BudgetItemId salary = plan.addIncome(description("Gehalt"), money("2500.00"), null);
+        repository.add(plan);
+
+        HouseholdPlan loaded = repository.findById(plan.id()).orElseThrow();
+        assertThat(loaded.items()).extracting(BudgetItem::note)
+                .containsExactly(Optional.of(new BudgetItemNote("Warmmiete\ninkl. Nebenkosten")), Optional.empty());
+
+        loaded.changeItem(rent, description("Miete"), money("850.00"), ExpenseCategory.LEBENSUNTERHALT, null);
+        loaded.changeItem(salary, description("Gehalt"), money("2500.00"), null, new BudgetItemNote("netto"));
+        repository.save(loaded);
+
+        assertThat(repository.findById(plan.id()).orElseThrow().items()).extracting(BudgetItem::note)
+                .containsExactly(Optional.empty(), Optional.of(new BudgetItemNote("netto")));
+    }
+
     @Test
     void removingTheLastItemLeavesAnEmptyPlan() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
-        BudgetItemId itemId = plan.addIncome(description("Gehalt"), money("100.00"));
+        BudgetItemId itemId = plan.addIncome(description("Gehalt"), money("100.00"), null);
         repository.add(plan);
 
         plan.removeItem(itemId);
@@ -136,13 +159,13 @@ class JdbcHouseholdPlanRepositoryTest {
                 HouseholdPlan first = repository.findById(planId).orElseThrow();
                 second.set(executor.submit(() -> transaction.executeWithoutResult(otherStatus -> {
                     HouseholdPlan other = repository.findById(planId).orElseThrow();
-                    other.addIncome(description("Bonus"), money("50.00"));
+                    other.addIncome(description("Bonus"), money("50.00"), null);
                     repository.save(other);
                 })));
                 assertThatThrownBy(() -> second.get().get(500, TimeUnit.MILLISECONDS))
                         .as("second transaction waits for the first one")
                         .isInstanceOf(TimeoutException.class);
-                first.addIncome(description("Gehalt"), money("100.00"));
+                first.addIncome(description("Gehalt"), money("100.00"), null);
                 repository.save(first);
             });
             second.get().get(10, TimeUnit.SECONDS);

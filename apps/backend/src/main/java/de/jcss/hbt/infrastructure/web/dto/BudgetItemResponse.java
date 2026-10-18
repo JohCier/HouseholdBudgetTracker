@@ -14,7 +14,9 @@ public record BudgetItemResponse(
         @Schema(implementation = String.class, format = "decimal", example = "850.00") BigDecimal amount,
         ItemTypeDto type,
         @Schema(nullable = true, description = "Only set for expenses")
-        ExpenseCategoryDto category
+        ExpenseCategoryDto category,
+        @Schema(nullable = true, description = "Only set if the item has a note")
+        String note
 ) {
 
     public static BudgetItemResponse from(OverviewItem item) {
@@ -23,7 +25,8 @@ public record BudgetItemResponse(
                 item.description().value(),
                 item.amount().value(),
                 ItemTypeDto.from(item.type()),
-                item.category() == null ? null : ExpenseCategoryDto.from(item.category())
+                item.category() == null ? null : ExpenseCategoryDto.from(item.category()),
+                item.note() == null ? null : item.note().value()
         );
     }
 }

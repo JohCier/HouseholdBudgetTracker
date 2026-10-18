@@ -1,6 +1,7 @@
 package de.jcss.hbt.domain.householdplan.command;
 
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
+import de.jcss.hbt.domain.householdplan.BudgetItemNote;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.Money;
@@ -9,10 +10,14 @@ import org.jmolecules.architecture.cqrs.Command;
 
 import java.util.Objects;
 
-/** Plan an expense of the given amount in a category of a household plan of the given owner. */
+/**
+ * Plan an expense of the given amount in a category of a household plan of the given owner.
+ *
+ * @param note {@code null} if the expense has no note
+ */
 @Command
 public record AddExpenseCommand(OwnerId owner, HouseholdPlanId planId, BudgetItemDescription description,
-                                Money amount, ExpenseCategory category) {
+                                Money amount, ExpenseCategory category, BudgetItemNote note) {
 
     public AddExpenseCommand {
         Objects.requireNonNull(owner, "owner must not be null");

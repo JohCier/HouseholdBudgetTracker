@@ -3,6 +3,7 @@ package de.jcss.hbt.infrastructure.persistence;
 import de.jcss.hbt.IntegrationTest;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.BudgetItemNote;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
@@ -46,11 +47,12 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
     @Test
     void loadsThePlanOfTheYearWithItsItemsMostRecentlyAddedFirst() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2026));
-        BudgetItemId income = plan.addIncome(description("Gehalt"), money("2000.00"));
-        BudgetItemId expense = plan.addExpense(description("Miete"), money("850.50"), ExpenseCategory.LEBENSUNTERHALT);
+        BudgetItemId income = plan.addIncome(description("Gehalt"), money("2000.00"), null);
+        BudgetItemId expense = plan.addExpense(description("Miete"), money("850.50"), ExpenseCategory.LEBENSUNTERHALT,
+                new BudgetItemNote("Warmmiete"));
         repository.add(plan);
         HouseholdPlan otherPlan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2027));
-        otherPlan.addIncome(description("Anderes Jahr"), money("1.00"));
+        otherPlan.addIncome(description("Anderes Jahr"), money("1.00"), null);
         repository.add(otherPlan);
 
         HouseholdPlanOverview overview = queryHandler.findByOwnerAndYear(OWNER, Year.of(2026)).orElseThrow();
@@ -59,8 +61,8 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
         assertThat(overview.year()).isEqualTo(Year.of(2026));
         assertThat(overview.items()).containsExactly(
                 new OverviewItem(expense, description("Miete"), money("850.50"), ItemType.EXPENSE,
-                        ExpenseCategory.LEBENSUNTERHALT),
-                new OverviewItem(income, description("Gehalt"), money("2000.00"), ItemType.INCOME, null));
+                        ExpenseCategory.LEBENSUNTERHALT, new BudgetItemNote("Warmmiete")),
+                new OverviewItem(income, description("Gehalt"), money("2000.00"), ItemType.INCOME, null, null));
         assertThat(overview.totalIncome()).isEqualTo(money("2000.00"));
         assertThat(overview.totalExpense()).isEqualTo(money("850.50"));
     }

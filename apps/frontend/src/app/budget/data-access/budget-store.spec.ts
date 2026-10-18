@@ -12,6 +12,7 @@ const item: BudgetItem = {
   amount: '2000.00',
   type: 'INCOME',
   category: null,
+  note: null,
 };
 const overview = (year: number, items = [item]): HouseholdPlanOverview => ({
   id: `plan-${year}`,
@@ -166,6 +167,16 @@ describe('BudgetStore', () => {
       description: 'Kino',
       amount: '2000.00',
       category: 'FREIZEIT_SPASS',
+    });
+  });
+
+  it('restores a removed item with its note (PN-8)', async () => {
+    await store.restoreItem('plan-2026', { ...item, note: 'netto' });
+
+    expect(api.addIncome).toHaveBeenCalledWith('plan-2026', {
+      description: 'Gehalt',
+      amount: '2000.00',
+      note: 'netto',
     });
   });
 

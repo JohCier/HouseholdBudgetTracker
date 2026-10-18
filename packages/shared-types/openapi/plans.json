@@ -239,6 +239,13 @@
             "maxLength" : 255,
             "minLength" : 0,
             "type" : "string"
+          },
+          "note" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string",
+            "description" : "Optional; empty or blank means no note",
+            "nullable" : true
           }
         }
       },
@@ -255,6 +262,13 @@
             "maxLength" : 255,
             "minLength" : 0,
             "type" : "string"
+          },
+          "note" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string",
+            "description" : "Optional; empty or blank means no note",
+            "nullable" : true
           }
         }
       },
@@ -269,7 +283,7 @@
         }
       },
       "BudgetItemResponse" : {
-        "required" : [ "amount", "category", "description", "id", "type" ],
+        "required" : [ "amount", "category", "description", "id", "note", "type" ],
         "type" : "object",
         "properties" : {
           "amount" : {
@@ -290,6 +304,11 @@
           "id" : {
             "type" : "string",
             "format" : "uuid"
+          },
+          "note" : {
+            "type" : "string",
+            "description" : "Only set if the item has a note",
+            "nullable" : true
           },
           "type" : {
             "$ref" : "#/components/schemas/ItemType"
@@ -347,6 +366,13 @@
             "maxLength" : 255,
             "minLength" : 0,
             "type" : "string"
+          },
+          "note" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string",
+            "description" : "Optional; empty or blank means no note",
+            "nullable" : true
           }
         }
       },

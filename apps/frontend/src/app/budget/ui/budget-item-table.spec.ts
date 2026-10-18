@@ -8,6 +8,7 @@ const salary: BudgetItem = {
   amount: '3000.00',
   type: 'INCOME',
   category: null,
+  note: null,
 };
 const rent: BudgetItem = {
   id: '2',
@@ -15,6 +16,7 @@ const rent: BudgetItem = {
   amount: '850.00',
   type: 'EXPENSE',
   category: 'LEBENSUNTERHALT',
+  note: null,
 };
 
 describe('BudgetItemTable', () => {
@@ -36,6 +38,14 @@ describe('BudgetItemTable', () => {
     expect(cells(rows[1])).toEqual(['Ausgabe', 'Miete', 'Lebensunterhalt', '−€850.00', '']);
     expect(rows[0].querySelector('.amount')!.classList).toContain('income');
     expect(rows[1].querySelector('.amount')!.classList).toContain('expense');
+  });
+
+  it('shows the note below the description of items that have one (PN-7)', async () => {
+    const fixture = await render([salary, { ...rent, note: 'Warmmiete\ninkl. Nebenkosten' }]);
+
+    const rows = (fixture.nativeElement as HTMLElement).querySelectorAll('tr[mat-row]');
+    expect(rows[0].querySelector('.note')).toBeNull();
+    expect(rows[1].querySelector('.note')?.textContent).toBe('Warmmiete\ninkl. Nebenkosten');
   });
 
   it('asks to remove the item whose delete button was clicked', async () => {

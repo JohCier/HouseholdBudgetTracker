@@ -8,12 +8,14 @@ import de.jcss.hbt.domain.exception.InvalidBudgetItemException;
 import de.jcss.hbt.domain.exception.InvalidMoneyException;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.BudgetItemNote;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
 import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
+import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
 import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
@@ -181,7 +183,71 @@ class HouseholdPlanControllerTest {
                 .andExpect(status().isCreated());
 
         verify(plans).addExpense(new AddExpenseCommand(OWNER, PLAN_ID, BudgetItemDescription.of("Miete"),
-                Money.of(new BigDecimal("800")), ExpenseCategory.LEBENSUNTERHALT));
+                Money.of(new BigDecimal("800")), ExpenseCategory.LEBENSUNTERHALT, null));
+    }
+
+    /** PN-1, PN-3 */
+    @Test
+    void addItemPassesTheNoteAndTreatsABlankOneAsNone() throws Exception {
+        when(plans.addExpense(any())).thenReturn(BudgetItemId.generate());
+        when(plans.addIncome(any())).thenReturn(BudgetItemId.generate());
+
+        mockMvc.perform(post("/api/plans/{planId}/expenses", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":"Miete","amount":800,"category":"LEBENSUNTERHALT","note":"Warmmiete"}
+                                """))
+                .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/plans/{planId}/incomes", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":"Gehalt","amount":2000,"note":"  "}
+                                """))
+                .andExpect(status().isCreated());
+
+        verify(plans).addExpense(new AddExpenseCommand(OWNER, PLAN_ID, BudgetItemDescription.of("Miete"),
+                Money.of(new BigDecimal("800")), ExpenseCategory.LEBENSUNTERHALT, new BudgetItemNote("Warmmiete")));
+        verify(plans).addIncome(new AddIncomeCommand(OWNER, PLAN_ID, BudgetItemDescription.of("Gehalt"),
+                Money.of(new BigDecimal("2000")), null));
+    }
+
+    /** PN-2 */
+    @Test
+    void tooLongNoteReturns400() throws Exception {
+        String note = "x".repeat(BudgetItemNote.MAX_LENGTH + 1);
+
+        mockMvc.perform(post("/api/plans/{planId}/incomes", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":"Gehalt","amount":2000,"note":"%s"}
+                                """.formatted(note)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.note").exists());
+        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", PLAN, UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":"Gehalt","amount":2000,"note":"%s"}
+                                """.formatted(note)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.note").exists());
+
+        verifyNoInteractions(plans);
+    }
+
+    /** PN-4 */
+    @Test
+    void changeItemPassesTheNote() throws Exception {
+        UUID itemId = UUID.randomUUID();
+
+        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", PLAN, itemId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":"Gehalt","amount":"2100","note":"netto"}
+                                """))
+                .andExpect(status().isNoContent());
+
+        verify(plans).changeItem(new ChangeBudgetItemCommand(OWNER, PLAN_ID, BudgetItemId.of(itemId),
+                BudgetItemDescription.of("Gehalt"), Money.of(new BigDecimal("2100")), null, new BudgetItemNote("netto")));
     }
 
     @Test
@@ -276,7 +342,7 @@ class HouseholdPlanControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(plans).changeItem(new ChangeBudgetItemCommand(OWNER, PLAN_ID, BudgetItemId.of(itemId),
-                BudgetItemDescription.of("Miete"), Money.of(new BigDecimal("900.00")), ExpenseCategory.SPAREN_INVESTIEREN));
+                BudgetItemDescription.of("Miete"), Money.of(new BigDecimal("900.00")), ExpenseCategory.SPAREN_INVESTIEREN, null));
     }
 
     /** PB-1 */
@@ -292,7 +358,7 @@ class HouseholdPlanControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(plans).changeItem(new ChangeBudgetItemCommand(OWNER, PLAN_ID, BudgetItemId.of(itemId),
-                BudgetItemDescription.of("Gehalt"), Money.of(new BigDecimal("2100")), null));
+                BudgetItemDescription.of("Gehalt"), Money.of(new BigDecimal("2100")), null, null));
     }
 
     /** PB-3 */
@@ -343,9 +409,9 @@ class HouseholdPlanControllerTest {
         BudgetItemId itemId = BudgetItemId.generate();
         when(plans.getOverview(OWNER, Year.of(2026))).thenReturn(HouseholdPlanOverview.of(PLAN_ID, Year.of(2026), List.of(
                 new OverviewItem(itemId, BudgetItemDescription.of("ETF"), Money.of(new BigDecimal("500")),
-                        ItemType.EXPENSE, ExpenseCategory.SPAREN_INVESTIEREN),
+                        ItemType.EXPENSE, ExpenseCategory.SPAREN_INVESTIEREN, new BudgetItemNote("ETF-Sparplan")),
                 new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Gehalt"),
-                        Money.of(new BigDecimal("1000")), ItemType.INCOME, null))));
+                        Money.of(new BigDecimal("1000")), ItemType.INCOME, null, null))));
 
         mockMvc.perform(get("/api/plans").param("year", "2026"))
                 .andExpect(status().isOk())
@@ -361,6 +427,8 @@ class HouseholdPlanControllerTest {
                 .andExpect(jsonPath("$.items[0].id").value(itemId.value().toString()))
                 .andExpect(jsonPath("$.items[0].amount").value("500.00"))
                 .andExpect(jsonPath("$.items[0].category").value("SPAREN_INVESTIEREN"))
+                .andExpect(jsonPath("$.items[0].note").value("ETF-Sparplan"))
+                .andExpect(jsonPath("$.items[1].note").isEmpty())
                 .andExpect(jsonPath("$.items[1].type").value("INCOME"))
                 .andExpect(jsonPath("$.items[1].category").isEmpty());
     }

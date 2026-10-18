@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.time.Year;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,7 +71,7 @@ class HouseholdPlanTest {
 
     @Test
     void reconstituteRecordsNoEvents() {
-        BudgetItem item = BudgetItem.income(BudgetItemId.generate(), salary, amount);
+        BudgetItem item = BudgetItem.income(BudgetItemId.generate(), salary, amount, null);
 
         HouseholdPlan plan = HouseholdPlan.reconstitute(planId, OWNER, YEAR, List.of(item));
 
@@ -99,7 +100,7 @@ class HouseholdPlanTest {
 
     @Test
     void reconstituteRejectsTheSameItemTwice() {
-        BudgetItem item = BudgetItem.income(BudgetItemId.generate(), salary, amount);
+        BudgetItem item = BudgetItem.income(BudgetItemId.generate(), salary, amount, null);
 
         assertThatThrownBy(() -> HouseholdPlan.reconstitute(planId, OWNER, YEAR, List.of(item, item)))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -109,8 +110,8 @@ class HouseholdPlanTest {
     @Test
     void summarizesItsItems() {
         HouseholdPlan plan = emptyPlan();
-        plan.addIncome(salary, Money.of(new BigDecimal("1000.00")));
-        plan.addExpense(rent, Money.of(new BigDecimal("600.00")), ExpenseCategory.LEBENSUNTERHALT);
+        plan.addIncome(salary, Money.of(new BigDecimal("1000.00")), null);
+        plan.addExpense(rent, Money.of(new BigDecimal("600.00")), ExpenseCategory.LEBENSUNTERHALT, null);
 
         BudgetSummary summary = plan.summary();
 
@@ -128,8 +129,8 @@ class HouseholdPlanTest {
     void addsIncomeAndExpenseInOrderAndRecordsEachChange() {
         HouseholdPlan plan = emptyPlan();
 
-        BudgetItemId incomeId = plan.addIncome(salary, amount);
-        BudgetItemId expenseId = plan.addExpense(rent, amount, ExpenseCategory.LEBENSUNTERHALT);
+        BudgetItemId incomeId = plan.addIncome(salary, amount, null);
+        BudgetItemId expenseId = plan.addExpense(rent, amount, ExpenseCategory.LEBENSUNTERHALT, null);
 
         assertThat(plan.items()).extracting(BudgetItem::id).containsExactly(incomeId, expenseId);
         assertThat(plan.items().get(1).category()).contains(ExpenseCategory.LEBENSUNTERHALT);
@@ -144,7 +145,7 @@ class HouseholdPlanTest {
     void invalidItemIsNeitherAddedNorRecorded() {
         HouseholdPlan plan = emptyPlan();
 
-        assertThatThrownBy(() -> plan.addExpense(rent, amount, null))
+        assertThatThrownBy(() -> plan.addExpense(rent, amount, null, null))
                 .isInstanceOf(InvalidBudgetItemException.class);
 
         assertThat(plan.items()).isEmpty();
@@ -154,7 +155,7 @@ class HouseholdPlanTest {
     @Test
     void removesItemAndRecordsIt() {
         HouseholdPlan plan = emptyPlan();
-        BudgetItemId itemId = plan.addIncome(salary, amount);
+        BudgetItemId itemId = plan.addIncome(salary, amount, null);
         plan.pullDomainEvents();
 
         plan.removeItem(itemId);
@@ -178,13 +179,13 @@ class HouseholdPlanTest {
     @Test
     void changesItemInPlaceAndRecordsIt() {
         HouseholdPlan plan = emptyPlan();
-        BudgetItemId first = plan.addIncome(salary, amount);
-        BudgetItemId changedId = plan.addExpense(rent, Money.of(new BigDecimal("850.00")), ExpenseCategory.LEBENSUNTERHALT);
-        BudgetItemId last = plan.addIncome(salary, amount);
+        BudgetItemId first = plan.addIncome(salary, amount, null);
+        BudgetItemId changedId = plan.addExpense(rent, Money.of(new BigDecimal("850.00")), ExpenseCategory.LEBENSUNTERHALT, null);
+        BudgetItemId last = plan.addIncome(salary, amount, null);
         plan.pullDomainEvents();
 
         plan.changeItem(changedId, BudgetItemDescription.of("Warmmiete"), Money.of(new BigDecimal("900.00")),
-                ExpenseCategory.SPAREN_INVESTIEREN);
+                ExpenseCategory.SPAREN_INVESTIEREN, null);
 
         assertThat(plan.items()).extracting(BudgetItem::id).containsExactly(first, changedId, last);
         BudgetItem changed = plan.items().get(1);
@@ -204,28 +205,80 @@ class HouseholdPlanTest {
     @Test
     void changingAnItemToItsCurrentValuesRecordsNothing() {
         HouseholdPlan plan = emptyPlan();
-        BudgetItemId itemId = plan.addExpense(rent, amount, ExpenseCategory.LEBENSUNTERHALT);
+        BudgetItemId itemId = plan.addExpense(rent, amount, ExpenseCategory.LEBENSUNTERHALT, null);
         plan.pullDomainEvents();
 
-        plan.changeItem(itemId, rent, Money.of(new BigDecimal("100")), ExpenseCategory.LEBENSUNTERHALT);
+        plan.changeItem(itemId, rent, Money.of(new BigDecimal("100")), ExpenseCategory.LEBENSUNTERHALT, null);
 
         assertThat(plan.pullDomainEvents()).isEmpty();
+    }
+
+    /** PN-1, PN-4 */
+    @Test
+    void keepsTheNoteOfNewItems() {
+        HouseholdPlan plan = emptyPlan();
+        BudgetItemNote note = new BudgetItemNote("Warmmiete inkl. Nebenkosten");
+
+        plan.addExpense(rent, amount, ExpenseCategory.LEBENSUNTERHALT, note);
+        plan.addIncome(salary, amount, null);
+
+        assertThat(plan.items()).extracting(BudgetItem::note).containsExactly(Optional.of(note), Optional.empty());
+    }
+
+    /** PN-4, PN-5 */
+    @Test
+    void addingChangingOrRemovingTheNoteIsAChange() {
+        HouseholdPlan plan = emptyPlan();
+        BudgetItemId itemId = plan.addExpense(rent, amount, ExpenseCategory.LEBENSUNTERHALT, null);
+        plan.pullDomainEvents();
+
+        plan.changeItem(itemId, rent, amount, ExpenseCategory.LEBENSUNTERHALT, new BudgetItemNote("Warmmiete"));
+        assertThat(plan.items().getFirst().note()).contains(new BudgetItemNote("Warmmiete"));
+        plan.changeItem(itemId, rent, amount, ExpenseCategory.LEBENSUNTERHALT, new BudgetItemNote("Kaltmiete"));
+        assertThat(plan.items().getFirst().note()).contains(new BudgetItemNote("Kaltmiete"));
+        plan.changeItem(itemId, rent, amount, ExpenseCategory.LEBENSUNTERHALT, null);
+        assertThat(plan.items().getFirst().note()).isEmpty();
+
+        assertThat(plan.pullDomainEvents()).hasSize(3).allMatch(BudgetItemChanged.class::isInstance);
+    }
+
+    /** PN-5 */
+    @Test
+    void keepingTheSameNoteRecordsNothing() {
+        HouseholdPlan plan = emptyPlan();
+        BudgetItemId itemId = plan.addIncome(salary, amount, new BudgetItemNote("netto"));
+        plan.pullDomainEvents();
+
+        plan.changeItem(itemId, salary, amount, null, new BudgetItemNote(" netto "));
+
+        assertThat(plan.pullDomainEvents()).isEmpty();
+    }
+
+    /** PN-6 */
+    @Test
+    void theNoteDoesNotAffectTheSummary() {
+        HouseholdPlan withNote = emptyPlan();
+        withNote.addExpense(rent, amount, ExpenseCategory.LEBENSUNTERHALT, new BudgetItemNote("Warmmiete"));
+        HouseholdPlan withoutNote = emptyPlan();
+        withoutNote.addExpense(rent, amount, ExpenseCategory.LEBENSUNTERHALT, null);
+
+        assertThat(withNote.summary()).isEqualTo(withoutNote.summary());
     }
 
     /** PB-2, PB-3 */
     @Test
     void invalidChangeLeavesItemUnchangedAndRecordsNothing() {
         HouseholdPlan plan = emptyPlan();
-        BudgetItemId incomeId = plan.addIncome(salary, amount);
-        BudgetItemId expenseId = plan.addExpense(rent, amount, ExpenseCategory.LEBENSUNTERHALT);
+        BudgetItemId incomeId = plan.addIncome(salary, amount, null);
+        BudgetItemId expenseId = plan.addExpense(rent, amount, ExpenseCategory.LEBENSUNTERHALT, null);
         List<BudgetItem> before = List.copyOf(plan.items());
         plan.pullDomainEvents();
 
-        assertThatThrownBy(() -> plan.changeItem(incomeId, salary, amount, ExpenseCategory.LEBENSUNTERHALT))
+        assertThatThrownBy(() -> plan.changeItem(incomeId, salary, amount, ExpenseCategory.LEBENSUNTERHALT, null))
                 .isInstanceOf(InvalidBudgetItemException.class);
-        assertThatThrownBy(() -> plan.changeItem(expenseId, rent, amount, null))
+        assertThatThrownBy(() -> plan.changeItem(expenseId, rent, amount, null, null))
                 .isInstanceOf(InvalidBudgetItemException.class);
-        assertThatThrownBy(() -> plan.changeItem(expenseId, rent, Money.ZERO, ExpenseCategory.LEBENSUNTERHALT))
+        assertThatThrownBy(() -> plan.changeItem(expenseId, rent, Money.ZERO, ExpenseCategory.LEBENSUNTERHALT, null))
                 .isInstanceOf(InvalidBudgetItemException.class);
 
         assertThat(plan.items()).hasSize(2);
@@ -240,7 +293,7 @@ class HouseholdPlanTest {
     void changingAnItemOfAnotherPlanFails() {
         HouseholdPlan plan = emptyPlan();
 
-        assertThatThrownBy(() -> plan.changeItem(BudgetItemId.generate(), salary, amount, null))
+        assertThatThrownBy(() -> plan.changeItem(BudgetItemId.generate(), salary, amount, null, null))
                 .isInstanceOf(BudgetItemNotFoundException.class);
         assertThat(plan.pullDomainEvents()).isEmpty();
     }
@@ -265,7 +318,7 @@ class HouseholdPlanTest {
     void itemsCannotBeChangedFromOutside() {
         HouseholdPlan plan = emptyPlan();
 
-        assertThatThrownBy(() -> plan.items().add(BudgetItem.income(BudgetItemId.generate(), salary, amount)))
+        assertThatThrownBy(() -> plan.items().add(BudgetItem.income(BudgetItemId.generate(), salary, amount, null)))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 

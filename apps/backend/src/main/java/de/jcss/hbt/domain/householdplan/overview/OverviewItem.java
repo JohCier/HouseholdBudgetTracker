@@ -2,6 +2,7 @@ package de.jcss.hbt.domain.householdplan.overview;
 
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.BudgetItemNote;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
@@ -12,6 +13,7 @@ import org.jmolecules.architecture.cqrs.QueryModel;
  * shown in the item list.
  *
  * @param category only set for expenses, otherwise {@code null}
+ * @param note     {@code null} if the item has no note
  */
 @QueryModel
 public record OverviewItem(
@@ -19,6 +21,7 @@ public record OverviewItem(
         BudgetItemDescription description,
         Money amount,
         ItemType type,
-        ExpenseCategory category
+        ExpenseCategory category,
+        BudgetItemNote note
 ) {
 }

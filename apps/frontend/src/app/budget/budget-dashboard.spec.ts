@@ -12,6 +12,7 @@ const item: BudgetItem = {
   amount: '12.50',
   type: 'EXPENSE',
   category: 'FREIZEIT_SPASS',
+  note: null,
 };
 
 describe('BudgetDashboard', () => {
