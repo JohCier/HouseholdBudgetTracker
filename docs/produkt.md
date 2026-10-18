@@ -38,7 +38,9 @@ Alle Beträge sind in Euro. Die Oberfläche ist deutschsprachig.
 
 ## Roadmap
 
-Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant". Derzeit ist keine Änderung geplant.
+Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant".
+
+- Notiz zum Posten: optionaler Freitext je Posten, siehe [posten-notiz.md](specs/posten-notiz.md)
 
 ## Weiterführend
 

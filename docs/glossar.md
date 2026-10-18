@@ -16,6 +16,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Einnahme | `ItemType.INCOME` | Posten ohne Kategorie, erhöht das Einkommen |
 | Ausgabe | `ItemType.EXPENSE` | Posten mit genau einer Kategorie |
 | Beschreibung | `BudgetItemDescription` | Wofür der Posten steht, z. B. „Miete". 1 bis 255 Zeichen, nicht nur Leerzeichen |
+| Notiz | `BudgetItemNote` | Optionaler Freitext zum Posten, höchstens 1000 Zeichen; ohne Einfluss auf die Auswertung |
 | Betrag | `Money` | Geldbetrag in Euro mit höchstens zwei Nachkommastellen; im Posten immer positiv |
 | Kategorie | `ExpenseCategory` | Einer der drei Töpfe der 50/30/20-Regel |
 | Lebensunterhalt | `LEBENSUNTERHALT` | Miete, Lebensmittel, Versicherungen; Ziel: höchstens 50 % des Einkommens |
