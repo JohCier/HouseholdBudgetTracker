@@ -38,11 +38,7 @@ Alle Beträge sind in Euro. Die Oberfläche ist deutschsprachig.
 
 ## Roadmap
 
-Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant":
-
-| Änderung | Spec |
-|---|---|
-| Überschuss zählt zu Freizeit & Spaß (AW-10) | [auswertung-50-30-20.md](specs/auswertung-50-30-20.md) |
+Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant". Derzeit ist keine Änderung geplant.
 
 ## Weiterführend
 

@@ -23,7 +23,8 @@ mat-card-content {
   font-variant-numeric: tabular-nums;
 }
 
-.ratio {
+.ratio,
+.unplanned {
   font: var(--mat-sys-body-small);
   color: var(--mat-sys-on-surface-variant);
 }
