@@ -4,8 +4,6 @@ import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
@@ -25,8 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * application service and the aggregate, stored in PostgreSQL with a real BCrypt hash,
  * and the session cookie checked by the security configuration.
  */
-@SpringBootTest
-@Import(TestcontainersConfiguration.class)
+@IntegrationTest
 class UsersIntegrationTest {
 
     @Autowired

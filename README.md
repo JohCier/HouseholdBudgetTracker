@@ -113,8 +113,15 @@ npm ci && npm start --workspace=frontend
 Wer die Apps anders startet, z. B. aus der IDE, muss `JWT_SECRET` selbst setzen – in beiden Apps auf denselben Wert,
 mindestens 32 Bytes; ohne startet keine der beiden.
 
-Tests: `./mvnw verify` (in `apps/backend` bzw. `apps/users`, nutzt Testcontainers) bzw.
-`npm test --workspace=frontend`. API-Dokumentation des Backends: http://localhost:8080/api/docs
+Tests (in `apps/backend` bzw. `apps/users`):
+
+- `./mvnw test` – schnelle Tests ohne Docker (Domäne, Application Services, Controller per `@WebMvcTest`,
+  `ArchitectureTest`), dauert Sekunden
+- `./mvnw verify` – zusätzlich alle mit `@IntegrationTest` markierten Tests: Sie starten die ganze App gegen eine
+  PostgreSQL per Testcontainers und brauchen Docker; Maven führt sie nach den schnellen Tests über das
+  Failsafe-Plugin aus. Neue Tests mit Datenbank bekommen deshalb `@IntegrationTest` statt `@SpringBootTest`.
+
+Frontend: `npm test --workspace=frontend`. API-Dokumentation des Backends: http://localhost:8080/api/docs
 
 ## API-Verträge ändern
 
@@ -124,7 +131,7 @@ Das Frontend importiert seine API-Typen aus `@hbt/shared-types`. Das Paket gener
 erzeugte Spezifikation davon abweicht. Nach einer gewollten API-Änderung in der betroffenen App:
 
 ```bash
-./mvnw test -Dtest=OpenApiContractTest -Dopenapi.update=true
+./mvnw verify -Dit.test=OpenApiContractTest -Dopenapi.update=true
 ```
 
 ## Docker

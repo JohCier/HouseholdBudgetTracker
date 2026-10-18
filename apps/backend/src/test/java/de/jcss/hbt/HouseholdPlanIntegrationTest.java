@@ -6,8 +6,6 @@ import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -41,8 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Requests carry a session cookie like the one the users app sets at login, signed here
  * with the same secret.
  */
-@SpringBootTest
-@Import(TestcontainersConfiguration.class)
+@IntegrationTest
 class HouseholdPlanIntegrationTest {
 
     @Autowired

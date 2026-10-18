@@ -1,6 +1,6 @@
 package de.jcss.hbt.infrastructure.persistence;
 
-import de.jcss.hbt.TestcontainersConfiguration;
+import de.jcss.hbt.IntegrationTest;
 import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
 import de.jcss.hbt.domain.householdplan.BudgetItem;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
@@ -13,8 +13,6 @@ import de.jcss.hbt.domain.householdplan.OwnerId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -32,8 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SpringBootTest
-@Import(TestcontainersConfiguration.class)
+@IntegrationTest
 class JdbcHouseholdPlanRepositoryTest {
 
     private static final Year YEAR = Year.of(2026);
