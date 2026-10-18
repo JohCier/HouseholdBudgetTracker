@@ -136,7 +136,8 @@ cd e2e && npm ci && npx playwright install chromium
 npx playwright test                              # andere Adresse: E2E_BASE_URL=http://localhost:4200 npx playwright test
 ```
 
-In der CI laufen sie im Job „E2E tests“ bei jedem Push und PR; schlägt einer fehl, werden keine Images gebaut und
+In der CI laufen sie im Job „E2E tests“, wenn sich das Frontend (siehe Pfadfilter unten) oder die E2E-Tests selbst
+geändert haben; reine Backend-Änderungen laufen ohne E2E-Tests. Schlägt einer fehl, werden keine Images gebaut und
 nichts deployt. Der Playwright-Bericht mit Traces und Screenshots hängt dann als Artefakt `playwright-report` am Lauf.
 
 ## API-Verträge ändern
@@ -189,18 +190,22 @@ ihren Zustand über `/actuator/health/readiness` (Docker-`HEALTHCHECK`). Das Sit
 sein.
 
 Die GitHub-Action `.github/workflows/ci.yml` baut und testet die geänderten Apps und pusht anschließend je ein Image
-nach `ghcr.io/johcier/householdbudgettracker/{backend,users,frontend}`. Das Frontend wird immer gebaut:
+nach `ghcr.io/johcier/householdbudgettracker/{backend,users,frontend}`. Auch das Frontend wird nur gebaut, getestet
+und deployt, wenn es sich geändert hat:
 
 | Auslöser          | Gebaute Apps               | Tags                           |
 |-------------------|----------------------------|--------------------------------|
-| Push auf master   | geänderte Apps + Frontend  | `latest`, `sha-<commit>`       |
+| Push auf master   | geänderte Apps             | `latest`, `sha-<commit>`       |
 | Git-Tag `v1.2.3`  | alle                       | `1.2.3`, `1.2`, `sha-<commit>` |
-| Pull Request      | geänderte Apps + Frontend  | nur Build, kein Push           |
+| Pull Request      | geänderte Apps             | nur Build, kein Push           |
 | Manueller Start   | alle                       | wie Push auf master            |
 
-Welche Dateien zu Backend und Users gehören, legen die Pfadfilter im Job `changes` fest (`apps/<app>/**` und der
-jeweilige OpenAPI-Vertrag in `packages/shared-types/openapi/`); eine Änderung an `ci.yml` baut alle Apps. Welche App
-gebaut wurde, zeigt der Job-Graph des Workflow-Laufs (für unveränderte Apps gibt es keinen Job), welche Dateien
+Welche Dateien zu welcher App gehören, legen die Pfadfilter im Job `changes` fest: für Backend und Users
+`apps/<app>/**` und der jeweilige OpenAPI-Vertrag in `packages/shared-types/openapi/`, für das Frontend
+`apps/frontend/**`, `packages/shared-types/**`, `package.json`, `package-lock.json` und `.dockerignore`. Eine Änderung
+an `ci.yml` baut alle Apps. Übersprungene Jobs gelten als erfolgreich, Pflicht-Checks in den Branch-Regeln blockieren
+den Merge also nicht. Welche App gebaut wurde, zeigt der Job-Graph des Workflow-Laufs (unveränderte Apps haben keinen
+oder einen übersprungenen Job), welche Dateien
 geändert wurden, das Log des Filter-Schritts im Job `changes`. Unveränderte Apps bekommen kein neues
 `sha-<commit>`-Tag, für `IMAGE_TAG` eignet sich daher nur `latest` oder eine Release-Version. Schlägt ein Build fehl,
 holt ihn der nächste Push nicht automatisch nach (die App gilt dann als unverändert); dafür die Action manuell starten.

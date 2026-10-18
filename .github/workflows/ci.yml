@@ -1,5 +1,5 @@
 # CI/CD pipeline: tests the changed apps, scans the dependencies for CVEs, builds and pushes the Docker images of the
-# changed apps, deploys to the server. The frontend is always tested and built.
+# changed apps, deploys to the server. The frontend is only tested, built and E2E-tested if it changed.
 #
 # Triggers:
 #   push to master       tests, CVE scan, build & push of the changed apps, deploy
@@ -10,17 +10,18 @@
 #                        which the next push would skip because the app counts as unchanged then)
 #
 # Changed apps: dorny/paths-filter compares the changed files with the filters in the job "changes"
-# (push: previous commit of the branch, pull_request: target branch of the PR). The frontend filter matches every
-# file, so the frontend is built on every change. Which app was built is visible in the job graph of the run
-# (unchanged apps have no job), the log of the filter step lists the changed files per app.
+# (push: previous commit of the branch, pull_request: target branch of the PR). Which app was built is visible in the
+# job graph of the run (unchanged apps have no job or a skipped one), the log of the filter step lists the changed files
+# per app. Skipped jobs count as successful, so required status checks in the branch rules do not block the merge.
 #
 # Jobs:
 #   changes    determines the apps to build
 #   java       Maven (./mvnw verify) for the changed Java apps, incl. Testcontainers and the OpenAPI contract check;
 #              skipped if no Java app changed
-#   frontend   npm: tests and Angular build of the frontend
+#   frontend   npm: tests and Angular build of the frontend; skipped if the frontend did not change
 #   e2e        Playwright (e2e/) drives Chromium through the whole stack from compose.yaml (nginx with the Angular app,
-#              backend, users, PostgreSQL), built from the checked-out code. On failure the Playwright report (with
+#              backend, users, PostgreSQL), built from the checked-out code. Runs only if the frontend or the E2E tests
+#              changed (backend-only changes are not E2E-tested). On failure the Playwright report (with
 #              traces and screenshots) is uploaded as the artifact "playwright-report" and the container logs are printed.
 #   cve-scan   Trivy scans the dependencies (pom.xml, package-lock.json) for known vulnerabilities (CVEs). Fails on
 #              CRITICAL/HIGH findings that already have a fix, but does not block docker/deploy (informative only).
@@ -34,7 +35,11 @@
 #   steps.filter.outputs.changes   origin: dorny/paths-filter; JSON list of the filters with changed files,
 #                                  e.g. ["backend","frontend"]
 #   needs.changes.outputs.apps     origin: job "changes"; steps.filter.outputs.changes, for tags and manual runs
-#                                  (filter skipped) all apps; matrix of the jobs "java" (without frontend) and "docker"
+#                                  (filter skipped) all apps; matrix of the jobs "java" (without frontend) and "docker",
+#                                  condition of the jobs "frontend" and "e2e"
+#   steps.e2e-filter.outputs.e2e   origin: dorny/paths-filter; 'true' if files under e2e/ changed
+#   needs.changes.outputs.e2e      origin: job "changes"; steps.e2e-filter.outputs.e2e, for tags and manual runs
+#                                  (filter skipped) 'true'; condition of the job "e2e"
 #   matrix.app                     origin: job matrix; app name = directory under apps/ and image name
 #   CI                             origin: set by the runner; makes Playwright forbid test.only and write the HTML report
 #   steps.node.outputs.version     origin: apps/frontend/.nvmrc; Node version as build arg NODE_VERSION of the
@@ -70,6 +75,7 @@ jobs:
     outputs:
       # Tags and manual runs skip the filter (empty output) and build all apps
       apps: ${{ steps.filter.outputs.changes || '["backend","users","frontend"]' }}
+      e2e: ${{ steps.e2e-filter.outputs.e2e || 'true' }}
     steps:
       - uses: actions/checkout@v7
       # Tags and manual runs build everything, so the filter is skipped. Its log lists the changed files per app.
@@ -77,8 +83,9 @@ jobs:
         if: github.ref_type != 'tag' && github.event_name != 'workflow_dispatch'
         uses: dorny/paths-filter@v4
         with:
-          # backend/users: their directory and the OpenAPI contract their tests check; a change to this workflow
-          # rebuilds them. frontend: '**' matches every file, so the frontend is built on every change.
+          # backend/users: their directory and the OpenAPI contract their tests check. frontend: its directory, the
+          # npm workspace in the repository root and packages/shared-types (API types generated from the contracts),
+          # plus .dockerignore (build context of its image). A change to this workflow rebuilds all apps.
           filters: |
             backend:
               - 'apps/backend/**'
@@ -89,7 +96,21 @@ jobs:
               - 'packages/shared-types/openapi/users.json'
               - '.github/workflows/ci.yml'
             frontend:
-              - '**'
+              - 'apps/frontend/**'
+              - 'packages/shared-types/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.dockerignore'
+              - '.github/workflows/ci.yml'
+      # Separate filter, so that "e2e" does not end up in the app list (matrix of the job "docker"). Changed E2E tests
+      # run the E2E job without building an image.
+      - id: e2e-filter
+        if: github.ref_type != 'tag' && github.event_name != 'workflow_dispatch'
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            e2e:
+              - 'e2e/**'
 
   java:
     name: ${{ matrix.app }} (build & test)
@@ -121,6 +142,9 @@ jobs:
 
   frontend:
     name: Frontend (build & test)
+    needs: [changes]
+    # Job-level condition: a skipped job reports success, so a required check "Frontend (build & test)" does not hang
+    if: contains(fromJSON(needs.changes.outputs.apps), 'frontend')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -136,6 +160,10 @@ jobs:
 
   e2e:
     name: E2E tests (Playwright)
+    needs: [changes]
+    # Job-level condition: a skipped job reports success, so a required check "E2E tests (Playwright)" does not hang
+    if: >-
+      contains(fromJSON(needs.changes.outputs.apps), 'frontend') || needs.changes.outputs.e2e == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -206,7 +234,8 @@ jobs:
   docker:
     name: Build & push ${{ matrix.app }} image
     needs: [changes, java, frontend, e2e]
-    # !failure() && !cancelled(): runs although "java" was skipped (no Java app changed), but not after a failed test.
+    # !failure() && !cancelled(): runs although "java", "frontend" or "e2e" were skipped (app unchanged), but not after a
+    # failed test.
     # Dependabot PRs only run the tests, no image build. Without changed files (empty commit) there is nothing to build.
     if: >-
       !failure() && !cancelled() && needs.changes.outputs.apps != '[]' &&
@@ -254,7 +283,8 @@ jobs:
   deploy:
     name: Deploy
     needs: [docker]
-    # !failure() && !cancelled(): runs although "java" was skipped (no Java app changed), but not after a failed job
+    # !failure() && !cancelled(): runs although "docker" was skipped (no app changed, e.g. only compose.prod.yaml), but
+    # not after a failed job. Unchanged apps keep their image, so their containers are not restarted.
     if: >-
       !failure() && !cancelled() && github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
