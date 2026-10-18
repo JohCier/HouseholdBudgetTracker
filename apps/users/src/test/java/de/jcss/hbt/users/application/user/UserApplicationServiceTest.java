@@ -14,16 +14,18 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Verifies that {@link UserApplicationService} registers and authenticates users correctly,
- * using an in-memory fake repository and capturing the published events.
+ * using in-memory fakes and capturing the published events.
  */
 class UserApplicationServiceTest {
 
@@ -31,9 +33,10 @@ class UserApplicationServiceTest {
     private static final Password PASSWORD = Password.of("richtig-geheim");
 
     private final FakeRepository repository = new FakeRepository();
+    private final FakeLoginThrottle loginThrottle = new FakeLoginThrottle();
     private final List<Object> publishedEvents = new ArrayList<>();
     private final UserApplicationService service =
-            new UserApplicationService(repository, new FakePasswordHasher(), publishedEvents::add);
+            new UserApplicationService(repository, loginThrottle, new FakePasswordHasher(), publishedEvents::add);
 
     @Test
     void registerStoresTheUserAndPublishesIt() {
@@ -73,6 +76,66 @@ class UserApplicationServiceTest {
         assertThatThrownBy(() -> service.authenticate(EmailAddress.of("unknown@example.org"), PASSWORD))
                 .isInstanceOf(InvalidCredentialsException.class)
                 .hasMessage("E-mail address or password is wrong");
+    }
+
+    /** AN-10, AN-6 */
+    @Test
+    void failedSignInsAreReportedToTheThrottle() {
+        service.register(new RegisterUserCommand(EMAIL, PASSWORD));
+        EmailAddress unknown = EmailAddress.of("unknown@example.org");
+
+        assertThatThrownBy(() -> service.authenticate(EMAIL, Password.of("falsch-geheim")))
+                .isInstanceOf(InvalidCredentialsException.class);
+        assertThatThrownBy(() -> service.authenticate(unknown, PASSWORD))
+                .isInstanceOf(InvalidCredentialsException.class);
+
+        assertThat(loginThrottle.failures).containsExactly(EMAIL, unknown);
+    }
+
+    /** AN-10 */
+    @Test
+    void aLockedAddressCannotSignInEvenWithTheRightPassword() {
+        service.register(new RegisterUserCommand(EMAIL, PASSWORD));
+        loginThrottle.locked.add(EMAIL);
+
+        assertThatThrownBy(() -> service.authenticate(EMAIL, PASSWORD))
+                .isInstanceOf(LoginLockedException.class);
+        assertThat(loginThrottle.failures).isEmpty();
+    }
+
+    /** AN-10 */
+    @Test
+    void aSuccessfulSignInResetsTheThrottle() {
+        service.register(new RegisterUserCommand(EMAIL, PASSWORD));
+
+        service.authenticate(EMAIL, PASSWORD);
+
+        assertThat(loginThrottle.resets).containsExactly(EMAIL);
+        assertThat(loginThrottle.failures).isEmpty();
+    }
+
+    private static final class FakeLoginThrottle implements LoginThrottle {
+
+        private final Set<EmailAddress> locked = new HashSet<>();
+        private final List<EmailAddress> failures = new ArrayList<>();
+        private final List<EmailAddress> resets = new ArrayList<>();
+
+        @Override
+        public void ensureNotLocked(EmailAddress email) {
+            if (locked.contains(email)) {
+                throw new LoginLockedException();
+            }
+        }
+
+        @Override
+        public void recordFailure(EmailAddress email) {
+            failures.add(email);
+        }
+
+        @Override
+        public void reset(EmailAddress email) {
+            resets.add(email);
+        }
     }
 
     private static final class FakeRepository implements UserRepository {

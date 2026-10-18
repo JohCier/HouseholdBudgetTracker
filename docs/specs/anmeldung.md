@@ -1,8 +1,6 @@
 # Anmeldung
 
-Status: geplant
-
-AN-1 bis AN-9 sind umgesetzt; geplant ist AN-10 (Schutz gegen viele Anmeldeversuche).
+Status: umgesetzt
 
 ## Zweck
 
@@ -25,7 +23,7 @@ und meldet sich an. Die Sitzung gilt für beide Dienste (Users und Backend).
   Anmeldung weiter.
 - **AN-8**: Abmelden beendet die Sitzung im Browser. Sitzungen werden serverseitig nicht gespeichert.
 - **AN-9**: Angemeldete Benutzer sehen Anmeldung und Registrierung nicht, nicht angemeldete nur diese beiden Seiten.
-- **AN-10** (geplant): Nach 5 fehlgeschlagenen Anmeldungen für dieselbe E-Mail-Adresse innerhalb von 15 Minuten wird
+- **AN-10**: Nach 5 fehlgeschlagenen Anmeldungen für dieselbe E-Mail-Adresse innerhalb von 15 Minuten wird
   die Anmeldung für diese Adresse 15 Minuten lang abgelehnt, auch mit richtigem Passwort (Anmeldesperre). Das gilt
   genauso für nicht registrierte Adressen, damit die Sperre nicht verrät, welche Adressen es gibt (AN-6). Eine
   erfolgreiche Anmeldung setzt den Zähler zurück.
@@ -63,13 +61,18 @@ und meldet sich an. Die Sitzung gilt für beide Dienste (Users und Backend).
   `RegisterUserCommand`, Event `UserRegistered`
 - AN-3: `UserApplicationService.register` prüft vorab, die Unique-Constraint in `V1__app_user.sql` sichert gegen
   gleichzeitige Anfragen
+- AN-10: Port `LoginThrottle` im Application Layer, umgesetzt von `InMemoryLoginThrottle` (Infrastruktur, Zähler im
+  Speicher); `UserApplicationService.authenticate` meldet Fehlversuche und setzt den Zähler nach einer erfolgreichen
+  Anmeldung zurück; `LoginLockedException` wird zu 429 mit `urn:hbt:too-many-login-attempts` (siehe
+  [fehlermeldungen.md](fehlermeldungen.md)). Die Zähler gelten je Instanz des Users-Dienstes und gehen bei einem
+  Neustart verloren
 - Sitzung: `SessionCookies` (Users) stellt das Cookie `HBT_SESSION` mit JWT (HS256) aus; das Backend prüft es mit
   demselben `JWT_SECRET` (`CookieBearerTokenResolver`, `SecurityConfig`)
 - API: `POST /api/auth/register`, `/login`, `/logout`, `GET /api/auth/me`
 - Frontend: `auth/ui/login-page.ts`, `auth/ui/register-page.ts`, `auth/auth.guards.ts`,
   `auth/session-expired.interceptor.ts`, `auth/data-access/auth-store.ts`
-- Tests: `UserTest`, `EmailAddressTest`, `PasswordTest`, `UserApplicationServiceTest`, `AuthControllerTest`,
-  `UsersIntegrationTest`, die `*.spec.ts` unter `auth/`
+- Tests: `UserTest`, `EmailAddressTest`, `PasswordTest`, `LoginThrottleTest`, `UserApplicationServiceTest`,
+  `AuthControllerTest`, `UsersIntegrationTest`, die `*.spec.ts` unter `auth/` und `shared/http-error.spec.ts`
 - E2E: `e2e/tests/anmeldung.spec.ts`
 
 ## Offene Fragen
