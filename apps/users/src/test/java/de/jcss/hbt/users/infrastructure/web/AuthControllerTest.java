@@ -3,6 +3,7 @@ package de.jcss.hbt.users.infrastructure.web;
 import de.jcss.hbt.users.application.user.UserApplicationService;
 import de.jcss.hbt.users.domain.exception.EmailAddressAlreadyRegisteredException;
 import de.jcss.hbt.users.domain.exception.InvalidCredentialsException;
+import de.jcss.hbt.users.domain.exception.LoginLockedException;
 import de.jcss.hbt.users.domain.user.EmailAddress;
 import de.jcss.hbt.users.domain.user.Password;
 import de.jcss.hbt.users.domain.user.UserId;
@@ -126,6 +127,21 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(USER.value().toString()))
                 .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("HBT_SESSION=ey")));
+    }
+
+    /** AN-10 */
+    @Test
+    void lockedAddressReturns429WithoutSession() throws Exception {
+        when(users.authenticate(any(), any())).thenThrow(new LoginLockedException());
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"max@example.org","password":"richtig-geheim"}
+                                """))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().doesNotExist(HttpHeaders.SET_COOKIE))
+                .andExpect(jsonPath("$.type").value("urn:hbt:too-many-login-attempts"));
     }
 
     /** FM-2 */

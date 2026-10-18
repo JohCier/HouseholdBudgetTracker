@@ -40,6 +40,7 @@ class UsersIntegrationTest {
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
         jdbcClient.sql("DELETE FROM users.app_user").update();
+        jdbcClient.sql("DELETE FROM users.login_throttle").update();
     }
 
     @Test
@@ -71,6 +72,21 @@ class UsersIntegrationTest {
         credentials("register", "max@example.org", "richtig-geheim").andExpect(status().isCreated());
 
         credentials("register", "MAX@example.org", "anderes-geheim").andExpect(status().isConflict());
+    }
+
+    /** AN-10 */
+    @Test
+    void fiveFailedSignInsLockTheAddress() throws Exception {
+        credentials("register", "max@example.org", "richtig-geheim").andExpect(status().isCreated());
+
+        for (int i = 0; i < 5; i++) {
+            credentials("login", "max@example.org", "falsch-geheim").andExpect(status().isUnauthorized());
+        }
+
+        credentials("login", "max@example.org", "richtig-geheim")
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.type").value("urn:hbt:too-many-login-attempts"));
+        credentials("login", "moritz@example.org", "falsch-geheim").andExpect(status().isUnauthorized());
     }
 
     @Test

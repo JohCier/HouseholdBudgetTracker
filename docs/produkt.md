@@ -19,7 +19,7 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 
 | Bereich | Was der Benutzer tun kann | Spec |
 |---|---|---|
-| Anmeldung | Registrieren, anmelden, abmelden; Sitzung läuft nach 8 Stunden ab | [anmeldung.md](specs/anmeldung.md) |
+| Anmeldung | Registrieren, anmelden, abmelden; Sitzung läuft nach 8 Stunden ab; Sperre nach 5 Fehlversuchen | [anmeldung.md](specs/anmeldung.md) |
 | Haushaltsplan | Pro Jahr einen Plan anlegen, zwischen Jahren wechseln | [haushaltsplan.md](specs/haushaltsplan.md) |
 | Posten | Einnahmen und Ausgaben (mit Kategorie) erfassen, löschen, Löschen rückgängig machen | [posten.md](specs/posten.md) |
 | Posten bearbeiten | Beschreibung, Betrag und Kategorie eines Postens ändern | [posten-bearbeiten.md](specs/posten-bearbeiten.md) |
@@ -44,7 +44,6 @@ Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant":
 |---|---|
 | Überschuss zählt zu Freizeit & Spaß (AW-10) | [auswertung-50-30-20.md](specs/auswertung-50-30-20.md) |
 | Pläne nur für 1900 bis 2200 (HP-1) | [haushaltsplan.md](specs/haushaltsplan.md) |
-| Anmeldesperre nach 5 Fehlversuchen (AN-10) | [anmeldung.md](specs/anmeldung.md) |
 
 ## Weiterführend
 

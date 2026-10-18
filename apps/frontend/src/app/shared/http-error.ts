@@ -12,6 +12,8 @@ const MESSAGES: Readonly<Record<string, string>> = {
   'urn:hbt:plan-already-exists': 'Für dieses Jahr gibt es bereits einen Haushaltsplan.',
   'urn:hbt:email-already-registered': 'Für diese E-Mail-Adresse gibt es bereits ein Konto.',
   'urn:hbt:invalid-credentials': 'E-Mail-Adresse oder Passwort ist falsch.',
+  'urn:hbt:too-many-login-attempts':
+    'Zu viele Anmeldeversuche. Bitte versuche es in 15 Minuten erneut.',
 };
 
 /** A German, user-facing message for an error; a general one for unknown errors (FM-3). */

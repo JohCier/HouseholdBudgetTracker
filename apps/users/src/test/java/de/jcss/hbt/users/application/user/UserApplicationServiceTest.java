@@ -2,6 +2,9 @@ package de.jcss.hbt.users.application.user;
 
 import de.jcss.hbt.users.domain.exception.EmailAddressAlreadyRegisteredException;
 import de.jcss.hbt.users.domain.exception.InvalidCredentialsException;
+import de.jcss.hbt.users.domain.exception.LoginLockedException;
+import de.jcss.hbt.users.domain.login.LoginThrottle;
+import de.jcss.hbt.users.domain.login.LoginThrottleRepository;
 import de.jcss.hbt.users.domain.user.EmailAddress;
 import de.jcss.hbt.users.domain.user.FakePasswordHasher;
 import de.jcss.hbt.users.domain.user.Password;
@@ -12,6 +15,10 @@ import de.jcss.hbt.users.domain.user.command.RegisterUserCommand;
 import de.jcss.hbt.users.domain.user.event.UserRegistered;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,9 +38,27 @@ class UserApplicationServiceTest {
     private static final Password PASSWORD = Password.of("richtig-geheim");
 
     private final FakeRepository repository = new FakeRepository();
+    private final FakeThrottleRepository throttles = new FakeThrottleRepository();
     private final List<Object> publishedEvents = new ArrayList<>();
+    private Instant now = Instant.parse("2026-10-18T12:00:00Z");
+    private final Clock clock = new Clock() {
+        @Override
+        public Instant instant() {
+            return now;
+        }
+
+        @Override
+        public java.time.ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(java.time.ZoneId zone) {
+            return this;
+        }
+    };
     private final UserApplicationService service =
-            new UserApplicationService(repository, new FakePasswordHasher(), publishedEvents::add);
+            new UserApplicationService(repository, throttles, new FakePasswordHasher(), publishedEvents::add, clock);
 
     @Test
     void registerStoresTheUserAndPublishesIt() {
@@ -73,6 +98,70 @@ class UserApplicationServiceTest {
         assertThatThrownBy(() -> service.authenticate(EmailAddress.of("unknown@example.org"), PASSWORD))
                 .isInstanceOf(InvalidCredentialsException.class)
                 .hasMessage("E-mail address or password is wrong");
+    }
+
+    private void failToSignIn(EmailAddress email, int times) {
+        for (int i = 0; i < times; i++) {
+            assertThatThrownBy(() -> service.authenticate(email, Password.of("falsch-geheim")))
+                    .isInstanceOf(InvalidCredentialsException.class);
+        }
+    }
+
+    /** AN-10 */
+    @Test
+    void fiveFailedAttemptsLockTheAddressEvenForTheRightPassword() {
+        service.register(new RegisterUserCommand(EMAIL, PASSWORD));
+
+        failToSignIn(EMAIL, 5);
+
+        assertThatThrownBy(() -> service.authenticate(EMAIL, PASSWORD))
+                .isInstanceOf(LoginLockedException.class);
+        now = now.plus(Duration.ofMinutes(15));
+        assertThat(service.authenticate(EMAIL, PASSWORD)).isNotNull();
+    }
+
+    /** AN-10, AN-6 */
+    @Test
+    void unknownAddressesAreLockedAlike() {
+        EmailAddress unknown = EmailAddress.of("unknown@example.org");
+
+        failToSignIn(unknown, 5);
+
+        assertThatThrownBy(() -> service.authenticate(unknown, PASSWORD))
+                .isInstanceOf(LoginLockedException.class);
+    }
+
+    /** AN-10 */
+    @Test
+    void aSuccessfulSignInForgetsTheFailedAttempts() {
+        service.register(new RegisterUserCommand(EMAIL, PASSWORD));
+        failToSignIn(EMAIL, 4);
+
+        service.authenticate(EMAIL, PASSWORD);
+
+        assertThat(throttles.throttles).doesNotContainKey(EMAIL);
+        failToSignIn(EMAIL, 4);
+        assertThat(service.authenticate(EMAIL, PASSWORD)).isNotNull();
+    }
+
+    private static final class FakeThrottleRepository implements LoginThrottleRepository {
+
+        private final Map<EmailAddress, LoginThrottle> throttles = new HashMap<>();
+
+        @Override
+        public Optional<LoginThrottle> findByEmail(EmailAddress email) {
+            return Optional.ofNullable(throttles.get(email));
+        }
+
+        @Override
+        public void save(LoginThrottle throttle) {
+            throttles.put(throttle.email(), throttle);
+        }
+
+        @Override
+        public void remove(EmailAddress email) {
+            throttles.remove(email);
+        }
     }
 
     private static final class FakeRepository implements UserRepository {

@@ -3,6 +3,7 @@ package de.jcss.hbt.users.infrastructure.web;
 import de.jcss.hbt.users.domain.exception.DomainValidationException;
 import de.jcss.hbt.users.domain.exception.EmailAddressAlreadyRegisteredException;
 import de.jcss.hbt.users.domain.exception.InvalidCredentialsException;
+import de.jcss.hbt.users.domain.exception.LoginLockedException;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -35,6 +36,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     static final URI INVALID_INPUT = URI.create("urn:hbt:invalid-input");
     static final URI EMAIL_ALREADY_REGISTERED = URI.create("urn:hbt:email-already-registered");
     static final URI INVALID_CREDENTIALS = URI.create("urn:hbt:invalid-credentials");
+    static final URI TOO_MANY_LOGIN_ATTEMPTS = URI.create("urn:hbt:too-many-login-attempts");
 
     @ExceptionHandler(DomainValidationException.class)
     public ProblemDetail handleDomainValidation(DomainValidationException ex) {
@@ -49,6 +51,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(InvalidCredentialsException.class)
     public ProblemDetail handleInvalidCredentials(InvalidCredentialsException ex) {
         return problem(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS, ex);
+    }
+
+    @ExceptionHandler(LoginLockedException.class)
+    public ProblemDetail handleLoginLocked(LoginLockedException ex) {
+        return problem(HttpStatus.TOO_MANY_REQUESTS, TOO_MANY_LOGIN_ATTEMPTS, ex);
     }
 
     private static ProblemDetail problem(HttpStatus status, URI type, RuntimeException ex) {
