@@ -40,6 +40,8 @@ Alle Beträge sind in Euro. Die Oberfläche ist deutschsprachig.
 Noch offen. Hier sollen die nächsten geplanten Features stehen, idealerweise jeweils mit einem GitHub-Issue und einer
 Spec mit Status „geplant".
 
+- [Posten bearbeiten](specs/posten-bearbeiten.md) (geplant): ersetzt das Nicht-Ziel „Keine Bearbeitung eines Postens"
+
 ## Weiterführend
 
 - [Glossar](glossar.md): Fachbegriffe und ihre Namen im Code
