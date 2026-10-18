@@ -59,6 +59,7 @@ und meldet sich an. Die Sitzung gilt für beide Dienste (Users und Backend).
   `auth/session-expired.interceptor.ts`, `auth/data-access/auth-store.ts`
 - Tests: `UserTest`, `EmailAddressTest`, `PasswordTest`, `UserApplicationServiceTest`, `AuthControllerTest`,
   `UsersIntegrationTest`, die `*.spec.ts` unter `auth/`
+- E2E: `e2e/tests/anmeldung.spec.ts`
 
 ## Offene Fragen
 

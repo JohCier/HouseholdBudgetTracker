@@ -126,6 +126,19 @@ Tests (in `apps/backend` bzw. `apps/users`):
 
 Frontend: `npm test --workspace=frontend`. API-Dokumentation des Backends: http://localhost:8080/api/docs
 
+E2E-Tests (`e2e/`, Playwright): Sie bedienen die Oberfläche in Chromium gegen den kompletten Stack und decken die
+Kernabläufe der Specs ab (Registrierung und Anmeldung, Haushaltsplan, Posten, 50/30/20-Auswertung). Jeder Test
+registriert einen eigenen Benutzer, die Tests laufen deshalb parallel und auch gegen eine Datenbank mit Altdaten.
+
+```bash
+docker compose --profile app up --build --wait   # Stack auf http://localhost:8080
+cd e2e && npm ci && npx playwright install chromium
+npx playwright test                              # andere Adresse: E2E_BASE_URL=http://localhost:4200 npx playwright test
+```
+
+In der CI laufen sie im Job „E2E tests“ bei jedem Push und PR; schlägt einer fehl, werden keine Images gebaut und
+nichts deployt. Der Playwright-Bericht mit Traces und Screenshots hängt dann als Artefakt `playwright-report` am Lauf.
+
 ## API-Verträge ändern
 
 Die Java-Controller und ihre DTOs sind die einzige Quelle des Vertrags (Code-first). Alles Weitere wird daraus

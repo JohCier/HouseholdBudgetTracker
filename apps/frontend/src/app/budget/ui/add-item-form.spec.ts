@@ -102,6 +102,19 @@ describe('AddItemForm', () => {
     ]);
   });
 
+  it('asks for a positive amount when the amount is negative (PO-4)', async () => {
+    await chooseType('Einnahme');
+    await type('description', 'Zinsen');
+    await type('amount', '-5');
+
+    await submit();
+
+    expect(store.addIncome).not.toHaveBeenCalled();
+    expect(element.querySelector('mat-error')?.textContent).toContain(
+      'Bitte einen positiven Betrag angeben.',
+    );
+  });
+
   it('rejects amounts with more than two decimal places', async () => {
     await chooseType('Einnahme');
     await type('description', 'Zinsen');

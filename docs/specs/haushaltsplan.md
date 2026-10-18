@@ -50,6 +50,7 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
 - Tests: `HouseholdPlanTest`, `HouseholdPlanApplicationServiceTest`, `HouseholdPlanControllerTest`,
   `HouseholdPlanIntegrationTest`, `JdbcHouseholdPlanRepositoryTest`, `budget-dashboard.spec.ts`,
   `budget-store.spec.ts`
+- E2E: `e2e/tests/haushaltsplan.spec.ts`
 
 ## Offene Fragen
 

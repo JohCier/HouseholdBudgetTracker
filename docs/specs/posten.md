@@ -57,6 +57,7 @@ ihnen ergibt sich die Auswertung nach der 50/30/20-Regel.
   und `BudgetStore.restoreItem`
 - Tests: `BudgetItemTest`, `BudgetItemDescriptionTest`, `MoneyTest`, `HouseholdPlanTest`,
   `HouseholdPlanControllerTest`, `add-item-form.spec.ts`, `budget-item-table.spec.ts`, `budget-store.spec.ts`
+- E2E: `e2e/tests/posten.spec.ts`
 
 ## Offene Fragen
 

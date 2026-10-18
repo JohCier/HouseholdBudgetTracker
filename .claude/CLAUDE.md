@@ -30,6 +30,7 @@ Anteil am Einkommen einhalten. Jeder Benutzer sieht nur seine eigenen Pläne.
 | `apps/backend/` | Spring Boot, Haushaltspläne, `/api/plans`; Pakete `domain`, `application`, `infrastructure` unter `de.jcss.hbt` |
 | `apps/users/` | Spring Boot, Registrierung und Anmeldung, `/api/auth`; gleiche Schichten unter `de.jcss.hbt.users` |
 | `apps/frontend/` | Angular + Material; je Feature `data-access/` (API, Signal-Store) und `ui/` (Komponenten) |
+| `e2e/` | Playwright-Tests der Kernabläufe gegen den Compose-Stack; je Spec eine Datei unter `e2e/tests/` |
 | `packages/shared-types/` | OpenAPI-Verträge (`openapi/*.json`, generiert, nie von Hand ändern) und daraus erzeugte TypeScript-Typen |
 
 Architektur, Sitzungs-Cookie, Docker und CI beschreibt das `README.md` ausführlich.
@@ -39,6 +40,7 @@ Architektur, Sitzungs-Cookie, Docker und CI beschreibt das `README.md` ausführl
 - Schnelle Tests ohne Docker: `./mvnw test` in `apps/backend` bzw. `apps/users`
 - Alle Tests inkl. Testcontainers: `./mvnw verify` (braucht Docker); neue Tests mit Datenbank bekommen `@IntegrationTest`
 - Frontend: `npm test --workspace=frontend`, `npm run build --workspace=frontend` (erzeugen vorher die API-Typen)
+- E2E-Tests: Stack mit `docker compose --profile app up --build --wait` starten, dann `npx playwright test` in `e2e`
 - API-Vertrag nach Änderung an Controller oder DTO neu schreiben:
   `./mvnw verify -Dit.test=OpenApiContractTest -Dopenapi.update=true`; JSON, Java und Frontend gemeinsam committen
 

@@ -60,6 +60,7 @@ der Anwendung.
   Kategorie)
 - Tests: `BudgetSummaryTest`, `ExpenseCategoryTest`, `PercentageTest`, `HouseholdPlanOverviewTest`,
   `JdbcHouseholdPlanOverviewQueryHandlerTest`, `overview-summary.spec.ts`, `category-breakdown.spec.ts`
+- E2E: `e2e/tests/auswertung.spec.ts`
 
 ## Offene Fragen
 
