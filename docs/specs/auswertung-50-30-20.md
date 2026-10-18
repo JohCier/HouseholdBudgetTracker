@@ -1,6 +1,8 @@
 # Auswertung nach der 50/30/20-Regel
 
-Status: umgesetzt
+Status: geplant
+
+AW-1 bis AW-9 sind umgesetzt; geplant ist AW-10 (Überschuss zählt zu Freizeit & Spaß).
 
 ## Zweck
 
@@ -29,6 +31,12 @@ der Anwendung.
 - **AW-7**: Ohne Einkommen ist jeder Anteil 0 %. Dann gilt eine Obergrenze nur als eingehalten, wenn in der Kategorie
   nichts ausgegeben wird; eine Untergrenze gilt immer als erreicht.
 - **AW-8**: Die Auswertung enthält immer alle drei Kategorien, auch solche ohne Ausgaben (mit 0,00 €).
+- **AW-10** (geplant): Ein Überschuss (positiver Saldo, also Einkommen, das keiner Ausgabe zugeordnet ist) zählt in
+  der Auswertung zu Freizeit & Spaß: Anteil und Zielerreichung von Freizeit & Spaß werden aus den Ausgaben der
+  Kategorie plus dem Überschuss berechnet. Zu Sparen & Investieren zählt weiterhin nur, was ausdrücklich so erfasst
+  ist. Einkommen, Ausgaben und Saldo (AW-1, AW-2) ändern sich dadurch nicht. Bei einem Defizit gibt es keinen
+  Überschuss. Die Oberfläche weist den Überschuss in der Aufteilung von Freizeit & Spaß getrennt aus („davon nicht
+  verplant").
 - **AW-9**: Alle Zahlen der Auswertung rechnet die Domäne (`BudgetSummary`). Read Model und Oberfläche rechnen nichts
   selbst nach.
 
@@ -39,6 +47,12 @@ der Anwendung.
   Ziele als erreicht.
 - **Gegeben** Einnahmen von 2.000,00 € und Ausgaben Lebensunterhalt 1.200,00 €, **dann** ist das Ziel für
   Lebensunterhalt überschritten (60 % > 50 %), und das Ziel für Sparen & Investieren ist nicht erreicht (0 % < 20 %).
+  Geplant (AW-10): Die übrigen 800,00 € zählen zu Freizeit & Spaß, deren Ziel damit ebenfalls nicht erreicht ist
+  (40 % > 30 %).
+- **Gegeben** Einnahmen von 2.000,00 € und Ausgaben Lebensunterhalt 1.000,00 €, Freizeit & Spaß 200,00 €, Sparen &
+  Investieren 400,00 €, **dann** beträgt der Überschuss 400,00 €, Freizeit & Spaß zeigt 600,00 € bzw. 30 % und gilt als
+  erreicht, Sparen & Investieren bleibt bei 20 % (AW-10). Die Oberfläche zeigt bei Freizeit & Spaß „davon nicht
+  verplant: 400,00 €".
 - **Gegeben** Ausgaben von 100,00 € und keine Einnahmen, **dann** zeigt die Oberfläche die Warnung „Deine Ausgaben
   übersteigen deine Einnahmen.", und der Saldo ist −100,00 €.
 - **Gegeben** ein leerer Plan, **dann** sind alle Summen 0,00 €, alle Anteile 0 %, und alle Ziele gelten als erreicht.
@@ -64,5 +78,3 @@ der Anwendung.
 
 ## Offene Fragen
 
-- Soll ein Überschuss (Einkommen, das keiner Kategorie zugeordnet ist) als Sparen gewertet werden? Heute zählt nur, was
-  ausdrücklich als „Sparen & Investieren" erfasst ist.
