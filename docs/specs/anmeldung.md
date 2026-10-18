@@ -50,6 +50,7 @@ und meldet sich an. Die Sitzung gilt für beide Dienste (Users und Backend).
 
 ## Nicht im Umfang
 
+- Begrenzung der Anmeldeversuche je IP-Adresse; Sperre bei der Registrierung
 - Passwort zurücksetzen oder ändern
 - E-Mail-Adresse bestätigen
 - Benutzerkonto löschen
@@ -73,7 +74,3 @@ und meldet sich an. Die Sitzung gilt für beide Dienste (Users und Backend).
 
 ## Offene Fragen
 
-- AN-10: Sind 5 Versuche und 15 Minuten die richtigen Werte? Vorschlag: ja.
-- AN-10: Zusätzlich je IP-Adresse begrenzen (gegen das Durchprobieren vieler Adressen)? Vorschlag: nein, solange die
-  Anwendung nur einen Users-Dienst hat; die Sperre je Adresse genügt vorerst.
-- AN-10: Gilt die Sperre auch für die Registrierung? Vorschlag: nein.

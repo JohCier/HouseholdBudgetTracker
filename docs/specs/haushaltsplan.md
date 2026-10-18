@@ -12,7 +12,8 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
 ## Fachliche Regeln
 
 - **HP-1**: Ein Plan gilt für genau ein Kalenderjahr von 1900 bis einschließlich 2200 (geplant; heute 1 bis 9999).
-  Pläne für andere Jahre werden weder angelegt noch abgerufen.
+  Pläne für andere Jahre werden weder angelegt noch abgerufen. Bereits gespeicherte Pläne außerhalb dieser Jahre
+  bleiben in der Datenbank, sind aber nicht mehr erreichbar.
 - **HP-2**: Ein Benutzer hat höchstens einen Plan pro Jahr. Ein zweiter Plan für dasselbe Jahr wird abgelehnt.
 - **HP-3**: Ein Plan gehört dem Benutzer, der ihn angelegt hat (Besitzer). Der Besitzer ändert sich nie.
 - **HP-4**: Nur der Besitzer sieht und ändert seinen Plan. Pläne anderer Benutzer werden behandelt, als gäbe es sie
@@ -61,5 +62,3 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
 
 ## Offene Fragen
 
-- HP-1: Was passiert mit bereits gespeicherten Plänen außerhalb von 1900 bis 2200? Vorschlag: vor der Umsetzung in der
-  Datenbank prüfen; gibt es keine, genügt die neue Grenze, sonst entscheidest du über Löschen oder Behalten.

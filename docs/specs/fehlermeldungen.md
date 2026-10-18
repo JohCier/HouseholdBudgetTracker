@@ -12,7 +12,7 @@ Benutzer sollen jede Meldung auf Deutsch lesen.
 
 - **FM-1**: Jede Fehlermeldung, die die Oberfläche anzeigt, ist deutsch, auch wenn der Fehler von der API kommt.
 - **FM-2**: Die Übersetzung geschieht im Frontend. Die API bleibt sprachneutral und liefert zu jedem fachlichen Fehler
-  eine stabile Kennung, an der das Frontend die Meldung erkennt; der englische `detail`-Text bleibt für Logs und
+  eine stabile Kennung im Feld `type` der Problem Details (z. B. `urn:hbt:plan-already-exists`), an der das Frontend die Meldung erkennt; der englische `detail`-Text bleibt für Logs und
   API-Clients erhalten.
 - **FM-3**: Kennt das Frontend einen Fehler nicht, zeigt es eine allgemeine deutsche Meldung statt des englischen
   Textes, z. B. „Die Anfrage ist fehlgeschlagen (400)."
@@ -42,5 +42,3 @@ Details), `shared/http-error.ts` im Frontend, API-Vertrag in `packages/shared-ty
 
 ## Offene Fragen
 
-- FM-2: Soll die Kennung im Feld `type` der Problem Details stehen (z. B. `urn:hbt:plan-already-exists`) oder in einem
-  eigenen Feld `code`? Vorschlag: `type`, weil RFC 9457 es dafür vorsieht.

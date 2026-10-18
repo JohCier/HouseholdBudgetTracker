@@ -35,7 +35,8 @@ der Anwendung.
   der Auswertung zu Freizeit & Spaß: Anteil und Zielerreichung von Freizeit & Spaß werden aus den Ausgaben der
   Kategorie plus dem Überschuss berechnet. Zu Sparen & Investieren zählt weiterhin nur, was ausdrücklich so erfasst
   ist. Einkommen, Ausgaben und Saldo (AW-1, AW-2) ändern sich dadurch nicht. Bei einem Defizit gibt es keinen
-  Überschuss.
+  Überschuss. Die Oberfläche weist den Überschuss in der Aufteilung von Freizeit & Spaß getrennt aus („davon nicht
+  verplant").
 - **AW-9**: Alle Zahlen der Auswertung rechnet die Domäne (`BudgetSummary`). Read Model und Oberfläche rechnen nichts
   selbst nach.
 
@@ -50,7 +51,8 @@ der Anwendung.
   (40 % > 30 %).
 - **Gegeben** Einnahmen von 2.000,00 € und Ausgaben Lebensunterhalt 1.000,00 €, Freizeit & Spaß 200,00 €, Sparen &
   Investieren 400,00 €, **dann** beträgt der Überschuss 400,00 €, Freizeit & Spaß zeigt 600,00 € bzw. 30 % und gilt als
-  erreicht, Sparen & Investieren bleibt bei 20 % (AW-10).
+  erreicht, Sparen & Investieren bleibt bei 20 % (AW-10). Die Oberfläche zeigt bei Freizeit & Spaß „davon nicht
+  verplant: 400,00 €".
 - **Gegeben** Ausgaben von 100,00 € und keine Einnahmen, **dann** zeigt die Oberfläche die Warnung „Deine Ausgaben
   übersteigen deine Einnahmen.", und der Saldo ist −100,00 €.
 - **Gegeben** ein leerer Plan, **dann** sind alle Summen 0,00 €, alle Anteile 0 %, und alle Ziele gelten als erreicht.
@@ -76,7 +78,3 @@ der Anwendung.
 
 ## Offene Fragen
 
-- AW-10: Zählt der Überschuss auch für die Zielerreichung von Freizeit & Spaß, sodass nicht verplantes Geld das
-  30-%-Ziel reißen kann (wie im zweiten Akzeptanzkriterium)? Vorschlag: ja, so steht es oben.
-- AW-10: Soll die Oberfläche den Überschuss im Balken von Freizeit & Spaß getrennt kenntlich machen (z. B. heller
-  Abschnitt „davon nicht verplant: 400,00 €")? Vorschlag: ja.
