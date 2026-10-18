@@ -36,12 +36,19 @@ import { OverviewSummary } from './ui/overview-summary';
         matIconButton
         type="button"
         aria-label="Vorheriges Jahr"
+        [disabled]="!store.hasPreviousYear()"
         (click)="store.previousYear()"
       >
         <mat-icon svgIcon="chevron_left" />
       </button>
       <h1>{{ store.year() }}</h1>
-      <button matIconButton type="button" aria-label="Nächstes Jahr" (click)="store.nextYear()">
+      <button
+        matIconButton
+        type="button"
+        aria-label="Nächstes Jahr"
+        [disabled]="!store.hasNextYear()"
+        (click)="store.nextYear()"
+      >
         <mat-icon svgIcon="chevron_right" />
       </button>
     </nav>

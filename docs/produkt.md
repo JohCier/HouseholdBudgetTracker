@@ -41,7 +41,6 @@ Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant":
 
 | Änderung | Spec |
 |---|---|
-| Pläne nur für 1900 bis 2200 (HP-1) | [haushaltsplan.md](specs/haushaltsplan.md) |
 | Fehlermeldungen der API auf Deutsch (FM-1 bis FM-4) | [fehlermeldungen.md](specs/fehlermeldungen.md) |
 | Anmeldesperre nach 5 Fehlversuchen (AN-10) | [anmeldung.md](specs/anmeldung.md) |
 

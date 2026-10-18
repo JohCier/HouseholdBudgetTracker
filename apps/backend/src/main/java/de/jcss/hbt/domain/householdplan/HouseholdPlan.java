@@ -1,6 +1,7 @@
 package de.jcss.hbt.domain.householdplan;
 
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
+import de.jcss.hbt.domain.exception.InvalidPlanYearException;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemChanged;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
@@ -33,10 +34,18 @@ import java.util.Set;
  * That a user has at most one plan per year spans several aggregates and is therefore
  * ensured by the application layer, not by this class.
  * <p>
+ * New plans are only created for the years {@value #FIRST_YEAR} to {@value #LAST_YEAR}. Stored plans
+ * of other years are still reconstituted, so that existing data stays readable.
+ * <p>
  * Identity (equals/hashCode) is based solely on the plan id.
  */
 @AggregateRoot
 public final class HouseholdPlan {
+
+    /** The first year a new plan may be created for. */
+    public static final int FIRST_YEAR = 1900;
+    /** The last year a new plan may be created for. */
+    public static final int LAST_YEAR = 2200;
 
     @Identity
     private final HouseholdPlanId id;
@@ -64,8 +73,16 @@ public final class HouseholdPlan {
         return items;
     }
 
-    /** Starts a new, empty plan of the given owner for the given year. */
+    /**
+     * Starts a new, empty plan of the given owner for the given year.
+     *
+     * @throws InvalidPlanYearException if the year is before {@value #FIRST_YEAR} or after {@value #LAST_YEAR}
+     */
     public static HouseholdPlan create(HouseholdPlanId id, OwnerId owner, Year year) {
+        Objects.requireNonNull(year, "year must not be null");
+        if (year.getValue() < FIRST_YEAR || year.getValue() > LAST_YEAR) {
+            throw new InvalidPlanYearException(year, FIRST_YEAR, LAST_YEAR);
+        }
         HouseholdPlan plan = new HouseholdPlan(id, owner, year, List.of());
         plan.record(new HouseholdPlanCreated(id, owner, year, Instant.now()));
         return plan;

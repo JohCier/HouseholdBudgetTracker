@@ -9,4 +9,13 @@ describe('currentYear', () => {
 
     expect(currentYear()).toBe(2026);
   });
+
+  // HP-1
+  it('stays within the years a plan can exist for', () => {
+    vi.useFakeTimers({ now: new Date(2300, 0, 1) });
+    expect(currentYear()).toBe(2200);
+
+    vi.useFakeTimers({ now: new Date(1850, 0, 1) });
+    expect(currentYear()).toBe(1900);
+  });
 });
