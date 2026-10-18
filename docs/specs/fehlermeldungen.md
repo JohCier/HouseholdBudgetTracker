@@ -1,6 +1,6 @@
 # Fehlermeldungen
 
-Status: geplant
+Status: umgesetzt
 
 ## Zweck
 
@@ -15,16 +15,18 @@ Benutzer sollen jede Meldung auf Deutsch lesen.
   eine stabile Kennung im Feld `type` der Problem Details (z. B. `urn:hbt:plan-already-exists`), an der das Frontend die Meldung erkennt; der englische `detail`-Text bleibt für Logs und
   API-Clients erhalten.
 - **FM-3**: Kennt das Frontend einen Fehler nicht, zeigt es eine allgemeine deutsche Meldung statt des englischen
-  Textes, z. B. „Die Anfrage ist fehlgeschlagen (400)."
+  Textes: „Die Anfrage ist fehlgeschlagen (400)."
 - **FM-4**: Meldungen, die das Frontend schon heute selbst erzeugt (Formularprüfungen, „Server nicht erreichbar."),
   bleiben unverändert.
 
 ## Akzeptanzkriterien
 
-- **Gegeben** ein Benutzer mit Plan für 2026, **wenn** er erneut einen Plan für 2026 anlegt, **dann** zeigt die
-  Oberfläche eine deutsche Meldung, z. B. „Für 2026 gibt es bereits einen Haushaltsplan."
+- **Gegeben** ein Benutzer mit Plan für 2026, **wenn** er (z. B. in einem zweiten Tab) erneut einen Plan für 2026
+  anlegt, **dann** zeigt die Oberfläche „Für dieses Jahr gibt es bereits einen Haushaltsplan."
+- **Gegeben** ein Posten, der in einem anderen Tab schon gelöscht wurde, **wenn** er gelöscht werden soll, **dann** zeigt
+  die Oberfläche „Diesen Eintrag gibt es nicht (mehr)."
 - **Gegeben** eine registrierte Adresse, **wenn** sich jemand erneut mit ihr registriert, **dann** zeigt die Oberfläche
-  „Diese E-Mail-Adresse ist bereits registriert."
+  „Für diese E-Mail-Adresse gibt es bereits ein Konto."
 - **Gegeben** eine falsche E-Mail-Adresse oder ein falsches Passwort, **dann** zeigt die Oberfläche „E-Mail-Adresse oder
   Passwort ist falsch." (AN-6)
 - **Gegeben** ein Fehler mit unbekannter Kennung, **dann** zeigt die Oberfläche die allgemeine deutsche Meldung, nie den
@@ -37,8 +39,25 @@ Benutzer sollen jede Meldung auf Deutsch lesen.
 
 ## Umsetzung
 
-Noch nicht umgesetzt. Betroffen: `GlobalExceptionHandler` in beiden Java-Apps (Kennung, z. B. als `type` der Problem
-Details), `shared/http-error.ts` im Frontend, API-Vertrag in `packages/shared-types/openapi/`.
+- Kennungen (`type` der Problem Details), gesetzt von `GlobalExceptionHandler` in beiden Java-Apps:
+
+  | Kennung | Status | Meldung in der Oberfläche |
+  |---|---|---|
+  | `urn:hbt:invalid-input` | 400 | Die Eingabe ist ungültig. |
+  | `urn:hbt:plan-not-found` | 404 | Diesen Haushaltsplan gibt es nicht (mehr). |
+  | `urn:hbt:item-not-found` | 404 | Diesen Eintrag gibt es nicht (mehr). |
+  | `urn:hbt:plan-already-exists` | 409 | Für dieses Jahr gibt es bereits einen Haushaltsplan. |
+  | `urn:hbt:email-already-registered` | 409 | Für diese E-Mail-Adresse gibt es bereits ein Konto. |
+  | `urn:hbt:invalid-credentials` | 401 | E-Mail-Adresse oder Passwort ist falsch. |
+
+  Fehler des Frameworks (z. B. ein Jahr, das keine Zahl ist) behalten `about:blank` und bekommen die allgemeine Meldung
+  (FM-3). Die Kennungen stehen nicht im API-Vertrag, weil Springdoc die Fehlerantworten nicht beschreibt; eine neue
+  Kennung braucht deshalb einen Eintrag in dieser Tabelle und in `shared/http-error.ts`.
+- Frontend: `shared/http-error.ts` (`toMessage`) übersetzt für alle Stores; `AuthStore` hat keine eigenen Meldungen mehr
+- Tests: `HouseholdPlanControllerTest`, `AuthControllerTest`, `http-error.spec.ts`, `auth-store.spec.ts`,
+  `budget-store.spec.ts`
+- E2E: `e2e/tests/fehlermeldungen.spec.ts` (FM-1, FM-2); `anmeldung.spec.ts` deckt die Meldungen bei Registrierung und
+  Anmeldung ab, FM-3 decken die Unit-Tests ab
 
 ## Offene Fragen
 

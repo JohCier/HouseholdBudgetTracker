@@ -1,4 +1,3 @@
-import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, firstValueFrom } from 'rxjs';
 import { toMessage } from '../../shared/http-error';
@@ -31,15 +30,11 @@ export class AuthStore {
   }
 
   login(request: LoginRequest): Promise<void> {
-    return this.startSession(this.api.login(request), {
-      [HttpStatusCode.Unauthorized]: 'E-Mail-Adresse oder Passwort ist falsch.',
-    });
+    return this.startSession(this.api.login(request));
   }
 
   register(request: RegisterUserRequest): Promise<void> {
-    return this.startSession(this.api.register(request), {
-      [HttpStatusCode.Conflict]: 'Für diese E-Mail-Adresse gibt es bereits ein Konto.',
-    });
+    return this.startSession(this.api.register(request));
   }
 
   async logout(): Promise<void> {
@@ -56,16 +51,12 @@ export class AuthStore {
     this.loaded = Promise.resolve();
   }
 
-  private async startSession(
-    request: Observable<User>,
-    messages: Partial<Record<number, string>>,
-  ): Promise<void> {
+  private async startSession(request: Observable<User>): Promise<void> {
     try {
       this._user.set(await firstValueFrom(request));
       this.loaded = Promise.resolve();
     } catch (error) {
-      const message = error instanceof HttpErrorResponse ? messages[error.status] : undefined;
-      throw new Error(message ?? toMessage(error));
+      throw new Error(toMessage(error));
     }
   }
 }

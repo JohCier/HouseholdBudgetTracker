@@ -169,7 +169,7 @@ describe('BudgetStore', () => {
     });
   });
 
-  it('surfaces the problem detail on a failed mutation', async () => {
+  it('explains a failed mutation in German', async () => {
     await store.selectYear(2026);
     api.getOverview.mockClear();
     api.addExpense.mockReturnValue(
@@ -177,14 +177,18 @@ describe('BudgetStore', () => {
         () =>
           new HttpErrorResponse({
             status: 400,
-            error: { title: 'Bad Request', detail: 'amount must be positive' },
+            error: {
+              type: 'urn:hbt:invalid-input',
+              title: 'Bad Request',
+              detail: 'amount must be positive',
+            },
           }),
       ),
     );
 
     await expect(
       store.addExpense({ description: 'Miete', amount: '-1', category: 'LEBENSUNTERHALT' }),
-    ).rejects.toThrow('amount must be positive');
+    ).rejects.toThrow('Die Eingabe ist ungültig.');
     expect(api.getOverview).not.toHaveBeenCalled();
   });
 
