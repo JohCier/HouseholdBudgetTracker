@@ -1,6 +1,6 @@
 # Posten bearbeiten
 
-Status: geplant
+Status: umgesetzt
 
 ## Zweck
 
@@ -8,8 +8,8 @@ Heute lässt sich ein Posten nur löschen und neu anlegen (PO-7). Wer sich bei B
 vertippt hat oder einen Betrag anpassen will, muss den Posten erneut vollständig erfassen, und der Posten rutscht in der
 Liste nach oben. Mit dieser Spec kann der Besitzer eines Plans einen bestehenden Posten direkt ändern.
 
-Mit der Umsetzung entfallen PO-7, „Posten bearbeiten" unter „Nicht im Umfang" in [posten.md](posten.md) und das
-Nicht-Ziel „Keine Bearbeitung eines Postens" in [produkt.md](../produkt.md).
+Diese Spec ersetzt die frühere Regel PO-7 („Ein Posten kann nicht bearbeitet werden") in [posten.md](posten.md) und
+das frühere Nicht-Ziel „Keine Bearbeitung eines Postens" in [produkt.md](../produkt.md).
 
 ## Fachliche Regeln
 
@@ -58,25 +58,18 @@ Nicht-Ziel „Keine Bearbeitung eines Postens" in [produkt.md](../produkt.md).
 
 ## Umsetzung
 
-Noch nicht umgesetzt. Vorgesehen:
-
-- Domäne: `HouseholdPlan.changeItem`, `BudgetItem` erhält eine Methode, die eine geänderte Kopie mit gleicher ID
-  liefert; Command `ChangeBudgetItemCommand`; Event `BudgetItemChanged`
-- API: `PUT /api/plans/{planId}/items/{itemId}` mit Beschreibung, Betrag und Kategorie, Antwort 204; Fehler als
-  RFC 9457 Problem Details; OpenAPI-Vertrag und TypeScript-Typen neu erzeugt
-- Persistenz: `UPDATE` der Zeile, `created_at` bleibt unverändert
-- Frontend: Schaltfläche „Bearbeiten" in `budget-item-table.ts`, Dialog mit den Feldern und Prüfungen aus
-  `add-item-form.ts`, `BudgetStore.changeItem`
+- Domäne: `HouseholdPlan.changeItem` (PB-1, PB-4 bis PB-6), `BudgetItem.changedTo` behält ID und Art und prüft die
+  Regeln wie beim Erfassen (PB-2, PB-3), `BudgetItem.hasSameValuesAs` (PB-5)
+- Command `ChangeBudgetItemCommand`, Event `BudgetItemChanged`, `HouseholdPlanApplicationService.changeItem`
+- Persistenz: `JdbcHouseholdPlanRepository.save` schreibt neue und geänderte Posten per Upsert; `created_at` bleibt
+  unverändert (PB-4)
+- API: `PUT /api/plans/{planId}/items/{itemId}` mit `ChangeBudgetItemRequest` (Beschreibung, Betrag, Kategorie nur bei
+  Ausgaben), Antwort 204; 400 bei ungültigen Werten, 404 bei unbekanntem Plan oder Posten
+- Frontend: Schaltfläche „Bearbeiten" in `budget/ui/budget-item-table.ts`, Dialog `budget/ui/edit-item-dialog.ts` mit
+  den Prüfungen aus `budget/ui/item-validators.ts`, `BudgetStore.changeItem`, `BudgetApi.changeItem`; geöffnet aus
+  `budget-dashboard.ts`
 - Tests: `BudgetItemTest`, `HouseholdPlanTest`, `HouseholdPlanApplicationServiceTest`, `HouseholdPlanControllerTest`,
-  `HouseholdPlanIntegrationTest`, `JdbcHouseholdPlanRepositoryTest`, `budget-item-table.spec.ts`,
-  `budget-store.spec.ts`, Spec für den Dialog
+  `JdbcHouseholdPlanRepositoryTest`, `HouseholdPlanIntegrationTest`, `edit-item-dialog.spec.ts`,
+  `budget-item-table.spec.ts`, `budget-store.spec.ts`, `budget-api.spec.ts`, `budget-dashboard.spec.ts`
 
 ## Offene Fragen
-
-- Soll sich die Art des Postens ändern lassen (PB-2)? Vorschlag: nein, weil sich damit auch die Pflicht zur Kategorie
-  ändert und Löschen plus Neuanlegen dafür reicht.
-- Soll der geänderte Posten seinen Platz behalten (PB-4) oder wie ein neuer Posten nach oben wandern? Vorschlag: Platz
-  behalten.
-- Bearbeiten im Dialog oder direkt in der Tabellenzeile? Vorschlag: Dialog, weil er die Prüfungen des Formulars
-  wiederverwendet und auf schmalen Bildschirmen besser funktioniert.
-- Soll es wie beim Löschen ein „Rückgängig" geben (PB-8)? Vorschlag: nein.

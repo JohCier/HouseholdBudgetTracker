@@ -54,5 +54,5 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | `IncomeAdded` | Eine Einnahme wurde erfasst |
 | `ExpenseAdded` | Eine Ausgabe wurde erfasst |
 | `BudgetItemRemoved` | Ein Posten wurde gelöscht |
-| `BudgetItemChanged` | Ein Posten wurde geändert (geplant, siehe [posten-bearbeiten.md](specs/posten-bearbeiten.md)) |
+| `BudgetItemChanged` | Beschreibung, Betrag oder Kategorie eines Postens wurden geändert |
 | `UserRegistered` | Ein Benutzer hat sich registriert |

@@ -81,6 +81,13 @@ describe('BudgetApi', () => {
   });
 
   it('deletes an item of a plan by id', () => {
+    api.changeItem(planId, 'item-1', { description: 'Miete', amount: '900' }).subscribe();
+
+    const change = http.expectOne(`/api/plans/${planId}/items/item-1`);
+    expect(change.request.method).toBe('PUT');
+    expect(change.request.body).toEqual({ description: 'Miete', amount: '900' });
+    change.flush(null, { status: 204, statusText: 'No Content' });
+
     api.removeItem(planId, 'item-1').subscribe();
 
     const req = http.expectOne(`/api/plans/${planId}/items/item-1`);

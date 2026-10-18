@@ -1,11 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import {
-  AbstractControl,
-  FormBuilder,
-  ReactiveFormsModule,
-  ValidationErrors,
-  Validators,
-} from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
@@ -15,12 +9,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { EXPENSE_CATEGORIES, ExpenseCategory, ItemType } from '../budget.model';
 import { BudgetStore } from '../data-access/budget-store';
-
-/** Amounts are stored in cents, so more than two decimal places are rejected. */
-function maxTwoDecimals(control: AbstractControl<number | null>): ValidationErrors | null {
-  const value = control.value;
-  return value === null || /^\d+(\.\d{1,2})?$/.test(String(value)) ? null : { decimals: true };
-}
+import { maxTwoDecimals } from './item-validators';
 
 @Component({
   selector: 'app-add-item-form',

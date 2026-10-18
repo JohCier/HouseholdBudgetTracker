@@ -4,6 +4,7 @@ import de.jcss.hbt.application.householdplan.HouseholdPlanApplicationService;
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
 import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
 import de.jcss.hbt.domain.exception.HouseholdPlanNotFoundException;
+import de.jcss.hbt.domain.exception.InvalidBudgetItemException;
 import de.jcss.hbt.domain.exception.InvalidMoneyException;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
@@ -13,6 +14,7 @@ import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
 import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
+import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
@@ -45,6 +47,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -234,6 +237,81 @@ class HouseholdPlanControllerTest {
         mockMvc.perform(delete("/api/plans/{planId}/items/{itemId}", PLAN, itemId))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.detail").value("Budget item not found: " + itemId));
+    }
+
+    /** PB-1 */
+    @Test
+    void changeItemReturns204AndMapsAllValues() throws Exception {
+        UUID itemId = UUID.randomUUID();
+
+        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", PLAN, itemId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":"Miete","amount":"900.00","category":"SPAREN_INVESTIEREN"}
+                                """))
+                .andExpect(status().isNoContent());
+
+        verify(plans).changeItem(new ChangeBudgetItemCommand(OWNER, PLAN_ID, BudgetItemId.of(itemId),
+                BudgetItemDescription.of("Miete"), Money.of(new BigDecimal("900.00")), ExpenseCategory.SPAREN_INVESTIEREN));
+    }
+
+    /** PB-1 */
+    @Test
+    void changeItemWithoutCategoryPassesNone() throws Exception {
+        UUID itemId = UUID.randomUUID();
+
+        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", PLAN, itemId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":"Gehalt","amount":"2100"}
+                                """))
+                .andExpect(status().isNoContent());
+
+        verify(plans).changeItem(new ChangeBudgetItemCommand(OWNER, PLAN_ID, BudgetItemId.of(itemId),
+                BudgetItemDescription.of("Gehalt"), Money.of(new BigDecimal("2100")), null));
+    }
+
+    /** PB-3 */
+    @Test
+    void invalidChangeRequestReturns400() throws Exception {
+        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", PLAN, UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":" ","amount":"10.005"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.description").exists())
+                .andExpect(jsonPath("$.errors.amount").exists());
+
+        verifyNoInteractions(plans);
+    }
+
+    /** PB-2, PB-3 */
+    @Test
+    void categoryNotFittingTheItemReturns400() throws Exception {
+        doThrow(new InvalidBudgetItemException("income items must not have a category")).when(plans).changeItem(any());
+
+        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", PLAN, UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":"Gehalt","amount":"1.00","category":"LEBENSUNTERHALT"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("income items must not have a category"));
+    }
+
+    /** PB-6 */
+    @Test
+    void changeUnknownItemReturns404() throws Exception {
+        UUID itemId = UUID.randomUUID();
+        doThrow(new BudgetItemNotFoundException(BudgetItemId.of(itemId))).when(plans).changeItem(any());
+
+        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", PLAN, itemId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":"Gehalt","amount":"1.00"}
+                                """))
+                .andExpect(status().isNotFound());
     }
 
     @Test

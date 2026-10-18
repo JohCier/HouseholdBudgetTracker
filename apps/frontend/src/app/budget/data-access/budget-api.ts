@@ -5,6 +5,7 @@ import {
   AddExpenseRequest,
   AddIncomeRequest,
   BudgetItemIdResponse,
+  ChangeBudgetItemRequest,
   HouseholdPlanIdResponse,
   HouseholdPlanOverview,
   Year,
@@ -39,6 +40,13 @@ export class BudgetApi {
 
   addExpense(planId: string, request: AddExpenseRequest): Observable<BudgetItemIdResponse> {
     return this.http.post<BudgetItemIdResponse>(`${this.planUrl(planId)}/expenses`, request);
+  }
+
+  changeItem(planId: string, itemId: string, request: ChangeBudgetItemRequest): Observable<void> {
+    return this.http.put<void>(
+      `${this.planUrl(planId)}/items/${encodeURIComponent(itemId)}`,
+      request,
+    );
   }
 
   removeItem(planId: string, itemId: string): Observable<void> {

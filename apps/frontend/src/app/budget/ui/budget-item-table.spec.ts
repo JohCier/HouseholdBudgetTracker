@@ -50,6 +50,18 @@ describe('BudgetItemTable', () => {
     expect(removed).toEqual([rent]);
   });
 
+  it('asks to edit the item whose edit button was clicked', async () => {
+    const fixture = await render([salary, rent]);
+    const edited: BudgetItem[] = [];
+    fixture.componentInstance.edit.subscribe((item) => edited.push(item));
+
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('button[aria-label="Eintrag Gehalt bearbeiten"]')!
+      .click();
+
+    expect(edited).toEqual([salary]);
+  });
+
   it('explains an empty plan instead of showing an empty table', async () => {
     const fixture = await render([]);
 

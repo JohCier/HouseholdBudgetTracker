@@ -2,6 +2,7 @@ package de.jcss.hbt.domain.householdplan;
 
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
 import de.jcss.hbt.domain.exception.InvalidBudgetItemException;
+import de.jcss.hbt.domain.householdplan.event.BudgetItemChanged;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCreated;
@@ -143,6 +144,77 @@ class HouseholdPlanTest {
         HouseholdPlan plan = emptyPlan();
 
         assertThatThrownBy(() -> plan.removeItem(BudgetItemId.generate()))
+                .isInstanceOf(BudgetItemNotFoundException.class);
+        assertThat(plan.pullDomainEvents()).isEmpty();
+    }
+
+    /** PB-1, PB-4, PB-5, PB-7 */
+    @Test
+    void changesItemInPlaceAndRecordsIt() {
+        HouseholdPlan plan = emptyPlan();
+        BudgetItemId first = plan.addIncome(salary, amount);
+        BudgetItemId changedId = plan.addExpense(rent, Money.of(new BigDecimal("850.00")), ExpenseCategory.LEBENSUNTERHALT);
+        BudgetItemId last = plan.addIncome(salary, amount);
+        plan.pullDomainEvents();
+
+        plan.changeItem(changedId, BudgetItemDescription.of("Warmmiete"), Money.of(new BigDecimal("900.00")),
+                ExpenseCategory.SPAREN_INVESTIEREN);
+
+        assertThat(plan.items()).extracting(BudgetItem::id).containsExactly(first, changedId, last);
+        BudgetItem changed = plan.items().get(1);
+        assertThat(changed.description()).isEqualTo(BudgetItemDescription.of("Warmmiete"));
+        assertThat(changed.amount()).isEqualTo(Money.of(new BigDecimal("900.00")));
+        assertThat(changed.type()).isEqualTo(ItemType.EXPENSE);
+        assertThat(changed.category()).contains(ExpenseCategory.SPAREN_INVESTIEREN);
+        assertThat(plan.summary().expensesIn(ExpenseCategory.LEBENSUNTERHALT)).isEqualTo(Money.ZERO);
+        assertThat(plan.summary().expensesIn(ExpenseCategory.SPAREN_INVESTIEREN))
+                .isEqualTo(Money.of(new BigDecimal("900.00")));
+        assertThat(plan.pullDomainEvents())
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+                .containsExactly(new BudgetItemChanged(planId, changedId, Instant.now()));
+    }
+
+    /** PB-5 */
+    @Test
+    void changingAnItemToItsCurrentValuesRecordsNothing() {
+        HouseholdPlan plan = emptyPlan();
+        BudgetItemId itemId = plan.addExpense(rent, amount, ExpenseCategory.LEBENSUNTERHALT);
+        plan.pullDomainEvents();
+
+        plan.changeItem(itemId, rent, Money.of(new BigDecimal("100")), ExpenseCategory.LEBENSUNTERHALT);
+
+        assertThat(plan.pullDomainEvents()).isEmpty();
+    }
+
+    /** PB-2, PB-3 */
+    @Test
+    void invalidChangeLeavesItemUnchangedAndRecordsNothing() {
+        HouseholdPlan plan = emptyPlan();
+        BudgetItemId incomeId = plan.addIncome(salary, amount);
+        BudgetItemId expenseId = plan.addExpense(rent, amount, ExpenseCategory.LEBENSUNTERHALT);
+        List<BudgetItem> before = List.copyOf(plan.items());
+        plan.pullDomainEvents();
+
+        assertThatThrownBy(() -> plan.changeItem(incomeId, salary, amount, ExpenseCategory.LEBENSUNTERHALT))
+                .isInstanceOf(InvalidBudgetItemException.class);
+        assertThatThrownBy(() -> plan.changeItem(expenseId, rent, amount, null))
+                .isInstanceOf(InvalidBudgetItemException.class);
+        assertThatThrownBy(() -> plan.changeItem(expenseId, rent, Money.ZERO, ExpenseCategory.LEBENSUNTERHALT))
+                .isInstanceOf(InvalidBudgetItemException.class);
+
+        assertThat(plan.items()).hasSize(2);
+        for (int i = 0; i < before.size(); i++) {
+            assertThat(plan.items().get(i).hasSameValuesAs(before.get(i))).isTrue();
+        }
+        assertThat(plan.pullDomainEvents()).isEmpty();
+    }
+
+    /** PB-6 */
+    @Test
+    void changingAnItemOfAnotherPlanFails() {
+        HouseholdPlan plan = emptyPlan();
+
+        assertThatThrownBy(() -> plan.changeItem(BudgetItemId.generate(), salary, amount, null))
                 .isInstanceOf(BudgetItemNotFoundException.class);
         assertThat(plan.pullDomainEvents()).isEmpty();
     }

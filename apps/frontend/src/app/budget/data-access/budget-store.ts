@@ -5,6 +5,7 @@ import {
   AddExpenseRequest,
   AddIncomeRequest,
   BudgetItem,
+  ChangeBudgetItemRequest,
   HouseholdPlanOverview,
   Year,
 } from '../budget.model';
@@ -87,6 +88,11 @@ export class BudgetStore {
 
   async addExpense(request: AddExpenseRequest): Promise<void> {
     return this.mutate(this.api.addExpense(this.requirePlanId(), request));
+  }
+
+  /** Gives an item of the selected year's plan new values; it keeps its id and position. */
+  async changeItem(itemId: string, request: ChangeBudgetItemRequest): Promise<void> {
+    return this.mutate(this.api.changeItem(this.requirePlanId(), itemId, request));
   }
 
   async removeItem(itemId: string): Promise<void> {

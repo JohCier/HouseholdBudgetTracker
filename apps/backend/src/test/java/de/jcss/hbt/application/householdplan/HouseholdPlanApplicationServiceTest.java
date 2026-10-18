@@ -15,8 +15,10 @@ import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
 import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
 import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
+import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
+import de.jcss.hbt.domain.householdplan.event.BudgetItemChanged;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCreated;
@@ -101,9 +103,13 @@ class HouseholdPlanApplicationServiceTest {
         assertThatThrownBy(() -> service.addExpense(new AddExpenseCommand(SOMEONE_ELSE, planId, SALARY,
                 money("1.00"), ExpenseCategory.FREIZEIT_SPASS)))
                 .isInstanceOf(HouseholdPlanNotFoundException.class);
+        assertThatThrownBy(() -> service.changeItem(new ChangeBudgetItemCommand(SOMEONE_ELSE, planId, itemId, SALARY,
+                money("1.00"), null)))
+                .isInstanceOf(HouseholdPlanNotFoundException.class);
         assertThatThrownBy(() -> service.removeItem(new RemoveBudgetItemCommand(SOMEONE_ELSE, planId, itemId)))
                 .isInstanceOf(HouseholdPlanNotFoundException.class);
         assertThat(storedItems()).extracting(BudgetItem::id).containsExactly(itemId);
+        assertThat(storedItems().getFirst().amount()).isEqualTo(money("2000.00"));
         assertThat(publishedEvents).isEmpty();
     }
 
@@ -140,6 +146,29 @@ class HouseholdPlanApplicationServiceTest {
                 .isInstanceOf(InvalidBudgetItemException.class);
         assertThat(storedItems()).isEmpty();
         assertThat(publishedEvents).isEmpty();
+    }
+
+    /** PB-1, PB-5 */
+    @Test
+    void changeItemStoresItAndPublishesEvent() {
+        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00")));
+
+        service.changeItem(new ChangeBudgetItemCommand(OWNER, planId, itemId, SALARY, money("2100.00"), null));
+
+        assertThat(storedItems()).singleElement().satisfies(item -> {
+            assertThat(item.id()).isEqualTo(itemId);
+            assertThat(item.amount()).isEqualTo(money("2100.00"));
+        });
+        assertThat(publishedEvents.getLast()).isInstanceOfSatisfying(BudgetItemChanged.class,
+                event -> assertThat(event.itemId()).isEqualTo(itemId));
+    }
+
+    /** PB-6 */
+    @Test
+    void changingUnknownItemThrows() {
+        assertThatThrownBy(() -> service.changeItem(new ChangeBudgetItemCommand(OWNER, planId, BudgetItemId.generate(),
+                SALARY, money("1.00"), null)))
+                .isInstanceOf(BudgetItemNotFoundException.class);
     }
 
     @Test
