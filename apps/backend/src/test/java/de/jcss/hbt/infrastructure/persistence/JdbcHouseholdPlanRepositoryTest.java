@@ -18,6 +18,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.Year;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -82,6 +83,29 @@ class JdbcHouseholdPlanRepositoryTest {
         assertThat(repository.findById(plan.id()).orElseThrow().items())
                 .extracting(BudgetItem::id)
                 .containsExactly(kept, added);
+    }
+
+    /** PB-4 */
+    @Test
+    void savingAChangedItemUpdatesItAndKeepsItsCreationTime() {
+        HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
+        BudgetItemId changed = plan.addExpense(description("Miete"), money("850.00"), ExpenseCategory.LEBENSUNTERHALT);
+        BudgetItemId later = plan.addIncome(description("Gehalt"), money("2500.00"));
+        repository.add(plan);
+        Instant createdAt = createdAtOf(changed);
+
+        HouseholdPlan loaded = repository.findById(plan.id()).orElseThrow();
+        loaded.changeItem(changed, description("Warmmiete"), money("900.00"), ExpenseCategory.FREIZEIT_SPASS);
+        repository.save(loaded);
+
+        HouseholdPlan restored = repository.findById(plan.id()).orElseThrow();
+        assertThat(restored.items()).extracting(BudgetItem::id).containsExactly(changed, later);
+        assertThat(restored.items().getFirst()).satisfies(item -> {
+            assertThat(item.description()).isEqualTo(description("Warmmiete"));
+            assertThat(item.amount()).isEqualTo(money("900.00"));
+            assertThat(item.category()).contains(ExpenseCategory.FREIZEIT_SPASS);
+        });
+        assertThat(createdAtOf(changed)).isEqualTo(createdAt);
     }
 
     @Test
@@ -159,6 +183,13 @@ class JdbcHouseholdPlanRepositoryTest {
         repository.add(otherOwners);
 
         assertThat(repository.findById(otherOwners.id())).isPresent();
+    }
+
+    private Instant createdAtOf(BudgetItemId itemId) {
+        return jdbcClient.sql("SELECT created_at FROM budget_item WHERE id = :id")
+                .param("id", itemId.value())
+                .query((rs, rowNum) -> rs.getTimestamp("created_at").toInstant())
+                .single();
     }
 
     private static BudgetItemDescription description(String value) {

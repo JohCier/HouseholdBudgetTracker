@@ -15,6 +15,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -28,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -117,13 +119,20 @@ class HouseholdPlanIntegrationTest {
                         .content("""
                                 {"description":"Fremd","amount":"1.00"}"""))
                 .andExpect(status().isNotFound());
+        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", alicesPlan, alicesItem)
+                        .cookie(bob)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":"Fremd","amount":"1.00"}"""))
+                .andExpect(status().isNotFound());
         mockMvc.perform(delete("/api/plans/{planId}/items/{itemId}", alicesPlan, alicesItem).cookie(bob))
                 .andExpect(status().isNotFound());
 
         mockMvc.perform(get("/api/plans").param("year", "2026").cookie(alice))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(1))
-                .andExpect(jsonPath("$.items[0].id").value(alicesItem));
+                .andExpect(jsonPath("$.items[0].id").value(alicesItem))
+                .andExpect(jsonPath("$.items[0].amount").value("1500.00"));
     }
 
     @Test
@@ -227,6 +236,67 @@ class HouseholdPlanIntegrationTest {
                 .isEqualTo(2026);
     }
 
+    /** PB-1, PB-4, PB-5, PB-7 */
+    @Test
+    void changingAnItemKeepsItsPlaceUpdatesTheOverviewAndIsAudited() throws Exception {
+        String planId = createPlan(2026);
+        post("/api/plans/" + planId + "/incomes", """
+                {"description":"Gehalt","amount":"2000.00"}""");
+        String rentId = JsonPath.read(post("/api/plans/" + planId + "/expenses", """
+                {"description":"Miete","amount":"850.00","category":"LEBENSUNTERHALT"}"""), "$.id");
+        post("/api/plans/" + planId + "/expenses", """
+                {"description":"Konzert","amount":"100.00","category":"FREIZEIT_SPASS"}""");
+
+        changeItem(planId, rentId, """
+                {"description":"Miete","amount":"900.00","category":"LEBENSUNTERHALT"}""")
+                .andExpect(status().isNoContent());
+        changeItem(planId, rentId, """
+                {"description":"Miete","amount":"900","category":"LEBENSUNTERHALT"}""")
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/plans").param("year", "2026").cookie(alice))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(3))
+                .andExpect(jsonPath("$.items[1].id").value(rentId))
+                .andExpect(jsonPath("$.items[1].amount").value("900.00"))
+                .andExpect(jsonPath("$.totalExpense").value("1000.00"))
+                .andExpect(jsonPath("$.balance").value("1000.00"));
+        assertThat(jdbcClient.sql("""
+                        SELECT payload ->> 'itemId' FROM audit_log WHERE event_type = 'BudgetItemChanged'""")
+                .query(String.class).list())
+                .as("only the change that changed something is audited")
+                .containsExactly(rentId);
+    }
+
+    /** PB-2, PB-3, PB-6 */
+    @Test
+    void invalidChangesAreRejectedAndLeaveTheItemAsItWas() throws Exception {
+        String planId = createPlan(2026);
+        String incomeId = JsonPath.read(post("/api/plans/" + planId + "/incomes", """
+                {"description":"Gehalt","amount":"2000.00"}"""), "$.id");
+        String expenseId = JsonPath.read(post("/api/plans/" + planId + "/expenses", """
+                {"description":"Miete","amount":"850.00","category":"LEBENSUNTERHALT"}"""), "$.id");
+
+        changeItem(planId, incomeId, """
+                {"description":"Gehalt","amount":"2000.00","category":"LEBENSUNTERHALT"}""")
+                .andExpect(status().isBadRequest());
+        changeItem(planId, expenseId, """
+                {"description":"Miete","amount":"850.00"}""")
+                .andExpect(status().isBadRequest());
+        changeItem(planId, expenseId, """
+                {"description":"Miete","amount":"0"}""")
+                .andExpect(status().isBadRequest());
+        changeItem(planId, UUID.randomUUID().toString(), """
+                {"description":"Miete","amount":"850.00"}""")
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/plans").param("year", "2026").cookie(alice))
+                .andExpect(jsonPath("$.totalIncome").value("2000.00"))
+                .andExpect(jsonPath("$.totalExpense").value("850.00"));
+        assertThat(jdbcClient.sql("SELECT COUNT(*) FROM audit_log WHERE event_type = 'BudgetItemChanged'")
+                .query(Long.class).single()).isZero();
+    }
+
     @Test
     void failedRemovalIsNotAudited() throws Exception {
         String planId = createPlan(2026);
@@ -249,6 +319,14 @@ class HouseholdPlanIntegrationTest {
                                 {"description":"Gehalt","amount":"10.005"}"""))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.amount").exists());
+    }
+
+    private ResultActions changeItem(String planId, String itemId, String json)
+            throws Exception {
+        return mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", planId, itemId)
+                .cookie(alice)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json));
     }
 
     private String createPlan(int year) throws Exception {

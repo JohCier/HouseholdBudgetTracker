@@ -36,6 +36,7 @@ describe('BudgetStore', () => {
       createPlan: vi.fn(() => of({ id: 'new-plan' })),
       addIncome: vi.fn(() => of({ id: '1' })),
       addExpense: vi.fn(() => of({ id: '2' })),
+      changeItem: vi.fn(() => of(undefined)),
       removeItem: vi.fn(() => of(undefined)),
     };
     TestBed.configureTestingModule({
@@ -93,6 +94,20 @@ describe('BudgetStore', () => {
       amount: '2000',
     });
     expect(api.getOverview).toHaveBeenLastCalledWith(2026);
+  });
+
+  // PB-7
+  it('changes an item of the plan of the selected year and reloads the overview', async () => {
+    await store.selectYear(2026);
+    api.getOverview.mockClear();
+
+    await store.changeItem('1', { description: 'Gehalt', amount: '2100' });
+
+    expect(api.changeItem).toHaveBeenCalledWith('plan-2026', '1', {
+      description: 'Gehalt',
+      amount: '2100',
+    });
+    expect(api.getOverview).toHaveBeenCalledWith(2026);
   });
 
   it('rejects adding an item while the year has no plan', async () => {

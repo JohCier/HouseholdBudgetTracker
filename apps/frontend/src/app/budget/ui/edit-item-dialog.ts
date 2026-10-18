@@ -1,0 +1,147 @@
+import { Component, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { BudgetItem, EXPENSE_CATEGORIES, ExpenseCategory } from '../budget.model';
+import { BudgetStore } from '../data-access/budget-store';
+import { maxTwoDecimals } from './item-validators';
+
+/**
+ * Changes description, amount and, for an expense, the category of an item. Whether it is
+ * an income or an expense cannot be changed. Closes with `true` once the change is saved;
+ * on an error it stays open and shows the message, so nothing typed is lost.
+ * Needs the dashboard's {@link BudgetStore}, so it is opened with the dashboard's injector.
+ */
+@Component({
+  selector: 'app-edit-item-dialog',
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+  ],
+  template: `
+    <h2 mat-dialog-title>{{ isExpense ? 'Ausgabe' : 'Einnahme' }} bearbeiten</h2>
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <mat-dialog-content>
+        <mat-form-field>
+          <mat-label>Beschreibung</mat-label>
+          <input matInput formControlName="description" autocomplete="off" maxlength="255" />
+          @if (form.controls.description.invalid) {
+            <mat-error>Bitte eine Beschreibung angeben.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Betrag</mat-label>
+          <input
+            matInput
+            type="number"
+            inputmode="decimal"
+            min="0.01"
+            step="0.01"
+            formControlName="amount"
+          />
+          <span matTextSuffix>€</span>
+          @if (form.controls.amount.hasError('decimals')) {
+            <mat-error>Höchstens zwei Nachkommastellen.</mat-error>
+          } @else if (form.controls.amount.invalid) {
+            <mat-error>Bitte einen positiven Betrag angeben.</mat-error>
+          }
+        </mat-form-field>
+
+        @if (isExpense) {
+          <mat-form-field>
+            <mat-label>Kategorie</mat-label>
+            <mat-select formControlName="category">
+              @for (category of categories; track category.value) {
+                <mat-option [value]="category.value">{{ category.label }}</mat-option>
+              }
+            </mat-select>
+            @if (form.controls.category.invalid) {
+              <mat-error>Bitte eine Kategorie wählen.</mat-error>
+            }
+          </mat-form-field>
+        }
+
+        @if (error(); as message) {
+          <p class="error" role="alert">{{ message }}</p>
+        }
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
+        <button matButton type="button" mat-dialog-close>Abbrechen</button>
+        <button matButton="filled" type="submit" [disabled]="saving()">Speichern</button>
+      </mat-dialog-actions>
+    </form>
+  `,
+  styles: `
+    mat-dialog-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: min(360px, 70vw);
+    }
+    mat-form-field:first-child {
+      margin-top: 8px;
+    }
+    .error {
+      color: var(--mat-sys-error);
+      margin: 0;
+    }
+  `,
+})
+export class EditItemDialog {
+  private readonly store = inject(BudgetStore);
+  private readonly dialogRef = inject<MatDialogRef<EditItemDialog, boolean>>(MatDialogRef);
+  private readonly item = inject<BudgetItem>(MAT_DIALOG_DATA);
+
+  protected readonly categories = EXPENSE_CATEGORIES;
+  protected readonly isExpense = this.item.type === 'EXPENSE';
+  protected readonly saving = signal(false);
+  protected readonly error = signal<string | null>(null);
+
+  private readonly fb = inject(FormBuilder).nonNullable;
+
+  protected readonly form = this.fb.group({
+    description: this.fb.control(this.item.description, [
+      Validators.required,
+      Validators.pattern(/\S/),
+    ]),
+    amount: this.fb.control<number | null>(Number(this.item.amount), [
+      Validators.required,
+      Validators.min(0.01),
+      maxTwoDecimals,
+    ]),
+    category: this.fb.control<ExpenseCategory | null>(
+      { value: this.item.category, disabled: !this.isExpense },
+      Validators.required,
+    ),
+  });
+
+  protected async save(): Promise<void> {
+    if (this.form.invalid || this.saving()) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    const { description, amount, category } = this.form.getRawValue();
+    this.saving.set(true);
+    this.error.set(null);
+    try {
+      await this.store.changeItem(this.item.id, {
+        description: description.trim(),
+        amount: String(amount),
+        ...(this.isExpense ? { category: category! } : {}),
+      });
+      this.dialogRef.close(true);
+    } catch (error) {
+      this.error.set((error as Error).message);
+    } finally {
+      this.saving.set(false);
+    }
+  }
+}

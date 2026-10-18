@@ -87,6 +87,37 @@ class BudgetItemTest {
                 .hasMessageContaining("amount");
     }
 
+    /** PB-1, PB-2, PB-3 */
+    @Test
+    void changedCopyKeepsIdAndTypeAndEnforcesTheSameRules() {
+        BudgetItem expense = BudgetItem.expense(id, RENT, amount, ExpenseCategory.LEBENSUNTERHALT);
+        Money newAmount = Money.of(new BigDecimal("900.00"));
+
+        BudgetItem changed = expense.changedTo(SALARY, newAmount, ExpenseCategory.FREIZEIT_SPASS);
+
+        assertThat(changed.id()).isEqualTo(id);
+        assertThat(changed.type()).isEqualTo(ItemType.EXPENSE);
+        assertThat(changed.description()).isEqualTo(SALARY);
+        assertThat(changed.amount()).isEqualTo(newAmount);
+        assertThat(changed.category()).contains(ExpenseCategory.FREIZEIT_SPASS);
+        assertThatThrownBy(() -> expense.changedTo(RENT, amount, null))
+                .isInstanceOf(InvalidBudgetItemException.class);
+        assertThatThrownBy(() -> BudgetItem.income(id, SALARY, amount)
+                .changedTo(SALARY, amount, ExpenseCategory.LEBENSUNTERHALT))
+                .isInstanceOf(InvalidBudgetItemException.class);
+    }
+
+    @Test
+    void comparesValuesIgnoringTheId() {
+        BudgetItem item = BudgetItem.expense(id, RENT, amount, ExpenseCategory.LEBENSUNTERHALT);
+
+        assertThat(item.hasSameValuesAs(BudgetItem.expense(BudgetItemId.generate(), RENT,
+                Money.of(new BigDecimal("100")), ExpenseCategory.LEBENSUNTERHALT))).isTrue();
+        assertThat(item.hasSameValuesAs(item.changedTo(RENT, amount, ExpenseCategory.FREIZEIT_SPASS))).isFalse();
+        assertThat(item.hasSameValuesAs(item.changedTo(SALARY, amount, ExpenseCategory.LEBENSUNTERHALT))).isFalse();
+        assertThat(item.hasSameValuesAs(BudgetItem.income(id, RENT, amount))).isFalse();
+    }
+
     @Test
     void addsItsAmountToTheSummary() {
         BudgetSummary summary = BudgetItem.expense(id, RENT, amount, ExpenseCategory.LEBENSUNTERHALT)

@@ -1,6 +1,7 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, Injector, OnInit, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -9,6 +10,7 @@ import { BudgetStore } from './data-access/budget-store';
 import { AddItemForm } from './ui/add-item-form';
 import { BudgetItemTable } from './ui/budget-item-table';
 import { CategoryBreakdownCard } from './ui/category-breakdown';
+import { EditItemDialog } from './ui/edit-item-dialog';
 import { OverviewSummary } from './ui/overview-summary';
 
 @Component({
@@ -63,7 +65,11 @@ import { OverviewSummary } from './ui/overview-summary';
             <app-category-breakdown [breakdowns]="overview.categoryBreakdowns" />
           }
         </div>
-        <app-budget-item-table [items]="store.items()" (remove)="remove($event)" />
+        <app-budget-item-table
+          [items]="store.items()"
+          (edit)="edit($event)"
+          (remove)="remove($event)"
+        />
       </div>
     } @else if (store.planMissing() && !store.loadError()) {
       <mat-card appearance="outlined" class="no-plan">
@@ -138,6 +144,8 @@ import { OverviewSummary } from './ui/overview-summary';
 export class BudgetDashboard implements OnInit {
   protected readonly store = inject(BudgetStore);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
+  private readonly injector = inject(Injector);
 
   protected readonly creating = signal(false);
 
@@ -154,6 +162,20 @@ export class BudgetDashboard implements OnInit {
     } finally {
       this.creating.set(false);
     }
+  }
+
+  protected edit(item: BudgetItem): void {
+    this.dialog
+      .open<EditItemDialog, BudgetItem, boolean>(EditItemDialog, {
+        data: item,
+        injector: this.injector,
+      })
+      .afterClosed()
+      .subscribe((saved) => {
+        if (saved) {
+          this.snackBar.open('Eintrag geändert', undefined, { duration: 3000 });
+        }
+      });
   }
 
   protected async remove(item: BudgetItem): Promise<void> {

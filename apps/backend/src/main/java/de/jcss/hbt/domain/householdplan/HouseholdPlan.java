@@ -1,6 +1,7 @@
 package de.jcss.hbt.domain.householdplan;
 
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
+import de.jcss.hbt.domain.householdplan.event.BudgetItemChanged;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCreated;
@@ -92,6 +93,34 @@ public final class HouseholdPlan {
         items.add(item);
         record(new ExpenseAdded(id, item.id(), Instant.now()));
         return item.id();
+    }
+
+    /**
+     * Gives an item new values while it keeps its id and its position among the items.
+     * Records an event only if a value actually changed.
+     *
+     * @param category the new category of an expense; {@code null} for an income
+     * @throws BudgetItemNotFoundException if the item is not part of this plan
+     */
+    public void changeItem(BudgetItemId itemId, BudgetItemDescription description, Money amount,
+                           ExpenseCategory category) {
+        int index = indexOf(itemId);
+        BudgetItem current = items.get(index);
+        BudgetItem changed = current.changedTo(description, amount, category);
+        if (changed.hasSameValuesAs(current)) {
+            return;
+        }
+        items.set(index, changed);
+        record(new BudgetItemChanged(id, itemId, Instant.now()));
+    }
+
+    private int indexOf(BudgetItemId itemId) {
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).hasId(itemId)) {
+                return i;
+            }
+        }
+        throw new BudgetItemNotFoundException(itemId);
     }
 
     /**
