@@ -10,6 +10,10 @@ public record CategoryBreakdownResponse(
         ExpenseCategoryDto category,
         @JsonFormat(shape = JsonFormat.Shape.STRING)
         @Schema(implementation = String.class, format = "decimal", example = "850.00") BigDecimal total,
+        @JsonFormat(shape = JsonFormat.Shape.STRING)
+        @Schema(implementation = String.class, format = "decimal", example = "0.00",
+                description = "Part of total that is income not used up by any expense")
+        BigDecimal unplanned,
         @Schema(example = "34.00") BigDecimal actualPercentageOfIncome,
         int targetPercentageOfIncome,
         TargetDirectionDto targetDirection,
@@ -20,6 +24,7 @@ public record CategoryBreakdownResponse(
         return new CategoryBreakdownResponse(
                 ExpenseCategoryDto.from(breakdown.category()),
                 breakdown.total().value(),
+                breakdown.unplanned().value(),
                 breakdown.actualPercentageOfIncome().value(),
                 breakdown.targetPercentageOfIncome().value().intValueExact(),
                 TargetDirectionDto.from(breakdown.targetDirection()),

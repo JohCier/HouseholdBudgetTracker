@@ -41,7 +41,7 @@ test.describe('Auswertung nach der 50/30/20-Regel', () => {
     await expect(page.getByText(/Ziel (überschritten|nicht erreicht)/)).toHaveCount(0);
   });
 
-  test('zu hohe Kosten überschreiten das Ziel, fehlendes Sparen verfehlt es (AW-6)', async ({
+  test('zu hohe Kosten überschreiten das Ziel, fehlendes Sparen verfehlt es (AW-6, AW-10)', async ({
     page,
   }) => {
     await addIncome(page, 'Gehalt', '2000');
@@ -50,10 +50,32 @@ test.describe('Auswertung nach der 50/30/20-Regel', () => {
     await expect(categoryRow(page, 'Lebensunterhalt')).toContainText(
       '60 % von max. 50 % · Ziel überschritten',
     );
-    await expect(categoryRow(page, 'Freizeit & Spaß')).not.toContainText('Ziel');
+    // The 800,00 € not spent count towards leisure
+    await expect(categoryRow(page, 'Freizeit & Spaß')).toContainText(
+      '40 % von max. 30 % · Ziel überschritten',
+    );
     await expect(categoryRow(page, 'Sparen & Investieren')).toContainText(
       '0 % von mind. 20 % · Ziel nicht erreicht',
     );
+  });
+
+  test('der Überschuss zählt zu Freizeit & Spaß und wird als nicht verplant ausgewiesen (AW-10)', async ({
+    page,
+  }) => {
+    await addIncome(page, 'Gehalt', '2000');
+    await addExpense(page, 'Miete', '1000', 'Lebensunterhalt');
+    await addExpense(page, 'Kino', '200', 'Freizeit & Spaß');
+    await addExpense(page, 'ETF-Sparplan', '400', 'Sparen & Investieren');
+
+    await expect(tile(page, 'Ausgaben')).toHaveText('1.600,00 €');
+    await expect(tile(page, 'Saldo')).toHaveText('400,00 €');
+    const freizeit = categoryRow(page, 'Freizeit & Spaß');
+    await expect(freizeit).toContainText('600,00 €');
+    await expect(freizeit).toContainText('davon nicht verplant: 400,00 €');
+    await expect(freizeit).toContainText('30 % von max. 30 %');
+    await expect(freizeit).not.toContainText('Ziel überschritten');
+    await expect(categoryRow(page, 'Sparen & Investieren')).toContainText('20 % von mind. 20 %');
+    await expect(categoryRow(page, 'Sparen & Investieren')).not.toContainText('nicht verplant');
   });
 
   test('Ausgaben ohne Einnahmen sind ein Defizit (AW-2, AW-3, AW-7)', async ({ page }) => {

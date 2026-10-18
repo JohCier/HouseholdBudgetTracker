@@ -6,7 +6,8 @@ import { CategoryBreakdown, categoryLabel } from '../budget.model';
 
 /**
  * Visualizes actual spend per category against its 50/30/20 target share of income.
- * Living costs and leisure have a ceiling, savings a floor.
+ * Living costs and leisure have a ceiling, savings a floor. Income that no expense uses up
+ * counts towards leisure and is shown there as unplanned (AW-10).
  */
 @Component({
   selector: 'app-category-breakdown',
@@ -24,6 +25,11 @@ import { CategoryBreakdown, categoryLabel } from '../budget.model';
               <span class="name">{{ label(breakdown) }}</span>
               <span class="total">{{ breakdown.total | currency: 'EUR' }}</span>
             </div>
+            @if (hasUnplanned(breakdown)) {
+              <span class="unplanned">
+                davon nicht verplant: {{ breakdown.unplanned | currency: 'EUR' }}
+              </span>
+            }
             <mat-progress-bar
               mode="determinate"
               [value]="progress(breakdown)"
@@ -54,6 +60,10 @@ export class CategoryBreakdownCard {
 
   protected label(breakdown: CategoryBreakdown): string {
     return categoryLabel(breakdown.category);
+  }
+
+  protected hasUnplanned(breakdown: CategoryBreakdown): boolean {
+    return Number(breakdown.unplanned) > 0;
   }
 
   /** Fill level relative to the category's target, capped at 100 %. */

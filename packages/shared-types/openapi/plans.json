@@ -298,7 +298,7 @@
         "description" : "Most recently added first"
       },
       "CategoryBreakdownResponse" : {
-        "required" : [ "actualPercentageOfIncome", "category", "targetDirection", "targetMet", "targetPercentageOfIncome", "total" ],
+        "required" : [ "actualPercentageOfIncome", "category", "targetDirection", "targetMet", "targetPercentageOfIncome", "total", "unplanned" ],
         "type" : "object",
         "properties" : {
           "actualPercentageOfIncome" : {
@@ -322,6 +322,12 @@
             "type" : "string",
             "format" : "decimal",
             "example" : "850.0"
+          },
+          "unplanned" : {
+            "type" : "string",
+            "description" : "Part of total that is income not used up by any expense",
+            "format" : "decimal",
+            "example" : "0.0"
           }
         }
       },

@@ -69,8 +69,9 @@ class HouseholdPlanOverviewTest {
         HouseholdPlanOverview overview = overview("1000.00",
                 // exactly at the 50% ceiling
                 expense(ExpenseCategory.LEBENSUNTERHALT, "500.00"),
-                // above the 30% ceiling
-                expense(ExpenseCategory.FREIZEIT_SPASS, "350.00"));
+                // above the 30% ceiling, no surplus left
+                expense(ExpenseCategory.FREIZEIT_SPASS, "350.00"),
+                expense(ExpenseCategory.SPAREN_INVESTIEREN, "150.00"));
 
         CategoryBreakdown lebensunterhalt = breakdownFor(overview, ExpenseCategory.LEBENSUNTERHALT);
         assertThat(lebensunterhalt.total().value()).isEqualByComparingTo("500.00");
@@ -122,8 +123,25 @@ class HouseholdPlanOverviewTest {
         assertThat(overview.totalIncome()).isEqualTo(money("2000.00"));
         assertThat(overview.totalExpense()).isEqualTo(money("1300.00"));
         assertThat(breakdownFor(overview, ExpenseCategory.LEBENSUNTERHALT).total()).isEqualTo(money("900.00"));
-        assertThat(breakdownFor(overview, ExpenseCategory.FREIZEIT_SPASS).total()).isEqualTo(Money.ZERO);
         assertThat(breakdownFor(overview, ExpenseCategory.SPAREN_INVESTIEREN).total()).isEqualTo(money("400.00"));
+    }
+
+    /** AW-10 */
+    @Test
+    void leisureContainsTheSurplusAndShowsItAsUnplanned() {
+        HouseholdPlanOverview overview = overview("2000.00",
+                expense(ExpenseCategory.LEBENSUNTERHALT, "1000.00"),
+                expense(ExpenseCategory.FREIZEIT_SPASS, "200.00"),
+                expense(ExpenseCategory.SPAREN_INVESTIEREN, "400.00"));
+
+        CategoryBreakdown freizeit = breakdownFor(overview, ExpenseCategory.FREIZEIT_SPASS);
+        assertThat(freizeit.total()).isEqualTo(money("600.00"));
+        assertThat(freizeit.unplanned()).isEqualTo(money("400.00"));
+        assertThat(freizeit.actualPercentageOfIncome()).isEqualTo(Percentage.of(30));
+        assertThat(freizeit.targetMet()).isTrue();
+        assertThat(breakdownFor(overview, ExpenseCategory.SPAREN_INVESTIEREN).unplanned()).isEqualTo(Money.ZERO);
+        assertThat(breakdownFor(overview, ExpenseCategory.LEBENSUNTERHALT).unplanned()).isEqualTo(Money.ZERO);
+        assertThat(overview.totalExpense()).isEqualTo(money("1600.00"));
     }
 
     private static HouseholdPlanOverview overview(String income, OverviewItem... expenses) {
