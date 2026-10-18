@@ -1,5 +1,14 @@
 # Projektregeln
 
+## Fachliche Dokumentation
+
+- Zweck, Funktionsumfang und Nicht-Ziele stehen in `docs/produkt.md`, Fachbegriffe und ihre Namen im Code in
+  `docs/glossar.md`.
+- Vor jeder fachlichen Änderung die betroffene Spec in `docs/specs/` lesen. Widerspricht der Auftrag einer Spec oder
+  fehlt eine passende Spec, nachfragen. Ändert sich fachliches Verhalten, wird die Spec im selben PR angepasst.
+- Neue Specs entstehen aus `docs/specs/_vorlage.md`; neue Fachbegriffe kommen ins Glossar.
+- Tests, Commits und PRs verweisen auf die Regel-IDs der Specs (z. B. `HP-2`).
+
 ## CI und CD Pipelines
 
 ### Regeln für CI und CD Pipelines

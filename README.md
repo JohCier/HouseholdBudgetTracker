@@ -4,6 +4,9 @@ Haushaltsbuch nach der 50/30/20-Regel: höchstens 50 % des Jahreseinkommens für
 höchstens 30 % für Freizeit & Spaß, mindestens 20 % für Sparen & Investieren. Jeder Benutzer sieht und bearbeitet nur
 seine eigenen Haushaltspläne.
 
+Funktionsumfang, Nicht-Ziele und fachliche Regeln beschreiben [docs/produkt.md](docs/produkt.md),
+[docs/glossar.md](docs/glossar.md) und die Specs in [docs/specs/](docs/specs/).
+
 | Ordner                   | Inhalt                                                                                      |
 |--------------------------|---------------------------------------------------------------------------------------------|
 | `apps/backend/`          | Spring Boot (Java 25, Maven) – Haushaltspläne, DDD mit getrennter Schreib-/Leseseite, REST-API unter `/api/plans` |
