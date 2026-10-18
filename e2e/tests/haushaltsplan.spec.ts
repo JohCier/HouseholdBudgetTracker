@@ -42,6 +42,21 @@ test.describe('Haushaltsplan', () => {
     await expect(itemRow(page, 'Gehalt')).toBeVisible();
   });
 
+  for (const [boundary, disabled, enabled] of [
+    [1900, 'Vorheriges Jahr', 'Nächstes Jahr'],
+    [2200, 'Nächstes Jahr', 'Vorheriges Jahr'],
+  ] as const) {
+    test(`im Jahr ${boundary} ist der Pfeil „${disabled}" deaktiviert (HP-1)`, async ({ page }) => {
+      // The dashboard opens at the current year of the browser
+      await page.clock.setFixedTime(new Date(boundary, 5, 1, 12));
+      await register(page);
+
+      await expect(page.getByRole('heading', { name: String(boundary) })).toBeVisible();
+      await expect(page.getByRole('button', { name: disabled })).toBeDisabled();
+      await expect(page.getByRole('button', { name: enabled })).toBeEnabled();
+    });
+  }
+
   test('ein Benutzer sieht nur seine eigenen Pläne (HP-4)', async ({ browser }) => {
     const alice = await browser.newPage();
     await registerWithPlan(alice);

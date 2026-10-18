@@ -43,7 +43,6 @@ Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant":
 | Änderung | Spec |
 |---|---|
 | Überschuss zählt zu Freizeit & Spaß (AW-10) | [auswertung-50-30-20.md](specs/auswertung-50-30-20.md) |
-| Pläne nur für 1900 bis 2200 (HP-1) | [haushaltsplan.md](specs/haushaltsplan.md) |
 | Anmeldesperre nach 5 Fehlversuchen (AN-10) | [anmeldung.md](specs/anmeldung.md) |
 
 ## Weiterführend

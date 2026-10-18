@@ -127,6 +127,21 @@ class HouseholdPlanControllerTest {
                 .andExpect(jsonPath("$.detail").value("A household plan for 2026 already exists"));
     }
 
+    /** HP-1 */
+    @Test
+    void createPlanRejectsYearOutOfRange() throws Exception {
+        for (String year : new String[] {"1899", "2201"}) {
+            mockMvc.perform(post("/api/plans")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"year\":" + year + "}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("urn:hbt:invalid-input"))
+                    .andExpect(jsonPath("$.errors.year").exists());
+        }
+
+        verifyNoInteractions(plans);
+    }
+
     /** FM-2 */
     @Test
     void createPlanRequiresYear() throws Exception {
@@ -359,12 +374,15 @@ class HouseholdPlanControllerTest {
                 .andExpect(jsonPath("$.detail").value("No household plan for 2030"));
     }
 
+    /** HP-1, FM-2 */
     @Test
     void overviewRejectsYearOutOfRange() throws Exception {
-        mockMvc.perform(get("/api/plans").param("year", "0"))
-                .andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/plans").param("year", "10000"))
-                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/plans").param("year", "1899"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.type").value("urn:hbt:invalid-input"));
+        mockMvc.perform(get("/api/plans").param("year", "2201"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.type").value("urn:hbt:invalid-input"));
 
         verifyNoInteractions(plans);
     }

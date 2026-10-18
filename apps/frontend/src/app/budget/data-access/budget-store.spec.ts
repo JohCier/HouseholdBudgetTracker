@@ -68,6 +68,23 @@ describe('BudgetStore', () => {
     expect(api.getOverview).toHaveBeenLastCalledWith(2025);
   });
 
+  // HP-1
+  it('does not go before 1900 or after 2200', async () => {
+    await store.selectYear(1900);
+    expect(store.hasPreviousYear()).toBe(false);
+    expect(store.hasNextYear()).toBe(true);
+    await store.previousYear();
+    expect(store.year()).toBe(1900);
+
+    await store.selectYear(2200);
+    expect(store.hasNextYear()).toBe(false);
+    expect(store.hasPreviousYear()).toBe(true);
+    api.getOverview.mockClear();
+    await store.nextYear();
+    expect(store.year()).toBe(2200);
+    expect(api.getOverview).not.toHaveBeenCalled();
+  });
+
   it('knows when a year has no plan yet and can create one', async () => {
     await store.selectYear(2030);
 
