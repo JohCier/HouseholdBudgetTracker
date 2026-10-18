@@ -46,7 +46,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Registrieren | `User.register`, `/api/auth/register` | Benutzer anlegen und direkt anmelden |
 | Anmelden | `authenticate`, `/api/auth/login` | Prüfen, ob E-Mail-Adresse und Passwort zusammenpassen, und eine Sitzung starten |
 | Sitzung | Cookie `HBT_SESSION` mit JWT | Weist den Benutzer gegenüber beiden Diensten aus; 8 Stunden gültig, nicht serverseitig gespeichert |
-| Anmeldesperre | (geplant, AN-10) | Nach 5 fehlgeschlagenen Anmeldungen in 15 Minuten ist die Anmeldung mit dieser Adresse 15 Minuten lang gesperrt |
+| Anmeldesperre | `LoginThrottle` (Application-Port, kein Aggregate) | Nach 5 fehlgeschlagenen Anmeldungen in 15 Minuten ist die Anmeldung mit dieser Adresse 15 Minuten lang gesperrt |
 
 ## Domain Events
 

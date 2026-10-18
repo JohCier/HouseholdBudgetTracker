@@ -20,6 +20,12 @@ describe('toMessage', () => {
     expect(
       toMessage(problem(401, 'urn:hbt:invalid-credentials', 'E-mail address or password is wrong')),
     ).toBe('E-Mail-Adresse oder Passwort ist falsch.');
+    // AN-10
+    expect(
+      toMessage(
+        problem(429, 'urn:hbt:too-many-login-attempts', 'Too many failed sign-in attempts'),
+      ),
+    ).toBe('Zu viele Anmeldeversuche. Bitte versuche es in 15 Minuten erneut.');
     expect(toMessage(problem(400, 'urn:hbt:invalid-input', 'amount must be positive'))).toBe(
       'Die Eingabe ist ungültig.',
     );

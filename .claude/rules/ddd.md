@@ -26,7 +26,7 @@ jMolecules) in beiden Apps maschinell. Schlägt `ArchitectureTest` fehl, wird de
   - `domain/<aggregat>/event/`: Domain Events
   - `domain/<aggregat>/overview/`: Read Models und Query-Handler-Interfaces (ArchUnit)
   - `domain/exception/`: fachliche Exceptions
-  - `application/<aggregat>/`: Application Services
+  - `application/<aggregat>/`: Application Services und Ports für technische Mechanismen
   - `infrastructure/persistence|web|security|…`: Repository- und Query-Handler-Implementierungen, Controller, DTOs
 
 - Schichten: Die Ringe sind per `package-info.java` als jMolecules-Onion-Ringe deklariert; Abhängigkeiten zeigen nur
@@ -54,6 +54,14 @@ jMolecules) in beiden Apps maschinell. Schlägt `ArchitectureTest` fehl, wird de
 - Domain Events veröffentlichen: Das Aggregate sammelt seine Events intern; der Application Service holt sie nach
   `add`/`save` über `pullDomainEvents()` ab und veröffentlicht sie über Springs `ApplicationEventPublisher`. Events
   sind Records (ArchUnit) und tragen einen `Instant timestamp` (ArchUnit)
+
+- Nur fachliche Konzepte sind Aggregates: Eine Aggregate Root modelliert ein Konzept, das Benutzer kennen und dessen
+  Regeln die Specs beschreiben (`HouseholdPlan`, `User`). Technische Schutz- und Hilfsmechanismen wie Anmeldesperre,
+  Rate-Limits, Caches oder Sitzungen sind keine Aggregates, Entities oder Value Objects und bekommen weder Repository
+  noch Tabelle. Sie werden als Interface im Application Layer deklariert und in der Infrastruktur umgesetzt, im
+  einfachsten Fall im Speicher (z. B. `LoginThrottle`, umgesetzt von `InMemoryLoginThrottle`); ihre Exceptions liegen
+  beim Interface (`LoginLockedException`). Eine eigene
+  Datenbanktransaktion oder Persistenz nur, wenn die Spec verlangt, dass der Zustand einen Neustart übersteht
 
 - Domain-Ports: Technische Fähigkeiten, die die Domäne braucht, werden als Interface in der Domäne deklariert und in der
   Infrastruktur implementiert (z. B. `PasswordHasher`, umgesetzt von `BCryptPasswordHasher`). Ein Port darf einer

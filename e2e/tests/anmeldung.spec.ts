@@ -81,4 +81,22 @@ test.describe('Anmeldung', () => {
     await login(page, uniqueEmail());
     await expect(page.getByRole('alert')).toHaveText('E-Mail-Adresse oder Passwort ist falsch.');
   });
+
+  test('nach 5 Fehlversuchen ist die Anmeldung gesperrt, auch mit richtigem Passwort (AN-10)', async ({
+    page,
+  }) => {
+    const email = await register(page);
+    await logout(page);
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      await login(page, email, 'falsches-passwort');
+      await expect(page.getByRole('alert')).toHaveText('E-Mail-Adresse oder Passwort ist falsch.');
+    }
+    await login(page, email);
+
+    await expect(page.getByRole('alert')).toHaveText(
+      'Zu viele Anmeldeversuche. Bitte versuche es in 15 Minuten erneut.',
+    );
+    await expect(page).toHaveURL('/login');
+  });
 });
