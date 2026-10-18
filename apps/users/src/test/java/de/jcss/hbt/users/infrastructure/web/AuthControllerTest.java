@@ -63,6 +63,7 @@ class AuthControllerTest {
                         containsString("SameSite=Strict"), containsString("Secure"), containsString("Path=/"))));
     }
 
+    /** FM-2 */
     @Test
     void registeringATakenAddressReturns409() throws Exception {
         when(users.register(any()))
@@ -75,6 +76,7 @@ class AuthControllerTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(header().doesNotExist(HttpHeaders.SET_COOKIE))
+                .andExpect(jsonPath("$.type").value("urn:hbt:email-already-registered"))
                 .andExpect(jsonPath("$.detail").value("max@example.org is already registered"));
     }
 
@@ -86,6 +88,7 @@ class AuthControllerTest {
                                 {"email":"max@example.org","password":"kurz"}
                                 """))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.type").value("urn:hbt:invalid-input"))
                 .andExpect(jsonPath("$.detail").value("password must have at least 8 characters"));
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -104,6 +107,7 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.type").value("urn:hbt:invalid-input"))
                 .andExpect(jsonPath("$.errors.email").exists())
                 .andExpect(jsonPath("$.errors.password").exists());
 
@@ -124,6 +128,7 @@ class AuthControllerTest {
                 .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("HBT_SESSION=ey")));
     }
 
+    /** FM-2 */
     @Test
     void wrongCredentialsReturn401WithoutSession() throws Exception {
         when(users.authenticate(any(), any())).thenThrow(new InvalidCredentialsException());
@@ -135,6 +140,7 @@ class AuthControllerTest {
                                 """))
                 .andExpect(status().isUnauthorized())
                 .andExpect(header().doesNotExist(HttpHeaders.SET_COOKIE))
+                .andExpect(jsonPath("$.type").value("urn:hbt:invalid-credentials"))
                 .andExpect(jsonPath("$.detail").value("E-mail address or password is wrong"));
     }
 

@@ -1,15 +1,30 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
-/** Extracts a user-facing message, preferring the `detail` of an RFC 9457 problem response. */
+/**
+ * German messages for the errors of the API, by the `type` of their RFC 9457 problem
+ * response (FM-1, FM-2). The English `detail` is meant for logs and API clients and is never
+ * shown.
+ */
+const MESSAGES: Readonly<Record<string, string>> = {
+  'urn:hbt:invalid-input': 'Die Eingabe ist ungültig.',
+  'urn:hbt:plan-not-found': 'Diesen Haushaltsplan gibt es nicht (mehr).',
+  'urn:hbt:item-not-found': 'Diesen Eintrag gibt es nicht (mehr).',
+  'urn:hbt:plan-already-exists': 'Für dieses Jahr gibt es bereits einen Haushaltsplan.',
+  'urn:hbt:email-already-registered': 'Für diese E-Mail-Adresse gibt es bereits ein Konto.',
+  'urn:hbt:invalid-credentials': 'E-Mail-Adresse oder Passwort ist falsch.',
+};
+
+/** A German, user-facing message for an error; a general one for unknown errors (FM-3). */
 export function toMessage(error: unknown): string {
   if (error instanceof HttpErrorResponse) {
-    if (typeof error.error?.detail === 'string') {
-      return error.error.detail;
+    const type: unknown = error.error?.type;
+    if (typeof type === 'string' && type in MESSAGES) {
+      return MESSAGES[type];
     }
     if (error.status === 0) {
       return 'Server nicht erreichbar.';
     }
-    return `Anfrage fehlgeschlagen (${error.status}).`;
+    return `Die Anfrage ist fehlgeschlagen (${error.status}).`;
   }
   return 'Unbekannter Fehler.';
 }
