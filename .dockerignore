@@ -10,3 +10,4 @@ apps/users
 apps/frontend/dist
 apps/frontend/.angular
 packages/shared-types/generated
+e2e

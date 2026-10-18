@@ -19,10 +19,14 @@
 #   java       Maven (./mvnw verify) for the changed Java apps, incl. Testcontainers and the OpenAPI contract check;
 #              skipped if no Java app changed
 #   frontend   npm: tests and Angular build of the frontend
+#   e2e        Playwright (e2e/) drives Chromium through the whole stack from compose.yaml (nginx with the Angular app,
+#              backend, users, PostgreSQL), built from the checked-out code. On failure the Playwright report (with
+#              traces and screenshots) is uploaded as the artifact "playwright-report" and the container logs are printed.
 #   cve-scan   Trivy scans the dependencies (pom.xml, package-lock.json) for known vulnerabilities (CVEs). Fails on
 #              CRITICAL/HIGH findings that already have a fix, but does not block docker/deploy (informative only).
 #              Accepted findings go into .trivyignore in the repository root (one CVE ID per line, with a reason).
-#   docker     Docker Buildx builds one image per changed app and pushes it to ghcr.io (not for pull requests).
+#   docker     Docker Buildx builds one image per changed app and pushes it to ghcr.io (not for pull requests);
+#              waits for java, frontend and e2e, so a failed E2E test stops the image push and the deploy.
 #              Unchanged apps keep their previous image and get no new sha-<commit> tag.
 #   deploy     copies compose.prod.yaml to the server via SCP and starts the new images via SSH (master only)
 #
@@ -32,6 +36,7 @@
 #   needs.changes.outputs.apps     origin: job "changes"; steps.filter.outputs.changes, for tags and manual runs
 #                                  (filter skipped) all apps; matrix of the jobs "java" (without frontend) and "docker"
 #   matrix.app                     origin: job matrix; app name = directory under apps/ and image name
+#   CI                             origin: set by the runner; makes Playwright forbid test.only and write the HTML report
 #   steps.node.outputs.version     origin: apps/frontend/.nvmrc; Node version as build arg NODE_VERSION of the
 #                                  frontend image
 #   steps.meta.outputs.tags        origin: docker/metadata-action; image tags (latest, sha-<commit>, semver)
@@ -129,6 +134,37 @@ jobs:
       - run: npm test --workspace=frontend -- --watch=false
       - run: npm run build --workspace=frontend
 
+  e2e:
+    name: E2E tests (Playwright)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: apps/frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      # Builds the images from the checked-out code and waits until every container is healthy; the app is then
+      # reachable at http://localhost:8080 (default JWT_SECRET from compose.yaml)
+      - name: Stack starten
+        run: docker compose --profile app up --build --detach --wait
+      - run: npm ci
+      - name: Chromium installieren
+        run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      - name: Container-Logs
+        if: failure()
+        run: docker compose --profile app logs
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 14
+
   cve-scan:
     name: CVE scan (Trivy)
     # Not listed in docker.needs: a finding turns this job red, but images are still built and deployed
@@ -169,7 +205,7 @@ jobs:
 
   docker:
     name: Build & push ${{ matrix.app }} image
-    needs: [changes, java, frontend]
+    needs: [changes, java, frontend, e2e]
     # !failure() && !cancelled(): runs although "java" was skipped (no Java app changed), but not after a failed test.
     # Dependabot PRs only run the tests, no image build. Without changed files (empty commit) there is nothing to build.
     if: >-
