@@ -112,6 +112,7 @@ class HouseholdPlanControllerTest {
                 .andExpect(jsonPath("$.id").value(PLAN.toString()));
     }
 
+    /** FM-2 */
     @Test
     void createPlanForExistingYearReturns409() throws Exception {
         when(plans.createPlan(any())).thenThrow(new HouseholdPlanAlreadyExistsException(Year.of(2026)));
@@ -122,15 +123,18 @@ class HouseholdPlanControllerTest {
                                 {"year":2026}
                                 """))
                 .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.type").value("urn:hbt:plan-already-exists"))
                 .andExpect(jsonPath("$.detail").value("A household plan for 2026 already exists"));
     }
 
+    /** FM-2 */
     @Test
     void createPlanRequiresYear() throws Exception {
         mockMvc.perform(post("/api/plans")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.type").value("urn:hbt:invalid-input"))
                 .andExpect(jsonPath("$.errors.year").exists());
 
         verifyNoInteractions(plans);
@@ -203,9 +207,11 @@ class HouseholdPlanControllerTest {
                                 {"description":"Gehalt","amount":"1.00"}
                                 """))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.type").value("urn:hbt:invalid-input"))
                 .andExpect(jsonPath("$.detail").value("amount must not have more than 2 decimal places"));
     }
 
+    /** FM-2 */
     @Test
     void unknownPlanReturns404() throws Exception {
         when(plans.addIncome(any())).thenThrow(new HouseholdPlanNotFoundException(PLAN_ID));
@@ -216,6 +222,7 @@ class HouseholdPlanControllerTest {
                                 {"description":"Gehalt","amount":"1.00"}
                                 """))
                 .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.type").value("urn:hbt:plan-not-found"))
                 .andExpect(jsonPath("$.detail").value("Household plan not found: " + PLAN));
     }
 
@@ -229,6 +236,7 @@ class HouseholdPlanControllerTest {
         verify(plans).removeItem(new RemoveBudgetItemCommand(OWNER, PLAN_ID, BudgetItemId.of(itemId)));
     }
 
+    /** FM-2 */
     @Test
     void removeUnknownItemReturns404() throws Exception {
         UUID itemId = UUID.randomUUID();
@@ -236,6 +244,7 @@ class HouseholdPlanControllerTest {
 
         mockMvc.perform(delete("/api/plans/{planId}/items/{itemId}", PLAN, itemId))
                 .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.type").value("urn:hbt:item-not-found"))
                 .andExpect(jsonPath("$.detail").value("Budget item not found: " + itemId));
     }
 

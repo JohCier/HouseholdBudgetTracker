@@ -6,8 +6,8 @@ import { AuthStore } from './auth-store';
 
 const user = { id: 'u1', email: 'max@example.org' };
 const credentials = { email: 'max@example.org', password: 'geheim123' };
-const httpError = (status: number, detail?: string) => () =>
-  new HttpErrorResponse({ status, error: detail ? { detail } : null });
+const httpError = (status: number, type?: string) => () =>
+  new HttpErrorResponse({ status, error: type ? { type, detail: 'English detail' } : null });
 
 describe('AuthStore', () => {
   let api: { [K in keyof AuthApi]: ReturnType<typeof vi.fn> };
@@ -61,8 +61,10 @@ describe('AuthStore', () => {
   });
 
   it('explains failures in German', async () => {
-    api.login.mockReturnValue(throwError(httpError(401, 'E-mail address or password is wrong')));
-    api.register.mockReturnValueOnce(throwError(httpError(409)));
+    api.login.mockReturnValue(throwError(httpError(401, 'urn:hbt:invalid-credentials')));
+    api.register.mockReturnValueOnce(
+      throwError(httpError(409, 'urn:hbt:email-already-registered')),
+    );
 
     await expect(store.login(credentials)).rejects.toThrow(
       'E-Mail-Adresse oder Passwort ist falsch.',
@@ -73,14 +75,10 @@ describe('AuthStore', () => {
     expect(store.signedIn()).toBe(false);
   });
 
-  it('passes on other server messages', async () => {
-    api.register.mockReturnValue(
-      throwError(httpError(400, 'password must have at least 8 characters')),
-    );
+  it('explains invalid input in German', async () => {
+    api.register.mockReturnValue(throwError(httpError(400, 'urn:hbt:invalid-input')));
 
-    await expect(store.register(credentials)).rejects.toThrow(
-      'password must have at least 8 characters',
-    );
+    await expect(store.register(credentials)).rejects.toThrow('Die Eingabe ist ungültig.');
   });
 
   it('is signed out even if the server cannot be told', async () => {

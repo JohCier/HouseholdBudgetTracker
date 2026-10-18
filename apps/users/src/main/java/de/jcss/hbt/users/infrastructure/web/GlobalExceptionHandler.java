@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import java.net.URI;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -24,24 +25,36 @@ import java.util.stream.Collectors;
  * Renders all errors as RFC 9457 problem details ({@code application/problem+json}).
  * Framework exceptions (malformed JSON, ...) are covered by {@link ResponseEntityExceptionHandler};
  * domain exceptions are translated here, keeping the domain itself free of any web/HTTP
- * concerns. The human-readable message is always in {@code detail}.
+ * concerns. The human-readable message is always in {@code detail} (English, for logs and API
+ * clients). Each domain error also carries a stable {@code type}, by which the frontend shows its
+ * own German message (FM-2).
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
+    static final URI INVALID_INPUT = URI.create("urn:hbt:invalid-input");
+    static final URI EMAIL_ALREADY_REGISTERED = URI.create("urn:hbt:email-already-registered");
+    static final URI INVALID_CREDENTIALS = URI.create("urn:hbt:invalid-credentials");
+
     @ExceptionHandler(DomainValidationException.class)
     public ProblemDetail handleDomainValidation(DomainValidationException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return problem(HttpStatus.BAD_REQUEST, INVALID_INPUT, ex);
     }
 
     @ExceptionHandler(EmailAddressAlreadyRegisteredException.class)
     public ProblemDetail handleAlreadyRegistered(EmailAddressAlreadyRegisteredException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        return problem(HttpStatus.CONFLICT, EMAIL_ALREADY_REGISTERED, ex);
     }
 
     @ExceptionHandler(InvalidCredentialsException.class)
     public ProblemDetail handleInvalidCredentials(InvalidCredentialsException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        return problem(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS, ex);
+    }
+
+    private static ProblemDetail problem(HttpStatus status, URI type, RuntimeException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, ex.getMessage());
+        problem.setType(type);
+        return problem;
     }
 
     /** Lists every invalid field in {@code detail} and as an {@code errors} map. */
@@ -51,6 +64,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         Map<String, String> errors = ex.getBindingResult().getFieldErrors().stream()
                 .collect(Collectors.toMap(FieldError::getField, this::messageOf, (first, _) -> first, TreeMap::new));
         ProblemDetail body = ex.getBody();
+        body.setType(INVALID_INPUT);
         body.setDetail(errors.entrySet().stream()
                 .map(error -> error.getKey() + ": " + error.getValue())
                 .collect(Collectors.joining(", ")));

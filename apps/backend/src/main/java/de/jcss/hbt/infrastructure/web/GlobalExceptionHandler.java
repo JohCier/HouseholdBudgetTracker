@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import java.net.URI;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -26,24 +27,41 @@ import java.util.stream.Collectors;
  * Framework exceptions (malformed JSON, missing parameters, ...) are covered by
  * {@link ResponseEntityExceptionHandler}; domain exceptions are translated here, keeping
  * the domain itself free of any web/HTTP concerns. The human-readable message is always
- * in {@code detail}.
+ * in {@code detail} (English, for logs and API clients). Each domain error also carries a stable
+ * {@code type}, by which the frontend shows its own German message (FM-2).
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
+    static final URI INVALID_INPUT = URI.create("urn:hbt:invalid-input");
+    static final URI PLAN_NOT_FOUND = URI.create("urn:hbt:plan-not-found");
+    static final URI ITEM_NOT_FOUND = URI.create("urn:hbt:item-not-found");
+    static final URI PLAN_ALREADY_EXISTS = URI.create("urn:hbt:plan-already-exists");
+
     @ExceptionHandler(DomainValidationException.class)
     public ProblemDetail handleDomainValidation(DomainValidationException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return problem(HttpStatus.BAD_REQUEST, INVALID_INPUT, ex);
     }
 
-    @ExceptionHandler({HouseholdPlanNotFoundException.class, BudgetItemNotFoundException.class})
-    public ProblemDetail handleNotFound(RuntimeException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    @ExceptionHandler(HouseholdPlanNotFoundException.class)
+    public ProblemDetail handlePlanNotFound(HouseholdPlanNotFoundException ex) {
+        return problem(HttpStatus.NOT_FOUND, PLAN_NOT_FOUND, ex);
+    }
+
+    @ExceptionHandler(BudgetItemNotFoundException.class)
+    public ProblemDetail handleItemNotFound(BudgetItemNotFoundException ex) {
+        return problem(HttpStatus.NOT_FOUND, ITEM_NOT_FOUND, ex);
     }
 
     @ExceptionHandler(HouseholdPlanAlreadyExistsException.class)
     public ProblemDetail handleHouseholdPlanAlreadyExists(HouseholdPlanAlreadyExistsException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        return problem(HttpStatus.CONFLICT, PLAN_ALREADY_EXISTS, ex);
+    }
+
+    private static ProblemDetail problem(HttpStatus status, URI type, RuntimeException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, ex.getMessage());
+        problem.setType(type);
+        return problem;
     }
 
     /** Lists every invalid field in {@code detail} and as an {@code errors} map. */
@@ -53,6 +71,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         Map<String, String> errors = ex.getBindingResult().getFieldErrors().stream()
                 .collect(Collectors.toMap(FieldError::getField, this::messageOf, (first, _) -> first, TreeMap::new));
         ProblemDetail body = ex.getBody();
+        body.setType(INVALID_INPUT);
         body.setDetail(errors.entrySet().stream()
                 .map(error -> error.getKey() + ": " + error.getValue())
                 .collect(Collectors.joining(", ")));

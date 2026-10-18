@@ -23,6 +23,7 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 | Haushaltsplan | Pro Jahr einen Plan anlegen, zwischen Jahren wechseln | [haushaltsplan.md](specs/haushaltsplan.md) |
 | Posten | Einnahmen und Ausgaben (mit Kategorie) erfassen, löschen, Löschen rückgängig machen | [posten.md](specs/posten.md) |
 | Posten bearbeiten | Beschreibung, Betrag und Kategorie eines Postens ändern | [posten-bearbeiten.md](specs/posten-bearbeiten.md) |
+| Fehlermeldungen | Alle Meldungen auf Deutsch, auch die der API | [fehlermeldungen.md](specs/fehlermeldungen.md) |
 | Auswertung | Summen, Saldo, Warnung bei Defizit, Anteil und Zielerreichung je 50/30/20-Kategorie | [auswertung-50-30-20.md](specs/auswertung-50-30-20.md) |
 
 Alle Beträge sind in Euro. Die Oberfläche ist deutschsprachig.
@@ -43,7 +44,6 @@ Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant":
 |---|---|
 | Überschuss zählt zu Freizeit & Spaß (AW-10) | [auswertung-50-30-20.md](specs/auswertung-50-30-20.md) |
 | Pläne nur für 1900 bis 2200 (HP-1) | [haushaltsplan.md](specs/haushaltsplan.md) |
-| Fehlermeldungen der API auf Deutsch (FM-1 bis FM-4) | [fehlermeldungen.md](specs/fehlermeldungen.md) |
 | Anmeldesperre nach 5 Fehlversuchen (AN-10) | [anmeldung.md](specs/anmeldung.md) |
 
 ## Weiterführend
