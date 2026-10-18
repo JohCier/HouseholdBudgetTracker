@@ -26,9 +26,7 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 
 Alle Beträge sind in Euro. Die Oberfläche ist deutschsprachig.
 
-## Nicht-Ziele (bitte bestätigen)
-
-Abgeleitet aus dem, was der Code bewusst nicht kann:
+## Nicht-Ziele
 
 - Keine einzelnen Buchungen mit Datum, keine Monatsansicht: Ein Posten ist ein Jahresbetrag ohne eigenes Datum.
 - Keine Anbindung an Bankkonten, kein Import von Kontoauszügen.
