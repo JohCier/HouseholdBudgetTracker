@@ -1,6 +1,6 @@
 package de.jcss.hbt.infrastructure.persistence;
 
-import de.jcss.hbt.TestcontainersConfiguration;
+import de.jcss.hbt.IntegrationTest;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
@@ -15,8 +15,6 @@ import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 import java.math.BigDecimal;
@@ -26,8 +24,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** The repository is only used to arrange test data; the query handler itself never touches it. */
-@SpringBootTest
-@Import(TestcontainersConfiguration.class)
+@IntegrationTest
 class JdbcHouseholdPlanOverviewQueryHandlerTest {
 
     private static final OwnerId OWNER = OwnerId.of(UUID.randomUUID());

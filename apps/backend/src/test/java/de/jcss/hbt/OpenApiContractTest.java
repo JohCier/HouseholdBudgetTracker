@@ -2,8 +2,6 @@ package de.jcss.hbt;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -20,10 +18,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  * Guards the REST contract shared with the frontend: the generated OpenAPI document must
  * match {@code packages/shared-types/openapi/plans.json}, from which the frontend
  * generates its TypeScript types. After an intended API change, regenerate the file with
- * {@code ./mvnw test -Dtest=OpenApiContractTest -Dopenapi.update=true}.
+ * {@code ./mvnw verify -Dit.test=OpenApiContractTest -Dopenapi.update=true}.
  */
-@SpringBootTest
-@Import(TestcontainersConfiguration.class)
+@IntegrationTest
 class OpenApiContractTest {
 
     private static final Path CONTRACT = Path.of("..", "..", "packages", "shared-types", "openapi", "plans.json");

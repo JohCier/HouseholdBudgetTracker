@@ -113,8 +113,15 @@ npm ci && npm start --workspace=frontend
 Wer die Apps anders startet, z. B. aus der IDE, muss `JWT_SECRET` selbst setzen – in beiden Apps auf denselben Wert,
 mindestens 32 Bytes; ohne startet keine der beiden.
 
-Tests: `./mvnw verify` (in `apps/backend` bzw. `apps/users`, nutzt Testcontainers) bzw.
-`npm test --workspace=frontend`. API-Dokumentation des Backends: http://localhost:8080/api/docs
+Tests (in `apps/backend` bzw. `apps/users`):
+
+- `./mvnw test` – schnelle Tests ohne Docker (Domäne, Application Services, Controller per `@WebMvcTest`,
+  `ArchitectureTest`), dauert Sekunden
+- `./mvnw verify` – zusätzlich alle mit `@IntegrationTest` markierten Tests: Sie starten die ganze App gegen eine
+  PostgreSQL per Testcontainers und brauchen Docker; Maven führt sie nach den schnellen Tests über das
+  Failsafe-Plugin aus. Neue Tests mit Datenbank bekommen deshalb `@IntegrationTest` statt `@SpringBootTest`.
+
+Frontend: `npm test --workspace=frontend`. API-Dokumentation des Backends: http://localhost:8080/api/docs
 
 ## API-Verträge ändern
 
@@ -139,11 +146,11 @@ JSON-Datei und schlägt fehl, sobald beide voneinander abweichen. So fällt jede
 Vorgehen bei einer Änderung, z. B. ein neues Feld in einem Request-DTO:
 
 1. Controller bzw. DTO in der betroffenen App (`apps/backend` oder `apps/users`) ändern.
-2. `./mvnw test` – `OpenApiContractTest` schlägt mit „API changed …“ fehl; das ist erwartet.
+2. `./mvnw verify` – `OpenApiContractTest` schlägt mit „API changed …“ fehl; das ist erwartet.
 3. Die JSON-Datei aus dem Java-Code neu erzeugen:
 
    ```bash
-   ./mvnw test -Dtest=OpenApiContractTest -Dopenapi.update=true
+   ./mvnw verify -Dit.test=OpenApiContractTest -Dopenapi.update=true
    ```
 
 4. Frontend bauen oder testen – die TypeScript-Typen werden neu generiert, der Compiler zeigt die Stellen, die

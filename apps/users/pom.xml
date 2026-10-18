@@ -166,10 +166,35 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
+					<!-- Fast tests without Docker; tests marked @IntegrationTest run via Failsafe -->
+					<excludedGroups>integration</excludedGroups>
 					<environmentVariables>
 						<JWT_SECRET>${dev.jwt-secret}</JWT_SECRET>
 					</environmentVariables>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<configuration>
+					<!-- Tests marked @IntegrationTest (Testcontainers, needs Docker), run by ./mvnw verify -->
+					<groups>integration</groups>
+					<includes>
+						<include>**/*Test.java</include>
+						<include>**/*Tests.java</include>
+					</includes>
+					<environmentVariables>
+						<JWT_SECRET>${dev.jwt-secret}</JWT_SECRET>
+					</environmentVariables>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
