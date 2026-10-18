@@ -29,6 +29,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Ausgaben | `totalExpense` | Summe aller Ausgaben eines Plans |
 | Saldo | `balance` | Einkommen minus Ausgaben; negativ bei Defizit |
 | Defizit | `expensesExceedIncome` | Die Ausgaben sind höher als das Einkommen |
+| Überschuss | (geplant, AW-10) | Positiver Saldo; zählt in der Auswertung zu Freizeit & Spaß |
 | Finanzielle Lage | `BudgetSummary` (Value Object) | Einkommen, Ausgaben je Kategorie und alles, was daraus folgt (Saldo, Anteile, Zielerreichung) |
 | Übersicht | `HouseholdPlanOverview` (Read Model) | Was die Oberfläche für ein Jahr anzeigt: Posten, Summen, Aufteilung je Kategorie |
 | Aufteilung je Kategorie | `CategoryBreakdown` | Teil der Übersicht: Summe, Anteil, Zielanteil und Zielerreichung einer Kategorie |
@@ -45,6 +46,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Registrieren | `User.register`, `/api/auth/register` | Benutzer anlegen und direkt anmelden |
 | Anmelden | `authenticate`, `/api/auth/login` | Prüfen, ob E-Mail-Adresse und Passwort zusammenpassen, und eine Sitzung starten |
 | Sitzung | Cookie `HBT_SESSION` mit JWT | Weist den Benutzer gegenüber beiden Diensten aus; 8 Stunden gültig, nicht serverseitig gespeichert |
+| Anmeldesperre | (geplant, AN-10) | Nach 5 fehlgeschlagenen Anmeldungen in 15 Minuten ist die Anmeldung mit dieser Adresse 15 Minuten lang gesperrt |
 
 ## Domain Events
 

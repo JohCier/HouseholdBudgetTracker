@@ -44,6 +44,8 @@ ihnen ergibt sich die Auswertung nach der 50/30/20-Regel.
 - Posten mit Datum, wiederkehrende Posten, Monatsbeträge
 - Eigene Kategorien oder Unterkategorien
 - Andere Währungen als Euro
+- Eine fachliche Obergrenze für Beträge. Technisch begrenzt bleibt der Betrag auf zehn Vorkommastellen (Spalte
+  `amount`); das ist keine fachliche Regel.
 
 ## Umsetzung
 
@@ -60,7 +62,3 @@ ihnen ergibt sich die Auswertung nach der 50/30/20-Regel.
 - E2E: `e2e/tests/posten.spec.ts`
 
 ## Offene Fragen
-
-- Die Fehlermeldungen der API (`detail`) sind englisch und werden in der deutschen Oberfläche direkt angezeigt. Sollen
-  sie übersetzt werden, und wenn ja, im Backend oder im Frontend?
-- Die API erlaubt Beträge bis zehn Vorkommastellen. Ist eine fachliche Obergrenze gewünscht?

@@ -1,6 +1,8 @@
 # Haushaltsplan
 
-Status: umgesetzt
+Status: geplant
+
+HP-2 bis HP-7 sind umgesetzt; geplant ist die neue Jahresgrenze in HP-1 (1900 bis 2200 statt 1 bis 9999).
 
 ## Zweck
 
@@ -9,7 +11,8 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
 
 ## Fachliche Regeln
 
-- **HP-1**: Ein Plan gilt für genau ein Kalenderjahr (1 bis 9999).
+- **HP-1**: Ein Plan gilt für genau ein Kalenderjahr von 1900 bis einschließlich 2200 (geplant; heute 1 bis 9999).
+  Pläne für andere Jahre werden weder angelegt noch abgerufen.
 - **HP-2**: Ein Benutzer hat höchstens einen Plan pro Jahr. Ein zweiter Plan für dasselbe Jahr wird abgelehnt.
 - **HP-3**: Ein Plan gehört dem Benutzer, der ihn angelegt hat (Besitzer). Der Besitzer ändert sich nie.
 - **HP-4**: Nur der Besitzer sieht und ändert seinen Plan. Pläne anderer Benutzer werden behandelt, als gäbe es sie
@@ -30,6 +33,10 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
   die API mit 404 (nicht 403).
 - **Gegeben** die Oberfläche, **wenn** sie geöffnet wird, **dann** zeigt sie das aktuelle Jahr (Zeitzone des Browsers);
   mit den Pfeilen wechselt der Benutzer zum vorherigen bzw. nächsten Jahr.
+- **Gegeben** ein Plan für 1899 oder 2201, **wenn** er angelegt oder abgerufen werden soll, **dann** antwortet die API mit
+  400 (HP-1).
+- **Gegeben** die Oberfläche zeigt 1900 bzw. 2200, **dann** ist der Pfeil zum vorherigen bzw. nächsten Jahr deaktiviert
+  (HP-1).
 
 ## Nicht im Umfang
 
@@ -54,5 +61,5 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
 
 ## Offene Fragen
 
-- Soll es eine Grenze geben, wie weit in Zukunft oder Vergangenheit ein Plan angelegt werden darf? Heute ist jedes Jahr
-  von 1 bis 9999 erlaubt.
+- HP-1: Was passiert mit bereits gespeicherten Plänen außerhalb von 1900 bis 2200? Vorschlag: vor der Umsetzung in der
+  Datenbank prüfen; gibt es keine, genügt die neue Grenze, sonst entscheidest du über Löschen oder Behalten.

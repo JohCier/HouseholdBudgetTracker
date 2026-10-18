@@ -1,6 +1,8 @@
 # Anmeldung
 
-Status: umgesetzt
+Status: geplant
+
+AN-1 bis AN-9 sind umgesetzt; geplant ist AN-10 (Schutz gegen viele Anmeldeversuche).
 
 ## Zweck
 
@@ -23,6 +25,10 @@ und meldet sich an. Die Sitzung gilt für beide Dienste (Users und Backend).
   Anmeldung weiter.
 - **AN-8**: Abmelden beendet die Sitzung im Browser. Sitzungen werden serverseitig nicht gespeichert.
 - **AN-9**: Angemeldete Benutzer sehen Anmeldung und Registrierung nicht, nicht angemeldete nur diese beiden Seiten.
+- **AN-10** (geplant): Nach 5 fehlgeschlagenen Anmeldungen für dieselbe E-Mail-Adresse innerhalb von 15 Minuten wird
+  die Anmeldung für diese Adresse 15 Minuten lang abgelehnt, auch mit richtigem Passwort (Anmeldesperre). Das gilt
+  genauso für nicht registrierte Adressen, damit die Sperre nicht verrät, welche Adressen es gibt (AN-6). Eine
+  erfolgreiche Anmeldung setzt den Zähler zurück.
 
 ## Akzeptanzkriterien
 
@@ -34,6 +40,10 @@ und meldet sich an. Die Sitzung gilt für beide Dienste (Users und Backend).
   Oberfläche zeigt „Mindestens 8 Zeichen.", ohne die Anfrage zu senden.
 - **Gegeben** ein registrierter Benutzer, **wenn** er sich mit falschem Passwort anmeldet, **dann** antwortet die API mit
   401.
+- **Gegeben** 5 fehlgeschlagene Anmeldungen für eine Adresse innerhalb von 15 Minuten, **wenn** sich jemand erneut mit
+  dieser Adresse anmeldet, auch mit richtigem Passwort, **dann** antwortet die API mit 429, und die Oberfläche zeigt
+  „Zu viele Anmeldeversuche. Bitte versuche es in 15 Minuten erneut." (AN-10).
+- **Gegeben** eine Anmeldesperre, **wenn** 15 Minuten vergangen sind, **dann** ist die Anmeldung wieder möglich (AN-10).
 - **Gegeben** eine abgelaufene Sitzung, **wenn** die Oberfläche Daten lädt, **dann** leitet sie zur Anmeldung weiter.
 - **Gegeben** eine Sitzung, **wenn** `GET /api/auth/me` aufgerufen wird, **dann** liefert die API ID und E-Mail-Adresse
   des Benutzers, ohne Sitzung 401.
@@ -63,4 +73,7 @@ und meldet sich an. Die Sitzung gilt für beide Dienste (Users und Backend).
 
 ## Offene Fragen
 
-- Gibt es einen Schutz gegen viele Anmeldeversuche hintereinander (Rate Limiting)? Heute nicht.
+- AN-10: Sind 5 Versuche und 15 Minuten die richtigen Werte? Vorschlag: ja.
+- AN-10: Zusätzlich je IP-Adresse begrenzen (gegen das Durchprobieren vieler Adressen)? Vorschlag: nein, solange die
+  Anwendung nur einen Users-Dienst hat; die Sperre je Adresse genügt vorerst.
+- AN-10: Gilt die Sperre auch für die Registrierung? Vorschlag: nein.
