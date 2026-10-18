@@ -127,7 +127,7 @@ Tests (in `apps/backend` bzw. `apps/users`):
 Frontend: `npm test --workspace=frontend`. API-Dokumentation des Backends: http://localhost:8080/api/docs
 
 E2E-Tests (`e2e/`, Playwright): Sie bedienen die Oberfläche in Chromium gegen den kompletten Stack und decken die
-Kernabläufe der Specs ab (Registrierung und Anmeldung, Haushaltsplan, Posten, 50/30/20-Auswertung). Jeder Test
+Kernabläufe der Specs ab (Registrierung und Anmeldung, Haushaltsplan, Posten erfassen und bearbeiten, 50/30/20-Auswertung). Jeder Test
 registriert einen eigenen Benutzer, die Tests laufen deshalb parallel und auch gegen eine Datenbank mit Altdaten.
 
 ```bash

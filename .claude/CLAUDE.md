@@ -18,7 +18,10 @@ Anteil am Einkommen einhalten. Jeder Benutzer sieht nur seine eigenen Pläne.
 1. Wird ein neues Feature oder eine fachliche Änderung beschrieben, zuerst die Spec schreiben bzw. anpassen
    (Status „geplant"), noch ohne Code. Offene Fragen in der Spec festhalten.
 2. Die Spec zur Freigabe vorlegen und dabei die offenen Fragen stellen. Erst nach Freigabe implementieren.
-3. Eine Spec pro Auftrag und PR umsetzen; die Akzeptanzkriterien werden zu Tests.
+3. Eine Spec pro Auftrag und PR umsetzen; die Akzeptanzkriterien werden zu Tests. Jedes neue oder geänderte
+   Akzeptanzkriterium mit sichtbarem Verhalten in der Oberfläche bekommt im selben PR einen Playwright-Test in
+   `e2e/tests/<spec>.spec.ts`, mit der Regel-ID im Testnamen (z. B. `(PB-4)`). Reine API-Fälle (400, 404) decken die
+   Backend-Tests ab.
 4. Nach der Umsetzung den Status auf „umgesetzt" setzen und den Abschnitt „Umsetzung" ergänzen.
 
 „Setze alle geplanten Specs um" heißt: alle Specs mit Status „geplant" nacheinander, je Spec ein eigener PR.
