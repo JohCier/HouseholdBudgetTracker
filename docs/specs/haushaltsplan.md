@@ -1,8 +1,6 @@
 # Haushaltsplan
 
-Status: geplant
-
-HP-2 bis HP-7 sind umgesetzt; geplant ist die neue Jahresgrenze in HP-1 (1900 bis 2200 statt 1 bis 9999).
+Status: umgesetzt
 
 ## Zweck
 
@@ -11,7 +9,7 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
 
 ## Fachliche Regeln
 
-- **HP-1**: Ein Plan gilt für genau ein Kalenderjahr von 1900 bis einschließlich 2200 (geplant; heute 1 bis 9999).
+- **HP-1**: Ein Plan gilt für genau ein Kalenderjahr von 1900 bis einschließlich 2200.
   Pläne für andere Jahre werden weder angelegt noch abgerufen. Bereits gespeicherte Pläne außerhalb dieser Jahre
   bleiben in der Datenbank, sind aber nicht mehr erreichbar.
 - **HP-2**: Ein Benutzer hat höchstens einen Plan pro Jahr. Ein zweiter Plan für dasselbe Jahr wird abgelehnt.
@@ -48,6 +46,10 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
 ## Umsetzung
 
 - Domäne: `HouseholdPlan` (`create`, `isOwnedBy`), `OwnerId`, `HouseholdPlanId`
+- HP-1: `HouseholdPlan.create` lehnt Jahre außerhalb von `FIRST_YEAR`/`LAST_YEAR` mit `InvalidPlanYearException` ab
+  (400), `reconstitute` nicht; `CreateHouseholdPlanRequest` und `GET /api/plans?year=` prüfen dieselben Grenzen.
+  Frontend: `FIRST_YEAR`/`LAST_YEAR` in `budget/year.ts`, `BudgetStore.hasPreviousYear`/`hasNextYear` deaktivieren
+  die Pfeile
 - HP-2: `HouseholdPlanApplicationService.createPlan` prüft vorab, die Unique-Constraint in
   `V4__household_plan_owner.sql` sichert gegen gleichzeitige Anfragen
 - HP-4: `HouseholdPlanApplicationService.load` filtert über `isOwnedBy` und wirft `HouseholdPlanNotFoundException`
@@ -57,7 +59,7 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
 - Frontend: `budget/budget-dashboard.ts`, `budget/data-access/budget-store.ts`, `budget/year.ts`
 - Tests: `HouseholdPlanTest`, `HouseholdPlanApplicationServiceTest`, `HouseholdPlanControllerTest`,
   `HouseholdPlanIntegrationTest`, `JdbcHouseholdPlanRepositoryTest`, `budget-dashboard.spec.ts`,
-  `budget-store.spec.ts`
+  `budget-store.spec.ts`, `year.spec.ts`
 - E2E: `e2e/tests/haushaltsplan.spec.ts`
 
 ## Offene Fragen

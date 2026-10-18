@@ -3,6 +3,7 @@ package de.jcss.hbt.infrastructure.web;
 import de.jcss.hbt.application.householdplan.HouseholdPlanApplicationService;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
@@ -71,7 +72,7 @@ public class HouseholdPlanController {
     /** The overview of the user's plan of a year, including its items; 404 if they have no plan for it. */
     @GetMapping
     public HouseholdPlanOverviewResponse overview(@AuthenticationPrincipal Jwt user,
-                                                  @RequestParam @Min(1) @Max(9999) int year) {
+                                                  @RequestParam @Min(HouseholdPlan.FIRST_YEAR) @Max(HouseholdPlan.LAST_YEAR) int year) {
         return HouseholdPlanOverviewResponse.from(plans.getOverview(owner(user), Year.of(year)));
     }
 
