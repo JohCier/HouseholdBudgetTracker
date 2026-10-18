@@ -3,19 +3,19 @@ updates:
   - package-ecosystem: maven
     directories: [/apps/backend, /apps/users]
     schedule:
-      interval: weekly
+      interval: daily
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
+      interval: daily
     groups:
       angular:
         patterns: ["@angular/*", "@angular-devkit/*"]
   - package-ecosystem: docker
     directories: [/apps/backend, /apps/users, /apps/frontend]
     schedule:
-      interval: weekly
+      interval: daily
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: daily
