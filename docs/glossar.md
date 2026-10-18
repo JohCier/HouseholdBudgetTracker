@@ -10,7 +10,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 |---|---|---|
 | Haushaltsplan, Plan | `HouseholdPlan` (Aggregate Root) | Alle Einnahmen und Ausgaben, die ein Benutzer für ein Kalenderjahr plant. Höchstens einer pro Benutzer und Jahr |
 | Besitzer | `OwnerId` | Der Benutzer, der den Plan angelegt hat. Nur er sieht und ändert ihn. Im Backend nur über seine ID bekannt |
-| Jahr | `java.time.Year` | Das Kalenderjahr, für das ein Plan gilt (1 bis 9999) |
+| Jahr | `java.time.Year` | Das Kalenderjahr, für das ein Plan gilt (1900 bis 2200) |
 | Posten, Eintrag | `BudgetItem` (Entity) | Eine Einnahme oder Ausgabe in einem Plan, als Jahresbetrag ohne eigenes Datum |
 | Art des Postens | `ItemType` (`INCOME`, `EXPENSE`) | Einnahme oder Ausgabe |
 | Einnahme | `ItemType.INCOME` | Posten ohne Kategorie, erhöht das Einkommen |

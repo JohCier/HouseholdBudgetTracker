@@ -20,6 +20,8 @@ describe('BudgetDashboard', () => {
     const snackBar = { open: vi.fn(() => ({ onAction: () => undo })) };
     const store = {
       year: signal(2026),
+      hasPreviousYear: signal(true),
+      hasNextYear: signal(true),
       planId: signal('plan-2026'),
       planMissing: signal(false),
       items: signal([item]),
@@ -57,6 +59,8 @@ describe('BudgetDashboard', () => {
     const snackBar = { open: vi.fn() };
     const store = {
       year: signal(2026),
+      hasPreviousYear: signal(true),
+      hasNextYear: signal(true),
       planId: signal('plan-2026'),
       planMissing: signal(false),
       items: signal([item]),
@@ -102,6 +106,8 @@ describe('BudgetDashboard', () => {
   it('offers to create the plan of a year without one', async () => {
     const store = {
       year: signal(2030),
+      hasPreviousYear: signal(true),
+      hasNextYear: signal(true),
       planId: signal(null),
       planMissing: signal(true),
       items: signal([]),
