@@ -125,14 +125,37 @@ Frontend: `npm test --workspace=frontend`. API-Dokumentation des Backends: http:
 
 ## API-Verträge ändern
 
-Das Frontend importiert seine API-Typen aus `@hbt/shared-types`. Das Paket generiert sie aus
-`packages/shared-types/openapi/plans.json` und `users.json` (`npm run generate:api`, läuft automatisch vor `start`,
-`build` und `test` des Frontends). `OpenApiContractTest` der jeweiligen Java-App schlägt fehl, sobald die vom Server
-erzeugte Spezifikation davon abweicht. Nach einer gewollten API-Änderung in der betroffenen App:
+Die Java-Controller und ihre DTOs sind die einzige Quelle des Vertrags (Code-first). Alles Weitere wird daraus
+erzeugt, die Richtung ist immer Java → JSON → TypeScript:
 
-```bash
-./mvnw verify -Dit.test=OpenApiContractTest -Dopenapi.update=true
 ```
+Controller + DTOs (Java)
+   │  springdoc erzeugt zur Laufzeit die Spezifikation unter /v3/api-docs
+   │  OpenApiContractTest -Dopenapi.update=true schreibt sie in die Datei
+   ▼
+packages/shared-types/openapi/plans.json bzw. users.json   (eingecheckt, nie von Hand bearbeiten)
+   │  npm run generate:api – läuft automatisch vor start, build und test des Frontends
+   ▼
+TypeScript-Typen in @hbt/shared-types → Frontend
+```
+
+`OpenApiContractTest` der jeweiligen Java-App vergleicht die vom Server erzeugte Spezifikation mit der eingecheckten
+JSON-Datei und schlägt fehl, sobald beide voneinander abweichen. So fällt jede API-Änderung auf und muss bewusst
+übernommen werden.
+
+Vorgehen bei einer Änderung, z. B. ein neues Feld in einem Request-DTO:
+
+1. Controller bzw. DTO in der betroffenen App (`apps/backend` oder `apps/users`) ändern.
+2. `./mvnw verify` – `OpenApiContractTest` schlägt mit „API changed …“ fehl; das ist erwartet.
+3. Die JSON-Datei aus dem Java-Code neu erzeugen:
+
+   ```bash
+   ./mvnw verify -Dit.test=OpenApiContractTest -Dopenapi.update=true
+   ```
+
+4. Frontend bauen oder testen – die TypeScript-Typen werden neu generiert, der Compiler zeigt die Stellen, die
+   angepasst werden müssen.
+5. Java-Änderung, JSON-Datei und Frontend-Anpassung gemeinsam committen.
 
 ## Docker
 
@@ -149,14 +172,28 @@ ihren Zustand über `/actuator/health/readiness` (Docker-`HEALTHCHECK`). Das Sit
 `Secure`; solange die App nur per HTTP (nicht localhost) erreichbar ist, muss `HBT_AUTH_SECURE_COOKIE=false` gesetzt
 sein.
 
-Die GitHub-Action `.github/workflows/ci.yml` baut und testet alle Apps und pusht anschließend je ein Image nach
-`ghcr.io/johcier/householdbudgettracker/{backend,users,frontend}`:
+Die GitHub-Action `.github/workflows/ci.yml` baut und testet die geänderten Apps und pusht anschließend je ein Image
+nach `ghcr.io/johcier/householdbudgettracker/{backend,users,frontend}`. Das Frontend wird immer gebaut:
 
-| Auslöser         | Tags                              |
-|------------------|-----------------------------------|
-| Push auf master  | `latest`, `sha-<commit>`          |
-| Git-Tag `v1.2.3` | `1.2.3`, `1.2`, `sha-<commit>`    |
-| Pull Request     | nur Build, kein Push              |
+| Auslöser          | Gebaute Apps               | Tags                           |
+|-------------------|----------------------------|--------------------------------|
+| Push auf master   | geänderte Apps + Frontend  | `latest`, `sha-<commit>`       |
+| Git-Tag `v1.2.3`  | alle                       | `1.2.3`, `1.2`, `sha-<commit>` |
+| Pull Request      | geänderte Apps + Frontend  | nur Build, kein Push           |
+| Manueller Start   | alle                       | wie Push auf master            |
+
+Welche Dateien zu Backend und Users gehören, legen die Pfadfilter im Job `changes` fest (`apps/<app>/**` und der
+jeweilige OpenAPI-Vertrag in `packages/shared-types/openapi/`); eine Änderung an `ci.yml` baut alle Apps. Welche App
+gebaut wurde, zeigt der Job-Graph des Workflow-Laufs (für unveränderte Apps gibt es keinen Job), welche Dateien
+geändert wurden, das Log des Filter-Schritts im Job `changes`. Unveränderte Apps bekommen kein neues
+`sha-<commit>`-Tag, für `IMAGE_TAG` eignet sich daher nur `latest` oder eine Release-Version. Schlägt ein Build fehl,
+holt ihn der nächste Push nicht automatisch nach (die App gilt dann als unverändert); dafür die Action manuell starten.
+
+Bei jedem Lauf prüft Trivy die Abhängigkeiten (`pom.xml`, `package-lock.json`) auf bekannte Sicherheitslücken
+(CVEs). Funde der Schwere CRITICAL oder HIGH, für die es bereits einen Fix gibt, lassen den Job `cve-scan` fehlschlagen;
+Build, Push und Deploy laufen trotzdem weiter. Die Funde stehen in der Zusammenfassung des Workflow-Laufs. Bewusst
+akzeptierte Funde kommen mit Begründung in eine `.trivyignore` im Repository-Root (eine CVE-ID pro Zeile). Die
+Trivy-Version (`version` in `ci.yml`) aktualisiert Dependabot nicht, sie ist von Hand nachzuziehen.
 
 Für das Deployment (`compose.prod.yaml`) braucht der Server in `/opt/hbt/.env` neben `DB_PASSWORD` auch ein
 `JWT_SECRET` (z. B. `openssl rand -base64 48`). Optional schaltet `SECURE_COOKIE=true` das `Secure`-Flag ein, sobald
