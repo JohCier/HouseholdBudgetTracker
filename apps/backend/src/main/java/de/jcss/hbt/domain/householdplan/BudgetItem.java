@@ -18,6 +18,7 @@ import java.util.Optional;
  *     <li>description is required (its own rules are enforced by {@link BudgetItemDescription})</li>
  *     <li>amount must be positive</li>
  *     <li>an expense item requires a category; an income item never has one</li>
+ *     <li>the note is optional for both (its own rules are enforced by {@link BudgetItemNote})</li>
  * </ul>
  * Identity (equals/hashCode) is based solely on the item id, as is appropriate for
  * a DDD entity.
@@ -31,43 +32,48 @@ public final class BudgetItem {
     private final Money amount;
     private final ItemType type;
     private final ExpenseCategory category;
+    private final BudgetItemNote note;
 
     private BudgetItem(BudgetItemId id, BudgetItemDescription description, Money amount, ItemType type,
-                       ExpenseCategory category) {
+                       ExpenseCategory category, BudgetItemNote note) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.description = requireDescription(description);
         this.amount = requirePositive(amount);
         this.type = Objects.requireNonNull(type, "type must not be null");
         this.category = category;
+        this.note = note;
     }
 
-    static BudgetItem income(BudgetItemId id, BudgetItemDescription description, Money amount) {
-        return new BudgetItem(id, description, amount, ItemType.INCOME, null);
+    /** @param note {@code null} if the item has no note */
+    static BudgetItem income(BudgetItemId id, BudgetItemDescription description, Money amount, BudgetItemNote note) {
+        return new BudgetItem(id, description, amount, ItemType.INCOME, null, note);
     }
 
+    /** @param note {@code null} if the item has no note */
     static BudgetItem expense(BudgetItemId id, BudgetItemDescription description, Money amount,
-                                     ExpenseCategory category) {
+                              ExpenseCategory category, BudgetItemNote note) {
         if (category == null) {
             throw new InvalidBudgetItemException("category is required for expense items");
         }
-        return new BudgetItem(id, description, amount, ItemType.EXPENSE, category);
+        return new BudgetItem(id, description, amount, ItemType.EXPENSE, category, note);
     }
 
     /**
      * Rebuilds a stored item, e.g. in a repository; only meant for persistence.
      *
      * @param category the category of an expense; {@code null} for an income
+     * @param note     {@code null} if the item has no note
      */
     public static BudgetItem reconstitute(BudgetItemId id, BudgetItemDescription description, Money amount,
-                                          ItemType type, ExpenseCategory category) {
+                                          ItemType type, ExpenseCategory category, BudgetItemNote note) {
         return switch (Objects.requireNonNull(type, "type must not be null")) {
             case INCOME -> {
                 if (category != null) {
                     throw new InvalidBudgetItemException("income items must not have a category");
                 }
-                yield income(id, description, amount);
+                yield income(id, description, amount, note);
             }
-            case EXPENSE -> expense(id, description, amount, category);
+            case EXPENSE -> expense(id, description, amount, category, note);
         };
     }
 
@@ -76,15 +82,17 @@ public final class BudgetItem {
      * itself cannot be changed: an income must not get a category, an expense needs one.
      *
      * @param category the new category of an expense; {@code null} for an income
+     * @param note     the new note; {@code null} to remove it
      */
-    BudgetItem changedTo(BudgetItemDescription description, Money amount, ExpenseCategory category) {
-        return reconstitute(id, description, amount, type, category);
+    BudgetItem changedTo(BudgetItemDescription description, Money amount, ExpenseCategory category,
+                         BudgetItemNote note) {
+        return reconstitute(id, description, amount, type, category, note);
     }
 
-    /** Whether the other item has the same description, amount, type and category as this one. */
+    /** Whether the other item has the same description, amount, type, category and note as this one. */
     boolean hasSameValuesAs(BudgetItem other) {
         return description.equals(other.description) && amount.equals(other.amount) && type == other.type
-                && Objects.equals(category, other.category);
+                && Objects.equals(category, other.category) && Objects.equals(note, other.note);
     }
 
     private static BudgetItemDescription requireDescription(BudgetItemDescription description) {
@@ -131,6 +139,10 @@ public final class BudgetItem {
 
     public Optional<ExpenseCategory> category() {
         return Optional.ofNullable(category);
+    }
+
+    public Optional<BudgetItemNote> note() {
+        return Optional.ofNullable(note);
     }
 
     @Override

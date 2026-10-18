@@ -109,11 +109,15 @@ export class BudgetStore {
   }
 
   /**
-   * Re-creates a previously removed item (with a new id) in the plan it was removed from,
-   * even if another year has been selected in the meantime.
+   * Re-creates a previously removed item (with a new id) and its note in the plan it was
+   * removed from, even if another year has been selected in the meantime (PO-9, PN-8).
    */
   restoreItem(planId: string, item: BudgetItem): Promise<void> {
-    const request = { description: item.description, amount: item.amount };
+    const request = {
+      description: item.description,
+      amount: item.amount,
+      ...(item.note ? { note: item.note } : {}),
+    };
     return this.mutate(
       item.category === null
         ? this.api.addIncome(planId, request)

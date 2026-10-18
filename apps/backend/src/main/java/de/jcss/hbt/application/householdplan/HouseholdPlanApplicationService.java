@@ -72,21 +72,23 @@ public class HouseholdPlanApplicationService {
 
     public BudgetItemId addIncome(AddIncomeCommand command) {
         HouseholdPlan plan = load(command.planId(), command.owner());
-        BudgetItemId itemId = plan.addIncome(command.description(), command.amount());
+        BudgetItemId itemId = plan.addIncome(command.description(), command.amount(), command.note());
         saveAndPublishEvents(plan);
         return itemId;
     }
 
     public BudgetItemId addExpense(AddExpenseCommand command) {
         HouseholdPlan plan = load(command.planId(), command.owner());
-        BudgetItemId itemId = plan.addExpense(command.description(), command.amount(), command.category());
+        BudgetItemId itemId = plan.addExpense(command.description(), command.amount(), command.category(),
+                command.note());
         saveAndPublishEvents(plan);
         return itemId;
     }
 
     public void changeItem(ChangeBudgetItemCommand command) {
         HouseholdPlan plan = load(command.planId(), command.owner());
-        plan.changeItem(command.itemId(), command.description(), command.amount(), command.category());
+        plan.changeItem(command.itemId(), command.description(), command.amount(), command.category(),
+                command.note());
         saveAndPublishEvents(plan);
     }
 

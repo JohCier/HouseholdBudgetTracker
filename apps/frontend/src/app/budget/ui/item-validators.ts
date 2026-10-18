@@ -1,5 +1,14 @@
 import { AbstractControl, ValidationErrors } from '@angular/forms';
 
+/** The longest note an item may have (PN-2). */
+export const NOTE_MAX_LENGTH = 1000;
+
+/** The note to send for the text typed in: none if it is blank (PN-3). */
+export function noteOf(text: string): { note?: string } {
+  const note = text.trim();
+  return note === '' ? {} : { note };
+}
+
 /**
  * Amounts are stored in cents, so more than two decimal places are rejected. The sign is left to
  * `Validators.min`, so a negative amount gets the "positive amount" message (PO-4).

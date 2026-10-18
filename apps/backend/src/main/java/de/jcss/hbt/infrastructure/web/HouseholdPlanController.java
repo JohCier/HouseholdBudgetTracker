@@ -3,6 +3,7 @@ package de.jcss.hbt.infrastructure.web;
 import de.jcss.hbt.application.householdplan.HouseholdPlanApplicationService;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.BudgetItemNote;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.Money;
@@ -81,7 +82,8 @@ public class HouseholdPlanController {
     public BudgetItemIdResponse addIncome(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId,
                                           @Valid @RequestBody AddIncomeRequest request) {
         BudgetItemId id = plans.addIncome(new AddIncomeCommand(owner(user), HouseholdPlanId.of(planId),
-                BudgetItemDescription.of(request.description()), Money.of(request.amount())));
+                BudgetItemDescription.of(request.description()), Money.of(request.amount()),
+                BudgetItemNote.ofNullable(request.note())));
         return BudgetItemIdResponse.from(id);
     }
 
@@ -91,7 +93,7 @@ public class HouseholdPlanController {
                                            @Valid @RequestBody AddExpenseRequest request) {
         BudgetItemId id = plans.addExpense(new AddExpenseCommand(owner(user), HouseholdPlanId.of(planId),
                 BudgetItemDescription.of(request.description()), Money.of(request.amount()),
-                request.category().toDomain()));
+                request.category().toDomain(), BudgetItemNote.ofNullable(request.note())));
         return BudgetItemIdResponse.from(id);
     }
 
@@ -103,7 +105,7 @@ public class HouseholdPlanController {
         ExpenseCategoryDto category = request.category();
         plans.changeItem(new ChangeBudgetItemCommand(owner(user), HouseholdPlanId.of(planId), BudgetItemId.of(itemId),
                 BudgetItemDescription.of(request.description()), Money.of(request.amount()),
-                category == null ? null : category.toDomain()));
+                category == null ? null : category.toDomain(), BudgetItemNote.ofNullable(request.note())));
     }
 
     @DeleteMapping("/{planId}/items/{itemId}")

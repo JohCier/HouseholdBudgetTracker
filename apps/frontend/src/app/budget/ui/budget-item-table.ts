@@ -35,7 +35,12 @@ import { BudgetItem, categoryLabel } from '../budget.model';
             </ng-container>
             <ng-container matColumnDef="description">
               <th mat-header-cell *matHeaderCellDef>Beschreibung</th>
-              <td mat-cell *matCellDef="let item">{{ item.description }}</td>
+              <td mat-cell *matCellDef="let item">
+                {{ item.description }}
+                @if (item.note) {
+                  <div class="note">{{ item.note }}</div>
+                }
+              </td>
             </ng-container>
             <ng-container matColumnDef="category">
               <th mat-header-cell *matHeaderCellDef>Kategorie</th>
@@ -103,6 +108,12 @@ import { BudgetItem, categoryLabel } from '../budget.model';
     .actions {
       width: 96px;
       white-space: nowrap;
+    }
+    .note {
+      color: var(--mat-sys-on-surface-variant);
+      font: var(--mat-sys-body-small);
+      white-space: pre-line;
+      overflow-wrap: anywhere;
     }
     .empty {
       color: var(--mat-sys-on-surface-variant);

@@ -2,6 +2,7 @@ package de.jcss.hbt.infrastructure.persistence;
 
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.BudgetItemNote;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.ItemType;
@@ -33,7 +34,8 @@ public class JdbcHouseholdPlanOverviewQueryHandler implements HouseholdPlanOverv
                 BudgetItemDescription.of(rs.getString("description")),
                 Money.of(rs.getBigDecimal("amount")),
                 ItemType.valueOf(rs.getString("type")),
-                category == null ? null : ExpenseCategory.valueOf(category));
+                category == null ? null : ExpenseCategory.valueOf(category),
+                BudgetItemNote.ofNullable(rs.getString("note")));
     };
 
     private final JdbcClient jdbcClient;
@@ -54,7 +56,7 @@ public class JdbcHouseholdPlanOverviewQueryHandler implements HouseholdPlanOverv
 
     private List<OverviewItem> itemsOf(HouseholdPlanId planId) {
         return jdbcClient.sql("""
-                        SELECT id, description, amount, type, category
+                        SELECT id, description, amount, type, category, note
                         FROM budget_item
                         WHERE household_plan_id = :planId
                         ORDER BY created_at DESC, id

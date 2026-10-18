@@ -49,6 +49,15 @@
         </mat-form-field>
       }
 
+      <mat-form-field>
+        <mat-label>Notiz (optional)</mat-label>
+        <textarea matInput formControlName="note" rows="2" cdkTextareaAutosize></textarea>
+        <mat-hint align="end">{{ form.controls.note.value.length }} / {{ noteMaxLength }}</mat-hint>
+        @if (form.controls.note.invalid) {
+          <mat-error>Höchstens {{ noteMaxLength }} Zeichen.</mat-error>
+        }
+      </mat-form-field>
+
       <button matButton="filled" type="submit" [disabled]="submitting()">Hinzufügen</button>
     </form>
   </mat-card-content>

@@ -152,12 +152,12 @@ class HouseholdPlanOverviewTest {
 
     private static OverviewItem income(String amount) {
         return new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Einnahme"), money(amount),
-                ItemType.INCOME, null);
+                ItemType.INCOME, null, null);
     }
 
     private static OverviewItem expense(ExpenseCategory category, String amount) {
         return new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Ausgabe"), money(amount),
-                ItemType.EXPENSE, category);
+                ItemType.EXPENSE, category, null);
     }
 
     private static Money money(String amount) {

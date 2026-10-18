@@ -4,6 +4,7 @@ import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
 import de.jcss.hbt.domain.householdplan.BudgetItem;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.BudgetItemNote;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
@@ -41,7 +42,8 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                 BudgetItemDescription.of(rs.getString("description")),
                 Money.of(rs.getBigDecimal("amount")),
                 ItemType.valueOf(rs.getString("type")),
-                category == null ? null : ExpenseCategory.valueOf(category));
+                category == null ? null : ExpenseCategory.valueOf(category),
+                BudgetItemNote.ofNullable(rs.getString("note")));
     };
 
     private final JdbcClient jdbcClient;
@@ -65,7 +67,7 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
 
     private List<BudgetItem> findItems(HouseholdPlanId planId) {
         return jdbcClient.sql("""
-                        SELECT id, description, amount, type, category
+                        SELECT id, description, amount, type, category, note
                         FROM budget_item
                         WHERE household_plan_id = :planId
                         ORDER BY created_at, id
@@ -125,12 +127,13 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
     /** Unchanged items are left alone, so only new and changed items are written. */
     private void upsertItem(HouseholdPlanId planId, BudgetItem item) {
         jdbcClient.sql("""
-                        INSERT INTO budget_item (id, household_plan_id, description, amount, type, category)
-                        VALUES (:id, :planId, :description, :amount, :type, :category)
+                        INSERT INTO budget_item (id, household_plan_id, description, amount, type, category, note)
+                        VALUES (:id, :planId, :description, :amount, :type, :category, :note)
                         ON CONFLICT (id) DO UPDATE
-                        SET description = EXCLUDED.description, amount = EXCLUDED.amount, category = EXCLUDED.category
-                        WHERE (budget_item.description, budget_item.amount, budget_item.category)
-                              IS DISTINCT FROM (EXCLUDED.description, EXCLUDED.amount, EXCLUDED.category)
+                        SET description = EXCLUDED.description, amount = EXCLUDED.amount, category = EXCLUDED.category,
+                            note = EXCLUDED.note
+                        WHERE (budget_item.description, budget_item.amount, budget_item.category, budget_item.note)
+                              IS DISTINCT FROM (EXCLUDED.description, EXCLUDED.amount, EXCLUDED.category, EXCLUDED.note)
                         """)
                 .param("id", item.id().value())
                 .param("planId", planId.value())
@@ -138,6 +141,7 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                 .param("amount", item.amount().value())
                 .param("type", item.type().name())
                 .param("category", item.category().map(Enum::name).orElse(null))
+                .param("note", item.note().map(BudgetItemNote::value).orElse(null))
                 .update();
     }
 }

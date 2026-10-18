@@ -1,6 +1,6 @@
 # Notiz zum Posten
 
-Status: geplant
+Status: umgesetzt
 
 ## Zweck
 
@@ -47,10 +47,23 @@ Plans zu jedem Posten eine optionale Notiz festhalten und später wiederfinden.
 
 ## Umsetzung
 
-Folgt nach der Umsetzung.
+- Domäne: Value Object `BudgetItemNote` (PN-2, PN-3; `ofNullable` macht aus leerem Text „keine Notiz"), optionales
+  Feld `note` in `BudgetItem`; `HouseholdPlan.addIncome`, `addExpense` und `changeItem` nehmen die Notiz entgegen
+  (PN-1, PN-4), `BudgetItem.hasSameValuesAs` vergleicht sie mit (PN-5). Die Events tragen weiterhin nur IDs, der Text
+  der Notiz landet nicht im Protokoll (PN-5). `BudgetSummary` kennt die Notiz nicht (PN-6)
+- Commands: `AddIncomeCommand`, `AddExpenseCommand`, `ChangeBudgetItemCommand` mit optionaler Notiz
+- Persistenz: Spalte `budget_item.note VARCHAR(1000)` (Migration `V6__budget_item_note.sql`), geschrieben von
+  `JdbcHouseholdPlanRepository`, gelesen auch von `JdbcHouseholdPlanOverviewQueryHandler` (Read Model `OverviewItem`)
+- API: optionales Feld `note` (höchstens 1000 Zeichen, sonst 400) in `AddIncomeRequest`, `AddExpenseRequest` und
+  `ChangeBudgetItemRequest`; ein fehlendes oder leeres `note` beim Ändern entfernt die Notiz. `BudgetItemResponse`
+  liefert `note` oder `null`
+- Frontend: Feld „Notiz (optional)" mit Zeichenzähler in `budget/ui/add-item-form.html` und
+  `budget/ui/edit-item-dialog.ts`, Prüfung und Aufbereitung in `budget/ui/item-validators.ts` (`NOTE_MAX_LENGTH`,
+  `noteOf`); `budget/ui/budget-item-table.ts` zeigt die Notiz vollständig in kleiner grauer Schrift unter der
+  Beschreibung (PN-7); `BudgetStore.restoreItem` stellt sie wieder her (PN-8)
+- Tests: `BudgetItemNoteTest`, `HouseholdPlanTest`, `HouseholdPlanControllerTest`, `JdbcHouseholdPlanRepositoryTest`,
+  `JdbcHouseholdPlanOverviewQueryHandlerTest`, `add-item-form.spec.ts`, `edit-item-dialog.spec.ts`,
+  `budget-item-table.spec.ts`, `budget-store.spec.ts`
+- E2E: `e2e/tests/posten-notiz.spec.ts` (PN-1 bis PN-4, PN-7, PN-8; PN-5 und PN-6 decken die Backend-Tests ab)
 
 ## Offene Fragen
-
-- Reichen 1000 Zeichen als Obergrenze (PN-2)?
-- Soll die Tabelle die Notiz vollständig unter der Beschreibung zeigen (PN-7) oder nur ein Symbol, das die Notiz beim
-  Daraufzeigen einblendet? Vorschlag: vollständig, in kleiner grauer Schrift.

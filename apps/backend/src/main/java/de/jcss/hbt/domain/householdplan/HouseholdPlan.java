@@ -98,15 +98,18 @@ public final class HouseholdPlan {
         return owner.equals(user);
     }
 
-    public BudgetItemId addIncome(BudgetItemDescription description, Money amount) {
-        BudgetItem item = BudgetItem.income(BudgetItemId.generate(), description, amount);
+    /** @param note {@code null} if the income has no note */
+    public BudgetItemId addIncome(BudgetItemDescription description, Money amount, BudgetItemNote note) {
+        BudgetItem item = BudgetItem.income(BudgetItemId.generate(), description, amount, note);
         items.add(item);
         record(new IncomeAdded(id, item.id(), Instant.now()));
         return item.id();
     }
 
-    public BudgetItemId addExpense(BudgetItemDescription description, Money amount, ExpenseCategory category) {
-        BudgetItem item = BudgetItem.expense(BudgetItemId.generate(), description, amount, category);
+    /** @param note {@code null} if the expense has no note */
+    public BudgetItemId addExpense(BudgetItemDescription description, Money amount, ExpenseCategory category,
+                                   BudgetItemNote note) {
+        BudgetItem item = BudgetItem.expense(BudgetItemId.generate(), description, amount, category, note);
         items.add(item);
         record(new ExpenseAdded(id, item.id(), Instant.now()));
         return item.id();
@@ -117,13 +120,14 @@ public final class HouseholdPlan {
      * Records an event only if a value actually changed.
      *
      * @param category the new category of an expense; {@code null} for an income
+     * @param note     the new note; {@code null} to remove it
      * @throws BudgetItemNotFoundException if the item is not part of this plan
      */
     public void changeItem(BudgetItemId itemId, BudgetItemDescription description, Money amount,
-                           ExpenseCategory category) {
+                           ExpenseCategory category, BudgetItemNote note) {
         int index = indexOf(itemId);
         BudgetItem current = items.get(index);
-        BudgetItem changed = current.changedTo(description, amount, category);
+        BudgetItem changed = current.changedTo(description, amount, category, note);
         if (changed.hasSameValuesAs(current)) {
             return;
         }

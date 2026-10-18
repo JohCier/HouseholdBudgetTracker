@@ -1,3 +1,4 @@
+import { TextFieldModule } from '@angular/cdk/text-field';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,7 +10,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { EXPENSE_CATEGORIES, ExpenseCategory, ItemType } from '../budget.model';
 import { BudgetStore } from '../data-access/budget-store';
-import { maxTwoDecimals } from './item-validators';
+import { NOTE_MAX_LENGTH, maxTwoDecimals, noteOf } from './item-validators';
 
 @Component({
   selector: 'app-add-item-form',
@@ -21,6 +22,7 @@ import { maxTwoDecimals } from './item-validators';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    TextFieldModule,
   ],
   templateUrl: './add-item-form.html',
   styles: `
@@ -43,6 +45,7 @@ export class AddItemForm {
   private readonly snackBar = inject(MatSnackBar);
 
   protected readonly categories = EXPENSE_CATEGORIES;
+  protected readonly noteMaxLength = NOTE_MAX_LENGTH;
   protected readonly submitting = signal(false);
 
   private readonly fb = inject(FormBuilder).nonNullable;
@@ -56,6 +59,7 @@ export class AddItemForm {
       maxTwoDecimals,
     ]),
     category: this.fb.control<ExpenseCategory | null>(null, Validators.required),
+    note: this.fb.control('', Validators.maxLength(NOTE_MAX_LENGTH)),
   });
 
   constructor() {
@@ -79,8 +83,8 @@ export class AddItemForm {
       this.form.markAllAsTouched();
       return;
     }
-    const { type, description, amount, category } = this.form.getRawValue();
-    const request = { description: description.trim(), amount: String(amount) };
+    const { type, description, amount, category, note } = this.form.getRawValue();
+    const request = { description: description.trim(), amount: String(amount), ...noteOf(note) };
 
     this.submitting.set(true);
     try {
@@ -89,7 +93,7 @@ export class AddItemForm {
       } else {
         await this.store.addExpense({ ...request, category: category! });
       }
-      this.form.reset({ type, description: '', amount: null, category: null });
+      this.form.reset({ type, description: '', amount: null, category: null, note: '' });
       this.snackBar.open(
         type === 'INCOME' ? 'Einnahme hinzugefügt' : 'Ausgabe hinzugefügt',
         undefined,

@@ -12,6 +12,7 @@ const rent: BudgetItem = {
   amount: '850.00',
   type: 'EXPENSE',
   category: 'LEBENSUNTERHALT',
+  note: null,
 };
 const salary: BudgetItem = {
   id: '1',
@@ -19,6 +20,7 @@ const salary: BudgetItem = {
   amount: '3000.00',
   type: 'INCOME',
   category: null,
+  note: null,
 };
 
 // PB-1, PB-2, PB-3
@@ -44,7 +46,9 @@ describe('EditItemDialog', () => {
   }
 
   function input(name: string): HTMLInputElement {
-    return element.querySelector<HTMLInputElement>(`input[formcontrolname="${name}"]`)!;
+    return element.querySelector<HTMLInputElement>(
+      `input[formcontrolname="${name}"], textarea[formcontrolname="${name}"]`,
+    )!;
   }
 
   async function type(name: string, value: string) {
@@ -116,6 +120,40 @@ describe('EditItemDialog', () => {
     expect(element.querySelector('mat-error')?.textContent).toContain(
       'Bitte einen positiven Betrag angeben.',
     );
+  });
+
+  it('shows the current note and saves a changed one (PN-4)', async () => {
+    await open({ ...salary, note: 'netto' });
+
+    expect(input('note').value).toBe('netto');
+
+    await type('note', ' brutto ');
+    await save();
+
+    expect(store.changeItem).toHaveBeenCalledWith('1', {
+      description: 'Gehalt',
+      amount: '3000',
+      note: 'brutto',
+    });
+  });
+
+  it('removes the note when it is emptied (PN-4)', async () => {
+    await open({ ...salary, note: 'netto' });
+
+    await type('note', '');
+    await save();
+
+    expect(store.changeItem).toHaveBeenCalledWith('1', { description: 'Gehalt', amount: '3000' });
+  });
+
+  it('does not save a note longer than 1000 characters (PN-2)', async () => {
+    await open(salary);
+
+    await type('note', 'x'.repeat(1001));
+    await save();
+
+    expect(store.changeItem).not.toHaveBeenCalled();
+    expect(element.querySelector('mat-error')?.textContent).toContain('Höchstens 1000 Zeichen.');
   });
 
   it('stays open and shows why saving failed', async () => {
