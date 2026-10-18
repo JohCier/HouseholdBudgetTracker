@@ -1,5 +1,7 @@
 package de.jcss.hbt.users;
 
+import de.jcss.hbt.users.application.user.LoginThrottle;
+import de.jcss.hbt.users.domain.user.EmailAddress;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,6 +13,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -32,6 +36,9 @@ class UsersIntegrationTest {
     @Autowired
     private JdbcClient jdbcClient;
 
+    @Autowired
+    private LoginThrottle loginThrottle;
+
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -40,7 +47,10 @@ class UsersIntegrationTest {
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
         jdbcClient.sql("DELETE FROM users.app_user").update();
-        jdbcClient.sql("DELETE FROM users.login_throttle").update();
+        // The failed sign-ins are kept in memory and outlive a single test.
+        Stream.of("max@example.org", "moritz@example.org", "unknown@example.org")
+                .map(EmailAddress::of)
+                .forEach(loginThrottle::reset);
     }
 
     @Test

@@ -1,4 +1,4 @@
-package de.jcss.hbt.users.domain.exception;
+package de.jcss.hbt.users.application.user;
 
 /**
  * Thrown when signing in with an address that is locked after too many failed attempts.

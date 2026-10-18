@@ -1,9 +1,9 @@
 package de.jcss.hbt.users.infrastructure.web;
 
+import de.jcss.hbt.users.application.user.LoginLockedException;
 import de.jcss.hbt.users.domain.exception.DomainValidationException;
 import de.jcss.hbt.users.domain.exception.EmailAddressAlreadyRegisteredException;
 import de.jcss.hbt.users.domain.exception.InvalidCredentialsException;
-import de.jcss.hbt.users.domain.exception.LoginLockedException;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;

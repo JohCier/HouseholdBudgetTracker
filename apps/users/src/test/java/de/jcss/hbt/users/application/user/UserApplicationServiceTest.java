@@ -2,9 +2,6 @@ package de.jcss.hbt.users.application.user;
 
 import de.jcss.hbt.users.domain.exception.EmailAddressAlreadyRegisteredException;
 import de.jcss.hbt.users.domain.exception.InvalidCredentialsException;
-import de.jcss.hbt.users.domain.exception.LoginLockedException;
-import de.jcss.hbt.users.domain.login.LoginThrottle;
-import de.jcss.hbt.users.domain.login.LoginThrottleRepository;
 import de.jcss.hbt.users.domain.user.EmailAddress;
 import de.jcss.hbt.users.domain.user.FakePasswordHasher;
 import de.jcss.hbt.users.domain.user.Password;
@@ -15,22 +12,20 @@ import de.jcss.hbt.users.domain.user.command.RegisterUserCommand;
 import de.jcss.hbt.users.domain.user.event.UserRegistered;
 import org.junit.jupiter.api.Test;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Verifies that {@link UserApplicationService} registers and authenticates users correctly,
- * using an in-memory fake repository and capturing the published events.
+ * using in-memory fakes and capturing the published events.
  */
 class UserApplicationServiceTest {
 
@@ -38,27 +33,10 @@ class UserApplicationServiceTest {
     private static final Password PASSWORD = Password.of("richtig-geheim");
 
     private final FakeRepository repository = new FakeRepository();
-    private final FakeThrottleRepository throttles = new FakeThrottleRepository();
+    private final FakeLoginThrottle loginThrottle = new FakeLoginThrottle();
     private final List<Object> publishedEvents = new ArrayList<>();
-    private Instant now = Instant.parse("2026-10-18T12:00:00Z");
-    private final Clock clock = new Clock() {
-        @Override
-        public Instant instant() {
-            return now;
-        }
-
-        @Override
-        public java.time.ZoneId getZone() {
-            return ZoneOffset.UTC;
-        }
-
-        @Override
-        public Clock withZone(java.time.ZoneId zone) {
-            return this;
-        }
-    };
     private final UserApplicationService service =
-            new UserApplicationService(repository, throttles, new FakePasswordHasher(), publishedEvents::add, clock);
+            new UserApplicationService(repository, loginThrottle, new FakePasswordHasher(), publishedEvents::add);
 
     @Test
     void registerStoresTheUserAndPublishesIt() {
@@ -100,67 +78,63 @@ class UserApplicationServiceTest {
                 .hasMessage("E-mail address or password is wrong");
     }
 
-    private void failToSignIn(EmailAddress email, int times) {
-        for (int i = 0; i < times; i++) {
-            assertThatThrownBy(() -> service.authenticate(email, Password.of("falsch-geheim")))
-                    .isInstanceOf(InvalidCredentialsException.class);
-        }
+    /** AN-10, AN-6 */
+    @Test
+    void failedSignInsAreReportedToTheThrottle() {
+        service.register(new RegisterUserCommand(EMAIL, PASSWORD));
+        EmailAddress unknown = EmailAddress.of("unknown@example.org");
+
+        assertThatThrownBy(() -> service.authenticate(EMAIL, Password.of("falsch-geheim")))
+                .isInstanceOf(InvalidCredentialsException.class);
+        assertThatThrownBy(() -> service.authenticate(unknown, PASSWORD))
+                .isInstanceOf(InvalidCredentialsException.class);
+
+        assertThat(loginThrottle.failures).containsExactly(EMAIL, unknown);
     }
 
     /** AN-10 */
     @Test
-    void fiveFailedAttemptsLockTheAddressEvenForTheRightPassword() {
+    void aLockedAddressCannotSignInEvenWithTheRightPassword() {
         service.register(new RegisterUserCommand(EMAIL, PASSWORD));
-
-        failToSignIn(EMAIL, 5);
+        loginThrottle.locked.add(EMAIL);
 
         assertThatThrownBy(() -> service.authenticate(EMAIL, PASSWORD))
                 .isInstanceOf(LoginLockedException.class);
-        now = now.plus(Duration.ofMinutes(15));
-        assertThat(service.authenticate(EMAIL, PASSWORD)).isNotNull();
-    }
-
-    /** AN-10, AN-6 */
-    @Test
-    void unknownAddressesAreLockedAlike() {
-        EmailAddress unknown = EmailAddress.of("unknown@example.org");
-
-        failToSignIn(unknown, 5);
-
-        assertThatThrownBy(() -> service.authenticate(unknown, PASSWORD))
-                .isInstanceOf(LoginLockedException.class);
+        assertThat(loginThrottle.failures).isEmpty();
     }
 
     /** AN-10 */
     @Test
-    void aSuccessfulSignInForgetsTheFailedAttempts() {
+    void aSuccessfulSignInResetsTheThrottle() {
         service.register(new RegisterUserCommand(EMAIL, PASSWORD));
-        failToSignIn(EMAIL, 4);
 
         service.authenticate(EMAIL, PASSWORD);
 
-        assertThat(throttles.throttles).doesNotContainKey(EMAIL);
-        failToSignIn(EMAIL, 4);
-        assertThat(service.authenticate(EMAIL, PASSWORD)).isNotNull();
+        assertThat(loginThrottle.resets).containsExactly(EMAIL);
+        assertThat(loginThrottle.failures).isEmpty();
     }
 
-    private static final class FakeThrottleRepository implements LoginThrottleRepository {
+    private static final class FakeLoginThrottle implements LoginThrottle {
 
-        private final Map<EmailAddress, LoginThrottle> throttles = new HashMap<>();
+        private final Set<EmailAddress> locked = new HashSet<>();
+        private final List<EmailAddress> failures = new ArrayList<>();
+        private final List<EmailAddress> resets = new ArrayList<>();
 
         @Override
-        public Optional<LoginThrottle> findByEmail(EmailAddress email) {
-            return Optional.ofNullable(throttles.get(email));
+        public void ensureNotLocked(EmailAddress email) {
+            if (locked.contains(email)) {
+                throw new LoginLockedException();
+            }
         }
 
         @Override
-        public void save(LoginThrottle throttle) {
-            throttles.put(throttle.email(), throttle);
+        public void recordFailure(EmailAddress email) {
+            failures.add(email);
         }
 
         @Override
-        public void remove(EmailAddress email) {
-            throttles.remove(email);
+        public void reset(EmailAddress email) {
+            resets.add(email);
         }
     }
 

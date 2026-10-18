@@ -61,10 +61,11 @@ und meldet sich an. Die Sitzung gilt für beide Dienste (Users und Backend).
   `RegisterUserCommand`, Event `UserRegistered`
 - AN-3: `UserApplicationService.register` prüft vorab, die Unique-Constraint in `V1__app_user.sql` sichert gegen
   gleichzeitige Anfragen
-- AN-10: Aggregate `LoginThrottle` (`ensureNotLocked`, `afterFailedAttempt`) mit `LoginThrottleRepository`, Tabelle
-  `users.login_throttle` (`V2__login_throttle.sql`); `UserApplicationService.authenticate` zählt Fehlversuche (auch bei
-  Rollback durch `InvalidCredentialsException`) und löscht sie nach einer erfolgreichen Anmeldung; `LoginLockedException`
-  wird zu 429 mit `urn:hbt:too-many-login-attempts` (siehe [fehlermeldungen.md](fehlermeldungen.md))
+- AN-10: Port `LoginThrottle` im Application Layer, umgesetzt von `InMemoryLoginThrottle` (Infrastruktur, Zähler im
+  Speicher); `UserApplicationService.authenticate` meldet Fehlversuche und setzt den Zähler nach einer erfolgreichen
+  Anmeldung zurück; `LoginLockedException` wird zu 429 mit `urn:hbt:too-many-login-attempts` (siehe
+  [fehlermeldungen.md](fehlermeldungen.md)). Die Zähler gelten je Instanz des Users-Dienstes und gehen bei einem
+  Neustart verloren
 - Sitzung: `SessionCookies` (Users) stellt das Cookie `HBT_SESSION` mit JWT (HS256) aus; das Backend prüft es mit
   demselben `JWT_SECRET` (`CookieBearerTokenResolver`, `SecurityConfig`)
 - API: `POST /api/auth/register`, `/login`, `/logout`, `GET /api/auth/me`
