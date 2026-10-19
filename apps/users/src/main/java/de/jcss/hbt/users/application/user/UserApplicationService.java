@@ -11,7 +11,6 @@ import de.jcss.hbt.users.domain.user.UserRepository;
 import de.jcss.hbt.users.domain.user.command.RegisterUserCommand;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
 
@@ -24,11 +23,15 @@ import java.util.Objects;
  * aggregates and gives a clear error early, while the unique constraint behind
  * {@link UserRepository#add} remains the actual safeguard against races.
  * <p>
+ * Runs without a database transaction on purpose: hashing and checking passwords is
+ * deliberately slow (BCrypt), and a transaction would hold one of the few pooled database
+ * connections all that time. None is needed either, since each use case writes at most one
+ * row: registering stores the user with a single {@code INSERT}, signing in only reads.
+ * <p>
  * Signing in counts every attempt with the {@link LoginThrottle} before the password is
  * checked, which may lock the address (AN-10); a successful attempt resets the count.
  */
 @Service
-@Transactional
 public class UserApplicationService {
 
     private final UserRepository repository;
