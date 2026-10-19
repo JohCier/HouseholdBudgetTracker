@@ -17,7 +17,9 @@ import { BudgetApi } from './budget-api';
  * have a plan yet; items can only be added once one has been created. The overview,
  * including the items, is derived on the server, so every mutation is followed by a
  * reload of it. Only the response of the latest load is applied, so overlapping reloads
- * (e.g. quick successive deletes or year changes) cannot leave stale data behind.
+ * (e.g. quick successive deletes or year changes) cannot leave stale data behind. Selecting
+ * another year forgets the overview of the previous one right away, so nothing of the previous
+ * year is shown or changed while the new one loads or if loading it fails (HP-1).
  * Mutations reject with an Error carrying a user-facing message.
  *
  * Provided by the dashboard, so the state lives only as long as the dashboard is shown and
@@ -48,6 +50,7 @@ export class BudgetStore {
 
   selectYear(year: Year): Promise<void> {
     this._year.set(year);
+    this._overview.set(undefined);
     return this.load();
   }
 

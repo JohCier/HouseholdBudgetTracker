@@ -18,7 +18,10 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import java.time.Year;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -97,51 +100,79 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
         } catch (DuplicateKeyException e) {
             throw new HouseholdPlanAlreadyExistsException(plan.year());
         }
-        plan.items().forEach(item -> upsertItem(plan.id(), item));
+        plan.items().forEach(item -> insertItem(plan.id(), item));
     }
 
     /**
-     * Deletes the removed items, inserts the new ones and updates the changed ones. The
+     * Compares the items with the stored ones and writes only the differences: deletes the
+     * removed items, inserts the new ones and updates the changed ones. As a command changes a
+     * single item, saving takes one query and one write however many items the plan has. The
      * creation time of an existing item is kept, so a changed item keeps its position.
      */
     @Override
     public void save(HouseholdPlan plan) {
-        deleteRemovedItems(plan);
-        plan.items().forEach(item -> upsertItem(plan.id(), item));
-    }
-
-    private void deleteRemovedItems(HouseholdPlan plan) {
-        List<UUID> keptIds = plan.items().stream().map(item -> item.id().value()).toList();
-        if (keptIds.isEmpty()) {
-            jdbcClient.sql("DELETE FROM budget_item WHERE household_plan_id = :planId")
-                    .param("planId", plan.id().value())
-                    .update();
-            return;
+        Map<BudgetItemId, BudgetItem> stored = new HashMap<>();
+        findItems(plan.id()).forEach(item -> stored.put(item.id(), item));
+        for (BudgetItem item : plan.items()) {
+            BudgetItem storedItem = stored.remove(item.id());
+            if (storedItem == null) {
+                insertItem(plan.id(), item);
+            } else if (!sameValues(item, storedItem)) {
+                updateItem(item);
+            }
         }
-        jdbcClient.sql("DELETE FROM budget_item WHERE household_plan_id = :planId AND id NOT IN (:keptIds)")
-                .param("planId", plan.id().value())
-                .param("keptIds", keptIds)
-                .update();
+        deleteItems(stored.keySet());
     }
 
-    /** Unchanged items are left alone, so only new and changed items are written. */
-    private void upsertItem(HouseholdPlanId planId, BudgetItem item) {
+    private static boolean sameValues(BudgetItem item, BudgetItem other) {
+        return item.description().equals(other.description()) && item.amount().equals(other.amount())
+                && item.category().equals(other.category()) && item.note().equals(other.note());
+    }
+
+    private void insertItem(HouseholdPlanId planId, BudgetItem item) {
         jdbcClient.sql("""
                         INSERT INTO budget_item (id, household_plan_id, description, amount, type, category, note)
                         VALUES (:id, :planId, :description, :amount, :type, :category, :note)
-                        ON CONFLICT (id) DO UPDATE
-                        SET description = EXCLUDED.description, amount = EXCLUDED.amount, category = EXCLUDED.category,
-                            note = EXCLUDED.note
-                        WHERE (budget_item.description, budget_item.amount, budget_item.category, budget_item.note)
-                              IS DISTINCT FROM (EXCLUDED.description, EXCLUDED.amount, EXCLUDED.category, EXCLUDED.note)
                         """)
                 .param("id", item.id().value())
                 .param("planId", planId.value())
                 .param("description", item.description().value())
                 .param("amount", item.amount().value())
                 .param("type", item.type().name())
-                .param("category", item.category().map(Enum::name).orElse(null))
-                .param("note", item.note().map(BudgetItemNote::value).orElse(null))
+                .param("category", categoryOf(item))
+                .param("note", noteOf(item))
                 .update();
+    }
+
+    /** The type of an item never changes, see {@link BudgetItem}. */
+    private void updateItem(BudgetItem item) {
+        jdbcClient.sql("""
+                        UPDATE budget_item
+                        SET description = :description, amount = :amount, category = :category, note = :note
+                        WHERE id = :id
+                        """)
+                .param("id", item.id().value())
+                .param("description", item.description().value())
+                .param("amount", item.amount().value())
+                .param("category", categoryOf(item))
+                .param("note", noteOf(item))
+                .update();
+    }
+
+    private void deleteItems(Collection<BudgetItemId> ids) {
+        if (ids.isEmpty()) {
+            return;
+        }
+        jdbcClient.sql("DELETE FROM budget_item WHERE id IN (:ids)")
+                .param("ids", ids.stream().map(BudgetItemId::value).toList())
+                .update();
+    }
+
+    private static String categoryOf(BudgetItem item) {
+        return item.category().map(Enum::name).orElse(null);
+    }
+
+    private static String noteOf(BudgetItem item) {
+        return item.note().map(BudgetItemNote::value).orElse(null);
     }
 }

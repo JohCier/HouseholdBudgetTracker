@@ -60,33 +60,34 @@ class BudgetSummaryTest {
                 .withExpense(ExpenseCategory.LEBENSUNTERHALT, money("500.00"))
                 .withExpense(ExpenseCategory.FREIZEIT_SPASS, money("350.00"))
                 .withExpense(ExpenseCategory.SPAREN_INVESTIEREN, money("100.00"));
-        // The surplus of 50.00 counts towards leisure (AW-10)
+        // The surplus of 50.00 counts towards savings (AW-10)
 
         assertThat(summary.shareOfIncome(ExpenseCategory.LEBENSUNTERHALT)).isEqualTo(Percentage.of(50));
         assertThat(summary.isTargetMet(ExpenseCategory.LEBENSUNTERHALT)).isTrue();
-        assertThat(summary.shareOfIncome(ExpenseCategory.FREIZEIT_SPASS)).isEqualTo(Percentage.of(40));
+        assertThat(summary.shareOfIncome(ExpenseCategory.FREIZEIT_SPASS)).isEqualTo(Percentage.of(35));
         assertThat(summary.isTargetMet(ExpenseCategory.FREIZEIT_SPASS)).isFalse();
-        assertThat(summary.shareOfIncome(ExpenseCategory.SPAREN_INVESTIEREN)).isEqualTo(Percentage.of(10));
+        assertThat(summary.shareOfIncome(ExpenseCategory.SPAREN_INVESTIEREN)).isEqualTo(Percentage.of(15));
         assertThat(summary.isTargetMet(ExpenseCategory.SPAREN_INVESTIEREN)).isFalse();
     }
 
     /** AW-10 */
     @Test
-    void surplusCountsTowardsLeisure() {
+    void surplusCountsTowardsSavings() {
         BudgetSummary summary = BudgetSummary.EMPTY
                 .withIncome(money("2000.00"))
                 .withExpense(ExpenseCategory.LEBENSUNTERHALT, money("1200.00"));
 
         assertThat(summary.surplus()).isEqualTo(money("800.00"));
-        assertThat(summary.unplannedIn(ExpenseCategory.FREIZEIT_SPASS)).isEqualTo(money("800.00"));
-        assertThat(summary.assessedIn(ExpenseCategory.FREIZEIT_SPASS)).isEqualTo(money("800.00"));
-        assertThat(summary.shareOfIncome(ExpenseCategory.FREIZEIT_SPASS)).isEqualTo(Percentage.of(40));
-        assertThat(summary.isTargetMet(ExpenseCategory.FREIZEIT_SPASS)).isFalse();
-        // Savings only count what was entered as such
-        assertThat(summary.unplannedIn(ExpenseCategory.SPAREN_INVESTIEREN)).isEqualTo(Money.ZERO);
-        assertThat(summary.shareOfIncome(ExpenseCategory.SPAREN_INVESTIEREN)).isEqualTo(Percentage.ZERO);
+        assertThat(summary.unplannedIn(ExpenseCategory.SPAREN_INVESTIEREN)).isEqualTo(money("800.00"));
+        assertThat(summary.assessedIn(ExpenseCategory.SPAREN_INVESTIEREN)).isEqualTo(money("800.00"));
+        assertThat(summary.shareOfIncome(ExpenseCategory.SPAREN_INVESTIEREN)).isEqualTo(Percentage.of(40));
+        assertThat(summary.isTargetMet(ExpenseCategory.SPAREN_INVESTIEREN)).isTrue();
+        // Leisure only counts what was entered as such
+        assertThat(summary.unplannedIn(ExpenseCategory.FREIZEIT_SPASS)).isEqualTo(Money.ZERO);
+        assertThat(summary.shareOfIncome(ExpenseCategory.FREIZEIT_SPASS)).isEqualTo(Percentage.ZERO);
+        assertThat(summary.isTargetMet(ExpenseCategory.FREIZEIT_SPASS)).isTrue();
         // Totals contain only what was entered
-        assertThat(summary.expensesIn(ExpenseCategory.FREIZEIT_SPASS)).isEqualTo(Money.ZERO);
+        assertThat(summary.expensesIn(ExpenseCategory.SPAREN_INVESTIEREN)).isEqualTo(Money.ZERO);
         assertThat(summary.totalExpense()).isEqualTo(money("1200.00"));
         assertThat(summary.balance()).isEqualTo(money("800.00"));
     }
@@ -103,6 +104,7 @@ class BudgetSummaryTest {
 
         assertThat(deficit.surplus()).isEqualTo(Money.ZERO);
         assertThat(deficit.assessedIn(ExpenseCategory.FREIZEIT_SPASS)).isEqualTo(money("800.00"));
+        assertThat(deficit.assessedIn(ExpenseCategory.SPAREN_INVESTIEREN)).isEqualTo(Money.ZERO);
         assertThat(balanced.surplus()).isEqualTo(Money.ZERO);
     }
 

@@ -42,6 +42,31 @@ test.describe('Haushaltsplan', () => {
     await expect(itemRow(page, 'Gehalt')).toBeVisible();
   });
 
+  test('beim Jahreswechsel zeigt die Oberfläche nichts mehr vom vorherigen Jahr (HP-1)', async ({
+    page,
+  }) => {
+    await registerWithPlan(page);
+    await addIncome(page, 'Gehalt', '3000');
+
+    // Hold back the overview of the next year, then let it fail
+    let failNextYear: () => void = () => {};
+    const held = new Promise<void>((resolve) => (failNextYear = resolve));
+    await page.route(`**/api/plans?year=${year + 1}`, async (route) => {
+      await held;
+      await route.abort();
+    });
+
+    await page.getByRole('button', { name: 'Nächstes Jahr' }).click();
+    await expect(page.getByRole('heading', { name: String(year + 1) })).toBeVisible();
+    await expect(itemRow(page, 'Gehalt')).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Hinzufügen' })).toBeHidden();
+
+    failNextYear();
+    await expect(page.getByText('Daten konnten nicht geladen werden')).toBeVisible();
+    await expect(itemRow(page, 'Gehalt')).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Hinzufügen' })).toBeHidden();
+  });
+
   for (const [boundary, disabled, enabled] of [
     [1900, 'Vorheriges Jahr', 'Nächstes Jahr'],
     [2200, 'Nächstes Jahr', 'Vorheriges Jahr'],
