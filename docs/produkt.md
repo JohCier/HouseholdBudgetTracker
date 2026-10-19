@@ -39,7 +39,10 @@ Alle Beträge sind in Euro. Die Oberfläche ist deutschsprachig.
 
 ## Roadmap
 
-Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant". Derzeit ist keine Änderung geplant.
+Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant".
+
+- [Übersicht als Antwort auf Änderungen](specs/antwort-mit-uebersicht.md): die API liefert nach jeder Änderung die
+  neue Übersicht mit, die Oberfläche spart das erneute Laden
 
 ## Weiterführend
 
