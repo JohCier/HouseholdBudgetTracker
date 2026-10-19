@@ -32,6 +32,9 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
   die API mit 404 (nicht 403).
 - **Gegeben** die Oberfläche, **wenn** sie geöffnet wird, **dann** zeigt sie das aktuelle Jahr (Zeitzone des Browsers);
   mit den Pfeilen wechselt der Benutzer zum vorherigen bzw. nächsten Jahr.
+- **Gegeben** die Oberfläche zeigt einen Plan, **wenn** der Benutzer das Jahr wechselt, **dann** zeigt sie bis zum Laden
+  des neuen Jahres und auch bei einem Ladefehler nichts mehr vom vorherigen Jahr, und es lässt sich nichts darin
+  ändern (HP-1).
 - **Gegeben** ein Plan für 1899 oder 2201, **wenn** er angelegt oder abgerufen werden soll, **dann** antwortet die API mit
   400 (HP-1).
 - **Gegeben** die Oberfläche zeigt 1900 bzw. 2200, **dann** ist der Pfeil zum vorherigen bzw. nächsten Jahr deaktiviert
@@ -49,7 +52,7 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
 - HP-1: `HouseholdPlan.create` lehnt Jahre außerhalb von `FIRST_YEAR`/`LAST_YEAR` mit `DomainValidationException` ab
   (400), `reconstitute` nicht; `CreateHouseholdPlanRequest` und `GET /api/plans?year=` prüfen dieselben Grenzen.
   Frontend: `FIRST_YEAR`/`LAST_YEAR` in `budget/year.ts`, `BudgetStore.hasPreviousYear`/`hasNextYear` deaktivieren
-  die Pfeile
+  die Pfeile; `BudgetStore.selectYear` verwirft die Übersicht des vorherigen Jahres sofort
 - HP-2: `HouseholdPlanApplicationService.createPlan` prüft vorab, die Unique-Constraint in
   `V4__household_plan_owner.sql` sichert gegen gleichzeitige Anfragen
 - HP-4: `HouseholdPlanApplicationService.load` filtert über `isOwnedBy` und wirft `HouseholdPlanNotFoundException`
