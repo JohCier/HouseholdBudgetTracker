@@ -1,5 +1,7 @@
 package de.jcss.hbt.infrastructure.web;
 
+import de.jcss.hbt.application.householdplan.AddedBudgetItem;
+import de.jcss.hbt.application.householdplan.CreatedHouseholdPlan;
 import de.jcss.hbt.application.householdplan.HouseholdPlanApplicationService;
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
 import de.jcss.hbt.domain.exception.DomainValidationException;
@@ -64,6 +66,7 @@ class HouseholdPlanControllerTest {
     private static final OwnerId OWNER = OwnerId.of(UUID.randomUUID());
     private static final HouseholdPlanId PLAN_ID = HouseholdPlanId.generate();
     private static final UUID PLAN = PLAN_ID.value();
+    private static final HouseholdPlanOverview EMPTY_OVERVIEW = HouseholdPlanOverview.of(PLAN_ID, Year.of(2026), List.of());
 
     @Autowired
     private WebApplicationContext webApplicationContext;
@@ -82,6 +85,10 @@ class HouseholdPlanControllerTest {
                 .apply(springSecurity())
                 .defaultRequest(get("/").with(jwt().jwt(token -> token.subject(OWNER.value().toString()))))
                 .build();
+        when(plans.addIncome(any())).thenReturn(new AddedBudgetItem(BudgetItemId.generate(), EMPTY_OVERVIEW));
+        when(plans.addExpense(any())).thenReturn(new AddedBudgetItem(BudgetItemId.generate(), EMPTY_OVERVIEW));
+        when(plans.changeItem(any())).thenReturn(EMPTY_OVERVIEW);
+        when(plans.removeItem(any())).thenReturn(EMPTY_OVERVIEW);
     }
 
     @Test
@@ -100,9 +107,11 @@ class HouseholdPlanControllerTest {
         verifyNoInteractions(plans);
     }
 
+    /** AU-1, AU-3, AU-4 */
     @Test
-    void createPlanReturns201WithId() throws Exception {
-        when(plans.createPlan(new CreateHouseholdPlanCommand(OWNER, Year.of(2026)))).thenReturn(PLAN_ID);
+    void createPlanReturns201WithIdAndOverview() throws Exception {
+        when(plans.createPlan(new CreateHouseholdPlanCommand(OWNER, Year.of(2026))))
+                .thenReturn(new CreatedHouseholdPlan(PLAN_ID, EMPTY_OVERVIEW));
 
         mockMvc.perform(post("/api/plans")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -110,7 +119,10 @@ class HouseholdPlanControllerTest {
                                 {"year":2026}
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(PLAN.toString()));
+                .andExpect(jsonPath("$.id").value(PLAN.toString()))
+                .andExpect(jsonPath("$.overview.id").value(PLAN.toString()))
+                .andExpect(jsonPath("$.overview.year").value(2026))
+                .andExpect(jsonPath("$.overview.items").isEmpty());
     }
 
     /** FM-2 */
@@ -156,10 +168,13 @@ class HouseholdPlanControllerTest {
         verifyNoInteractions(plans);
     }
 
+    /** AU-1, AU-3, AU-4 */
     @Test
-    void addIncomeReturns201WithId() throws Exception {
+    void addIncomeReturns201WithIdAndOverview() throws Exception {
         BudgetItemId id = BudgetItemId.generate();
-        when(plans.addIncome(any())).thenReturn(id);
+        when(plans.addIncome(any())).thenReturn(new AddedBudgetItem(id, HouseholdPlanOverview.of(PLAN_ID, Year.of(2026),
+                List.of(new OverviewItem(id, BudgetItemDescription.of("Gehalt"), Money.of(new BigDecimal("2000")),
+                        ItemType.INCOME, null, null)))));
 
         mockMvc.perform(post("/api/plans/{planId}/incomes", PLAN)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -167,13 +182,13 @@ class HouseholdPlanControllerTest {
                                 {"description":"Gehalt","amount":"2000.00"}
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(id.value().toString()));
+                .andExpect(jsonPath("$.id").value(id.value().toString()))
+                .andExpect(jsonPath("$.overview.totalIncome").value("2000.00"))
+                .andExpect(jsonPath("$.overview.items[0].id").value(id.value().toString()));
     }
 
     @Test
     void addExpenseMapsPlanAndCategory() throws Exception {
-        when(plans.addExpense(any())).thenReturn(BudgetItemId.generate());
-
         mockMvc.perform(post("/api/plans/{planId}/expenses", PLAN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -188,9 +203,6 @@ class HouseholdPlanControllerTest {
     /** PN-1, PN-3 */
     @Test
     void addItemPassesTheNoteAndTreatsABlankOneAsNone() throws Exception {
-        when(plans.addExpense(any())).thenReturn(BudgetItemId.generate());
-        when(plans.addIncome(any())).thenReturn(BudgetItemId.generate());
-
         mockMvc.perform(post("/api/plans/{planId}/expenses", PLAN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -243,7 +255,7 @@ class HouseholdPlanControllerTest {
                         .content("""
                                 {"description":"Gehalt","amount":"2100","note":"netto"}
                                 """))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
 
         verify(plans).changeItem(new ChangeBudgetItemCommand(OWNER, PLAN_ID, BudgetItemId.of(itemId),
                 BudgetItemDescription.of("Gehalt"), Money.of(new BigDecimal("2100")), null, new BudgetItemNote("netto")));
@@ -306,12 +318,15 @@ class HouseholdPlanControllerTest {
                 .andExpect(jsonPath("$.detail").value("Household plan not found: " + PLAN));
     }
 
+    /** AU-1, AU-4 */
     @Test
-    void removeItemReturns204() throws Exception {
+    void removeItemReturns200WithOverview() throws Exception {
         UUID itemId = UUID.randomUUID();
 
         mockMvc.perform(delete("/api/plans/{planId}/items/{itemId}", PLAN, itemId))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(PLAN.toString()))
+                .andExpect(jsonPath("$.items").isEmpty());
 
         verify(plans).removeItem(new RemoveBudgetItemCommand(OWNER, PLAN_ID, BudgetItemId.of(itemId)));
     }
@@ -328,9 +343,9 @@ class HouseholdPlanControllerTest {
                 .andExpect(jsonPath("$.detail").value("Budget item not found: " + itemId));
     }
 
-    /** PB-1 */
+    /** PB-1, AU-1, AU-4 */
     @Test
-    void changeItemReturns204AndMapsAllValues() throws Exception {
+    void changeItemReturns200WithOverviewAndMapsAllValues() throws Exception {
         UUID itemId = UUID.randomUUID();
 
         mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", PLAN, itemId)
@@ -338,7 +353,8 @@ class HouseholdPlanControllerTest {
                         .content("""
                                 {"description":"Miete","amount":"900.00","category":"SPAREN_INVESTIEREN"}
                                 """))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(PLAN.toString()));
 
         verify(plans).changeItem(new ChangeBudgetItemCommand(OWNER, PLAN_ID, BudgetItemId.of(itemId),
                 BudgetItemDescription.of("Miete"), Money.of(new BigDecimal("900.00")), ExpenseCategory.SPAREN_INVESTIEREN, null));
@@ -354,7 +370,7 @@ class HouseholdPlanControllerTest {
                         .content("""
                                 {"description":"Gehalt","amount":"2100"}
                                 """))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
 
         verify(plans).changeItem(new ChangeBudgetItemCommand(OWNER, PLAN_ID, BudgetItemId.of(itemId),
                 BudgetItemDescription.of("Gehalt"), Money.of(new BigDecimal("2100")), null, null));

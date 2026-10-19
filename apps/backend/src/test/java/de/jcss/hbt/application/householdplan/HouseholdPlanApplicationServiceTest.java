@@ -62,7 +62,7 @@ class HouseholdPlanApplicationServiceTest {
 
     @BeforeEach
     void createPlan() {
-        planId = service.createPlan(new CreateHouseholdPlanCommand(OWNER, YEAR));
+        planId = service.createPlan(new CreateHouseholdPlanCommand(OWNER, YEAR)).id();
     }
 
     @Test
@@ -86,7 +86,7 @@ class HouseholdPlanApplicationServiceTest {
 
     @Test
     void otherOwnersHavePlansOfTheirOwnForTheSameYear() {
-        HouseholdPlanId otherPlan = service.createPlan(new CreateHouseholdPlanCommand(SOMEONE_ELSE, YEAR));
+        HouseholdPlanId otherPlan = service.createPlan(new CreateHouseholdPlanCommand(SOMEONE_ELSE, YEAR)).id();
 
         assertThat(otherPlan).isNotEqualTo(planId);
         assertThat(service.getOverview(SOMEONE_ELSE, YEAR).planId()).isEqualTo(otherPlan);
@@ -95,7 +95,7 @@ class HouseholdPlanApplicationServiceTest {
 
     @Test
     void plansOfOtherOwnersCannotBeChangedAndAppearNotToExist() {
-        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null));
+        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null)).id();
         publishedEvents.clear();
 
         assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(SOMEONE_ELSE, planId, SALARY, money("1.00"), null)))
@@ -121,7 +121,7 @@ class HouseholdPlanApplicationServiceTest {
 
     @Test
     void addIncomeStoresItemAndPublishesEvent() {
-        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null));
+        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null)).id();
 
         assertThat(storedItems()).extracting(BudgetItem::id).containsExactly(itemId);
         assertThat(publishedEvents.getLast()).isInstanceOfSatisfying(IncomeAdded.class,
@@ -131,7 +131,7 @@ class HouseholdPlanApplicationServiceTest {
     @Test
     void addExpenseStoresItemAndPublishesEvent() {
         BudgetItemId itemId = service.addExpense(new AddExpenseCommand(
-                OWNER, planId, BudgetItemDescription.of("Miete"), money("800.00"), ExpenseCategory.LEBENSUNTERHALT, null));
+                OWNER, planId, BudgetItemDescription.of("Miete"), money("800.00"), ExpenseCategory.LEBENSUNTERHALT, null)).id();
 
         assertThat(storedItems().getFirst().category()).contains(ExpenseCategory.LEBENSUNTERHALT);
         assertThat(publishedEvents.getLast()).isInstanceOfSatisfying(ExpenseAdded.class,
@@ -151,7 +151,7 @@ class HouseholdPlanApplicationServiceTest {
     /** PB-1, PB-5 */
     @Test
     void changeItemStoresItAndPublishesEvent() {
-        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null));
+        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null)).id();
 
         service.changeItem(new ChangeBudgetItemCommand(OWNER, planId, itemId, SALARY, money("2100.00"), null, null));
 
@@ -173,7 +173,7 @@ class HouseholdPlanApplicationServiceTest {
 
     @Test
     void removeItemDeletesItAndPublishesEvent() {
-        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null));
+        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null)).id();
 
         service.removeItem(new RemoveBudgetItemCommand(OWNER, planId, itemId));
 
@@ -188,6 +188,43 @@ class HouseholdPlanApplicationServiceTest {
                 .isInstanceOf(BudgetItemNotFoundException.class);
     }
 
+    /** AU-1, AU-3 */
+    @Test
+    void createPlanAnswersWithItsEmptyOverview() {
+        CreatedHouseholdPlan created = service.createPlan(new CreateHouseholdPlanCommand(OWNER, Year.of(2027)));
+
+        assertThat(created.overview().planId()).isEqualTo(created.id());
+        assertThat(created.overview().year()).isEqualTo(Year.of(2027));
+        assertThat(created.overview().items()).isEmpty();
+    }
+
+    /** AU-1, AU-2, AU-3 */
+    @Test
+    void addingAnItemAnswersWithTheOverviewIncludingIt() {
+        AddedBudgetItem income = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null));
+        AddedBudgetItem expense = service.addExpense(new AddExpenseCommand(OWNER, planId,
+                BudgetItemDescription.of("Miete"), money("850.00"), ExpenseCategory.LEBENSUNTERHALT, null));
+
+        assertThat(income.overview().items()).extracting(OverviewItem::id).containsExactly(income.id());
+        assertThat(expense.overview().items()).extracting(OverviewItem::id).contains(income.id(), expense.id());
+        assertThat(expense.overview().totalExpense().value()).isEqualByComparingTo("850.00");
+        assertThat(expense.overview()).isEqualTo(service.getOverview(OWNER, YEAR));
+    }
+
+    /** AU-1, AU-2 */
+    @Test
+    void changingAndRemovingAnItemAnswerWithTheOverviewAfterwards() {
+        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null)).id();
+
+        HouseholdPlanOverview changed = service.changeItem(
+                new ChangeBudgetItemCommand(OWNER, planId, itemId, SALARY, money("2100.00"), null, null));
+        assertThat(changed.totalIncome().value()).isEqualByComparingTo("2100.00");
+
+        HouseholdPlanOverview removed = service.removeItem(new RemoveBudgetItemCommand(OWNER, planId, itemId));
+        assertThat(removed.items()).isEmpty();
+        assertThat(removed).isEqualTo(service.getOverview(OWNER, YEAR));
+    }
+
     @Test
     void commandsForUnknownPlanThrow() {
         HouseholdPlanId unknown = HouseholdPlanId.generate();
@@ -198,7 +235,7 @@ class HouseholdPlanApplicationServiceTest {
 
     @Test
     void overviewOfAYearContainsThePlanAndItsItems() {
-        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null));
+        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null)).id();
 
         HouseholdPlanOverview overview = service.getOverview(OWNER, YEAR);
 

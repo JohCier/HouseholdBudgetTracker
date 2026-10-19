@@ -1,6 +1,6 @@
 # Übersicht als Antwort auf Änderungen
 
-Status: geplant
+Status: umgesetzt
 
 ## Zweck
 
@@ -53,15 +53,18 @@ sie ohne weitere Anfrage an. Für den Benutzer ändert sich nur, dass die Anzeig
 
 ## Umsetzung
 
-Noch nicht umgesetzt. Bei der Umsetzung werden im selben PR auch die Akzeptanzkriterien in
-[haushaltsplan.md](haushaltsplan.md), [posten.md](posten.md) und [posten-bearbeiten.md](posten-bearbeiten.md)
-angepasst, die heute 204 bzw. 201 nur mit ID nennen, außerdem API-Vertrag und Frontend.
+- Application: `HouseholdPlanApplicationService` liest nach jedem Command die Übersicht in derselben Transaktion über
+  den `HouseholdPlanOverviewQueryHandler` (AU-1, AU-2); `createPlan` gibt `CreatedHouseholdPlan`, `addIncome` und
+  `addExpense` geben `AddedBudgetItem` zurück (ID und Übersicht, AU-3), `changeItem` und `removeItem` die Übersicht
+- API: `POST /api/plans` antwortet mit `CreatedHouseholdPlanResponse`, `POST …/incomes` und `…/expenses` mit
+  `AddedBudgetItemResponse` (jeweils `{ id, overview }`, 201); `PUT` und `DELETE …/items/{itemId}` antworten mit 200
+  und `HouseholdPlanOverviewResponse` (AU-4); API-Vertrag `packages/shared-types/openapi/plans.json`
+- Frontend: `BudgetStore` zeigt die Übersicht aus der Antwort an, statt neu zu laden; gehört sie nicht zum gewählten
+  Jahr, bleibt die Anzeige unverändert (AU-5); eine laufende Ladeanfrage wird verworfen (AU-6)
+- Angepasste Akzeptanzkriterien: [haushaltsplan.md](haushaltsplan.md) (HP-5), [posten.md](posten.md) (PO-1, PO-6),
+  [posten-bearbeiten.md](posten-bearbeiten.md) (PB-1)
+- Tests: `HouseholdPlanApplicationServiceTest`, `HouseholdPlanControllerTest`, `HouseholdPlanIntegrationTest`,
+  `budget-api.spec.ts`, `budget-store.spec.ts`
+- E2E: `e2e/tests/antwort-mit-uebersicht.spec.ts` (AU-5 mit PO-9; AU-1 bis AU-4 decken die Backend-Tests ab)
 
 ## Offene Fragen
-
-1. **Ändern und Löschen mit 200 statt 204 (AU-4)?** Vorschlag: ja, weil die Antwort jetzt die Übersicht enthält.
-   Alternative: 204 behalten und die Oberfläche lädt nach Ändern/Löschen weiter neu, dann gilt die Spec nur fürs
-   Erfassen und Anlegen.
-2. **Form der Antwort beim Erfassen und Anlegen (AU-3)?** Vorschlag: `{ "id": …, "overview": { … } }`, damit API-Clients
-   die ID wie bisher unter `id` finden. Alternative: nur die Übersicht, die ID steht dort ja in der Postenliste bzw. als
-   `id` des Plans.

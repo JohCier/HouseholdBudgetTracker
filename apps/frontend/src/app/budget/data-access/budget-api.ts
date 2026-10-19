@@ -4,14 +4,17 @@ import { Observable, catchError, of, throwError } from 'rxjs';
 import {
   AddExpenseRequest,
   AddIncomeRequest,
-  BudgetItemIdResponse,
+  AddedBudgetItemResponse,
   ChangeBudgetItemRequest,
-  HouseholdPlanIdResponse,
+  CreatedHouseholdPlanResponse,
   HouseholdPlanOverview,
   Year,
 } from '../budget.model';
 
-/** Thin HTTP adapter for the backend's /api/plans endpoints. */
+/**
+ * Thin HTTP adapter for the backend's /api/plans endpoints. Every change answers with the
+ * overview of the plan after it (AU-1).
+ */
 @Injectable({ providedIn: 'root' })
 export class BudgetApi {
   private readonly http = inject(HttpClient);
@@ -30,27 +33,33 @@ export class BudgetApi {
       );
   }
 
-  createPlan(year: Year): Observable<HouseholdPlanIdResponse> {
-    return this.http.post<HouseholdPlanIdResponse>(this.baseUrl, { year });
+  createPlan(year: Year): Observable<CreatedHouseholdPlanResponse> {
+    return this.http.post<CreatedHouseholdPlanResponse>(this.baseUrl, { year });
   }
 
-  addIncome(planId: string, request: AddIncomeRequest): Observable<BudgetItemIdResponse> {
-    return this.http.post<BudgetItemIdResponse>(`${this.planUrl(planId)}/incomes`, request);
+  addIncome(planId: string, request: AddIncomeRequest): Observable<AddedBudgetItemResponse> {
+    return this.http.post<AddedBudgetItemResponse>(`${this.planUrl(planId)}/incomes`, request);
   }
 
-  addExpense(planId: string, request: AddExpenseRequest): Observable<BudgetItemIdResponse> {
-    return this.http.post<BudgetItemIdResponse>(`${this.planUrl(planId)}/expenses`, request);
+  addExpense(planId: string, request: AddExpenseRequest): Observable<AddedBudgetItemResponse> {
+    return this.http.post<AddedBudgetItemResponse>(`${this.planUrl(planId)}/expenses`, request);
   }
 
-  changeItem(planId: string, itemId: string, request: ChangeBudgetItemRequest): Observable<void> {
-    return this.http.put<void>(
+  changeItem(
+    planId: string,
+    itemId: string,
+    request: ChangeBudgetItemRequest,
+  ): Observable<HouseholdPlanOverview> {
+    return this.http.put<HouseholdPlanOverview>(
       `${this.planUrl(planId)}/items/${encodeURIComponent(itemId)}`,
       request,
     );
   }
 
-  removeItem(planId: string, itemId: string): Observable<void> {
-    return this.http.delete<void>(`${this.planUrl(planId)}/items/${encodeURIComponent(itemId)}`);
+  removeItem(planId: string, itemId: string): Observable<HouseholdPlanOverview> {
+    return this.http.delete<HouseholdPlanOverview>(
+      `${this.planUrl(planId)}/items/${encodeURIComponent(itemId)}`,
+    );
   }
 
   private planUrl(planId: string): string {

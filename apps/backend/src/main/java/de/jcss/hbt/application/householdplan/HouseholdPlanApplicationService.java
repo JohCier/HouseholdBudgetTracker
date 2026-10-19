@@ -31,7 +31,8 @@ import java.util.Objects;
  * <p>
  * Write side: each command runs in its own transaction:
  * load the {@link HouseholdPlan}, let it apply the change, save it, and publish the
- * domain events it recorded. Events are published through Spring's
+ * domain events it recorded. Every command answers with the overview of the plan after
+ * the change (AU-1, AU-2), read within the same transaction so it includes the change. Events are published through Spring's
  * {@link ApplicationEventPublisher}, so listeners can choose to run within this
  * transaction or only after it has committed.
  * <p>
@@ -60,42 +61,44 @@ public class HouseholdPlanApplicationService {
         this.eventPublisher = Objects.requireNonNull(eventPublisher);
     }
 
-    public HouseholdPlanId createPlan(CreateHouseholdPlanCommand command) {
+    public CreatedHouseholdPlan createPlan(CreateHouseholdPlanCommand command) {
         if (repository.existsFor(command.owner(), command.year())) {
             throw new HouseholdPlanAlreadyExistsException(command.year());
         }
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), command.owner(), command.year());
         repository.add(plan);
         publishEvents(plan);
-        return plan.id();
+        return new CreatedHouseholdPlan(plan.id(), overviewOf(plan, command.owner()));
     }
 
-    public BudgetItemId addIncome(AddIncomeCommand command) {
+    public AddedBudgetItem addIncome(AddIncomeCommand command) {
         HouseholdPlan plan = load(command.planId(), command.owner());
         BudgetItemId itemId = plan.addIncome(command.description(), command.amount(), command.note());
         saveAndPublishEvents(plan);
-        return itemId;
+        return new AddedBudgetItem(itemId, overviewOf(plan, command.owner()));
     }
 
-    public BudgetItemId addExpense(AddExpenseCommand command) {
+    public AddedBudgetItem addExpense(AddExpenseCommand command) {
         HouseholdPlan plan = load(command.planId(), command.owner());
         BudgetItemId itemId = plan.addExpense(command.description(), command.amount(), command.category(),
                 command.note());
         saveAndPublishEvents(plan);
-        return itemId;
+        return new AddedBudgetItem(itemId, overviewOf(plan, command.owner()));
     }
 
-    public void changeItem(ChangeBudgetItemCommand command) {
+    public HouseholdPlanOverview changeItem(ChangeBudgetItemCommand command) {
         HouseholdPlan plan = load(command.planId(), command.owner());
         plan.changeItem(command.itemId(), command.description(), command.amount(), command.category(),
                 command.note());
         saveAndPublishEvents(plan);
+        return overviewOf(plan, command.owner());
     }
 
-    public void removeItem(RemoveBudgetItemCommand command) {
+    public HouseholdPlanOverview removeItem(RemoveBudgetItemCommand command) {
         HouseholdPlan plan = load(command.planId(), command.owner());
         plan.removeItem(command.itemId());
         saveAndPublishEvents(plan);
+        return overviewOf(plan, command.owner());
     }
 
     /**
@@ -111,6 +114,12 @@ public class HouseholdPlanApplicationService {
         return repository.findById(id)
                 .filter(plan -> plan.isOwnedBy(owner))
                 .orElseThrow(() -> new HouseholdPlanNotFoundException(id));
+    }
+
+    /** The overview of a plan just saved; it must exist, because this transaction wrote it. */
+    private HouseholdPlanOverview overviewOf(HouseholdPlan plan, OwnerId owner) {
+        return overviewQueryHandler.findByOwnerAndYear(owner, plan.year())
+                .orElseThrow(() -> new IllegalStateException("No overview for saved plan " + plan.id()));
     }
 
     private void saveAndPublishEvents(HouseholdPlan plan) {

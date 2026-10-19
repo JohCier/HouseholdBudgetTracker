@@ -15,9 +15,9 @@ export type HouseholdPlanOverview = Schemas['HouseholdPlanOverviewResponse'];
 export type AddIncomeRequest = Schemas['AddIncomeRequest'];
 export type AddExpenseRequest = Schemas['AddExpenseRequest'];
 export type ChangeBudgetItemRequest = Schemas['ChangeBudgetItemRequest'];
-export type BudgetItemIdResponse = Schemas['BudgetItemIdResponse'];
+export type AddedBudgetItemResponse = Schemas['AddedBudgetItemResponse'];
 export type CreateHouseholdPlanRequest = Schemas['CreateHouseholdPlanRequest'];
-export type HouseholdPlanIdResponse = Schemas['HouseholdPlanIdResponse'];
+export type CreatedHouseholdPlanResponse = Schemas['CreatedHouseholdPlanResponse'];
 
 /** A calendar year, e.g. 2026. */
 export type Year = number;

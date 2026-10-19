@@ -62,7 +62,9 @@ lädt pro Command den `HouseholdPlan` über das Repository, lässt den Plan prü
 gleichzeitige Änderungen am selben Plan nacheinander statt gegeneinander laufen. Der Plan sammelt dabei Domain Events
 (`HouseholdPlanCreated`, `IncomeAdded`, `ExpenseAdded`, `BudgetItemChanged`, `BudgetItemRemoved`), die der Service nach dem Speichern über
 Springs `ApplicationEventPublisher` veröffentlicht. Listener wie `AuditLogListener` reagieren per
-`@TransactionalEventListener` erst nach dem Commit und in einer eigenen Transaktion.
+`@TransactionalEventListener` erst nach dem Commit und in einer eigenen Transaktion. Jeder Command antwortet mit der
+Übersicht des Plans nach der Änderung, die der Service noch in derselben Transaktion über die Leseseite liest; die
+Oberfläche zeigt sie an, ohne neu zu laden (siehe [antwort-mit-uebersicht.md](docs/specs/antwort-mit-uebersicht.md)).
 
 **Leseseite:** Es gibt ein Read Model, die `HouseholdPlanOverview` eines Jahres mit Einträgen, Summen und
 50/30/20-Aufteilung. Summen, Saldo und die Bewertung nach 50/30/20 rechnet das Value Object `BudgetSummary` aus der

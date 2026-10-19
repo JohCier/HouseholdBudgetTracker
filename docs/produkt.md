@@ -26,6 +26,7 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 | Notiz zum Posten | Optionaler Freitext je Posten, beim Erfassen und Bearbeiten | [posten-notiz.md](specs/posten-notiz.md) |
 | Fehlermeldungen | Alle Meldungen auf Deutsch, auch die der API | [fehlermeldungen.md](specs/fehlermeldungen.md) |
 | Auswertung | Summen, Saldo, Warnung bei Defizit, Anteil und Zielerreichung je 50/30/20-Kategorie | [auswertung-50-30-20.md](specs/auswertung-50-30-20.md) |
+| Übersicht als Antwort | Nach jeder Änderung liefert die API die neue Übersicht mit, die Oberfläche lädt nicht erneut | [antwort-mit-uebersicht.md](specs/antwort-mit-uebersicht.md) |
 
 Alle Beträge sind in Euro. Die Oberfläche ist deutschsprachig.
 
@@ -39,10 +40,7 @@ Alle Beträge sind in Euro. Die Oberfläche ist deutschsprachig.
 
 ## Roadmap
 
-Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant".
-
-- [Übersicht als Antwort auf Änderungen](specs/antwort-mit-uebersicht.md): die API liefert nach jeder Änderung die
-  neue Übersicht mit, die Oberfläche spart das erneute Laden
+Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant". Derzeit ist keine Änderung geplant.
 
 ## Weiterführend
 

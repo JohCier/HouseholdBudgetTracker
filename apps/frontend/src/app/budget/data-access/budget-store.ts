@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom, map } from 'rxjs';
 import { toMessage } from '../../shared/http-error';
 import {
   AddExpenseRequest,
@@ -15,9 +15,10 @@ import { BudgetApi } from './budget-api';
 /**
  * Signal-based state holder for the household plan of the selected year. A year may not
  * have a plan yet; items can only be added once one has been created. The overview,
- * including the items, is derived on the server, so every mutation is followed by a
- * reload of it. Only the response of the latest load is applied, so overlapping reloads
- * (e.g. quick successive deletes or year changes) cannot leave stale data behind.
+ * including the items, is derived on the server; every mutation answers with the overview
+ * after it, which is shown without reloading (AU-5). Only the latest response is applied,
+ * so overlapping loads and mutations (e.g. quick successive deletes or year changes) cannot
+ * leave stale data behind (AU-6).
  * Mutations reject with an Error carrying a user-facing message.
  *
  * Provided by the dashboard, so the state lives only as long as the dashboard is shown and
@@ -88,15 +89,19 @@ export class BudgetStore {
 
   /** Creates the household plan of the selected year. */
   createPlan(): Promise<void> {
-    return this.mutate(this.api.createPlan(this._year()));
+    return this.mutate(this.api.createPlan(this._year()).pipe(map((created) => created.overview)));
   }
 
   async addIncome(request: AddIncomeRequest): Promise<void> {
-    return this.mutate(this.api.addIncome(this.requirePlanId(), request));
+    return this.mutate(
+      this.api.addIncome(this.requirePlanId(), request).pipe(map((added) => added.overview)),
+    );
   }
 
   async addExpense(request: AddExpenseRequest): Promise<void> {
-    return this.mutate(this.api.addExpense(this.requirePlanId(), request));
+    return this.mutate(
+      this.api.addExpense(this.requirePlanId(), request).pipe(map((added) => added.overview)),
+    );
   }
 
   /** Gives an item of the selected year's plan new values; it keeps its id and position. */
@@ -118,11 +123,11 @@ export class BudgetStore {
       amount: item.amount,
       ...(item.note ? { note: item.note } : {}),
     };
-    return this.mutate(
+    const added =
       item.category === null
         ? this.api.addIncome(planId, request)
-        : this.api.addExpense(planId, { ...request, category: item.category }),
-    );
+        : this.api.addExpense(planId, { ...request, category: item.category });
+    return this.mutate(added.pipe(map((response) => response.overview)));
   }
 
   private requirePlanId(): string {
@@ -133,12 +138,27 @@ export class BudgetStore {
     return planId;
   }
 
-  private async mutate(request: Observable<unknown>): Promise<void> {
+  private async mutate(request: Observable<HouseholdPlanOverview>): Promise<void> {
+    let overview: HouseholdPlanOverview;
     try {
-      await firstValueFrom(request, { defaultValue: undefined });
+      overview = await firstValueFrom(request);
     } catch (error) {
       throw new Error(toMessage(error));
     }
-    await this.load();
+    this.show(overview);
+  }
+
+  /**
+   * Shows the overview a mutation answered with, unless another year has been selected in
+   * the meantime (AU-5). It is the latest state, so a load still running is discarded (AU-6).
+   */
+  private show(overview: HouseholdPlanOverview): void {
+    if (overview.year !== this._year()) {
+      return;
+    }
+    this.latestLoad++;
+    this._overview.set(overview);
+    this._loadError.set(null);
+    this._loading.set(false);
   }
 }

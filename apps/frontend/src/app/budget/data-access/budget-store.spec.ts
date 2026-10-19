@@ -24,6 +24,8 @@ const overview = (year: number, items = [item]): HouseholdPlanOverview => ({
   categoryBreakdowns: [],
   items,
 });
+const yearOf = (planId: string) => Number(planId.replace('plan-', ''));
+const added: BudgetItem = { ...item, id: 'added', description: 'Bonus' };
 
 describe('BudgetStore', () => {
   let api: { [K in keyof BudgetApi]: ReturnType<typeof vi.fn> };
@@ -34,11 +36,17 @@ describe('BudgetStore', () => {
     plannedYears = [2025, 2026, 2027, currentYear()];
     api = {
       getOverview: vi.fn((year: number) => of(plannedYears.includes(year) ? overview(year) : null)),
-      createPlan: vi.fn(() => of({ id: 'new-plan' })),
-      addIncome: vi.fn(() => of({ id: '1' })),
-      addExpense: vi.fn(() => of({ id: '2' })),
-      changeItem: vi.fn(() => of(undefined)),
-      removeItem: vi.fn(() => of(undefined)),
+      createPlan: vi.fn((year: number) => of({ id: `plan-${year}`, overview: overview(year, []) })),
+      addIncome: vi.fn((planId: string) =>
+        of({ id: 'added', overview: overview(yearOf(planId), [item, added]) }),
+      ),
+      addExpense: vi.fn((planId: string) =>
+        of({ id: 'added', overview: overview(yearOf(planId), [item, added]) }),
+      ),
+      changeItem: vi.fn((planId: string) =>
+        of(overview(yearOf(planId), [{ ...item, amount: '2100.00' }])),
+      ),
+      removeItem: vi.fn((planId: string) => of(overview(yearOf(planId), []))),
     };
     TestBed.configureTestingModule({
       providers: [BudgetStore, { provide: BudgetApi, useValue: api }],
@@ -94,28 +102,32 @@ describe('BudgetStore', () => {
     expect(store.items()).toEqual([]);
     expect(store.overview()).toBeNull();
 
-    plannedYears.push(2030);
+    api.getOverview.mockClear();
     await store.createPlan();
 
     expect(api.createPlan).toHaveBeenCalledWith(2030);
     expect(store.planId()).toBe('plan-2030');
     expect(store.planMissing()).toBe(false);
+    expect(api.getOverview).not.toHaveBeenCalled();
   });
 
-  it('adds items to the plan of the selected year', async () => {
+  // AU-5
+  it('adds items to the plan of the selected year and shows the returned overview', async () => {
     await store.selectYear(2026);
+    api.getOverview.mockClear();
 
-    await store.addIncome({ description: 'Gehalt', amount: '2000' });
+    await store.addIncome({ description: 'Bonus', amount: '2000' });
 
     expect(api.addIncome).toHaveBeenCalledWith('plan-2026', {
-      description: 'Gehalt',
+      description: 'Bonus',
       amount: '2000',
     });
-    expect(api.getOverview).toHaveBeenLastCalledWith(2026);
+    expect(store.items()).toEqual([item, added]);
+    expect(api.getOverview).not.toHaveBeenCalled();
   });
 
-  // PB-7
-  it('changes an item of the plan of the selected year and reloads the overview', async () => {
+  // PB-7, AU-5
+  it('changes an item of the plan of the selected year and shows the returned overview', async () => {
     await store.selectYear(2026);
     api.getOverview.mockClear();
 
@@ -125,7 +137,46 @@ describe('BudgetStore', () => {
       description: 'Gehalt',
       amount: '2100',
     });
-    expect(api.getOverview).toHaveBeenCalledWith(2026);
+    expect(store.items()[0].amount).toBe('2100.00');
+    expect(api.getOverview).not.toHaveBeenCalled();
+  });
+
+  // AU-5
+  it('removes an item and shows the returned overview', async () => {
+    await store.selectYear(2026);
+    api.getOverview.mockClear();
+
+    await store.removeItem('1');
+
+    expect(api.removeItem).toHaveBeenCalledWith('plan-2026', '1');
+    expect(store.items()).toEqual([]);
+    expect(api.getOverview).not.toHaveBeenCalled();
+  });
+
+  // AU-5, PO-9
+  it('does not show the overview of a change to another year than the selected one', async () => {
+    await store.selectYear(2027);
+
+    await store.restoreItem('plan-2026', item);
+
+    expect(store.year()).toBe(2027);
+    expect(store.overview()).toEqual(overview(2027));
+  });
+
+  // AU-6
+  it('prefers the overview of a change over a load still running', async () => {
+    await store.selectYear(2026);
+    const slowOverview = new Subject<HouseholdPlanOverview>();
+    api.getOverview.mockReturnValueOnce(slowOverview);
+
+    const loading = store.load();
+    await store.removeItem('1');
+    expect(store.loading()).toBe(false);
+    slowOverview.next(overview(2026));
+    slowOverview.complete();
+    await loading;
+
+    expect(store.items()).toEqual([]);
   });
 
   it('rejects adding an item while the year has no plan', async () => {

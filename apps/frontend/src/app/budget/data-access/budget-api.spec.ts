@@ -6,6 +6,7 @@ import { BudgetApi } from './budget-api';
 
 describe('BudgetApi', () => {
   const planId = '123e4567-e89b-12d3-a456-426614174000';
+  const emptyOverview = { id: planId, year: 2026, items: [] };
   let api: BudgetApi;
   let http: HttpTestingController;
 
@@ -53,9 +54,9 @@ describe('BudgetApi', () => {
     const req = http.expectOne('/api/plans');
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ year: 2026 });
-    req.flush({ id: planId });
+    req.flush({ id: planId, overview: emptyOverview });
 
-    expect(await result).toEqual({ id: planId });
+    expect(await result).toEqual({ id: planId, overview: emptyOverview });
   });
 
   it('posts an income to a plan', async () => {
@@ -65,9 +66,9 @@ describe('BudgetApi', () => {
     const req = http.expectOne(`/api/plans/${planId}/incomes`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(request);
-    req.flush({ id: 'abc' });
+    req.flush({ id: 'abc', overview: emptyOverview });
 
-    expect(await result).toEqual({ id: 'abc' });
+    expect(await result).toEqual({ id: 'abc', overview: emptyOverview });
   });
 
   it('posts an expense with category to a plan', () => {
@@ -80,18 +81,23 @@ describe('BudgetApi', () => {
     req.flush({ id: 'abc' });
   });
 
-  it('deletes an item of a plan by id', () => {
-    api.changeItem(planId, 'item-1', { description: 'Miete', amount: '900' }).subscribe();
+  // AU-1
+  it('changes and deletes an item of a plan by id and returns the overview', async () => {
+    const changed = firstValueFrom(
+      api.changeItem(planId, 'item-1', { description: 'Miete', amount: '900' }),
+    );
 
     const change = http.expectOne(`/api/plans/${planId}/items/item-1`);
     expect(change.request.method).toBe('PUT');
     expect(change.request.body).toEqual({ description: 'Miete', amount: '900' });
-    change.flush(null, { status: 204, statusText: 'No Content' });
+    change.flush(emptyOverview);
+    expect(await changed).toEqual(emptyOverview);
 
-    api.removeItem(planId, 'item-1').subscribe();
+    const removed = firstValueFrom(api.removeItem(planId, 'item-1'));
 
     const req = http.expectOne(`/api/plans/${planId}/items/item-1`);
     expect(req.request.method).toBe('DELETE');
-    req.flush(null, { status: 204, statusText: 'No Content' });
+    req.flush(emptyOverview);
+    expect(await removed).toEqual(emptyOverview);
   });
 });
