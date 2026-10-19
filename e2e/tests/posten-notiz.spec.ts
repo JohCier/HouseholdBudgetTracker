@@ -1,13 +1,12 @@
 import { expect, Page, test } from '@playwright/test';
-import { addExpense, addIncome, itemRow, registerWithPlan } from './support';
+import { addExpense, addIncome, itemRow, openEditDialog, registerWithPlan } from './support';
 
 function note(page: Page, description: string) {
   return itemRow(page, description).locator('.note');
 }
 
 async function editNote(page: Page, description: string, text: string) {
-  await page.getByRole('button', { name: `Eintrag ${description} bearbeiten` }).click();
-  const dialog = page.getByRole('dialog');
+  const dialog = await openEditDialog(page, description);
   await dialog.getByLabel('Notiz (optional)').fill(text);
   await dialog.getByRole('button', { name: 'Speichern' }).click();
   await expect(dialog).toBeHidden();
@@ -46,9 +45,10 @@ test.describe('Notiz zum Posten', () => {
     await page.getByLabel('Notiz (optional)').fill('netto');
     await addIncome(page, 'Gehalt', '3000');
 
-    await page.getByRole('button', { name: 'Eintrag Gehalt bearbeiten' }).click();
-    await expect(page.getByRole('dialog').getByLabel('Notiz (optional)')).toHaveValue('netto');
-    await page.getByRole('dialog').getByRole('button', { name: 'Abbrechen' }).click();
+    const dialog = await openEditDialog(page, 'Gehalt');
+    await expect(dialog.getByLabel('Notiz (optional)')).toHaveValue('netto');
+    await dialog.getByRole('button', { name: 'Abbrechen' }).click();
+    await expect(dialog).toBeHidden();
 
     await editNote(page, 'Gehalt', 'netto, nach Steuern');
     await expect(note(page, 'Gehalt')).toHaveText('netto, nach Steuern');
@@ -76,8 +76,7 @@ test.describe('Notiz zum Posten', () => {
     await page.getByRole('button', { name: 'Hinzufügen' }).click();
     await expect(page.getByText('Höchstens 1000 Zeichen.')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Eintrag Gehalt bearbeiten' }).click();
-    const dialog = page.getByRole('dialog');
+    const dialog = await openEditDialog(page, 'Gehalt');
     await dialog.getByLabel('Notiz (optional)').fill(tooLong);
     await dialog.getByRole('button', { name: 'Speichern' }).click();
     await expect(dialog.getByText('Höchstens 1000 Zeichen.')).toBeVisible();

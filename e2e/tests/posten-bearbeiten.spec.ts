@@ -1,9 +1,13 @@
-import { expect, Page, test } from '@playwright/test';
-import { addExpense, addIncome, categoryRow, itemRow, registerWithPlan, tile } from './support';
-
-function editButton(page: Page, description: string) {
-  return page.getByRole('button', { name: `Eintrag ${description} bearbeiten` });
-}
+import { expect, test } from '@playwright/test';
+import {
+  addExpense,
+  addIncome,
+  categoryRow,
+  itemRow,
+  openEditDialog,
+  registerWithPlan,
+  tile,
+} from './support';
 
 // docs/specs/posten-bearbeiten.md
 test.describe('Posten bearbeiten', () => {
@@ -19,8 +23,7 @@ test.describe('Posten bearbeiten', () => {
     await addExpense(page, 'Kino', '20', 'Freizeit & Spaß');
     await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('850,00 €');
 
-    await editButton(page, 'Miete').click();
-    const dialog = page.getByRole('dialog');
+    const dialog = await openEditDialog(page, 'Miete');
     await expect(dialog).toContainText('Ausgabe bearbeiten');
     await expect(dialog.getByLabel('Beschreibung')).toHaveValue('Miete');
     await expect(dialog.getByLabel('Betrag')).toHaveValue('850');
@@ -56,8 +59,7 @@ test.describe('Posten bearbeiten', () => {
     await addExpense(page, 'Fondssparen', '400', 'Freizeit & Spaß');
     await expect(categoryRow(page, 'Freizeit & Spaß')).toContainText('20 % von max. 30 %');
 
-    await editButton(page, 'Fondssparen').click();
-    const dialog = page.getByRole('dialog');
+    const dialog = await openEditDialog(page, 'Fondssparen');
     await dialog.getByRole('combobox', { name: 'Kategorie' }).click();
     await page.getByRole('option', { name: 'Sparen & Investieren' }).click();
     await dialog.getByRole('button', { name: 'Speichern' }).click();
@@ -74,8 +76,7 @@ test.describe('Posten bearbeiten', () => {
   }) => {
     await addIncome(page, 'Gehalt', '3000');
 
-    await editButton(page, 'Gehalt').click();
-    const dialog = page.getByRole('dialog');
+    const dialog = await openEditDialog(page, 'Gehalt');
     await expect(dialog).toContainText('Einnahme bearbeiten');
     await expect(dialog.getByRole('combobox', { name: 'Kategorie' })).toHaveCount(0);
     await expect(dialog.getByRole('radio')).toHaveCount(0);
@@ -98,8 +99,7 @@ test.describe('Posten bearbeiten', () => {
       if (request.method() === 'PUT') requests.push(request.url());
     });
 
-    await editButton(page, 'Miete').click();
-    const dialog = page.getByRole('dialog');
+    const dialog = await openEditDialog(page, 'Miete');
     const save = dialog.getByRole('button', { name: 'Speichern' });
 
     for (const amount of ['0', '-5']) {
@@ -125,8 +125,7 @@ test.describe('Posten bearbeiten', () => {
   test('Abbrechen lässt den Posten unverändert (PB-1)', async ({ page }) => {
     await addExpense(page, 'Miete', '850', 'Lebensunterhalt');
 
-    await editButton(page, 'Miete').click();
-    const dialog = page.getByRole('dialog');
+    const dialog = await openEditDialog(page, 'Miete');
     await dialog.getByLabel('Beschreibung').fill('Warmmiete');
     await dialog.getByLabel('Betrag').fill('999');
     await dialog.getByRole('button', { name: 'Abbrechen' }).click();
@@ -142,7 +141,7 @@ test.describe('Posten bearbeiten', () => {
     await addExpense(page, 'Miete', '850', 'Lebensunterhalt');
     const dialog = page.getByRole('dialog');
 
-    await editButton(page, 'Miete').click();
+    await openEditDialog(page, 'Miete');
     await dialog.getByLabel('Betrag').fill('900');
     await dialog.getByRole('button', { name: 'Speichern' }).click();
     await expect(dialog).toBeHidden();
@@ -150,7 +149,7 @@ test.describe('Posten bearbeiten', () => {
     await expect(page.getByRole('button', { name: 'Rückgängig' })).toHaveCount(0);
     await expect(itemRow(page, 'Miete')).toContainText('−900,00 €');
 
-    await editButton(page, 'Miete').click();
+    await openEditDialog(page, 'Miete');
     await dialog.getByLabel('Betrag').fill('850');
     await dialog.getByRole('button', { name: 'Speichern' }).click();
     await expect(dialog).toBeHidden();

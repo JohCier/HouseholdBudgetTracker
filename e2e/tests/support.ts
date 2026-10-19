@@ -63,6 +63,18 @@ export async function addExpense(
   await expect(itemRow(page, description)).toBeVisible();
 }
 
+/**
+ * Opens the edit dialog of an item and waits until the dialog has moved the focus to its first
+ * field. Typing before that can land in the wrong field, because the dialog takes the focus only
+ * once it has opened.
+ */
+export async function openEditDialog(page: Page, description: string) {
+  await page.getByRole('button', { name: `Eintrag ${description} bearbeiten` }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByLabel('Beschreibung')).toBeFocused();
+  return dialog;
+}
+
 export function itemRow(page: Page, description: string) {
   return page.getByRole('row').filter({ hasText: description });
 }
