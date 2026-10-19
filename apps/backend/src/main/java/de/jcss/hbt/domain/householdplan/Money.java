@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.householdplan;
 
-import de.jcss.hbt.domain.exception.InvalidMoneyException;
+import de.jcss.hbt.domain.exception.DomainValidationException;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.math.BigDecimal;
@@ -21,7 +21,7 @@ public record Money(BigDecimal value) implements Comparable<Money> {
     public Money {
         Objects.requireNonNull(value, "value must not be null");
         if (value.stripTrailingZeros().scale() > 2) {
-            throw new InvalidMoneyException("amount must not have more than 2 decimal places");
+            throw new DomainValidationException("amount must not have more than 2 decimal places");
         }
         value = value.setScale(2);
     }

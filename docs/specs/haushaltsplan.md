@@ -46,7 +46,7 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
 ## Umsetzung
 
 - Domäne: `HouseholdPlan` (`create`, `isOwnedBy`), `OwnerId`, `HouseholdPlanId`
-- HP-1: `HouseholdPlan.create` lehnt Jahre außerhalb von `FIRST_YEAR`/`LAST_YEAR` mit `InvalidPlanYearException` ab
+- HP-1: `HouseholdPlan.create` lehnt Jahre außerhalb von `FIRST_YEAR`/`LAST_YEAR` mit `DomainValidationException` ab
   (400), `reconstitute` nicht; `CreateHouseholdPlanRequest` und `GET /api/plans?year=` prüfen dieselben Grenzen.
   Frontend: `FIRST_YEAR`/`LAST_YEAR` in `budget/year.ts`, `BudgetStore.hasPreviousYear`/`hasNextYear` deaktivieren
   die Pfeile

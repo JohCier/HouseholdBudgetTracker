@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.householdplan;
 
-import de.jcss.hbt.domain.exception.InvalidBudgetItemException;
+import de.jcss.hbt.domain.exception.DomainValidationException;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -37,29 +37,29 @@ class BudgetItemTest {
     @Test
     void expenseRequiresCategory() {
         assertThatThrownBy(() -> BudgetItem.expense(id, RENT, amount, null, null))
-                .isInstanceOf(InvalidBudgetItemException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("category");
     }
 
     @Test
     void requiresDescription() {
         assertThatThrownBy(() -> BudgetItem.income(id, null, amount, null))
-                .isInstanceOf(InvalidBudgetItemException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("description");
     }
 
     @Test
     void rejectsMissingOrNonPositiveAmount() {
         assertThatThrownBy(() -> BudgetItem.income(id, SALARY, null, null))
-                .isInstanceOf(InvalidBudgetItemException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("amount");
 
         assertThatThrownBy(() -> BudgetItem.income(id, SALARY, Money.ZERO, null))
-                .isInstanceOf(InvalidBudgetItemException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("amount");
 
         assertThatThrownBy(() -> BudgetItem.income(id, SALARY, Money.of(new BigDecimal("-1.00")), null))
-                .isInstanceOf(InvalidBudgetItemException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("amount");
     }
 
@@ -77,13 +77,13 @@ class BudgetItemTest {
     void reconstituteEnforcesTheSameRules() {
         assertThatThrownBy(() -> BudgetItem.reconstitute(id, SALARY, amount, ItemType.INCOME,
                 ExpenseCategory.LEBENSUNTERHALT, null))
-                .isInstanceOf(InvalidBudgetItemException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("category");
         assertThatThrownBy(() -> BudgetItem.reconstitute(id, RENT, amount, ItemType.EXPENSE, null, null))
-                .isInstanceOf(InvalidBudgetItemException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("category");
         assertThatThrownBy(() -> BudgetItem.reconstitute(id, SALARY, Money.ZERO, ItemType.INCOME, null, null))
-                .isInstanceOf(InvalidBudgetItemException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("amount");
     }
 
@@ -101,10 +101,10 @@ class BudgetItemTest {
         assertThat(changed.amount()).isEqualTo(newAmount);
         assertThat(changed.category()).contains(ExpenseCategory.FREIZEIT_SPASS);
         assertThatThrownBy(() -> expense.changedTo(RENT, amount, null, null))
-                .isInstanceOf(InvalidBudgetItemException.class);
+                .isInstanceOf(DomainValidationException.class);
         assertThatThrownBy(() -> BudgetItem.income(id, SALARY, amount, null)
                 .changedTo(SALARY, amount, ExpenseCategory.LEBENSUNTERHALT, null))
-                .isInstanceOf(InvalidBudgetItemException.class);
+                .isInstanceOf(DomainValidationException.class);
     }
 
     @Test

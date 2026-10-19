@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.householdplan;
 
-import de.jcss.hbt.domain.exception.InvalidBudgetItemException;
+import de.jcss.hbt.domain.exception.DomainValidationException;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
 
@@ -53,7 +53,7 @@ public final class BudgetItem {
     static BudgetItem expense(BudgetItemId id, BudgetItemDescription description, Money amount,
                               ExpenseCategory category, BudgetItemNote note) {
         if (category == null) {
-            throw new InvalidBudgetItemException("category is required for expense items");
+            throw new DomainValidationException("category is required for expense items");
         }
         return new BudgetItem(id, description, amount, ItemType.EXPENSE, category, note);
     }
@@ -69,7 +69,7 @@ public final class BudgetItem {
         return switch (Objects.requireNonNull(type, "type must not be null")) {
             case INCOME -> {
                 if (category != null) {
-                    throw new InvalidBudgetItemException("income items must not have a category");
+                    throw new DomainValidationException("income items must not have a category");
                 }
                 yield income(id, description, amount, note);
             }
@@ -97,14 +97,14 @@ public final class BudgetItem {
 
     private static BudgetItemDescription requireDescription(BudgetItemDescription description) {
         if (description == null) {
-            throw new InvalidBudgetItemException("description is required");
+            throw new DomainValidationException("description is required");
         }
         return description;
     }
 
     private static Money requirePositive(Money amount) {
         if (amount == null || !amount.isPositive()) {
-            throw new InvalidBudgetItemException("amount must be positive");
+            throw new DomainValidationException("amount must be positive");
         }
         return amount;
     }

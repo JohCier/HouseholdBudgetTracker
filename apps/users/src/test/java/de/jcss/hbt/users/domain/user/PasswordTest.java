@@ -1,6 +1,6 @@
 package de.jcss.hbt.users.domain.user;
 
-import de.jcss.hbt.users.domain.exception.InvalidPasswordException;
+import de.jcss.hbt.users.domain.exception.DomainValidationException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -11,8 +11,8 @@ class PasswordTest {
     @Test
     void needsAtLeastEightCharacters() {
         assertThat(Password.of("12345678").value()).isEqualTo("12345678");
-        assertThatThrownBy(() -> Password.of("1234567")).isInstanceOf(InvalidPasswordException.class);
-        assertThatThrownBy(() -> Password.of(null)).isInstanceOf(InvalidPasswordException.class);
+        assertThatThrownBy(() -> Password.of("1234567")).isInstanceOf(DomainValidationException.class);
+        assertThatThrownBy(() -> Password.of(null)).isInstanceOf(DomainValidationException.class);
     }
 
     @Test
@@ -23,9 +23,9 @@ class PasswordTest {
     @Test
     void mayNotExceedWhatBCryptTakesIntoAccount() {
         assertThat(Password.of("a".repeat(72)).value()).hasSize(72);
-        assertThatThrownBy(() -> Password.of("a".repeat(73))).isInstanceOf(InvalidPasswordException.class);
+        assertThatThrownBy(() -> Password.of("a".repeat(73))).isInstanceOf(DomainValidationException.class);
         assertThatThrownBy(() -> Password.of("ä".repeat(37))).as("74 bytes in UTF-8")
-                .isInstanceOf(InvalidPasswordException.class);
+                .isInstanceOf(DomainValidationException.class);
     }
 
     @Test

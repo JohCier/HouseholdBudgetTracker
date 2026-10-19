@@ -2,10 +2,9 @@ package de.jcss.hbt.infrastructure.web;
 
 import de.jcss.hbt.application.householdplan.HouseholdPlanApplicationService;
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
+import de.jcss.hbt.domain.exception.DomainValidationException;
 import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
 import de.jcss.hbt.domain.exception.HouseholdPlanNotFoundException;
-import de.jcss.hbt.domain.exception.InvalidBudgetItemException;
-import de.jcss.hbt.domain.exception.InvalidMoneyException;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.BudgetItemNote;
@@ -280,7 +279,7 @@ class HouseholdPlanControllerTest {
 
     @Test
     void domainValidationErrorReturns400WithDetail() throws Exception {
-        when(plans.addIncome(any())).thenThrow(new InvalidMoneyException("amount must not have more than 2 decimal places"));
+        when(plans.addIncome(any())).thenThrow(new DomainValidationException("amount must not have more than 2 decimal places"));
 
         mockMvc.perform(post("/api/plans/{planId}/incomes", PLAN)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -379,7 +378,7 @@ class HouseholdPlanControllerTest {
     /** PB-2, PB-3 */
     @Test
     void categoryNotFittingTheItemReturns400() throws Exception {
-        doThrow(new InvalidBudgetItemException("income items must not have a category")).when(plans).changeItem(any());
+        doThrow(new DomainValidationException("income items must not have a category")).when(plans).changeItem(any());
 
         mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", PLAN, UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)

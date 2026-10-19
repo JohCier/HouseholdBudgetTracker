@@ -1,6 +1,6 @@
 package de.jcss.hbt.users.domain.user;
 
-import de.jcss.hbt.users.domain.exception.InvalidEmailAddressException;
+import de.jcss.hbt.users.domain.exception.DomainValidationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
@@ -22,7 +22,7 @@ class EmailAddressTest {
     @ValueSource(strings = {"", "   ", "max", "max@", "@example.org", "max@example", "max muster@example.org",
             "max@@example.org"})
     void rejectsValuesNotShapedLikeAnAddress(String value) {
-        assertThatThrownBy(() -> EmailAddress.of(value)).isInstanceOf(InvalidEmailAddressException.class);
+        assertThatThrownBy(() -> EmailAddress.of(value)).isInstanceOf(DomainValidationException.class);
     }
 
     @Test
@@ -31,6 +31,6 @@ class EmailAddressTest {
         String longest = "a".repeat(EmailAddress.MAX_LENGTH - domain.length()) + domain;
 
         assertThat(EmailAddress.of(longest).value()).hasSize(EmailAddress.MAX_LENGTH);
-        assertThatThrownBy(() -> EmailAddress.of("a" + longest)).isInstanceOf(InvalidEmailAddressException.class);
+        assertThatThrownBy(() -> EmailAddress.of("a" + longest)).isInstanceOf(DomainValidationException.class);
     }
 }

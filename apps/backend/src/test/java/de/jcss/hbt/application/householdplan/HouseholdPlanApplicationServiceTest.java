@@ -1,9 +1,9 @@
 package de.jcss.hbt.application.householdplan;
 
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
+import de.jcss.hbt.domain.exception.DomainValidationException;
 import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
 import de.jcss.hbt.domain.exception.HouseholdPlanNotFoundException;
-import de.jcss.hbt.domain.exception.InvalidBudgetItemException;
 import de.jcss.hbt.domain.householdplan.BudgetItem;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
@@ -143,7 +143,7 @@ class HouseholdPlanApplicationServiceTest {
         publishedEvents.clear();
 
         assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, Money.ZERO, null)))
-                .isInstanceOf(InvalidBudgetItemException.class);
+                .isInstanceOf(DomainValidationException.class);
         assertThat(storedItems()).isEmpty();
         assertThat(publishedEvents).isEmpty();
     }

@@ -1,7 +1,7 @@
 package de.jcss.hbt.domain.householdplan;
 
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
-import de.jcss.hbt.domain.exception.InvalidPlanYearException;
+import de.jcss.hbt.domain.exception.DomainValidationException;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemChanged;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
@@ -76,12 +76,13 @@ public final class HouseholdPlan {
     /**
      * Starts a new, empty plan of the given owner for the given year.
      *
-     * @throws InvalidPlanYearException if the year is before {@value #FIRST_YEAR} or after {@value #LAST_YEAR}
+     * @throws DomainValidationException if the year is before {@value #FIRST_YEAR} or after {@value #LAST_YEAR}
      */
     public static HouseholdPlan create(HouseholdPlanId id, OwnerId owner, Year year) {
         Objects.requireNonNull(year, "year must not be null");
         if (year.getValue() < FIRST_YEAR || year.getValue() > LAST_YEAR) {
-            throw new InvalidPlanYearException(year, FIRST_YEAR, LAST_YEAR);
+            throw new DomainValidationException(
+                    "year must be between %d and %d, but was %s".formatted(FIRST_YEAR, LAST_YEAR, year));
         }
         HouseholdPlan plan = new HouseholdPlan(id, owner, year, List.of());
         plan.record(new HouseholdPlanCreated(id, owner, year, Instant.now()));

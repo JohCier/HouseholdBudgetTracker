@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.householdplan;
 
-import de.jcss.hbt.domain.exception.InvalidPercentageException;
+import de.jcss.hbt.domain.exception.DomainValidationException;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -19,7 +19,7 @@ class PercentageTest {
     @Test
     void rejectsMoreThanTwoDecimalPlaces() {
         assertThatThrownBy(() -> new Percentage(new BigDecimal("33.333")))
-                .isInstanceOf(InvalidPercentageException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("decimal places");
     }
 
