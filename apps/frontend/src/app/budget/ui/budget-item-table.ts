@@ -26,7 +26,7 @@ import { BudgetItem, categoryLabel } from '../budget.model';
         @if (items().length === 0) {
           <p class="empty">Noch keine Einträge in diesem Haushaltsplan.</p>
         } @else {
-          <table mat-table [dataSource]="items()">
+          <table mat-table [dataSource]="items()" [trackBy]="trackById">
             <ng-container matColumnDef="type">
               <th mat-header-cell *matHeaderCellDef>Art</th>
               <td mat-cell *matCellDef="let item">
@@ -127,6 +127,12 @@ export class BudgetItemTable {
   readonly remove = output<BudgetItem>();
 
   protected readonly columns = ['type', 'description', 'category', 'amount', 'actions'];
+
+  /**
+   * Every reload of the overview brings new objects for the same items; tracking them by id keeps
+   * the rows of unchanged items instead of building all rows anew, and keeps the focus in place.
+   */
+  protected readonly trackById = (_index: number, item: BudgetItem): string => item.id;
 
   protected label(item: BudgetItem): string {
     return categoryLabel(item.category);
