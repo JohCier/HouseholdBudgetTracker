@@ -16,7 +16,7 @@ COPY apps/frontend/ apps/frontend/
 RUN npm run build --workspace=frontend
 
 # --- Runtime: nginx liefert die App aus und leitet /api an die Dienste weiter ---
-FROM nginx:1.29-alpine
+FROM nginx:1.31-alpine
 COPY apps/frontend/docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /build/apps/frontend/dist/frontend/browser/ /usr/share/nginx/html/
 EXPOSE 80
