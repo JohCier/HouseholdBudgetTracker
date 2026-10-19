@@ -11,10 +11,14 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Keeps the failed sign-ins in memory (AN-10): after {@value #MAX_FAILED_ATTEMPTS} failures
  * within {@link #WINDOW}, signing in with the address is locked for {@link #LOCK_DURATION}.
+ * Attempts count as failures from the moment they start; the lock therefore already applies
+ * while the attempt that reached the limit is still being checked, and is lifted again by
+ * {@link #reset} if that attempt succeeds.
  * <p>
  * The counts belong to this instance and are lost on restart, which is fine for a single
  * instance; several instances would need a shared store.
@@ -33,19 +37,25 @@ public class InMemoryLoginThrottle implements LoginThrottle {
         this.clock = Objects.requireNonNull(clock);
     }
 
+    /**
+     * Checks the lock and counts the attempt atomically per address ({@link Map#compute}), so
+     * no more than {@value #MAX_FAILED_ATTEMPTS} attempts get through, however many arrive at once.
+     */
     @Override
-    public void ensureNotLocked(EmailAddress email) {
-        Attempts current = attempts.get(email);
-        if (current != null && current.isLockedAt(clock.instant())) {
-            throw new LoginLockedException();
-        }
-    }
-
-    @Override
-    public void recordFailure(EmailAddress email) {
+    public void countAttempt(EmailAddress email) {
         Instant now = clock.instant();
         attempts.values().removeIf(entry -> entry.isExpiredAt(now));
-        attempts.compute(email, (_, current) -> current == null ? Attempts.first(now) : current.afterFailure(now));
+        AtomicBoolean locked = new AtomicBoolean();
+        attempts.compute(email, (_, current) -> {
+            if (current != null && current.isLockedAt(now)) {
+                locked.set(true);
+                return current;
+            }
+            return current == null ? Attempts.first(now) : current.afterFailure(now);
+        });
+        if (locked.get()) {
+            throw new LoginLockedException();
+        }
     }
 
     @Override

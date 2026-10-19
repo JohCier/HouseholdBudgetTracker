@@ -62,8 +62,9 @@ und meldet sich an. Die Sitzung gilt für beide Dienste (Users und Backend).
 - AN-3: `UserApplicationService.register` prüft vorab, die Unique-Constraint in `V1__app_user.sql` sichert gegen
   gleichzeitige Anfragen
 - AN-10: Port `LoginThrottle` im Application Layer, umgesetzt von `InMemoryLoginThrottle` (Infrastruktur, Zähler im
-  Speicher); `UserApplicationService.authenticate` meldet Fehlversuche und setzt den Zähler nach einer erfolgreichen
-  Anmeldung zurück; `LoginLockedException` wird zu 429 mit `urn:hbt:too-many-login-attempts` (siehe
+  Speicher); `UserApplicationService.authenticate` zählt jeden Versuch vor der Passwortprüfung als Fehlversuch
+  (`countAttempt`, prüft und zählt in einem Schritt, damit gleichzeitige Versuche die Grenze nicht umgehen) und setzt
+  den Zähler nach einer erfolgreichen Anmeldung zurück; `LoginLockedException` wird zu 429 mit `urn:hbt:too-many-login-attempts` (siehe
   [fehlermeldungen.md](fehlermeldungen.md)). Die Zähler gelten je Instanz des Users-Dienstes und gehen bei einem
   Neustart verloren
 - Sitzung: `SessionCookies` (Users) stellt das Cookie `HBT_SESSION` mit JWT (HS256) aus; das Backend prüft es mit
