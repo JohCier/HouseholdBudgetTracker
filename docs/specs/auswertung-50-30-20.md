@@ -71,7 +71,8 @@ der Anwendung.
 - API: `GET /api/plans?year=` liefert `HouseholdPlanOverviewResponse`; Beträge als Dezimal-Strings (z. B. `"850.00"`).
   `CategoryBreakdownResponse.total` enthält den Überschuss, `unplanned` weist ihn getrennt aus (AW-10)
 - Frontend: `budget/ui/overview-summary.ts` (Summen, Saldo, Warnung), `budget/ui/category-breakdown.ts` (Balken je
-  Kategorie, „davon nicht verplant" bei Sparen & Investieren)
+  Kategorie, „davon nicht verplant" bei Sparen & Investieren); als Tortendiagramm siehe
+  [tortendiagramm.md](tortendiagramm.md)
 - Tests: `BudgetSummaryTest`, `ExpenseCategoryTest`, `PercentageTest`, `HouseholdPlanOverviewTest`,
   `JdbcHouseholdPlanOverviewQueryHandlerTest`, `overview-summary.spec.ts`, `category-breakdown.spec.ts`
 - E2E: `e2e/tests/auswertung.spec.ts`

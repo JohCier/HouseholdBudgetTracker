@@ -5,7 +5,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { BudgetItem } from './budget.model';
+import { BreakdownView, BudgetItem } from './budget.model';
 import { BudgetStore } from './data-access/budget-store';
 import { AddItemForm } from './ui/add-item-form';
 import { BudgetItemTable } from './ui/budget-item-table';
@@ -69,7 +69,10 @@ import { OverviewSummary } from './ui/overview-summary';
         <div class="side">
           <app-add-item-form />
           @if (store.overview(); as overview) {
-            <app-category-breakdown [breakdowns]="overview.categoryBreakdowns" />
+            <app-category-breakdown
+              [breakdowns]="overview.categoryBreakdowns"
+              [(view)]="breakdownView"
+            />
           }
         </div>
         <app-budget-item-table
@@ -155,6 +158,8 @@ export class BudgetDashboard implements OnInit {
   private readonly injector = inject(Injector);
 
   protected readonly creating = signal(false);
+  /** View of the 50/30/20 card, kept while the page is open (TD-1). */
+  protected readonly breakdownView = signal<BreakdownView>('bars');
 
   ngOnInit(): void {
     void this.store.load();

@@ -34,6 +34,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Finanzielle Lage | `BudgetSummary` (Value Object) | Einkommen, Ausgaben je Kategorie und alles, was daraus folgt (Saldo, Anteile, Zielerreichung) |
 | Übersicht | `HouseholdPlanOverview` (Read Model) | Was die Oberfläche für ein Jahr anzeigt: Posten, Summen, Aufteilung je Kategorie |
 | Aufteilung je Kategorie | `CategoryBreakdown` | Teil der Übersicht: Summe, Anteil, Zielanteil und Zielerreichung einer Kategorie |
+| Darstellung (Balken, Torte) | `BreakdownView` (`bars`, `pie`), nur im Frontend | Wie die Karte „50/30/20-Regel" die Aufteilung zeigt: als Balken je Kategorie oder als Tortendiagramm |
 | Protokoll | `audit_log`, `AuditLogListener` | Jedes Domain Event wird nach erfolgreichem Speichern protokolliert |
 
 ## Benutzer (`apps/users`)

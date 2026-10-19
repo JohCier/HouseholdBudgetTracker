@@ -88,3 +88,21 @@ export function tile(page: Page, label: 'Einnahmen' | 'Ausgaben' | 'Saldo') {
 export function categoryRow(page: Page, category: Category) {
   return page.locator('app-category-breakdown .row').filter({ hasText: category });
 }
+
+/** Switches the 50/30/20 card between "Balken" and "Torte" (TD-1). */
+export async function showBreakdownAs(page: Page, view: 'Balken' | 'Torte'): Promise<void> {
+  await page
+    .getByRole('radiogroup', { name: 'Darstellung' })
+    .getByRole('radio', { name: view })
+    .click();
+}
+
+/** Legend entry of a category in the pie chart of the 50/30/20 card. */
+export function pieLegendItem(page: Page, category: Category) {
+  return page.locator('app-category-pie .legend-item').filter({ hasText: category });
+}
+
+/** Slices of the pie chart, each labelled with category, total and share of income. */
+export function pieSlices(page: Page) {
+  return page.locator('app-category-pie').getByRole('img');
+}
