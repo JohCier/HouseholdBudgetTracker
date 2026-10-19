@@ -177,7 +177,7 @@ jMolecules) in beiden Apps maschinell. Schlägt `ArchitectureTest` fehl, wird de
 
 - Koordination statt Logik: Ein Application Service delegiert die Fachlogik an Aggregates oder Domain Services; er enthält nur „Wenn-Dann“-Abläufe für den Prozess (z. B. „Lade Plan, füge Ausgabe hinzu, speichere Plan, veröffentliche Events“)
 
-- Transaktionsgrenze: Hier beginnt und endet die Datenbanktransaktion (`@Transactional`); der Application Service stellt sicher, dass eine Operation atomar ist
+- Transaktionsgrenze: Hier beginnt und endet die Datenbanktransaktion (`@Transactional`); der Application Service stellt sicher, dass eine Operation atomar ist. Ausnahme: Ein Anwendungsfall, der höchstens eine Zeile schreibt und dabei etwas Langsames ohne Datenbank tut (z. B. BCrypt in `apps/users`), läuft ohne Transaktion, damit er keine Datenbankverbindung blockiert; der Javadoc des Service begründet das
 
 - Infrastruktur-Brücke: Koordiniert technische Belange; Versand von Bestätigungs-E-Mails, Aufruf externer APIs oder Veröffentlichen von Events
 
