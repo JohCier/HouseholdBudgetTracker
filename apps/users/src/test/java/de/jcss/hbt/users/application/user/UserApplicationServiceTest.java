@@ -5,6 +5,8 @@ import de.jcss.hbt.users.domain.exception.InvalidCredentialsException;
 import de.jcss.hbt.users.domain.user.EmailAddress;
 import de.jcss.hbt.users.domain.user.FakePasswordHasher;
 import de.jcss.hbt.users.domain.user.Password;
+import de.jcss.hbt.users.domain.user.PasswordHash;
+import de.jcss.hbt.users.domain.user.PasswordHasher;
 import de.jcss.hbt.users.domain.user.User;
 import de.jcss.hbt.users.domain.user.UserId;
 import de.jcss.hbt.users.domain.user.UserRepository;
@@ -91,6 +93,32 @@ class UserApplicationServiceTest {
 
         assertThat(loginThrottle.attempts).containsExactly(EMAIL, unknown);
         assertThat(loginThrottle.resets).isEmpty();
+    }
+
+    /** AN-6 */
+    @Test
+    void anUnknownAddressStillHasItsPasswordChecked() {
+        List<Password> checked = new ArrayList<>();
+        FakePasswordHasher fake = new FakePasswordHasher();
+        PasswordHasher hasher = new PasswordHasher() {
+            @Override
+            public PasswordHash hash(Password password) {
+                return fake.hash(password);
+            }
+
+            @Override
+            public boolean matches(Password password, PasswordHash hash) {
+                checked.add(password);
+                return fake.matches(password, hash);
+            }
+        };
+        UserApplicationService service =
+                new UserApplicationService(repository, loginThrottle, hasher, publishedEvents::add);
+
+        assertThatThrownBy(() -> service.authenticate(EmailAddress.of("unknown@example.org"), PASSWORD))
+                .isInstanceOf(InvalidCredentialsException.class);
+
+        assertThat(checked).containsExactly(PASSWORD);
     }
 
     /** AN-10 */

@@ -61,6 +61,8 @@ und meldet sich an. Die Sitzung gilt für beide Dienste (Users und Backend).
   `RegisterUserCommand`, Event `UserRegistered`
 - AN-3: `UserApplicationService.register` prüft vorab, die Unique-Constraint in `V1__app_user.sql` sichert gegen
   gleichzeitige Anfragen
+- AN-6: `UserApplicationService.authenticate` prüft das Passwort auch bei unbekannter Adresse (gegen einen Hash, zu
+  dem kein Passwort passt), damit die Antwortzeit nicht verrät, ob es die Adresse gibt
 - AN-10: Port `LoginThrottle` im Application Layer, umgesetzt von `InMemoryLoginThrottle` (Infrastruktur, Zähler im
   Speicher); `UserApplicationService.authenticate` zählt jeden Versuch vor der Passwortprüfung als Fehlversuch
   (`countAttempt`, prüft und zählt in einem Schritt, damit gleichzeitige Versuche die Grenze nicht umgehen) und setzt
