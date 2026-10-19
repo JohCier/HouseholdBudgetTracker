@@ -24,8 +24,8 @@ import java.util.Objects;
  * aggregates and gives a clear error early, while the unique constraint behind
  * {@link UserRepository#add} remains the actual safeguard against races.
  * <p>
- * Signing in reports failed attempts to the {@link LoginThrottle}, which may lock the address
- * (AN-10).
+ * Signing in counts every attempt with the {@link LoginThrottle} before the password is
+ * checked, which may lock the address (AN-10); a successful attempt resets the count.
  */
 @Service
 @Transactional
@@ -58,22 +58,18 @@ public class UserApplicationService {
     }
 
     /**
-     * Finds out who signs in with the given e-mail address and password. A failed attempt is
-     * counted, a successful one forgets the failed attempts with the address.
+     * Finds out who signs in with the given e-mail address and password. The attempt is counted
+     * as failed up front, so parallel attempts cannot get past the lock; a successful one forgets
+     * the failed attempts with the address.
      *
      * @throws LoginLockedException        if the address is locked after too many failed attempts
      * @throws InvalidCredentialsException if there is no such user or the password is wrong
      */
     public UserId authenticate(EmailAddress email, Password password) {
-        loginThrottle.ensureNotLocked(email);
-        try {
-            User user = repository.findByEmail(email).orElseThrow(InvalidCredentialsException::new);
-            user.authenticate(password, passwordHasher);
-            loginThrottle.reset(email);
-            return user.id();
-        } catch (InvalidCredentialsException e) {
-            loginThrottle.recordFailure(email);
-            throw e;
-        }
+        loginThrottle.countAttempt(email);
+        User user = repository.findByEmail(email).orElseThrow(InvalidCredentialsException::new);
+        user.authenticate(password, passwordHasher);
+        loginThrottle.reset(email);
+        return user.id();
     }
 }
