@@ -18,7 +18,12 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.sql.DataSource;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.time.Instant;
 import java.time.Year;
 import java.util.Optional;
@@ -28,7 +33,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -47,6 +54,9 @@ class JdbcHouseholdPlanRepositoryTest {
 
     @Autowired
     private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private DataSource dataSource;
 
     @BeforeEach
     void cleanUp() {
@@ -129,6 +139,64 @@ class JdbcHouseholdPlanRepositoryTest {
 
         assertThat(repository.findById(plan.id()).orElseThrow().items()).extracting(BudgetItem::note)
                 .containsExactly(Optional.empty(), Optional.of(new BudgetItemNote("netto")));
+    }
+
+    /** Saving writes only what a command changed, not every item of the plan again. */
+    @Test
+    void savingTakesOneQueryAndOneWriteHoweverManyItemsThePlanHas() {
+        HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
+        BudgetItemId first = null;
+        for (int i = 0; i < 20; i++) {
+            BudgetItemId id = plan.addIncome(description("Einnahme " + i), money("10.00"), null);
+            first = first == null ? id : first;
+        }
+        repository.add(plan);
+        AtomicInteger statements = new AtomicInteger();
+        JdbcHouseholdPlanRepository counting =
+                new JdbcHouseholdPlanRepository(JdbcClient.create(countingStatements(dataSource, statements)));
+
+        HouseholdPlan loaded = counting.findById(plan.id()).orElseThrow();
+        loaded.addIncome(description("Bonus"), money("5.00"), null);
+        statements.set(0);
+        counting.save(loaded);
+        assertThat(statements).as("add").hasValue(2);
+
+        loaded.changeItem(first, description("Gehalt"), money("10.00"), null, null);
+        statements.set(0);
+        counting.save(loaded);
+        assertThat(statements).as("change").hasValue(2);
+
+        loaded.removeItem(first);
+        statements.set(0);
+        counting.save(loaded);
+        assertThat(statements).as("remove").hasValue(2);
+
+        statements.set(0);
+        counting.save(loaded);
+        assertThat(statements).as("nothing changed").hasValue(1);
+        assertThat(repository.findById(plan.id()).orElseThrow().items()).hasSize(20);
+    }
+
+    /** Counts the statements prepared through connections of the data source. */
+    private static DataSource countingStatements(DataSource dataSource, AtomicInteger statements) {
+        return proxy(DataSource.class, dataSource, (method, result) -> method.getName().equals("getConnection")
+                ? proxy(Connection.class, (Connection) result, (connectionMethod, connectionResult) -> {
+                    if (connectionMethod.getName().equals("prepareStatement")) {
+                        statements.incrementAndGet();
+                    }
+                    return connectionResult;
+                })
+                : result);
+    }
+
+    private static <T> T proxy(Class<T> type, T target, BiFunction<Method, Object, Object> afterCall) {
+        return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type}, (proxy, method, args) -> {
+            try {
+                return afterCall.apply(method, method.invoke(target, args));
+            } catch (InvocationTargetException e) {
+                throw e.getCause();
+            }
+        }));
     }
 
     @Test
