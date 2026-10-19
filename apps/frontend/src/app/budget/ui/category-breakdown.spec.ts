@@ -76,4 +76,40 @@ describe('CategoryBreakdownCard', () => {
     expect(rows[0].textContent).not.toContain('nicht verplant');
     expect(rows[1].textContent).toMatch(/davon nicht verplant: \S*400/);
   });
+
+  // TD-1
+  it('shows the bars by default and switches to the pie chart and back', async () => {
+    const fixture = TestBed.createComponent(CategoryBreakdownCard);
+    fixture.componentRef.setInput('breakdowns', [
+      {
+        category: 'LEBENSUNTERHALT',
+        total: '100.00',
+        unplanned: '0.00',
+        actualPercentageOfIncome: 10,
+        targetPercentageOfIncome: 50,
+        targetDirection: 'AT_MOST',
+        targetMet: true,
+      },
+    ]);
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+    const toggle = (label: string) =>
+      [...element.querySelectorAll<HTMLButtonElement>('mat-button-toggle button')].find(
+        (b) => b.textContent?.trim() === label,
+      )!;
+
+    expect(toggle('Balken').getAttribute('aria-checked')).toBe('true');
+    expect(element.querySelector('.row')).not.toBeNull();
+    expect(element.querySelector('app-category-pie')).toBeNull();
+
+    toggle('Torte').click();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.view()).toBe('pie');
+    expect(element.querySelector('app-category-pie')).not.toBeNull();
+    expect(element.querySelector('.row')).toBeNull();
+
+    toggle('Balken').click();
+    await fixture.whenStable();
+    expect(element.querySelector('.row')).not.toBeNull();
+  });
 });

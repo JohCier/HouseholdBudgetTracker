@@ -7,6 +7,10 @@ mat-card-content {
   padding-top: 16px;
 }
 
+.view-toggle {
+  align-self: flex-start;
+}
+
 .row {
   display: flex;
   flex-direction: column;

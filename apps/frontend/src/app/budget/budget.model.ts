@@ -46,3 +46,17 @@ export const EXPENSE_CATEGORIES: readonly CategoryInfo[] = [
 export function categoryLabel(category: ExpenseCategory | null): string {
   return EXPENSE_CATEGORIES.find((c) => c.value === category)?.label ?? '–';
 }
+
+/** How the 50/30/20 card shows the breakdown: as one bar per category or as a pie chart. */
+export type BreakdownView = 'bars' | 'pie';
+
+/** Target wording shared by the bar and pie views, e.g. "max. 50" or "mind. 20". */
+export function targetLabel(breakdown: CategoryBreakdown): string {
+  const direction = breakdown.targetDirection === 'AT_LEAST' ? 'mind.' : 'max.';
+  return `${direction} ${breakdown.targetPercentageOfIncome}`;
+}
+
+/** Hint for a missed target, depending on whether the target is a ceiling or a floor. */
+export function missedTargetLabel(breakdown: CategoryBreakdown): string {
+  return breakdown.targetDirection === 'AT_LEAST' ? 'Ziel nicht erreicht' : 'Ziel überschritten';
+}
