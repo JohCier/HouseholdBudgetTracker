@@ -30,7 +30,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Ausgaben | `totalExpense` | Summe aller Ausgaben eines Plans |
 | Saldo | `balance` | Einkommen minus Ausgaben; negativ bei Defizit |
 | Defizit | `expensesExceedIncome` | Die Ausgaben sind höher als das Einkommen |
-| Überschuss, nicht verplant | `surplus`, `unplanned` | Positiver Saldo; zählt in der Auswertung zu Freizeit & Spaß |
+| Überschuss, nicht verplant | `surplus`, `unplanned` | Positiver Saldo; zählt in der Auswertung zu Sparen & Investieren |
 | Finanzielle Lage | `BudgetSummary` (Value Object) | Einkommen, Ausgaben je Kategorie und alles, was daraus folgt (Saldo, Anteile, Zielerreichung) |
 | Übersicht | `HouseholdPlanOverview` (Read Model) | Was die Oberfläche für ein Jahr anzeigt: Posten, Summen, Aufteilung je Kategorie |
 | Aufteilung je Kategorie | `CategoryBreakdown` | Teil der Übersicht: Summe, Anteil, Zielanteil und Zielerreichung einer Kategorie |
