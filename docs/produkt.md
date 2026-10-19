@@ -40,7 +40,11 @@ Alle Beträge sind in Euro. Die Oberfläche ist deutschsprachig.
 
 ## Roadmap
 
-Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant". Derzeit ist keine Änderung geplant.
+Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant".
+
+| Bereich | Was der Benutzer tun kann | Spec |
+|---|---|---|
+| Tortendiagramm | Die 50/30/20-Auswertung wahlweise als Balken oder als Tortendiagramm ansehen | [tortendiagramm.md](specs/tortendiagramm.md) |
 
 ## Weiterführend
 
