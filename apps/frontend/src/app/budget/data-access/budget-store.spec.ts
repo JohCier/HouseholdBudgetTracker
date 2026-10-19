@@ -203,6 +203,54 @@ describe('BudgetStore', () => {
     expect(store.overview()?.year).toBe(2026);
   });
 
+  it('forgets the previous year while the selected one loads (HP-1)', async () => {
+    await store.selectYear(2026);
+    const pending = new Subject<HouseholdPlanOverview>();
+    api.getOverview.mockReturnValueOnce(pending);
+
+    const loading = store.selectYear(2027);
+
+    expect(store.year()).toBe(2027);
+    expect(store.overview()).toBeNull();
+    expect(store.planId()).toBeNull();
+    expect(store.items()).toEqual([]);
+    expect(store.planMissing()).toBe(false);
+    await expect(store.addIncome({ description: 'Bonus', amount: '1.00' })).rejects.toThrow(
+      'Für 2027 gibt es noch keinen Haushaltsplan.',
+    );
+    expect(api.addIncome).not.toHaveBeenCalled();
+
+    pending.next(overview(2027));
+    pending.complete();
+    await loading;
+    expect(store.planId()).toBe('plan-2027');
+  });
+
+  it('shows nothing of the previous year when loading the selected one fails (HP-1)', async () => {
+    await store.selectYear(2026);
+    api.getOverview.mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 0 })));
+
+    await store.selectYear(2027);
+
+    expect(store.loadError()).not.toBeNull();
+    expect(store.overview()).toBeNull();
+    expect(store.planId()).toBeNull();
+    expect(store.planMissing()).toBe(false);
+  });
+
+  it('keeps the overview while reloading the same year', async () => {
+    await store.selectYear(2026);
+    const pending = new Subject<HouseholdPlanOverview>();
+    api.getOverview.mockReturnValueOnce(pending);
+
+    const reloading = store.load();
+
+    expect(store.planId()).toBe('plan-2026');
+    pending.next(overview(2026));
+    pending.complete();
+    await reloading;
+  });
+
   it('restores a removed expense into the plan it was removed from', async () => {
     await store.selectYear(2027);
     const expense: BudgetItem = {

@@ -61,8 +61,8 @@ das frühere Nicht-Ziel „Keine Bearbeitung eines Postens" in [produkt.md](../p
 - Domäne: `HouseholdPlan.changeItem` (PB-1, PB-4 bis PB-6), `BudgetItem.changedTo` behält ID und Art und prüft die
   Regeln wie beim Erfassen (PB-2, PB-3), `BudgetItem.hasSameValuesAs` (PB-5)
 - Command `ChangeBudgetItemCommand`, Event `BudgetItemChanged`, `HouseholdPlanApplicationService.changeItem`
-- Persistenz: `JdbcHouseholdPlanRepository.save` schreibt neue und geänderte Posten per Upsert; `created_at` bleibt
-  unverändert (PB-4)
+- Persistenz: `JdbcHouseholdPlanRepository.save` vergleicht mit den gespeicherten Posten und schreibt nur neue,
+  geänderte und entfernte; ein geänderter Posten bekommt ein `UPDATE`, `created_at` bleibt unverändert (PB-4)
 - API: `PUT /api/plans/{planId}/items/{itemId}` mit `ChangeBudgetItemRequest` (Beschreibung, Betrag, Kategorie nur bei
   Ausgaben), Antwort 200 mit der Übersicht (AU-4); 400 bei ungültigen Werten, 404 bei unbekanntem Plan oder Posten
 - Frontend: Schaltfläche „Bearbeiten" in `budget/ui/budget-item-table.ts`, Dialog `budget/ui/edit-item-dialog.ts` mit

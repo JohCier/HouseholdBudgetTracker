@@ -13,12 +13,15 @@ import de.jcss.hbt.users.domain.user.EmailAddress;
 public interface LoginThrottle {
 
     /**
-     * @throws LoginLockedException if signing in with the address is locked right now
+     * Counts a sign-in attempt with the address as failed, before its password is checked, and
+     * locks the address when the limit is reached. Checking and counting happen in one step, so
+     * attempts made at the same time cannot all get past the limit. A successful attempt is
+     * taken back with {@link #reset}.
+     *
+     * @throws LoginLockedException if signing in with the address is locked right now; the
+     *                              attempt is then not counted
      */
-    void ensureNotLocked(EmailAddress email);
-
-    /** Counts a failed sign-in with the address, locking it when the limit is reached. */
-    void recordFailure(EmailAddress email);
+    void countAttempt(EmailAddress email);
 
     /** Forgets the failed sign-ins with the address after a successful one. */
     void reset(EmailAddress email);

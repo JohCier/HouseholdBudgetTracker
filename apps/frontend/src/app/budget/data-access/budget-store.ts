@@ -18,7 +18,9 @@ import { BudgetApi } from './budget-api';
  * including the items, is derived on the server; every mutation answers with the overview
  * after it, which is shown without reloading (AU-5). Only the latest response is applied,
  * so overlapping loads and mutations (e.g. quick successive deletes or year changes) cannot
- * leave stale data behind (AU-6).
+ * leave stale data behind (AU-6). Selecting another year forgets the overview of the
+ * previous one right away, so nothing of the previous year is shown or changed while the
+ * new one loads or if loading it fails (HP-1).
  * Mutations reject with an Error carrying a user-facing message.
  *
  * Provided by the dashboard, so the state lives only as long as the dashboard is shown and
@@ -49,6 +51,7 @@ export class BudgetStore {
 
   selectYear(year: Year): Promise<void> {
     this._year.set(year);
+    this._overview.set(undefined);
     return this.load();
   }
 
