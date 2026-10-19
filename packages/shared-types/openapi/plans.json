@@ -57,7 +57,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/HouseholdPlanIdResponse"
+                  "$ref" : "#/components/schemas/CreatedHouseholdPlanResponse"
                 }
               }
             },
@@ -97,7 +97,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/BudgetItemIdResponse"
+                  "$ref" : "#/components/schemas/AddedBudgetItemResponse"
                 }
               }
             },
@@ -137,7 +137,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/BudgetItemIdResponse"
+                  "$ref" : "#/components/schemas/AddedBudgetItemResponse"
                 }
               }
             },
@@ -171,8 +171,15 @@
           }
         } ],
         "responses" : {
-          "204" : {
-            "description" : "No Content"
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HouseholdPlanOverviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
           }
         },
         "security" : [ {
@@ -210,8 +217,15 @@
           "required" : true
         },
         "responses" : {
-          "204" : {
-            "description" : "No Content"
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HouseholdPlanOverviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
           }
         },
         "security" : [ {
@@ -272,13 +286,16 @@
           }
         }
       },
-      "BudgetItemIdResponse" : {
-        "required" : [ "id" ],
+      "AddedBudgetItemResponse" : {
+        "required" : [ "id", "overview" ],
         "type" : "object",
         "properties" : {
           "id" : {
             "type" : "string",
             "format" : "uuid"
+          },
+          "overview" : {
+            "$ref" : "#/components/schemas/HouseholdPlanOverviewResponse"
           }
         }
       },
@@ -389,20 +406,23 @@
           }
         }
       },
-      "ExpenseCategory" : {
-        "type" : "string",
-        "description" : "Required for an expense, must be absent for an income",
-        "enum" : [ "LEBENSUNTERHALT", "FREIZEIT_SPASS", "SPAREN_INVESTIEREN" ]
-      },
-      "HouseholdPlanIdResponse" : {
-        "required" : [ "id" ],
+      "CreatedHouseholdPlanResponse" : {
+        "required" : [ "id", "overview" ],
         "type" : "object",
         "properties" : {
           "id" : {
             "type" : "string",
             "format" : "uuid"
+          },
+          "overview" : {
+            "$ref" : "#/components/schemas/HouseholdPlanOverviewResponse"
           }
         }
+      },
+      "ExpenseCategory" : {
+        "type" : "string",
+        "description" : "Required for an expense, must be absent for an income",
+        "enum" : [ "LEBENSUNTERHALT", "FREIZEIT_SPASS", "SPAREN_INVESTIEREN" ]
       },
       "HouseholdPlanOverviewResponse" : {
         "required" : [ "balance", "categoryBreakdowns", "expensesExceedIncome", "id", "items", "totalExpense", "totalIncome", "year" ],

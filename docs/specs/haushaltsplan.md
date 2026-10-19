@@ -23,7 +23,7 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
 ## Akzeptanzkriterien
 
 - **Gegeben** ein angemeldeter Benutzer ohne Plan für 2026, **wenn** er einen Plan für 2026 anlegt, **dann** antwortet
-  die API mit 201 und der ID des Plans, und die Übersicht für 2026 zeigt einen leeren Plan.
+  die API mit 201, der ID des Plans und der Übersicht für 2026, die einen leeren Plan zeigt (AU-1, AU-3).
 - **Gegeben** ein Benutzer mit Plan für 2026, **wenn** er erneut einen Plan für 2026 anlegt, **dann** antwortet die API
   mit 409.
 - **Gegeben** ein Benutzer ohne Plan für 2027, **wenn** er die Übersicht für 2027 abruft, **dann** antwortet die API mit

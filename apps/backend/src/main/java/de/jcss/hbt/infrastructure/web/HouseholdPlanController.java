@@ -1,5 +1,6 @@
 package de.jcss.hbt.infrastructure.web;
 
+import de.jcss.hbt.application.householdplan.AddedBudgetItem;
 import de.jcss.hbt.application.householdplan.HouseholdPlanApplicationService;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
@@ -15,10 +16,10 @@ import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.infrastructure.web.dto.AddExpenseRequest;
 import de.jcss.hbt.infrastructure.web.dto.AddIncomeRequest;
-import de.jcss.hbt.infrastructure.web.dto.BudgetItemIdResponse;
+import de.jcss.hbt.infrastructure.web.dto.AddedBudgetItemResponse;
 import de.jcss.hbt.infrastructure.web.dto.ChangeBudgetItemRequest;
 import de.jcss.hbt.infrastructure.web.dto.CreateHouseholdPlanRequest;
-import de.jcss.hbt.infrastructure.web.dto.HouseholdPlanIdResponse;
+import de.jcss.hbt.infrastructure.web.dto.CreatedHouseholdPlanResponse;
 import de.jcss.hbt.infrastructure.web.dto.ExpenseCategoryDto;
 import de.jcss.hbt.infrastructure.web.dto.HouseholdPlanOverviewResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -47,7 +48,8 @@ import java.util.UUID;
 /**
  * Exposes household plans as a REST API. Contains no business logic: requests that change
  * something become commands for the {@link HouseholdPlanApplicationService}, the overview
- * of a plan is read through it as well. Everything is done on behalf of the signed-in user,
+ * of a plan is read through it as well. Every change answers with the overview of the plan
+ * after the change (AU-1), so clients need no second request. Everything is done on behalf of the signed-in user,
  * the subject of the session token checked by the security configuration.
  */
 @RestController
@@ -64,9 +66,9 @@ public class HouseholdPlanController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public HouseholdPlanIdResponse createPlan(@AuthenticationPrincipal Jwt user,
-                                              @Valid @RequestBody CreateHouseholdPlanRequest request) {
-        return HouseholdPlanIdResponse.from(
+    public CreatedHouseholdPlanResponse createPlan(@AuthenticationPrincipal Jwt user,
+                                                   @Valid @RequestBody CreateHouseholdPlanRequest request) {
+        return CreatedHouseholdPlanResponse.from(
                 plans.createPlan(new CreateHouseholdPlanCommand(owner(user), Year.of(request.year()))));
     }
 
@@ -79,39 +81,40 @@ public class HouseholdPlanController {
 
     @PostMapping("/{planId}/incomes")
     @ResponseStatus(HttpStatus.CREATED)
-    public BudgetItemIdResponse addIncome(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId,
-                                          @Valid @RequestBody AddIncomeRequest request) {
-        BudgetItemId id = plans.addIncome(new AddIncomeCommand(owner(user), HouseholdPlanId.of(planId),
+    public AddedBudgetItemResponse addIncome(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId,
+                                             @Valid @RequestBody AddIncomeRequest request) {
+        AddedBudgetItem added = plans.addIncome(new AddIncomeCommand(owner(user), HouseholdPlanId.of(planId),
                 BudgetItemDescription.of(request.description()), Money.of(request.amount()),
                 BudgetItemNote.ofNullable(request.note())));
-        return BudgetItemIdResponse.from(id);
+        return AddedBudgetItemResponse.from(added);
     }
 
     @PostMapping("/{planId}/expenses")
     @ResponseStatus(HttpStatus.CREATED)
-    public BudgetItemIdResponse addExpense(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId,
-                                           @Valid @RequestBody AddExpenseRequest request) {
-        BudgetItemId id = plans.addExpense(new AddExpenseCommand(owner(user), HouseholdPlanId.of(planId),
+    public AddedBudgetItemResponse addExpense(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId,
+                                              @Valid @RequestBody AddExpenseRequest request) {
+        AddedBudgetItem added = plans.addExpense(new AddExpenseCommand(owner(user), HouseholdPlanId.of(planId),
                 BudgetItemDescription.of(request.description()), Money.of(request.amount()),
                 request.category().toDomain(), BudgetItemNote.ofNullable(request.note())));
-        return BudgetItemIdResponse.from(id);
+        return AddedBudgetItemResponse.from(added);
     }
 
     /** Gives an item new values; an expense needs a category, an income must not have one. */
     @PutMapping("/{planId}/items/{itemId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void changeItem(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId, @PathVariable UUID itemId,
-                           @Valid @RequestBody ChangeBudgetItemRequest request) {
+    public HouseholdPlanOverviewResponse changeItem(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId,
+                                                    @PathVariable UUID itemId,
+                                                    @Valid @RequestBody ChangeBudgetItemRequest request) {
         ExpenseCategoryDto category = request.category();
-        plans.changeItem(new ChangeBudgetItemCommand(owner(user), HouseholdPlanId.of(planId), BudgetItemId.of(itemId),
+        return HouseholdPlanOverviewResponse.from(plans.changeItem(new ChangeBudgetItemCommand(owner(user), HouseholdPlanId.of(planId), BudgetItemId.of(itemId),
                 BudgetItemDescription.of(request.description()), Money.of(request.amount()),
-                category == null ? null : category.toDomain(), BudgetItemNote.ofNullable(request.note())));
+                category == null ? null : category.toDomain(), BudgetItemNote.ofNullable(request.note()))));
     }
 
     @DeleteMapping("/{planId}/items/{itemId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeItem(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId, @PathVariable UUID itemId) {
-        plans.removeItem(new RemoveBudgetItemCommand(owner(user), HouseholdPlanId.of(planId), BudgetItemId.of(itemId)));
+    public HouseholdPlanOverviewResponse removeItem(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId,
+                                                    @PathVariable UUID itemId) {
+        return HouseholdPlanOverviewResponse.from(plans.removeItem(
+                new RemoveBudgetItemCommand(owner(user), HouseholdPlanId.of(planId), BudgetItemId.of(itemId))));
     }
 
     /** The signed-in user; the subject of their session token is their user id. */

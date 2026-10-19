@@ -28,13 +28,13 @@ ihnen ergibt sich die Auswertung nach der 50/30/20-Regel.
 ## Akzeptanzkriterien
 
 - **Gegeben** ein Plan, **wenn** der Benutzer eine Ausgabe „Miete", 850,00 €, Lebensunterhalt erfasst, **dann**
-  antwortet die API mit 201 und der ID des Postens, und die Übersicht enthält den Posten.
+  antwortet die API mit 201, der ID des Postens und der Übersicht, die den Posten enthält (AU-1, AU-3).
 - **Gegeben** ein Plan, **wenn** eine Ausgabe ohne Kategorie erfasst wird, **dann** antwortet die API mit 400.
 - **Gegeben** ein Plan, **wenn** ein Betrag von 0, ein negativer Betrag oder 10,005 erfasst wird, **dann** antwortet die
   API mit 400, und die Oberfläche zeigt „Bitte einen positiven Betrag angeben." bzw. „Höchstens zwei
   Nachkommastellen.", ohne die Anfrage zu senden.
-- **Gegeben** ein Posten im Plan, **wenn** der Benutzer ihn löscht, **dann** antwortet die API mit 204, und die
-  Oberfläche bietet für einige Sekunden „Rückgängig" an.
+- **Gegeben** ein Posten im Plan, **wenn** der Benutzer ihn löscht, **dann** antwortet die API mit 200 und der Übersicht
+  ohne den Posten (AU-4), und die Oberfläche bietet für einige Sekunden „Rückgängig" an.
 - **Gegeben** eine Posten-ID, die nicht zum Plan gehört, **wenn** sie gelöscht werden soll, **dann** antwortet die API
   mit 404.
 

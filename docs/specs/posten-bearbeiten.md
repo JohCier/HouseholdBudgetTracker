@@ -31,8 +31,8 @@ das frühere Nicht-Ziel „Keine Bearbeitung eines Postens" in [produkt.md](../p
 ## Akzeptanzkriterien
 
 - **Gegeben** eine Ausgabe „Miete", 850,00 €, Lebensunterhalt, **wenn** der Benutzer den Betrag auf 900,00 € ändert,
-  **dann** antwortet die API mit 204, die Übersicht zeigt „Miete", 900,00 €, Lebensunterhalt mit derselben ID an
-  derselben Stelle, und die Summe für Lebensunterhalt steigt um 50,00 €.
+  **dann** antwortet die API mit 200 und der Übersicht (AU-4); sie zeigt „Miete", 900,00 €, Lebensunterhalt mit
+  derselben ID an derselben Stelle, und die Summe für Lebensunterhalt steigt um 50,00 €.
 - **Gegeben** eine Ausgabe in Freizeit & Spaß, **wenn** der Benutzer die Kategorie auf Sparen & Investieren ändert,
   **dann** verschiebt sich ihr Betrag in der Aufteilung je Kategorie entsprechend.
 - **Gegeben** eine Einnahme, **wenn** beim Ändern eine Kategorie mitgeschickt wird, **dann** antwortet die API mit 400.
@@ -64,7 +64,7 @@ das frühere Nicht-Ziel „Keine Bearbeitung eines Postens" in [produkt.md](../p
 - Persistenz: `JdbcHouseholdPlanRepository.save` vergleicht mit den gespeicherten Posten und schreibt nur neue,
   geänderte und entfernte; ein geänderter Posten bekommt ein `UPDATE`, `created_at` bleibt unverändert (PB-4)
 - API: `PUT /api/plans/{planId}/items/{itemId}` mit `ChangeBudgetItemRequest` (Beschreibung, Betrag, Kategorie nur bei
-  Ausgaben), Antwort 204; 400 bei ungültigen Werten, 404 bei unbekanntem Plan oder Posten
+  Ausgaben), Antwort 200 mit der Übersicht (AU-4); 400 bei ungültigen Werten, 404 bei unbekanntem Plan oder Posten
 - Frontend: Schaltfläche „Bearbeiten" in `budget/ui/budget-item-table.ts`, Dialog `budget/ui/edit-item-dialog.ts` mit
   den Prüfungen aus `budget/ui/item-validators.ts`, `BudgetStore.changeItem`, `BudgetApi.changeItem`; geöffnet aus
   `budget-dashboard.ts`

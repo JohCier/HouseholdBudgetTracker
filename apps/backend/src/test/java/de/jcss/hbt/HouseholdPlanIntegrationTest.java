@@ -22,6 +22,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -193,7 +194,7 @@ class HouseholdPlanIntegrationTest {
                 {"description":"Gehalt","amount":"1500.00"}"""), "$.id");
 
         mockMvc.perform(delete("/api/plans/{planId}/items/{itemId}", planId, itemId).cookie(alice))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/plans").param("year", "2026").cookie(alice))
                 .andExpect(status().isOk())
@@ -249,10 +250,10 @@ class HouseholdPlanIntegrationTest {
 
         changeItem(planId, rentId, """
                 {"description":"Miete","amount":"900.00","category":"LEBENSUNTERHALT"}""")
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
         changeItem(planId, rentId, """
                 {"description":"Miete","amount":"900","category":"LEBENSUNTERHALT"}""")
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/plans").param("year", "2026").cookie(alice))
                 .andExpect(status().isOk())
@@ -297,6 +298,36 @@ class HouseholdPlanIntegrationTest {
                 .query(Long.class).single()).isZero();
     }
 
+    /** AU-1, AU-2, AU-3, AU-4 */
+    @Test
+    void everyChangeAnswersWithTheOverviewAfterIt() throws Exception {
+        String created = post("/api/plans", """
+                {"year":2026}""");
+        String planId = JsonPath.read(created, "$.id");
+        assertThat(JsonPath.<String>read(created, "$.overview.id")).isEqualTo(planId);
+        assertThat(JsonPath.<List<?>>read(created, "$.overview.items")).isEmpty();
+
+        String added = post("/api/plans/" + planId + "/expenses", """
+                {"description":"Miete","amount":"850.00","category":"LEBENSUNTERHALT"}""");
+        String rentId = JsonPath.read(added, "$.id");
+        assertThat(JsonPath.<String>read(added, "$.overview.items[0].id")).isEqualTo(rentId);
+        assertThat(JsonPath.<String>read(added, "$.overview.totalExpense")).isEqualTo("850.00");
+        assertThat(JsonPath.<Object>read(added, "$.overview")).isEqualTo(JsonPath.read(overview(2026), "$"));
+
+        String changed = changeItem(planId, rentId, """
+                {"description":"Miete","amount":"900.00","category":"LEBENSUNTERHALT"}""")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalExpense").value("900.00"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(changed).isEqualTo(overview(2026));
+
+        String removed = mockMvc.perform(delete("/api/plans/{planId}/items/{itemId}", planId, rentId).cookie(alice))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(0))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(removed).isEqualTo(overview(2026));
+    }
+
     @Test
     void failedRemovalIsNotAudited() throws Exception {
         String planId = createPlan(2026);
@@ -327,6 +358,12 @@ class HouseholdPlanIntegrationTest {
                 .cookie(alice)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json));
+    }
+
+    private String overview(int year) throws Exception {
+        return mockMvc.perform(get("/api/plans").param("year", String.valueOf(year)).cookie(alice))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
     }
 
     private String createPlan(int year) throws Exception {
