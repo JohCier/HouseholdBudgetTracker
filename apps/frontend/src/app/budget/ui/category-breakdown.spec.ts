@@ -17,7 +17,7 @@ describe('CategoryBreakdownCard', () => {
       {
         category: 'FREIZEIT_SPASS',
         total: '700.00',
-        unplanned: '400.00',
+        unplanned: '0.00',
         actualPercentageOfIncome: 35,
         targetPercentageOfIncome: 30,
         targetDirection: 'AT_MOST',
@@ -67,8 +67,8 @@ describe('CategoryBreakdownCard', () => {
     });
     const fixture = TestBed.createComponent(CategoryBreakdownCard);
     fixture.componentRef.setInput('breakdowns', [
-      breakdown('LEBENSUNTERHALT', '0.00'),
-      breakdown('FREIZEIT_SPASS', '400.00'),
+      breakdown('FREIZEIT_SPASS', '0.00'),
+      breakdown('SPAREN_INVESTIEREN', '400.00'),
     ]);
     await fixture.whenStable();
 

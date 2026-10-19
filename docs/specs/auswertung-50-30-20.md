@@ -1,9 +1,6 @@
 # Auswertung nach der 50/30/20-Regel
 
-Status: geplant
-
-AW-1 bis AW-9 sind umgesetzt; geplant ist die Änderung von AW-10 (Überschuss zählt zu Sparen & Investieren statt
-zu Freizeit & Spaß).
+Status: umgesetzt
 
 ## Zweck
 
@@ -32,12 +29,13 @@ der Anwendung.
 - **AW-7**: Ohne Einkommen ist jeder Anteil 0 %. Dann gilt eine Obergrenze nur als eingehalten, wenn in der Kategorie
   nichts ausgegeben wird; eine Untergrenze gilt immer als erreicht.
 - **AW-8**: Die Auswertung enthält immer alle drei Kategorien, auch solche ohne Ausgaben (mit 0,00 €).
-- **AW-10** (geändert, geplant): Ein Überschuss (positiver Saldo, also Einkommen, das keiner Ausgabe zugeordnet ist)
+- **AW-10**: Ein Überschuss (positiver Saldo, also Einkommen, das keiner Ausgabe zugeordnet ist)
   zählt in der Auswertung zu Sparen & Investieren: Anteil und Zielerreichung von Sparen & Investieren werden aus den
   Ausgaben der Kategorie plus dem Überschuss berechnet. Zu Freizeit & Spaß zählt nur, was ausdrücklich so erfasst ist.
   Einkommen, Ausgaben und Saldo (AW-1, AW-2) ändern sich dadurch nicht. Bei einem Defizit gibt es keinen Überschuss.
   Die Oberfläche weist den Überschuss in der Aufteilung von Sparen & Investieren getrennt aus („davon nicht verplant").
-  Bisher zählte der Überschuss zu Freizeit & Spaß.
+  Damit ist das Sparziel immer erreicht, wenn Lebensunterhalt und Freizeit & Spaß ihre Obergrenzen einhalten und kein
+  Defizit vorliegt; das ist so gewollt.
 - **AW-9**: Alle Zahlen der Auswertung rechnet die Domäne (`BudgetSummary`). Read Model und Oberfläche rechnen nichts
   selbst nach.
 
@@ -73,14 +71,9 @@ der Anwendung.
 - API: `GET /api/plans?year=` liefert `HouseholdPlanOverviewResponse`; Beträge als Dezimal-Strings (z. B. `"850.00"`).
   `CategoryBreakdownResponse.total` enthält den Überschuss, `unplanned` weist ihn getrennt aus (AW-10)
 - Frontend: `budget/ui/overview-summary.ts` (Summen, Saldo, Warnung), `budget/ui/category-breakdown.ts` (Balken je
-  Kategorie, „davon nicht verplant")
+  Kategorie, „davon nicht verplant" bei Sparen & Investieren)
 - Tests: `BudgetSummaryTest`, `ExpenseCategoryTest`, `PercentageTest`, `HouseholdPlanOverviewTest`,
   `JdbcHouseholdPlanOverviewQueryHandlerTest`, `overview-summary.spec.ts`, `category-breakdown.spec.ts`
 - E2E: `e2e/tests/auswertung.spec.ts`
 
 ## Offene Fragen
-
-- Durch AW-10 ist das Sparziel immer erreicht, sobald Lebensunterhalt und Freizeit & Spaß ihre Obergrenzen einhalten
-  und kein Defizit vorliegt (der Rest des Einkommens ist dann mindestens 20 %). Ist das so gewollt? Vorschlag: ja, das
-  ist die Folge der fachlichen Entscheidung; das Sparziel bleibt aussagekräftig, wenn eine der Obergrenzen gerissen
-  wird.

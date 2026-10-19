@@ -87,8 +87,13 @@ class HouseholdPlanOverviewTest {
 
     @Test
     void savingsAreAFloorThatMayBeExceeded() {
-        HouseholdPlanOverview belowFloor = overview("1000.00", expense(ExpenseCategory.SPAREN_INVESTIEREN, "100.00"));
-        HouseholdPlanOverview aboveFloor = overview("1000.00", expense(ExpenseCategory.SPAREN_INVESTIEREN, "300.00"));
+        // The rest of the income is spent on living costs, so no surplus adds to savings (AW-10)
+        HouseholdPlanOverview belowFloor = overview("1000.00",
+                expense(ExpenseCategory.SPAREN_INVESTIEREN, "100.00"),
+                expense(ExpenseCategory.LEBENSUNTERHALT, "900.00"));
+        HouseholdPlanOverview aboveFloor = overview("1000.00",
+                expense(ExpenseCategory.SPAREN_INVESTIEREN, "300.00"),
+                expense(ExpenseCategory.LEBENSUNTERHALT, "700.00"));
 
         CategoryBreakdown tooLittle = breakdownFor(belowFloor, ExpenseCategory.SPAREN_INVESTIEREN);
         assertThat(tooLittle.targetDirection()).isEqualTo(TargetDirection.AT_LEAST);
@@ -123,25 +128,29 @@ class HouseholdPlanOverviewTest {
         assertThat(overview.totalIncome()).isEqualTo(money("2000.00"));
         assertThat(overview.totalExpense()).isEqualTo(money("1300.00"));
         assertThat(breakdownFor(overview, ExpenseCategory.LEBENSUNTERHALT).total()).isEqualTo(money("900.00"));
-        assertThat(breakdownFor(overview, ExpenseCategory.SPAREN_INVESTIEREN).total()).isEqualTo(money("400.00"));
+        // Savings also contain the surplus of 700.00 (AW-10)
+        assertThat(breakdownFor(overview, ExpenseCategory.SPAREN_INVESTIEREN).total()).isEqualTo(money("1100.00"));
     }
 
     /** AW-10 */
     @Test
-    void leisureContainsTheSurplusAndShowsItAsUnplanned() {
+    void savingsContainTheSurplusAndShowItAsUnplanned() {
         HouseholdPlanOverview overview = overview("2000.00",
                 expense(ExpenseCategory.LEBENSUNTERHALT, "1000.00"),
-                expense(ExpenseCategory.FREIZEIT_SPASS, "200.00"),
-                expense(ExpenseCategory.SPAREN_INVESTIEREN, "400.00"));
+                expense(ExpenseCategory.FREIZEIT_SPASS, "600.00"),
+                expense(ExpenseCategory.SPAREN_INVESTIEREN, "100.00"));
 
+        CategoryBreakdown sparen = breakdownFor(overview, ExpenseCategory.SPAREN_INVESTIEREN);
+        assertThat(sparen.total()).isEqualTo(money("400.00"));
+        assertThat(sparen.unplanned()).isEqualTo(money("300.00"));
+        assertThat(sparen.actualPercentageOfIncome()).isEqualTo(Percentage.of(20));
+        assertThat(sparen.targetMet()).isTrue();
         CategoryBreakdown freizeit = breakdownFor(overview, ExpenseCategory.FREIZEIT_SPASS);
         assertThat(freizeit.total()).isEqualTo(money("600.00"));
-        assertThat(freizeit.unplanned()).isEqualTo(money("400.00"));
+        assertThat(freizeit.unplanned()).isEqualTo(Money.ZERO);
         assertThat(freizeit.actualPercentageOfIncome()).isEqualTo(Percentage.of(30));
-        assertThat(freizeit.targetMet()).isTrue();
-        assertThat(breakdownFor(overview, ExpenseCategory.SPAREN_INVESTIEREN).unplanned()).isEqualTo(Money.ZERO);
         assertThat(breakdownFor(overview, ExpenseCategory.LEBENSUNTERHALT).unplanned()).isEqualTo(Money.ZERO);
-        assertThat(overview.totalExpense()).isEqualTo(money("1600.00"));
+        assertThat(overview.totalExpense()).isEqualTo(money("1700.00"));
     }
 
     private static HouseholdPlanOverview overview(String income, OverviewItem... expenses) {
