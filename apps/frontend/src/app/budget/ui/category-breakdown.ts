@@ -7,7 +7,7 @@ import { CategoryBreakdown, categoryLabel } from '../budget.model';
 /**
  * Visualizes actual spend per category against its 50/30/20 target share of income.
  * Living costs and leisure have a ceiling, savings a floor. Income that no expense uses up
- * counts towards leisure and is shown there as unplanned (AW-10).
+ * counts towards savings and is shown there as unplanned (AW-10).
  */
 @Component({
   selector: 'app-category-breakdown',

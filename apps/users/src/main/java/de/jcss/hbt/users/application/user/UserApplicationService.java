@@ -27,8 +27,8 @@ import java.util.UUID;
  * aggregates and gives a clear error early, while the unique constraint behind
  * {@link UserRepository#add} remains the actual safeguard against races.
  * <p>
- * Signing in reports failed attempts to the {@link LoginThrottle}, which may lock the address
- * (AN-10).
+ * Signing in counts every attempt with the {@link LoginThrottle} before the password is
+ * checked, which may lock the address (AN-10); a successful attempt resets the count.
  */
 @Service
 @Transactional
@@ -64,29 +64,24 @@ public class UserApplicationService {
     }
 
     /**
-     * Finds out who signs in with the given e-mail address and password. A failed attempt is
-     * counted, a successful one forgets the failed attempts with the address. For an address
-     * nobody registered, the password is still checked (against a hash no password matches),
-     * so the answer takes as long as for a wrong password and does not tell which addresses
-     * exist (AN-6).
+     * Finds out who signs in with the given e-mail address and password. The attempt is counted
+     * as failed up front, so parallel attempts cannot get past the lock; a successful one forgets
+     * the failed attempts with the address. For an address nobody registered, the password is
+     * still checked (against a hash no password matches), so the answer takes as long as for a
+     * wrong password and does not tell which addresses exist (AN-6).
      *
      * @throws LoginLockedException        if the address is locked after too many failed attempts
      * @throws InvalidCredentialsException if there is no such user or the password is wrong
      */
     public UserId authenticate(EmailAddress email, Password password) {
-        loginThrottle.ensureNotLocked(email);
-        try {
-            Optional<User> user = repository.findByEmail(email);
-            if (user.isEmpty()) {
-                passwordHasher.matches(password, unknownUserHash);
-                throw new InvalidCredentialsException();
-            }
-            user.get().authenticate(password, passwordHasher);
-            loginThrottle.reset(email);
-            return user.get().id();
-        } catch (InvalidCredentialsException e) {
-            loginThrottle.recordFailure(email);
-            throw e;
+        loginThrottle.countAttempt(email);
+        Optional<User> user = repository.findByEmail(email);
+        if (user.isEmpty()) {
+            passwordHasher.matches(password, unknownUserHash);
+            throw new InvalidCredentialsException();
         }
+        user.get().authenticate(password, passwordHasher);
+        loginThrottle.reset(email);
+        return user.get().id();
     }
 }

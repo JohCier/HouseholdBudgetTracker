@@ -82,7 +82,7 @@ class UserApplicationServiceTest {
 
     /** AN-10, AN-6 */
     @Test
-    void failedSignInsAreReportedToTheThrottle() {
+    void everySignInIsCountedBeforeThePasswordIsChecked() {
         service.register(new RegisterUserCommand(EMAIL, PASSWORD));
         EmailAddress unknown = EmailAddress.of("unknown@example.org");
 
@@ -91,7 +91,8 @@ class UserApplicationServiceTest {
         assertThatThrownBy(() -> service.authenticate(unknown, PASSWORD))
                 .isInstanceOf(InvalidCredentialsException.class);
 
-        assertThat(loginThrottle.failures).containsExactly(EMAIL, unknown);
+        assertThat(loginThrottle.attempts).containsExactly(EMAIL, unknown);
+        assertThat(loginThrottle.resets).isEmpty();
     }
 
     /** AN-6 */
@@ -128,7 +129,7 @@ class UserApplicationServiceTest {
 
         assertThatThrownBy(() -> service.authenticate(EMAIL, PASSWORD))
                 .isInstanceOf(LoginLockedException.class);
-        assertThat(loginThrottle.failures).isEmpty();
+        assertThat(loginThrottle.attempts).isEmpty();
     }
 
     /** AN-10 */
@@ -138,26 +139,22 @@ class UserApplicationServiceTest {
 
         service.authenticate(EMAIL, PASSWORD);
 
+        assertThat(loginThrottle.attempts).containsExactly(EMAIL);
         assertThat(loginThrottle.resets).containsExactly(EMAIL);
-        assertThat(loginThrottle.failures).isEmpty();
     }
 
     private static final class FakeLoginThrottle implements LoginThrottle {
 
         private final Set<EmailAddress> locked = new HashSet<>();
-        private final List<EmailAddress> failures = new ArrayList<>();
+        private final List<EmailAddress> attempts = new ArrayList<>();
         private final List<EmailAddress> resets = new ArrayList<>();
 
         @Override
-        public void ensureNotLocked(EmailAddress email) {
+        public void countAttempt(EmailAddress email) {
             if (locked.contains(email)) {
                 throw new LoginLockedException();
             }
-        }
-
-        @Override
-        public void recordFailure(EmailAddress email) {
-            failures.add(email);
+            attempts.add(email);
         }
 
         @Override
