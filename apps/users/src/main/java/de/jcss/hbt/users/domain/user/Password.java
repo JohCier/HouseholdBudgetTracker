@@ -1,6 +1,6 @@
 package de.jcss.hbt.users.domain.user;
 
-import de.jcss.hbt.users.domain.exception.InvalidPasswordException;
+import de.jcss.hbt.users.domain.exception.DomainValidationException;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.nio.charset.StandardCharsets;
@@ -19,13 +19,13 @@ public record Password(String value) {
 
     public Password {
         if (value == null) {
-            throw new InvalidPasswordException("password must not be null");
+            throw new DomainValidationException("password must not be null");
         }
         if (value.codePointCount(0, value.length()) < MIN_LENGTH) {
-            throw new InvalidPasswordException("password must have at least %d characters".formatted(MIN_LENGTH));
+            throw new DomainValidationException("password must have at least %d characters".formatted(MIN_LENGTH));
         }
         if (value.getBytes(StandardCharsets.UTF_8).length > MAX_BYTES) {
-            throw new InvalidPasswordException("password must not be longer than %d bytes".formatted(MAX_BYTES));
+            throw new DomainValidationException("password must not be longer than %d bytes".formatted(MAX_BYTES));
         }
     }
 

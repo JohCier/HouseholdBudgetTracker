@@ -1,12 +1,13 @@
 package de.jcss.hbt.users.domain.exception;
 
 /**
- * Base class for violations of a domain invariant caused by invalid input, e.g. a
- * malformed e-mail address. Adapters can treat all subclasses uniformly as client errors.
+ * Thrown when a value object or entity rejects invalid input, e.g. a
+ * malformed e-mail address. The message tells which rule was violated; adapters treat it as
+ * a client error.
  */
-public abstract class DomainValidationException extends RuntimeException {
+public class DomainValidationException extends RuntimeException {
 
-    protected DomainValidationException(String message) {
+    public DomainValidationException(String message) {
         super(message);
     }
 }

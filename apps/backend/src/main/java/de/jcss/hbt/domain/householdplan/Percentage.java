@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.householdplan;
 
-import de.jcss.hbt.domain.exception.InvalidPercentageException;
+import de.jcss.hbt.domain.exception.DomainValidationException;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.math.BigDecimal;
@@ -22,7 +22,7 @@ public record Percentage(BigDecimal value) implements Comparable<Percentage> {
     public Percentage {
         Objects.requireNonNull(value, "value must not be null");
         if (value.stripTrailingZeros().scale() > 2) {
-            throw new InvalidPercentageException("percentage must not have more than 2 decimal places");
+            throw new DomainValidationException("percentage must not have more than 2 decimal places");
         }
         value = value.setScale(2);
     }

@@ -1,8 +1,7 @@
 package de.jcss.hbt.domain.householdplan;
 
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
-import de.jcss.hbt.domain.exception.InvalidBudgetItemException;
-import de.jcss.hbt.domain.exception.InvalidPlanYearException;
+import de.jcss.hbt.domain.exception.DomainValidationException;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemChanged;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
@@ -55,10 +54,10 @@ class HouseholdPlanTest {
     @Test
     void createRejectsYearsBefore1900OrAfter2200() {
         assertThatThrownBy(() -> HouseholdPlan.create(planId, OWNER, Year.of(1899)))
-                .isInstanceOf(InvalidPlanYearException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessage("year must be between 1900 and 2200, but was 1899");
         assertThatThrownBy(() -> HouseholdPlan.create(planId, OWNER, Year.of(2201)))
-                .isInstanceOf(InvalidPlanYearException.class);
+                .isInstanceOf(DomainValidationException.class);
     }
 
     /** HP-1: stored plans of other years stay readable */
@@ -146,7 +145,7 @@ class HouseholdPlanTest {
         HouseholdPlan plan = emptyPlan();
 
         assertThatThrownBy(() -> plan.addExpense(rent, amount, null, null))
-                .isInstanceOf(InvalidBudgetItemException.class);
+                .isInstanceOf(DomainValidationException.class);
 
         assertThat(plan.items()).isEmpty();
         assertThat(plan.pullDomainEvents()).isEmpty();
@@ -275,11 +274,11 @@ class HouseholdPlanTest {
         plan.pullDomainEvents();
 
         assertThatThrownBy(() -> plan.changeItem(incomeId, salary, amount, ExpenseCategory.LEBENSUNTERHALT, null))
-                .isInstanceOf(InvalidBudgetItemException.class);
+                .isInstanceOf(DomainValidationException.class);
         assertThatThrownBy(() -> plan.changeItem(expenseId, rent, amount, null, null))
-                .isInstanceOf(InvalidBudgetItemException.class);
+                .isInstanceOf(DomainValidationException.class);
         assertThatThrownBy(() -> plan.changeItem(expenseId, rent, Money.ZERO, ExpenseCategory.LEBENSUNTERHALT, null))
-                .isInstanceOf(InvalidBudgetItemException.class);
+                .isInstanceOf(DomainValidationException.class);
 
         assertThat(plan.items()).hasSize(2);
         for (int i = 0; i < before.size(); i++) {

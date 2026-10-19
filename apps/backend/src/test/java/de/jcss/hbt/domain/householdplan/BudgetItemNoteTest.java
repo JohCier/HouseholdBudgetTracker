@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.householdplan;
 
-import de.jcss.hbt.domain.exception.InvalidBudgetItemException;
+import de.jcss.hbt.domain.exception.DomainValidationException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,7 +24,7 @@ class BudgetItemNoteTest {
         assertThat(BudgetItemNote.ofNullable(" Warmmiete ")).isEqualTo(new BudgetItemNote("Warmmiete"));
 
         assertThatThrownBy(() -> new BudgetItemNote(" "))
-                .isInstanceOf(InvalidBudgetItemException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("note");
     }
 
@@ -35,7 +35,7 @@ class BudgetItemNoteTest {
         assertThat(BudgetItemNote.ofNullable(" " + "x".repeat(BudgetItemNote.MAX_LENGTH) + " ")).isNotNull();
 
         assertThatThrownBy(() -> BudgetItemNote.ofNullable("x".repeat(BudgetItemNote.MAX_LENGTH + 1)))
-                .isInstanceOf(InvalidBudgetItemException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("note");
     }
 }

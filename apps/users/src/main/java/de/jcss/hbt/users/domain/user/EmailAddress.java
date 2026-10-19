@@ -1,6 +1,6 @@
 package de.jcss.hbt.users.domain.user;
 
-import de.jcss.hbt.users.domain.exception.InvalidEmailAddressException;
+import de.jcss.hbt.users.domain.exception.DomainValidationException;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.util.Locale;
@@ -22,20 +22,20 @@ public record EmailAddress(String value) {
 
     public EmailAddress {
         if (value == null) {
-            throw new InvalidEmailAddressException("e-mail address must not be null");
+            throw new DomainValidationException("e-mail address must not be null");
         }
         value = value.strip().toLowerCase(Locale.ROOT);
         if (value.length() > MAX_LENGTH) {
-            throw new InvalidEmailAddressException("e-mail address must not be longer than %d characters"
+            throw new DomainValidationException("e-mail address must not be longer than %d characters"
                     .formatted(MAX_LENGTH));
         }
         if (!SHAPE.matcher(value).matches()) {
-            throw new InvalidEmailAddressException("'%s' is not a valid e-mail address".formatted(value));
+            throw new DomainValidationException("'%s' is not a valid e-mail address".formatted(value));
         }
     }
 
     /**
-     * @throws InvalidEmailAddressException if the value is missing or not shaped like an e-mail address
+     * @throws DomainValidationException if the value is missing or not shaped like an e-mail address
      */
     public static EmailAddress of(String value) {
         return new EmailAddress(value);

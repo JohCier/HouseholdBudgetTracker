@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.householdplan;
 
-import de.jcss.hbt.domain.exception.InvalidBudgetItemException;
+import de.jcss.hbt.domain.exception.DomainValidationException;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 /**
@@ -15,11 +15,11 @@ public record BudgetItemNote(String value) {
 
     public BudgetItemNote {
         if (value == null || value.isBlank()) {
-            throw new InvalidBudgetItemException("note must not be blank");
+            throw new DomainValidationException("note must not be blank");
         }
         value = value.strip();
         if (value.length() > MAX_LENGTH) {
-            throw new InvalidBudgetItemException("note must not be longer than %d characters".formatted(MAX_LENGTH));
+            throw new DomainValidationException("note must not be longer than %d characters".formatted(MAX_LENGTH));
         }
     }
 

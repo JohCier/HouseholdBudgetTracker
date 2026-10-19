@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.householdplan;
 
-import de.jcss.hbt.domain.exception.InvalidMoneyException;
+import de.jcss.hbt.domain.exception.DomainValidationException;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -26,7 +26,7 @@ class MoneyTest {
     @Test
     void rejectsFractionsOfCentsInsteadOfRounding() {
         assertThatThrownBy(() -> Money.of(new BigDecimal("10.005")))
-                .isInstanceOf(InvalidMoneyException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("decimal places");
     }
 
