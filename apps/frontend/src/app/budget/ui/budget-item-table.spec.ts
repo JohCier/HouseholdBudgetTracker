@@ -48,6 +48,19 @@ describe('BudgetItemTable', () => {
     expect(rows[1].querySelector('.note')?.textContent).toBe('Warmmiete\ninkl. Nebenkosten');
   });
 
+  it('keeps the rows of the items when the list is reloaded, updating their values', async () => {
+    const fixture = await render([salary, rent]);
+    const rowsBefore = [...(fixture.nativeElement as HTMLElement).querySelectorAll('tr[mat-row]')];
+
+    fixture.componentRef.setInput('items', [{ ...salary }, { ...rent, amount: '900.00' }]);
+    await fixture.whenStable();
+
+    const rowsAfter = [...(fixture.nativeElement as HTMLElement).querySelectorAll('tr[mat-row]')];
+    expect(rowsAfter[0]).toBe(rowsBefore[0]);
+    expect(rowsAfter[1]).toBe(rowsBefore[1]);
+    expect(rowsAfter[1].querySelector('.amount')?.textContent?.trim()).toBe('−€900.00');
+  });
+
   it('asks to remove the item whose delete button was clicked', async () => {
     const fixture = await render([salary, rent]);
     const removed: BudgetItem[] = [];
