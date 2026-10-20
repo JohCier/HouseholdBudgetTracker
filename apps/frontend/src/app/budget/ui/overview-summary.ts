@@ -4,54 +4,52 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { HouseholdPlanOverview } from '../budget.model';
 
-/** Income, expenses and balance of the plan, each per month and per year (MJ-13). */
+/** Income, expenses and balance of the plan in one box, per month and per year side by side (BI-1). */
 @Component({
   selector: 'app-overview-summary',
   imports: [CurrencyPipe, MatCardModule, MatIconModule],
   template: `
-    <div class="tiles">
-      <mat-card appearance="outlined" class="tile">
-        <span class="label">Einnahmen</span>
-        <span class="amount">
-          <span class="value monthly income">{{
-            overview().monthlyTotalIncome | currency: 'EUR'
-          }}</span>
-          <span class="period">im Monat</span>
-        </span>
-        <span class="amount">
-          <span class="value yearly income">{{ overview().totalIncome | currency: 'EUR' }}</span>
-          <span class="period">im Jahr</span>
-        </span>
-      </mat-card>
-      <mat-card appearance="outlined" class="tile">
-        <span class="label">Ausgaben</span>
-        <span class="amount">
-          <span class="value monthly expense">{{
-            overview().monthlyTotalExpense | currency: 'EUR'
-          }}</span>
-          <span class="period">im Monat</span>
-        </span>
-        <span class="amount">
-          <span class="value yearly expense">{{ overview().totalExpense | currency: 'EUR' }}</span>
-          <span class="period">im Jahr</span>
-        </span>
-      </mat-card>
-      <mat-card appearance="outlined" class="tile">
-        <span class="label">Saldo</span>
-        <span class="amount">
-          <span class="value monthly" [class.expense]="overview().monthlyBalance.startsWith('-')">{{
-            overview().monthlyBalance | currency: 'EUR'
-          }}</span>
-          <span class="period">im Monat</span>
-        </span>
-        <span class="amount">
-          <span class="value yearly" [class.expense]="overview().balance.startsWith('-')">{{
-            overview().balance | currency: 'EUR'
-          }}</span>
-          <span class="period">im Jahr</span>
-        </span>
-      </mat-card>
-    </div>
+    <mat-card appearance="outlined" class="balance-sheet">
+      <mat-card-header>
+        <mat-card-title id="balance-sheet-title">Bilanz</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <table aria-labelledby="balance-sheet-title">
+          <thead>
+            <tr>
+              <td></td>
+              <th scope="col">Monat</th>
+              <th scope="col">Jahr</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Gesamteinnahmen</th>
+              <td class="value monthly income">
+                {{ overview().monthlyTotalIncome | currency: 'EUR' }}
+              </td>
+              <td class="value yearly income">{{ overview().totalIncome | currency: 'EUR' }}</td>
+            </tr>
+            <tr>
+              <th scope="row">Gesamtausgaben</th>
+              <td class="value monthly expense">
+                {{ overview().monthlyTotalExpense | currency: 'EUR' }}
+              </td>
+              <td class="value yearly expense">{{ overview().totalExpense | currency: 'EUR' }}</td>
+            </tr>
+            <tr class="balance">
+              <th scope="row">Saldo</th>
+              <td class="value monthly" [class.expense]="overview().monthlyBalance.startsWith('-')">
+                {{ overview().monthlyBalance | currency: 'EUR' }}
+              </td>
+              <td class="value yearly" [class.expense]="overview().balance.startsWith('-')">
+                {{ overview().balance | currency: 'EUR' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </mat-card-content>
+    </mat-card>
     @if (overview().expensesExceedIncome) {
       <div class="warning" role="alert">
         <mat-icon svgIcon="warning" />
@@ -60,39 +58,66 @@ import { HouseholdPlanOverview } from '../budget.model';
     }
   `,
   styles: `
-    .tiles {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 16px;
+    .balance-sheet {
+      max-width: 560px;
     }
-    .tile {
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+    table {
+      width: 100%;
+      border-collapse: collapse;
     }
-    .label {
+    th,
+    td {
+      padding: 6px 0 6px 12px;
+    }
+    th:first-child,
+    td:first-child {
+      padding-left: 0;
+    }
+    thead th {
+      text-align: right;
+      font: var(--mat-sys-label-medium);
+      color: var(--mat-sys-on-surface-variant);
+    }
+    tbody th {
+      text-align: left;
       font: var(--mat-sys-label-large);
       color: var(--mat-sys-on-surface-variant);
     }
     .value {
-      font: var(--mat-sys-title-large);
+      text-align: right;
+      white-space: nowrap;
+      font: var(--mat-sys-title-medium);
       font-variant-numeric: tabular-nums;
     }
-    .amount {
-      display: flex;
-      align-items: baseline;
-      gap: 6px;
+    /* Separated from the totals above and emphasized, like the result of a balance sheet (BI-3) */
+    .balance th,
+    .balance td {
+      border-top: 1px solid var(--mat-sys-outline-variant);
+      padding-top: 10px;
     }
-    .period {
-      font: var(--mat-sys-label-medium);
-      color: var(--mat-sys-on-surface-variant);
+    .balance th {
+      color: var(--mat-sys-on-surface);
+    }
+    .balance .value {
+      font: var(--mat-sys-title-large);
+      font-variant-numeric: tabular-nums;
     }
     .income {
       color: var(--app-income-color);
     }
     .expense {
       color: var(--mat-sys-error);
+    }
+    @media (max-width: 400px) {
+      th,
+      td {
+        padding-left: 8px;
+      }
+      .value,
+      .balance .value {
+        font: var(--mat-sys-title-small);
+        font-variant-numeric: tabular-nums;
+      }
     }
     .warning {
       display: flex;

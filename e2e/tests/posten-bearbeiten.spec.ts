@@ -8,7 +8,7 @@ import {
   itemRow,
   openEditDialog,
   registerWithPlan,
-  tile,
+  balanceSheet,
 } from './support';
 
 // docs/specs/posten-bearbeiten.md
@@ -41,7 +41,7 @@ test.describe('Posten bearbeiten', () => {
     await expect(itemRow(page, 'Miete')).toContainText('−900,00 €');
     await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('960,00 €');
     await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('32 % von max. 50 %');
-    await expect(tile(page, 'Ausgaben', 'Monat')).toHaveText('960,00 €');
+    await expect(balanceSheet(page, 'Gesamtausgaben', 'Monat')).toHaveText('960,00 €');
 
     // Saved on the server, and still in its original place (PB-4)
     await page.reload();
@@ -91,7 +91,7 @@ test.describe('Posten bearbeiten', () => {
 
     await expect(itemIn(page, 'Einnahmen', 'Nettogehalt')).toBeVisible();
     await expect(itemRow(page, 'Nettogehalt')).toContainText('+3.200,50 €');
-    await expect(tile(page, 'Einnahmen')).toHaveText('3.200,50 €');
+    await expect(balanceSheet(page, 'Gesamteinnahmen')).toHaveText('3.200,50 €');
   });
 
   test('ungültige Werte zeigen dieselben Meldungen wie beim Erfassen, ohne die Anfrage zu senden (PB-3)', async ({

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addExpense, addIncome, itemRow, openEditDialog, registerWithPlan, tile } from './support';
+import { addExpense, addIncome, itemRow, openEditDialog, registerWithPlan, balanceSheet } from './support';
 
 // docs/specs/antwort-mit-uebersicht.md
 test.describe('Übersicht als Antwort auf Änderungen', () => {
@@ -19,18 +19,18 @@ test.describe('Übersicht als Antwort auf Änderungen', () => {
 
     await addIncome(page, 'Gehalt', '3000');
     await addExpense(page, 'Miete', '850', 'Lebensunterhalt');
-    await expect(tile(page, 'Ausgaben')).toHaveText('850,00 €');
+    await expect(balanceSheet(page, 'Gesamtausgaben')).toHaveText('850,00 €');
 
     const dialog = await openEditDialog(page, 'Miete');
     await dialog.getByLabel('Betrag').fill('900');
     await dialog.getByRole('button', { name: 'Speichern' }).click();
     await expect(itemRow(page, 'Miete')).toContainText('−900,00 €');
-    await expect(tile(page, 'Ausgaben')).toHaveText('900,00 €');
+    await expect(balanceSheet(page, 'Gesamtausgaben')).toHaveText('900,00 €');
 
     await page.getByRole('button', { name: 'Eintrag Miete löschen' }).click();
     await expect(itemRow(page, 'Miete')).toBeHidden();
-    await expect(tile(page, 'Ausgaben')).toHaveText('0,00 €');
-    await expect(tile(page, 'Saldo')).toHaveText('3.000,00 €');
+    await expect(balanceSheet(page, 'Gesamtausgaben')).toHaveText('0,00 €');
+    await expect(balanceSheet(page, 'Saldo')).toHaveText('3.000,00 €');
 
     expect(overviewLoads).toEqual([]);
   });

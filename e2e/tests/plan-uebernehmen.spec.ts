@@ -8,8 +8,8 @@ import {
   openYear,
   register,
   registerWithPlan,
+  balanceSheet,
   showAmounts,
-  tile,
   yearRow,
 } from "./support";
 
@@ -74,7 +74,7 @@ test.describe("Plan als Vorlage übernehmen", () => {
     await expect(itemIn(page, "Lebensunterhalt", "Wartung")).toContainText(
       "Inspektion im Mai",
     );
-    await expect(tile(page, "Saldo")).toContainText("1.700,00");
+    await expect(balanceSheet(page, "Saldo")).toContainText("1.700,00");
   });
 
   test("Änderungen im übernommenen Plan lassen die Vorlage unverändert (PU-5)", async ({

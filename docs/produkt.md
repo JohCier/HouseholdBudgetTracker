@@ -32,6 +32,7 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 | Monats- und Jahresbetrag | Beträge monatlich oder jährlich angeben; Monats- und Jahresbetrag je Posten und für alle Summen ansehen | [monats-jahresbetrag.md](specs/monats-jahresbetrag.md) |
 | Einträge in Gruppen | Neue Posten unten in ihrer Gruppe, Summen als Zeilen unter Gruppe, Kategorie und Bereich, Posten direkt in einer Gruppe erfassen | [eintraege-gruppen.md](specs/eintraege-gruppen.md) |
 | Ansicht auf schmalen Bildschirmen | Planansicht, Jahresübersicht und Dialoge auf dem Handy ohne waagerechtes Scrollen; Posten und Summen zweizeilig | [mobile-ansicht.md](specs/mobile-ansicht.md) |
+| Bilanz | Gesamteinnahmen, Gesamtausgaben und Saldo in einem Kasten, je Monat und je Jahr nebeneinander | [bilanz.md](specs/bilanz.md) |
 | Fehlermeldungen | Alle Meldungen auf Deutsch, auch die der API | [fehlermeldungen.md](specs/fehlermeldungen.md) |
 | Auswertung | Summen, Saldo, Warnung bei Defizit, Anteil und Zielerreichung je 50/30/20-Kategorie | [auswertung-50-30-20.md](specs/auswertung-50-30-20.md) |
 | Tortendiagramm | Die 50/30/20-Auswertung wahlweise als Balken oder als Tortendiagramm ansehen | [tortendiagramm.md](specs/tortendiagramm.md) |

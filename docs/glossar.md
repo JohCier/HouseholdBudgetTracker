@@ -45,6 +45,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Einkommen | `totalIncome` | Summe aller Einnahmen eines Plans |
 | Ausgaben | `totalExpense` | Summe aller Ausgaben eines Plans |
 | Saldo | `balance` | Einkommen minus Ausgaben; negativ bei Defizit |
+| Bilanz | `app-overview-summary`, nur im Frontend | Kasten oben in der Planansicht: Gesamteinnahmen, Gesamtausgaben und Saldo je Monat und je Jahr |
 | Defizit | `expensesExceedIncome` | Die Ausgaben sind höher als das Einkommen |
 | Überschuss, nicht verplant | `surplus`, `unplanned` | Positiver Saldo; zählt in der Auswertung zu Sparen & Investieren |
 | Finanzielle Lage | `BudgetSummary` (Value Object) | Einkommen, Ausgaben je Kategorie und alles, was daraus folgt (Saldo, Anteile, Zielerreichung) |

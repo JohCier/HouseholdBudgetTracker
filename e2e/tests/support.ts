@@ -180,15 +180,15 @@ export function itemDescriptions(
   return itemGroup(page, section, subcategory).locator('.item .description');
 }
 
-/** Yearly or monthly value of one of the tiles "Einnahmen", "Ausgaben", "Saldo" (MJ-13). */
-export function tile(
+/** Yearly or monthly value of the row "Gesamteinnahmen", "Gesamtausgaben" or "Saldo" in the box "Bilanz" (BI-1). */
+export function balanceSheet(
   page: Page,
-  label: 'Einnahmen' | 'Ausgaben' | 'Saldo',
+  label: 'Gesamteinnahmen' | 'Gesamtausgaben' | 'Saldo',
   per: 'Jahr' | 'Monat' = 'Jahr',
 ) {
   return page
-    .locator('app-overview-summary .tile')
-    .filter({ hasText: label })
+    .locator('app-overview-summary tbody tr')
+    .filter({ has: page.getByRole('rowheader', { name: label, exact: true }) })
     .locator(per === 'Jahr' ? '.value.yearly' : '.value.monthly');
 }
 
