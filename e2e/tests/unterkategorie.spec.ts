@@ -35,11 +35,20 @@ async function drag(page: Page, handle: Locator, target: Locator): Promise<void>
     const x = from.x + from.width / 2;
     const request = page.waitForRequest(isOrder, { timeout: 3000 });
     request.catch(() => undefined);
-    await page.mouse.move(x, from.y + from.height / 2);
+    const y = from.y + from.height / 2;
+    // Names what the pointer grabs, so a gesture the page ignores can be told apart from one aimed wrong
+    const grabbed = await page.evaluate(
+      ([px, py]) => document.elementFromPoint(px, py)?.outerHTML.slice(0, 300) ?? 'nothing',
+      [x, y],
+    );
+    await page.mouse.move(x, y);
     await page.mouse.down();
     try {
-      await page.mouse.move(x, from.y + from.height / 2 + 10, { steps: 5 });
-      await expect(page.locator('.cdk-drag-preview')).toBeVisible({ timeout: 2000 });
+      await page.mouse.move(x, y + 10, { steps: 5 });
+      await expect(
+        page.locator('.cdk-drag-preview'),
+        `drag preview after grabbing ${grabbed} at ${Math.round(x)}, ${Math.round(y)}`,
+      ).toBeVisible({ timeout: 2000 });
       await page.mouse.move(x, to.y + 4, { steps: 20 });
     } finally {
       await page.mouse.up();
