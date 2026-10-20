@@ -30,8 +30,9 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
   404, und die Oberfläche bietet „Haushaltsplan anlegen" an.
 - **Gegeben** Benutzer A mit einem Plan, **wenn** Benutzer B diesen Plan über seine ID ändern will, **dann** antwortet
   die API mit 404 (nicht 403).
-- **Gegeben** die Oberfläche, **wenn** sie geöffnet wird, **dann** zeigt sie das aktuelle Jahr (Zeitzone des Browsers);
-  mit den Pfeilen wechselt der Benutzer zum vorherigen bzw. nächsten Jahr.
+- **Gegeben** die Planansicht eines Jahres (`/jahre/<Jahr>`, siehe JU-11), **dann** zeigt sie dieses Jahr; mit den
+  Pfeilen wechselt der Benutzer zum vorherigen bzw. nächsten Jahr. Nach der Anmeldung zeigt die Oberfläche die
+  Jahresübersicht ([jahresuebersicht.md](jahresuebersicht.md)).
 - **Gegeben** die Oberfläche zeigt einen Plan, **wenn** der Benutzer das Jahr wechselt, **dann** zeigt sie bis zum Laden
   des neuen Jahres und auch bei einem Ladefehler nichts mehr vom vorherigen Jahr, und es lässt sich nichts darin
   ändern (HP-1).

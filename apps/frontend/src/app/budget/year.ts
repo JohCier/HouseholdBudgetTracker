@@ -8,3 +8,12 @@ export const LAST_YEAR: Year = 2200;
 export function currentYear(): Year {
   return Math.min(Math.max(new Date().getFullYear(), FIRST_YEAR), LAST_YEAR);
 }
+
+/** The year in an address, e.g. "2026"; `null` if it is no whole number a plan can exist for (HP-1). */
+export function parseYear(value: string | undefined): Year | null {
+  if (value === undefined || !/^\d{4}$/.test(value)) {
+    return null;
+  }
+  const year = Number(value);
+  return year >= FIRST_YEAR && year <= LAST_YEAR ? year : null;
+}

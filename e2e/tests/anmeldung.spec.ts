@@ -11,9 +11,7 @@ test.describe('Anmeldung', () => {
     await expect(page).toHaveURL('/');
     await expect(page.getByRole('button', { name: 'Abmelden' })).toBeVisible();
     await expect(page.getByText(email)).toBeVisible();
-    await expect(
-      page.getByRole('heading', { name: String(new Date().getFullYear()) }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Haushaltspläne' })).toBeVisible();
   });
 
   test('ein zu kurzes Passwort wird abgelehnt, ohne die Anfrage zu senden (AN-4)', async ({

@@ -16,6 +16,7 @@ import de.jcss.hbt.domain.householdplan.command.ReorderBudgetItemsCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderSubcategoriesCommand;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverviewQueryHandler;
+import de.jcss.hbt.domain.householdplan.overview.YearlyOverview;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -125,6 +126,13 @@ public class HouseholdPlanApplicationService {
     public HouseholdPlanOverview getOverview(OwnerId owner, Year year) {
         return overviewQueryHandler.findByOwnerAndYear(owner, year)
                 .orElseThrow(() -> new HouseholdPlanNotFoundException(year));
+    }
+
+    /** All plans of the owner with their totals and changes from the previous year; only reachable years (HP-1, JU-1). */
+    @Transactional(readOnly = true)
+    public YearlyOverview getYearlyOverview(OwnerId owner) {
+        return overviewQueryHandler.findYearlyOverviewByOwner(owner,
+                Year.of(HouseholdPlan.FIRST_YEAR), Year.of(HouseholdPlan.LAST_YEAR));
     }
 
     private HouseholdPlan load(HouseholdPlanId id, OwnerId owner) {

@@ -48,6 +48,17 @@ describe('BudgetApi', () => {
     await expect(result).rejects.toMatchObject({ status: 500 });
   });
 
+  // JU-1
+  it('fetches the yearly overview of all plans', async () => {
+    const result = firstValueFrom(api.getYearlyOverview());
+
+    const req = http.expectOne('/api/plans/years');
+    expect(req.request.method).toBe('GET');
+    req.flush({ years: [] });
+
+    expect(await result).toEqual({ years: [] });
+  });
+
   it('creates a plan for a year', async () => {
     const result = firstValueFrom(api.createPlan(2026));
 

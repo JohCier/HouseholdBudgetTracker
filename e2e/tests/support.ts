@@ -30,7 +30,21 @@ export async function login(page: Page, email: string, password = PASSWORD): Pro
   await page.getByRole('button', { name: 'Anmelden' }).click();
 }
 
-/** Registers a new user and creates the plan for the current year. */
+/** Opens the plan of a year, or the offer to create one (JU-11). */
+export async function openYear(page: Page, year: number): Promise<void> {
+  await page.goto(`/jahre/${year}`);
+  await expect(page.getByRole('heading', { name: String(year), exact: true })).toBeVisible();
+}
+
+/** Row of a year in the yearly overview (JU-1). */
+export function yearRow(page: Page, year: number) {
+  return page.locator(`app-yearly-overview-page tbody tr[data-year="${year}"]`);
+}
+
+/**
+ * Registers a new user and creates the plan for the current year from the yearly overview, which
+ * then opens it (JU-12).
+ */
 export async function registerWithPlan(page: Page): Promise<string> {
   const email = await register(page);
   await page.getByRole('button', { name: 'Haushaltsplan anlegen' }).click();

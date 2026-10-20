@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addIncome, itemRow, register, registerWithPlan } from './support';
+import { addIncome, itemRow, openYear, register, registerWithPlan } from './support';
 
 // docs/specs/haushaltsplan.md
 test.describe('Haushaltsplan', () => {
@@ -9,8 +9,8 @@ test.describe('Haushaltsplan', () => {
     page,
   }) => {
     await register(page);
+    await openYear(page, year);
 
-    await expect(page.getByRole('heading', { name: String(year) })).toBeVisible();
     await expect(page.getByText(`Für ${year} gibt es noch keinen Haushaltsplan.`)).toBeVisible();
 
     await page.getByRole('button', { name: 'Haushaltsplan anlegen' }).click();
@@ -72,11 +72,9 @@ test.describe('Haushaltsplan', () => {
     [2200, 'Nächstes Jahr', 'Vorheriges Jahr'],
   ] as const) {
     test(`im Jahr ${boundary} ist der Pfeil „${disabled}" deaktiviert (HP-1)`, async ({ page }) => {
-      // The dashboard opens at the current year of the browser
-      await page.clock.setFixedTime(new Date(boundary, 5, 1, 12));
       await register(page);
+      await openYear(page, boundary);
 
-      await expect(page.getByRole('heading', { name: String(boundary) })).toBeVisible();
       await expect(page.getByRole('button', { name: disabled })).toBeDisabled();
       await expect(page.getByRole('button', { name: enabled })).toBeEnabled();
     });
@@ -90,6 +88,8 @@ test.describe('Haushaltsplan', () => {
     // Separate context, so B has its own session cookie
     const bob = await (await browser.newContext()).newPage();
     await register(bob);
+    await expect(bob.getByText('Noch keine Haushaltspläne.')).toBeVisible();
+    await openYear(bob, year);
 
     await expect(bob.getByText(`Für ${year} gibt es noch keinen Haushaltsplan.`)).toBeVisible();
     await expect(bob.getByText('Gehalt von A')).toBeHidden();
