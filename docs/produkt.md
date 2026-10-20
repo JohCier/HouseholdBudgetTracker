@@ -42,7 +42,11 @@ Alle Beträge sind in Euro. Die Oberfläche ist deutschsprachig.
 
 ## Roadmap
 
-Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant". Derzeit ist keine Änderung geplant.
+Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant".
+
+| Änderung | Spec |
+|---|---|
+| Posten monatlich oder jährlich angeben; Monats- und Jahresbetrag je Posten und für alle Summen anzeigen | [monats-jahresbetrag.md](specs/monats-jahresbetrag.md) |
 
 ## Weiterführend
 
