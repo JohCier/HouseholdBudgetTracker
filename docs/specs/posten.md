@@ -30,6 +30,8 @@ ihnen ergibt sich die Auswertung nach der 50/30/20-Regel.
 
 - **Gegeben** ein Plan, **wenn** der Benutzer eine Ausgabe „Miete", 850,00 €, Lebensunterhalt erfasst, **dann**
   antwortet die API mit 201, der ID des Postens und der Übersicht, die den Posten enthält (AU-1, AU-3).
+- **Gegeben** ein Plan, **wenn** der Benutzer einen Posten erfolgreich erfasst hat, **dann** ist das Formular wieder
+  leer und zeigt keine Fehlermeldungen; die gewählte Art bleibt (PO-1).
 - **Gegeben** ein Plan, **wenn** eine Ausgabe ohne Kategorie erfasst wird, **dann** antwortet die API mit 400.
 - **Gegeben** ein Plan, **wenn** ein Betrag von 0, ein negativer Betrag oder 10,005 erfasst wird, **dann** antwortet die
   API mit 400, und die Oberfläche zeigt „Bitte einen positiven Betrag angeben." bzw. „Höchstens zwei

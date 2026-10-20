@@ -68,7 +68,7 @@ describe('AddItemForm', () => {
     await fixture.whenStable();
   }
 
-  it('adds an expense with its category and clears the form', async () => {
+  it('adds an expense with its category and clears the form without showing errors (PO-1)', async () => {
     await type('description', '  Miete  ');
     await type('amount', '850.5');
     await chooseCategory('Lebensunterhalt');
@@ -85,6 +85,8 @@ describe('AddItemForm', () => {
     });
     expect(input('description').value).toBe('');
     expect(input('amount').value).toBe('');
+    await fixture.whenStable();
+    expect(element.querySelectorAll('mat-error')).toHaveLength(0);
   });
 
   it('adds an income without a category and keeps the chosen type', async () => {
