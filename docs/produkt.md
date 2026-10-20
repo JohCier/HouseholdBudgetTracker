@@ -42,7 +42,11 @@ Alle Beträge sind in Euro. Die Oberfläche ist deutschsprachig.
 
 ## Roadmap
 
-Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant". Derzeit ist keine Änderung geplant.
+Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant".
+
+| Änderung | Spec |
+|---|---|
+| Jahresübersicht aller Pläne mit Einnahmen, Ausgaben, Überschuss und Veränderung zum Vorjahr als Startseite | [jahresuebersicht.md](specs/jahresuebersicht.md) |
 
 ## Weiterführend
 
