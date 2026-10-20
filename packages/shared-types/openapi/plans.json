@@ -517,7 +517,7 @@
         }
       },
       "CategoryBreakdownResponse" : {
-        "required" : [ "actualPercentageOfIncome", "category", "targetDirection", "targetMet", "targetPercentageOfIncome", "total", "unplanned" ],
+        "required" : [ "actualPercentageOfIncome", "category", "monthlyTotal", "monthlyUnplanned", "targetDirection", "targetMet", "targetPercentageOfIncome", "total", "unplanned" ],
         "type" : "object",
         "properties" : {
           "actualPercentageOfIncome" : {
@@ -526,6 +526,18 @@
           },
           "category" : {
             "$ref" : "#/components/schemas/ExpenseCategory"
+          },
+          "monthlyTotal" : {
+            "type" : "string",
+            "description" : "Total per month: total divided by 12 (MJ-14)",
+            "format" : "decimal",
+            "example" : "70.83"
+          },
+          "monthlyUnplanned" : {
+            "type" : "string",
+            "description" : "Unplanned per month: unplanned divided by 12 (MJ-14)",
+            "format" : "decimal",
+            "example" : "0.0"
           },
           "targetDirection" : {
             "$ref" : "#/components/schemas/TargetDirection"

@@ -2,15 +2,18 @@ import { TestBed } from '@angular/core/testing';
 import { CategoryBreakdown, ExpenseCategory } from '../budget.model';
 import { CategoryPieChart } from './category-pie';
 
+/** A breakdown with the given total per month; the yearly total is twelve times as much (MJ-14). */
 const breakdown = (
   category: ExpenseCategory,
-  total: string,
+  monthlyTotal: string,
   actualPercentageOfIncome: number,
   targetMet = true,
 ): CategoryBreakdown => ({
   category,
-  total,
+  total: (Number(monthlyTotal) * 12).toFixed(2),
   unplanned: '0.00',
+  monthlyTotal,
+  monthlyUnplanned: '0.00',
   actualPercentageOfIncome,
   targetPercentageOfIncome:
     category === 'LEBENSUNTERHALT' ? 50 : category === 'FREIZEIT_SPASS' ? 30 : 20,
@@ -26,7 +29,7 @@ async function render(breakdowns: CategoryBreakdown[]): Promise<HTMLElement> {
 }
 
 describe('CategoryPieChart', () => {
-  // TD-2, TD-3, TD-5, TD-9
+  // TD-2, TD-3, TD-5, TD-9, MJ-14
   it('draws one labelled slice per category and lists shares and targets in the legend', async () => {
     const element = await render([
       breakdown('LEBENSUNTERHALT', '1500.00', 50),
@@ -36,9 +39,9 @@ describe('CategoryPieChart', () => {
 
     const slices = [...element.querySelectorAll('.slice')];
     const labels = slices.map((s) => s.getAttribute('aria-label'));
-    expect(labels[0]).toMatch(/^Lebensunterhalt: \S*1.500\S*, 50 % des Einkommens$/);
-    expect(labels[1]).toMatch(/^Freizeit & Spaß: \S*600\S*, 20 % des Einkommens$/);
-    expect(labels[2]).toMatch(/^Sparen & Investieren: \S*900\S*, 30 % des Einkommens$/);
+    expect(labels[0]).toMatch(/^Lebensunterhalt: \S*1.500\S* im Monat, 50 % des Einkommens$/);
+    expect(labels[1]).toMatch(/^Freizeit & Spaß: \S*600\S* im Monat, 20 % des Einkommens$/);
+    expect(labels[2]).toMatch(/^Sparen & Investieren: \S*900\S* im Monat, 30 % des Einkommens$/);
     // Half the circle for living costs: from twelve to six o'clock
     expect(slices[0].getAttribute('d')).toBe('M 0 0 L 0 -80 A 80 80 0 0 1 0 80 Z');
     const legend = [...element.querySelectorAll('.legend-item')].map((i) => i.textContent);
@@ -53,7 +56,11 @@ describe('CategoryPieChart', () => {
     const element = await render([
       breakdown('LEBENSUNTERHALT', '1200.00', 60, false),
       breakdown('FREIZEIT_SPASS', '0.00', 0),
-      { ...breakdown('SPAREN_INVESTIEREN', '800.00', 40), unplanned: '800.00' },
+      {
+        ...breakdown('SPAREN_INVESTIEREN', '800.00', 40),
+        unplanned: '9600.00',
+        monthlyUnplanned: '800.00',
+      },
     ]);
 
     expect(element.querySelectorAll('.slice').length).toBe(2);

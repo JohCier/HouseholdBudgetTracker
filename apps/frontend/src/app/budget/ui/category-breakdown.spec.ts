@@ -9,6 +9,8 @@ describe('CategoryBreakdownCard', () => {
         category: 'LEBENSUNTERHALT',
         total: '1200.00',
         unplanned: '0.00',
+        monthlyTotal: '100.00',
+        monthlyUnplanned: '0.00',
         actualPercentageOfIncome: 60,
         targetPercentageOfIncome: 50,
         targetDirection: 'AT_MOST',
@@ -18,6 +20,8 @@ describe('CategoryBreakdownCard', () => {
         category: 'FREIZEIT_SPASS',
         total: '700.00',
         unplanned: '0.00',
+        monthlyTotal: '58.33',
+        monthlyUnplanned: '0.00',
         actualPercentageOfIncome: 35,
         targetPercentageOfIncome: 30,
         targetDirection: 'AT_MOST',
@@ -27,6 +31,8 @@ describe('CategoryBreakdownCard', () => {
         category: 'SPAREN_INVESTIEREN',
         total: '100.00',
         unplanned: '0.00',
+        monthlyTotal: '8.33',
+        monthlyUnplanned: '0.00',
         actualPercentageOfIncome: 5,
         targetPercentageOfIncome: 20,
         targetDirection: 'AT_LEAST',
@@ -51,15 +57,41 @@ describe('CategoryBreakdownCard', () => {
     expect(rows[2].classList).toContain('missed');
   });
 
-  // AW-10
+  // MJ-14
+  it('shows the totals per month', async () => {
+    const fixture = TestBed.createComponent(CategoryBreakdownCard);
+    fixture.componentRef.setInput('breakdowns', [
+      {
+        category: 'LEBENSUNTERHALT',
+        total: '18000.00',
+        unplanned: '0.00',
+        monthlyTotal: '1500.00',
+        monthlyUnplanned: '0.00',
+        actualPercentageOfIncome: 50,
+        targetPercentageOfIncome: 50,
+        targetDirection: 'AT_MOST',
+        targetMet: true,
+      },
+    ]);
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('mat-card-subtitle')?.textContent).toContain('je Monat');
+    expect(element.querySelector('.row .total')?.textContent).toMatch(/1.500/);
+    expect(element.textContent).not.toMatch(/18.000/);
+  });
+
+  // AW-10, MJ-14
   it('shows the surplus counted towards a category as unplanned', async () => {
     const breakdown = (
       category: CategoryBreakdown['category'],
-      unplanned: string,
+      monthlyUnplanned: string,
     ): CategoryBreakdown => ({
       category,
       total: '600.00',
-      unplanned,
+      unplanned: (Number(monthlyUnplanned) * 12).toFixed(2),
+      monthlyTotal: '50.00',
+      monthlyUnplanned,
       actualPercentageOfIncome: 30,
       targetPercentageOfIncome: 30,
       targetDirection: 'AT_MOST',
@@ -85,6 +117,8 @@ describe('CategoryBreakdownCard', () => {
         category: 'LEBENSUNTERHALT',
         total: '100.00',
         unplanned: '0.00',
+        monthlyTotal: '8.33',
+        monthlyUnplanned: '0.00',
         actualPercentageOfIncome: 10,
         targetPercentageOfIncome: 50,
         targetDirection: 'AT_MOST',

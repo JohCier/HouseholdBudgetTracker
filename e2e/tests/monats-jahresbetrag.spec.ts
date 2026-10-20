@@ -6,7 +6,9 @@ import {
   itemGroup,
   itemRow,
   openEditDialog,
+  pieLegendItem,
   registerWithPlan,
+  showBreakdownAs,
   tile,
 } from './support';
 
@@ -17,7 +19,9 @@ function itemAmount(page: Page, description: string, per: 'Monat' | 'Jahr') {
 
 /** The toggle "Monatlich | Jährlich" of the form or of the edit dialog (MJ-11). */
 function periodToggle(scope: Page | Locator) {
-  return scope.getByRole('radiogroup', { name: 'Angabe monatlich oder jährlich' });
+  return scope.getByRole('radiogroup', {
+    name: 'Angabe monatlich oder jährlich',
+  });
 }
 
 // docs/specs/monats-jahresbetrag.md
@@ -36,7 +40,8 @@ test.describe('Monats- und Jahresbetrag', () => {
     await expect(itemAmount(page, 'Miete', 'Jahr')).toHaveText('−10.200,00 €');
     await expect(itemAmount(page, 'Miete', 'Monat')).not.toHaveClass(/derived/);
     await expect(itemAmount(page, 'Miete', 'Jahr')).toHaveClass(/derived/);
-    await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('10.200,00 €');
+    // The 50/30/20 card shows the total per month (MJ-14)
+    await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('850,00 €');
   });
 
   test('eine jährliche Ausgabe zeigt ein Zwölftel, auf den Cent gerundet, je Monat (MJ-7, MJ-12)', async ({
@@ -119,5 +124,30 @@ test.describe('Monats- und Jahresbetrag', () => {
     await expect(itemAmount(page, 'Miete', 'Monat')).toHaveText('−850,00 €');
     await expect(itemAmount(page, 'Miete', 'Monat')).not.toHaveClass(/derived/);
     await expect(itemAmount(page, 'Miete', 'Jahr')).toHaveText('−10.200,00 €');
+  });
+
+  test('die 50/30/20-Karte zeigt Monatswerte in Balken und Torte (MJ-14)', async ({ page }) => {
+    await addIncome(page, 'Gehalt', '36000', undefined, 'Jährlich');
+    await addExpense(page, 'Miete', '1500', 'Lebensunterhalt', undefined, 'Monatlich');
+
+    await expect(
+      page.getByText('Beträge je Monat, Anteil am Einkommen je Kategorie'),
+    ).toBeVisible();
+    await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('1.500,00 €');
+    await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('50 % von max. 50 %');
+    await expect(categoryRow(page, 'Sparen & Investieren')).toContainText(
+      'davon nicht verplant: 1.500,00 €',
+    );
+
+    await showBreakdownAs(page, 'Torte');
+    await expect(pieLegendItem(page, 'Lebensunterhalt')).toContainText('1.500,00 €');
+    await expect(pieLegendItem(page, 'Sparen & Investieren')).toContainText(
+      'davon nicht verplant: 1.500,00 €',
+    );
+    await expect(
+      page.getByRole('img', {
+        name: 'Lebensunterhalt: 1.500,00 € im Monat, 50 % des Einkommens',
+      }),
+    ).toBeVisible();
   });
 });

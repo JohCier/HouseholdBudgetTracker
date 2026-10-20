@@ -20,10 +20,10 @@ test.describe('Posten bearbeiten', () => {
   test('den Betrag einer Ausgabe ändern, der Posten bleibt an seiner Stelle (PB-1, PB-4, PB-7)', async ({
     page,
   }) => {
-    await addIncome(page, 'Gehalt', '3000');
-    await addExpense(page, 'Wasser', '20', 'Lebensunterhalt');
-    await addExpense(page, 'Miete', '850', 'Lebensunterhalt');
-    await addExpense(page, 'Strom', '40', 'Lebensunterhalt');
+    await addIncome(page, 'Gehalt', '3000', undefined, 'Monatlich');
+    await addExpense(page, 'Wasser', '20', 'Lebensunterhalt', undefined, 'Monatlich');
+    await addExpense(page, 'Miete', '850', 'Lebensunterhalt', undefined, 'Monatlich');
+    await addExpense(page, 'Strom', '40', 'Lebensunterhalt', undefined, 'Monatlich');
     await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('910,00 €');
 
     const dialog = await openEditDialog(page, 'Miete');
@@ -41,7 +41,7 @@ test.describe('Posten bearbeiten', () => {
     await expect(itemRow(page, 'Miete')).toContainText('−900,00 €');
     await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('960,00 €');
     await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('32 % von max. 50 %');
-    await expect(tile(page, 'Ausgaben')).toHaveText('960,00 €');
+    await expect(tile(page, 'Ausgaben', 'Monat')).toHaveText('960,00 €');
 
     // Saved on the server, and still in its original place (PB-4)
     await page.reload();
@@ -56,10 +56,10 @@ test.describe('Posten bearbeiten', () => {
   test('die Kategorie einer Ausgabe ändern verschiebt ihren Betrag (PB-1, PB-7)', async ({
     page,
   }) => {
-    await addIncome(page, 'Gehalt', '2000');
+    await addIncome(page, 'Gehalt', '2000', undefined, 'Monatlich');
     // Uses up the income, so no surplus counts towards savings (AW-10)
-    await addExpense(page, 'Miete', '1600', 'Lebensunterhalt');
-    await addExpense(page, 'Fondssparen', '400', 'Freizeit & Spaß');
+    await addExpense(page, 'Miete', '1600', 'Lebensunterhalt', undefined, 'Monatlich');
+    await addExpense(page, 'Fondssparen', '400', 'Freizeit & Spaß', undefined, 'Monatlich');
     await expect(categoryRow(page, 'Freizeit & Spaß')).toContainText('20 % von max. 30 %');
 
     const dialog = await openEditDialog(page, 'Fondssparen');
