@@ -153,16 +153,17 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
     }
 
     @Test
-    void yearlyOverviewSumsTheItemsOfEveryPlanOfTheOwner() { // JU-1, JU-2, JU-3, JU-5
+    void yearlyOverviewSumsTheItemsOfEveryPlanOfTheOwner() { // JU-1, JU-2, JU-3, JU-5, MJ-8
         HouseholdPlan previous = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2025));
-        previous.addIncome(description("Gehalt"), money("20000.00"), null, null);
-        previous.addIncome(description("Bonus"), money("10000.00"), null, null);
-        previous.addExpense(description("Miete"), money("20000.00"), ExpenseCategory.LEBENSUNTERHALT, null, null);
-        previous.addExpense(description("Urlaub"), money("5000.00"), ExpenseCategory.FREIZEIT_SPASS, null, null);
+        previous.addIncome(description("Gehalt"), yearly("20000.00"), null, null);
+        previous.addIncome(description("Bonus"), yearly("10000.00"), null, null);
+        previous.addExpense(description("Miete"), yearly("20000.00"), ExpenseCategory.LEBENSUNTERHALT, null, null);
+        previous.addExpense(description("Urlaub"), yearly("5000.00"), ExpenseCategory.FREIZEIT_SPASS, null, null);
         repository.add(previous);
         HouseholdPlan current = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2026));
-        current.addIncome(description("Gehalt"), money("30900.00"), null, null);
-        current.addExpense(description("Miete"), money("24250.00"), ExpenseCategory.LEBENSUNTERHALT, null, null);
+        // A monthly amount counts twelve times (MJ-8)
+        current.addIncome(description("Gehalt"), ItemAmount.monthly(money("2575.00")), null, null);
+        current.addExpense(description("Miete"), yearly("24250.00"), ExpenseCategory.LEBENSUNTERHALT, null, null);
         repository.add(current);
         HouseholdPlan empty = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2027));
         repository.add(empty);

@@ -98,7 +98,9 @@ Plans, lässt sich aber als Monatsbetrag angeben und so anzeigen.
   `YEARLY` für bestehende Posten (MJ-3); `amount` bleibt der eingegebene Betrag
 - Read Model: `OverviewItem` mit `ItemAmount`; `HouseholdPlanOverview` summiert Jahresbeträge und liefert
   `monthlyTotalIncome`, `monthlyTotalExpense`, `monthlyBalance`, `OverviewItemGroup` und `OverviewCategoryItems`
-  `monthlyTotal`, jeweils die Jahressumme durch 12 (MJ-9, MJ-10). `CategoryBreakdown` bleibt bei Jahreswerten (MJ-14)
+  `monthlyTotal`, jeweils die Jahressumme durch 12 (MJ-9, MJ-10). `CategoryBreakdown` bleibt bei Jahreswerten (MJ-14),
+  ebenso die Jahresübersicht ([JU-2](jahresuebersicht.md)): `JdbcHouseholdPlanOverviewQueryHandler` summiert dort je
+  Angabe und rechnet monatliche Summen mal 12
 - API: Pflichtfeld `period` (`MONTHLY`, `YEARLY`) in `AddIncomeRequest`, `AddExpenseRequest`,
   `ChangeBudgetItemRequest`, sonst 400 (MJ-1); `BudgetItemResponse` mit `amount` (wie eingegeben), `period`,
   `monthlyAmount`, `annualAmount`; Monatssummen in `HouseholdPlanOverviewResponse`, `ItemGroupResponse`,

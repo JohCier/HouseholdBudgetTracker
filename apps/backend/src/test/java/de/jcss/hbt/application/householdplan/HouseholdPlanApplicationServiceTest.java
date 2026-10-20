@@ -336,8 +336,8 @@ class HouseholdPlanApplicationServiceTest {
             BudgetSummary summary = BudgetSummary.EMPTY;
             for (BudgetItem item : plan.items()) {
                 summary = item.category().isEmpty()
-                        ? summary.withIncome(item.amount())
-                        : summary.withExpense(item.category().get(), item.amount());
+                        ? summary.withIncome(item.amount().annual())
+                        : summary.withExpense(item.category().get(), item.amount().annual());
             }
             return summary;
         }
