@@ -62,20 +62,6 @@ export class BudgetStore {
     return this.load();
   }
 
-  /** Selects the previous year; does nothing at the first year a plan can exist for. */
-  async previousYear(): Promise<void> {
-    if (this.hasPreviousYear()) {
-      await this.selectYear(this._year() - 1);
-    }
-  }
-
-  /** Selects the next year; does nothing at the last year a plan can exist for. */
-  async nextYear(): Promise<void> {
-    if (this.hasNextYear()) {
-      await this.selectYear(this._year() + 1);
-    }
-  }
-
   async load(): Promise<void> {
     const loadId = ++this.latestLoad;
     const year = this._year();

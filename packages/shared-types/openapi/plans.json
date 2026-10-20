@@ -70,6 +70,27 @@
         "tags" : [ "household-plans" ]
       }
     },
+    "/api/plans/years" : {
+      "get" : {
+        "operationId" : "yearlyOverview",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/YearlyOverviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "household-plans" ]
+      }
+    },
     "/api/plans/{planId}/expenses" : {
       "post" : {
         "operationId" : "addExpense",
@@ -734,6 +755,69 @@
       "TargetDirection" : {
         "type" : "string",
         "enum" : [ "AT_MOST", "AT_LEAST" ]
+      },
+      "YearlyOverviewEntryResponse" : {
+        "required" : [ "balance", "balanceChange", "expenseChange", "expensesExceedIncome", "incomeChange", "planId", "totalExpense", "totalIncome", "year" ],
+        "type" : "object",
+        "properties" : {
+          "balance" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "6650.0"
+          },
+          "balanceChange" : {
+            "type" : "number",
+            "description" : "Change from the previous year in percent, positive if the balance grew; null without a plan of the previous year or if its balance was zero",
+            "nullable" : true,
+            "example" : 33.0
+          },
+          "expenseChange" : {
+            "type" : "number",
+            "description" : "Change from the previous year in percent; null without a plan of the previous year or if its expenses were zero",
+            "nullable" : true,
+            "example" : -3.0
+          },
+          "expensesExceedIncome" : {
+            "type" : "boolean"
+          },
+          "incomeChange" : {
+            "type" : "number",
+            "description" : "Change from the previous year in percent; null without a plan of the previous year or if its income was zero",
+            "nullable" : true,
+            "example" : 3.0
+          },
+          "planId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "totalExpense" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "24250.0"
+          },
+          "totalIncome" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "30900.0"
+          },
+          "year" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 2026
+          }
+        }
+      },
+      "YearlyOverviewResponse" : {
+        "required" : [ "years" ],
+        "type" : "object",
+        "properties" : {
+          "years" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/YearlyOverviewEntryResponse"
+            }
+          }
+        }
       }
     },
     "securitySchemes" : {

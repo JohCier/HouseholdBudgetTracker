@@ -7,6 +7,7 @@ import de.jcss.hbt.domain.exception.HouseholdPlanNotFoundException;
 import de.jcss.hbt.domain.householdplan.BudgetItem;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.BudgetSummary;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
@@ -25,7 +26,9 @@ import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCreated;
 import de.jcss.hbt.domain.householdplan.event.IncomeAdded;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
+import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverviewQueryHandler;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
+import de.jcss.hbt.domain.householdplan.overview.YearlyOverview;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +60,7 @@ class HouseholdPlanApplicationServiceTest {
     private final FakeRepository repository = new FakeRepository();
     private final List<Object> publishedEvents = new ArrayList<>();
     private final HouseholdPlanApplicationService service =
-            new HouseholdPlanApplicationService(repository, repository::overviewOf, publishedEvents::add);
+            new HouseholdPlanApplicationService(repository, repository.queryHandler(), publishedEvents::add);
 
     private HouseholdPlanId planId;
 
@@ -92,6 +95,20 @@ class HouseholdPlanApplicationServiceTest {
         assertThat(otherPlan).isNotEqualTo(planId);
         assertThat(service.getOverview(SOMEONE_ELSE, YEAR).planId()).isEqualTo(otherPlan);
         assertThat(service.getOverview(OWNER, YEAR).planId()).isEqualTo(planId);
+    }
+
+    @Test
+    void yearlyOverviewListsOnlyTheOwnersPlansNewestFirst() {
+        HouseholdPlanId previous = service.createPlan(new CreateHouseholdPlanCommand(OWNER, YEAR.minusYears(1))).id();
+        service.createPlan(new CreateHouseholdPlanCommand(SOMEONE_ELSE, YEAR.plusYears(1)));
+        service.addIncome(new AddIncomeCommand(OWNER, previous, SALARY, money("1000.00"), null, null));
+        service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("1030.00"), null, null));
+
+        YearlyOverview overview = service.getYearlyOverview(OWNER);
+
+        assertThat(overview.years()).extracting(entry -> entry.planId()).containsExactly(planId, previous);
+        assertThat(overview.years().getFirst().incomeChange().value()).isEqualByComparingTo("3.00");
+        assertThat(overview.years().getLast().incomeChange()).isNull();
     }
 
     @Test
@@ -292,15 +309,45 @@ class HouseholdPlanApplicationServiceTest {
                             plan.subcategoryOrders()));
         }
 
-        Optional<HouseholdPlanOverview> overviewOf(OwnerId owner, Year year) {
-            return plans.values().stream()
-                    .filter(plan -> plan.isOwnedBy(owner) && plan.year().equals(year))
-                    .findFirst()
-                    .map(plan -> HouseholdPlanOverview.of(plan.id(), plan.year(), plan.items().stream()
-                            .map(item -> new OverviewItem(item.id(), item.description(), item.amount(),
-                                    item.type(), item.category().orElse(null), item.subcategory().orElse(null),
-                                    item.note().orElse(null)))
-                            .toList(), plan.subcategoryOrders()));
+        HouseholdPlanOverviewQueryHandler queryHandler() {
+            return new HouseholdPlanOverviewQueryHandler() {
+
+                @Override
+                public Optional<HouseholdPlanOverview> findByOwnerAndYear(OwnerId owner, Year year) {
+                    return plans.values().stream()
+                            .filter(plan -> plan.isOwnedBy(owner) && plan.year().equals(year))
+                            .findFirst()
+                            .map(plan -> HouseholdPlanOverview.of(plan.id(), plan.year(), overviewItemsOf(plan),
+                                    plan.subcategoryOrders()));
+                }
+
+                @Override
+                public YearlyOverview findYearlyOverviewByOwner(OwnerId owner, Year firstYear, Year lastYear) {
+                    return YearlyOverview.of(plans.values().stream()
+                            .filter(plan -> plan.isOwnedBy(owner))
+                            .filter(plan -> !plan.year().isBefore(firstYear) && !plan.year().isAfter(lastYear))
+                            .map(plan -> new YearlyOverview.PlanSummary(plan.id(), plan.year(), summaryOf(plan)))
+                            .toList());
+                }
+            };
+        }
+
+        private static BudgetSummary summaryOf(HouseholdPlan plan) {
+            BudgetSummary summary = BudgetSummary.EMPTY;
+            for (BudgetItem item : plan.items()) {
+                summary = item.category().isEmpty()
+                        ? summary.withIncome(item.amount())
+                        : summary.withExpense(item.category().get(), item.amount());
+            }
+            return summary;
+        }
+
+        private static List<OverviewItem> overviewItemsOf(HouseholdPlan plan) {
+            return plan.items().stream()
+                    .map(item -> new OverviewItem(item.id(), item.description(), item.amount(),
+                            item.type(), item.category().orElse(null), item.subcategory().orElse(null),
+                            item.note().orElse(null)))
+                    .toList();
         }
     }
 }

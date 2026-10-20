@@ -23,6 +23,8 @@ export type ReorderSubcategoriesRequest = Schemas['ReorderSubcategoriesRequest']
 export type AddedBudgetItemResponse = Schemas['AddedBudgetItemResponse'];
 export type CreateHouseholdPlanRequest = Schemas['CreateHouseholdPlanRequest'];
 export type CreatedHouseholdPlanResponse = Schemas['CreatedHouseholdPlanResponse'];
+export type YearlyOverview = Schemas['YearlyOverviewResponse'];
+export type YearlyOverviewEntry = Schemas['YearlyOverviewEntryResponse'];
 
 /** A calendar year, e.g. 2026. */
 export type Year = number;

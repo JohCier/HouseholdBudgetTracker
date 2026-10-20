@@ -18,6 +18,8 @@ import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
 import de.jcss.hbt.domain.householdplan.overview.OverviewCategoryItems;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItemGroup;
+import de.jcss.hbt.domain.householdplan.overview.YearlyOverview;
+import de.jcss.hbt.domain.householdplan.overview.YearlyOverviewEntry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -148,6 +150,58 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
         repository.add(HouseholdPlan.create(HouseholdPlanId.generate(), OwnerId.of(UUID.randomUUID()), Year.of(2026)));
 
         assertThat(queryHandler.findByOwnerAndYear(OWNER, Year.of(2026))).isEmpty();
+    }
+
+    @Test
+    void yearlyOverviewSumsTheItemsOfEveryPlanOfTheOwner() { // JU-1, JU-2, JU-3, JU-5
+        HouseholdPlan previous = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2025));
+        previous.addIncome(description("Gehalt"), money("20000.00"), null, null);
+        previous.addIncome(description("Bonus"), money("10000.00"), null, null);
+        previous.addExpense(description("Miete"), money("20000.00"), ExpenseCategory.LEBENSUNTERHALT, null, null);
+        previous.addExpense(description("Urlaub"), money("5000.00"), ExpenseCategory.FREIZEIT_SPASS, null, null);
+        repository.add(previous);
+        HouseholdPlan current = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2026));
+        current.addIncome(description("Gehalt"), money("30900.00"), null, null);
+        current.addExpense(description("Miete"), money("24250.00"), ExpenseCategory.LEBENSUNTERHALT, null, null);
+        repository.add(current);
+        HouseholdPlan empty = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2027));
+        repository.add(empty);
+
+        YearlyOverview overview = queryHandler.findYearlyOverviewByOwner(OWNER, Year.of(1900), Year.of(2200));
+
+        assertThat(overview.years()).extracting(YearlyOverviewEntry::planId)
+                .containsExactly(empty.id(), current.id(), previous.id());
+        YearlyOverviewEntry emptyYear = overview.years().get(0);
+        assertThat(emptyYear.totalIncome()).isEqualTo(Money.ZERO);
+        assertThat(emptyYear.totalExpense()).isEqualTo(Money.ZERO);
+        assertThat(emptyYear.incomeChange().value()).isEqualByComparingTo("-100.00");
+        YearlyOverviewEntry currentYear = overview.years().get(1);
+        assertThat(currentYear.totalIncome()).isEqualTo(money("30900.00"));
+        assertThat(currentYear.totalExpense()).isEqualTo(money("24250.00"));
+        assertThat(currentYear.incomeChange().value()).isEqualByComparingTo("3.00");
+        assertThat(currentYear.expenseChange().value()).isEqualByComparingTo("-3.00");
+        assertThat(currentYear.balanceChange().value()).isEqualByComparingTo("33.00");
+        assertThat(overview.years().get(2).totalExpense()).isEqualTo(money("25000.00"));
+    }
+
+    @Test
+    void yearlyOverviewLeavesOutPlansOfOtherOwnersAndYearsOutsideTheRange() { // JU-1, HP-1
+        repository.add(HouseholdPlan.create(HouseholdPlanId.generate(), OwnerId.of(UUID.randomUUID()), Year.of(2026)));
+        HouseholdPlan inRange = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2026));
+        repository.add(inRange);
+        jdbcClient.sql("INSERT INTO household_plan (id, owner_id, year) VALUES (:id, :owner, 2201)")
+                .param("id", UUID.randomUUID())
+                .param("owner", OWNER.value())
+                .update();
+
+        assertThat(queryHandler.findYearlyOverviewByOwner(OWNER, Year.of(1900), Year.of(2200)).years())
+                .extracting(YearlyOverviewEntry::planId)
+                .containsExactly(inRange.id());
+    }
+
+    @Test
+    void ownerWithoutPlansHasAnEmptyYearlyOverview() { // JU-13
+        assertThat(queryHandler.findYearlyOverviewByOwner(OWNER, Year.of(1900), Year.of(2200)).years()).isEmpty();
     }
 
     private static BudgetItemDescription description(String value) {

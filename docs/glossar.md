@@ -43,6 +43,9 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Überschuss, nicht verplant | `surplus`, `unplanned` | Positiver Saldo; zählt in der Auswertung zu Sparen & Investieren |
 | Finanzielle Lage | `BudgetSummary` (Value Object) | Einkommen, Ausgaben je Kategorie und alles, was daraus folgt (Saldo, Anteile, Zielerreichung) |
 | Übersicht | `HouseholdPlanOverview` (Read Model) | Was die Oberfläche für ein Jahr anzeigt: Posten, Summen, Aufteilung je Kategorie |
+| Jahresübersicht | `YearlyOverview` (Read Model), `YearlyOverviewEntry` | Alle Pläne eines Benutzers mit Einnahmen, Ausgaben, Überschuss und Veränderung zum Vorjahr; Startseite nach der Anmeldung |
+| Vorjahr | `YearlyOverviewEntry.of(…, previousYear)` | Der Plan des unmittelbar vorhergehenden Kalenderjahres, falls es ihn gibt |
+| Veränderung zum Vorjahr | `Percentage.changeFrom`, `incomeChange`, `expenseChange`, `balanceChange` | (Wert − Wert des Vorjahres) ÷ \|Wert des Vorjahres\| × 100, in Prozent mit zwei Nachkommastellen; fehlt ohne Vorjahr oder bei 0,00 € im Vorjahr |
 | Aufteilung je Kategorie | `CategoryBreakdown` | Teil der Übersicht: Summe, Anteil, Zielanteil und Zielerreichung einer Kategorie |
 | Darstellung (Balken, Torte) | `BreakdownView` (`bars`, `pie`), nur im Frontend | Wie die Karte „50/30/20-Regel" die Aufteilung zeigt: als Balken je Kategorie oder als Tortendiagramm |
 | Protokoll | `audit_log`, `AuditLogListener` | Jedes Domain Event wird nach erfolgreichem Speichern protokolliert |

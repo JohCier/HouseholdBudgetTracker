@@ -11,6 +11,7 @@ import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.BudgetItemNote;
 import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
+import de.jcss.hbt.domain.householdplan.BudgetSummary;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.ItemAmount;
@@ -27,6 +28,7 @@ import de.jcss.hbt.domain.householdplan.command.ReorderBudgetItemsCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderSubcategoriesCommand;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
+import de.jcss.hbt.domain.householdplan.overview.YearlyOverview;
 import de.jcss.hbt.infrastructure.security.SecurityConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -370,6 +372,38 @@ class HouseholdPlanControllerTest {
     }
 
     /** UK-9 to UK-12 */
+    @Test
+    void yearlyOverviewListsThePlansWithTheirChanges() throws Exception { // JU-1, JU-2, JU-5, JU-6
+        HouseholdPlanId previous = HouseholdPlanId.generate();
+        when(plans.getYearlyOverview(OWNER)).thenReturn(YearlyOverview.of(List.of(
+                new YearlyOverview.PlanSummary(previous, Year.of(2025), BudgetSummary.EMPTY
+                        .withExpense(ExpenseCategory.LEBENSUNTERHALT, Money.of(new BigDecimal("25000.00")))),
+                new YearlyOverview.PlanSummary(PLAN_ID, Year.of(2026), BudgetSummary.EMPTY
+                        .withIncome(Money.of(new BigDecimal("30900.00")))
+                        .withExpense(ExpenseCategory.LEBENSUNTERHALT, Money.of(new BigDecimal("24250.00")))))));
+
+        mockMvc.perform(get("/api/plans/years"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.years.length()").value(2))
+                .andExpect(jsonPath("$.years[0].planId").value(PLAN.toString()))
+                .andExpect(jsonPath("$.years[0].year").value(2026))
+                .andExpect(jsonPath("$.years[0].totalIncome").value("30900.00"))
+                .andExpect(jsonPath("$.years[0].totalExpense").value("24250.00"))
+                .andExpect(jsonPath("$.years[0].balance").value("6650.00"))
+                .andExpect(jsonPath("$.years[0].expensesExceedIncome").value(false))
+                .andExpect(jsonPath("$.years[0].incomeChange").isEmpty())
+                .andExpect(jsonPath("$.years[0].expenseChange").value(-3.0))
+                .andExpect(jsonPath("$.years[0].balanceChange").value(126.6))
+                .andExpect(jsonPath("$.years[1].year").value(2025))
+                .andExpect(jsonPath("$.years[1].expensesExceedIncome").value(true));
+    }
+
+    @Test
+    void yearlyOverviewNeedsASignedInUser() throws Exception {
+        anonymous.perform(get("/api/plans/years")).andExpect(status().isUnauthorized());
+        verifyNoInteractions(plans);
+    }
+
     @Test
     void overviewListsTheGroupedEntriesWithSums() throws Exception {
         HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, Year.of(2026), List.of(

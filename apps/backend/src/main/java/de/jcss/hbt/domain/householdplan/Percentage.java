@@ -6,11 +6,13 @@ import org.jmolecules.ddd.annotation.ValueObject;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Value object representing a share in percent with a precision of two decimal places,
  * e.g. {@code 34.50} for 34.5 %. Values with more decimal places are rejected; shares
- * computed via {@link #shareOf} are rounded half up instead.
+ * computed via {@link #shareOf} and {@link #changeFrom} are rounded half up instead. May be
+ * negative, e.g. for a decrease.
  */
 @ValueObject
 public record Percentage(BigDecimal value) implements Comparable<Percentage> {
@@ -37,6 +39,20 @@ public record Percentage(BigDecimal value) implements Comparable<Percentage> {
             return ZERO;
         }
         return new Percentage(part.value().multiply(HUNDRED).divide(whole.value(), 2, RoundingMode.HALF_UP));
+    }
+
+    /**
+     * By how many percent {@code current} differs from {@code previous}, relative to the amount of
+     * {@code previous} (JU-5): positive if {@code current} is higher, even if {@code previous} is
+     * negative. Empty if {@code previous} is zero, as no change in percent follows from it (JU-6).
+     */
+    public static Optional<Percentage> changeFrom(Money previous, Money current) {
+        if (previous.isZero()) {
+            return Optional.empty();
+        }
+        BigDecimal difference = current.value().subtract(previous.value());
+        return Optional.of(new Percentage(
+                difference.multiply(HUNDRED).divide(previous.value().abs(), 2, RoundingMode.HALF_UP)));
     }
 
     @Override

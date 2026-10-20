@@ -11,6 +11,7 @@ import {
   ReorderBudgetItemsRequest,
   ReorderSubcategoriesRequest,
   Year,
+  YearlyOverview,
 } from '../budget.model';
 
 /**
@@ -33,6 +34,11 @@ export class BudgetApi {
             : throwError(() => error),
         ),
       );
+  }
+
+  /** All plans of the user, the newest year first, with their changes from the previous year (JU-1). */
+  getYearlyOverview(): Observable<YearlyOverview> {
+    return this.http.get<YearlyOverview>(`${this.baseUrl}/years`);
   }
 
   createPlan(year: Year): Observable<CreatedHouseholdPlanResponse> {

@@ -51,6 +51,7 @@ describe('BudgetStore', () => {
     plannedYears = [2025, 2026, 2027, currentYear()];
     api = {
       getOverview: vi.fn((year: number) => of(plannedYears.includes(year) ? overview(year) : null)),
+      getYearlyOverview: vi.fn(() => of({ years: [] })),
       createPlan: vi.fn((year: number) => of({ id: `plan-${year}`, overview: overview(year, []) })),
       addIncome: vi.fn((planId: string) =>
         of({ id: 'added', overview: overview(yearOf(planId), [item, added]) }),
@@ -83,32 +84,22 @@ describe('BudgetStore', () => {
     expect(store.loadError()).toBeNull();
   });
 
-  it('navigates between years', async () => {
-    await store.selectYear(2026);
-    await store.nextYear();
-    expect(store.year()).toBe(2027);
+  it('loads the plan of the selected year', async () => {
+    await store.selectYear(2025);
 
-    await store.previousYear();
-    await store.previousYear();
     expect(store.year()).toBe(2025);
     expect(api.getOverview).toHaveBeenLastCalledWith(2025);
   });
 
   // HP-1
-  it('does not go before 1900 or after 2200', async () => {
+  it('knows whether there is a year before or after the selected one', async () => {
     await store.selectYear(1900);
     expect(store.hasPreviousYear()).toBe(false);
     expect(store.hasNextYear()).toBe(true);
-    await store.previousYear();
-    expect(store.year()).toBe(1900);
 
     await store.selectYear(2200);
     expect(store.hasNextYear()).toBe(false);
     expect(store.hasPreviousYear()).toBe(true);
-    api.getOverview.mockClear();
-    await store.nextYear();
-    expect(store.year()).toBe(2200);
-    expect(api.getOverview).not.toHaveBeenCalled();
   });
 
   it('knows when a year has no plan yet and can create one', async () => {

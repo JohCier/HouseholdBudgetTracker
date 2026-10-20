@@ -28,7 +28,7 @@ test.describe('Fehlermeldungen', () => {
     await page.getByRole('button', { name: 'Haushaltsplan anlegen' }).click();
     await addIncome(page, 'Gehalt', '3000');
     const otherTab = await context.newPage();
-    await otherTab.goto('/');
+    await otherTab.goto(page.url());
     await expect(itemRow(otherTab, 'Gehalt')).toBeVisible();
 
     await page.getByRole('button', { name: 'Eintrag Gehalt löschen' }).click();
