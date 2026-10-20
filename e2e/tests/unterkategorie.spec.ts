@@ -30,6 +30,8 @@ async function drag(page: Page, handle: Locator, target: Locator): Promise<void>
   const isOrder = (request: Request) => request.method() === 'PUT' && /-order$/.test(request.url());
   let sent: Request | undefined;
   await expect(async () => {
+    // The mouse only reaches what is in view; the page may have scrolled while entries were added
+    await handle.scrollIntoViewIfNeeded();
     const from = (await handle.boundingBox())!;
     const to = (await target.boundingBox())!;
     const x = from.x + from.width / 2;
