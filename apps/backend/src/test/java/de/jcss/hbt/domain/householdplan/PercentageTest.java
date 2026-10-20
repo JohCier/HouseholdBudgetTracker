@@ -36,6 +36,28 @@ class PercentageTest {
     }
 
     @Test
+    void changeIsRelativeToThePreviousValueAndRoundedHalfUp() {
+        assertThat(Percentage.changeFrom(money("30000.00"), money("30900.00"))).contains(Percentage.of(3));
+        assertThat(Percentage.changeFrom(money("25000.00"), money("24250.00"))).contains(Percentage.of(-3));
+        assertThat(Percentage.changeFrom(money("3.00"), money("4.00")).orElseThrow().value()).isEqualByComparingTo("33.33");
+        assertThat(Percentage.changeFrom(money("3.00"), money("5.00")).orElseThrow().value()).isEqualByComparingTo("66.67");
+        assertThat(Percentage.changeFrom(money("100.00"), money("100.00"))).contains(Percentage.ZERO);
+    }
+
+    @Test
+    void changeFromANegativeValueIsPositiveIfTheValueGrew() {
+        assertThat(Percentage.changeFrom(money("-1000.00"), money("-500.00"))).contains(Percentage.of(50));
+        assertThat(Percentage.changeFrom(money("-1000.00"), money("-1500.00"))).contains(Percentage.of(-50));
+        assertThat(Percentage.changeFrom(money("-1000.00"), money("1000.00"))).contains(Percentage.of(200));
+    }
+
+    @Test
+    void noChangeFromZero() {
+        assertThat(Percentage.changeFrom(Money.ZERO, money("1000.00"))).isEmpty();
+        assertThat(Percentage.changeFrom(Money.ZERO, Money.ZERO)).isEmpty();
+    }
+
+    @Test
     void comparesByValue() {
         assertThat(Percentage.of(20)).isLessThan(Percentage.of(30));
     }

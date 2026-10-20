@@ -4,9 +4,16 @@ import { signedInGuard, signedOutGuard } from './auth/auth.guards';
 export const routes: Routes = [
   {
     path: '',
-    loadComponent: () => import('./budget/budget-dashboard').then((m) => m.BudgetDashboard),
+    pathMatch: 'full',
+    loadComponent: () => import('./budget/yearly-overview-page').then((m) => m.YearlyOverviewPage),
     canActivate: [signedInGuard],
     title: 'Haushaltsbuch',
+  },
+  {
+    path: 'jahre/:year',
+    loadComponent: () => import('./budget/budget-dashboard').then((m) => m.BudgetDashboard),
+    canActivate: [signedInGuard],
+    title: 'Haushaltsplan – Haushaltsbuch',
   },
   {
     path: 'login',

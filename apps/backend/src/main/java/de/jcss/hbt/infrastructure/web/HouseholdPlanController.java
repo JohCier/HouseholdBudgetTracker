@@ -28,6 +28,7 @@ import de.jcss.hbt.infrastructure.web.dto.ExpenseCategoryDto;
 import de.jcss.hbt.infrastructure.web.dto.HouseholdPlanOverviewResponse;
 import de.jcss.hbt.infrastructure.web.dto.ReorderBudgetItemsRequest;
 import de.jcss.hbt.infrastructure.web.dto.ReorderSubcategoriesRequest;
+import de.jcss.hbt.infrastructure.web.dto.YearlyOverviewResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -83,6 +84,12 @@ public class HouseholdPlanController {
     public HouseholdPlanOverviewResponse overview(@AuthenticationPrincipal Jwt user,
                                                   @RequestParam @Min(HouseholdPlan.FIRST_YEAR) @Max(HouseholdPlan.LAST_YEAR) int year) {
         return HouseholdPlanOverviewResponse.from(plans.getOverview(owner(user), Year.of(year)));
+    }
+
+    /** All plans of the user, the newest year first, with their totals and changes from the previous year (JU-1 to JU-9). */
+    @GetMapping("/years")
+    public YearlyOverviewResponse yearlyOverview(@AuthenticationPrincipal Jwt user) {
+        return YearlyOverviewResponse.from(plans.getYearlyOverview(owner(user)));
     }
 
     @PostMapping("/{planId}/incomes")

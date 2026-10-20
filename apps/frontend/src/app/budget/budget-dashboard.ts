@@ -1,10 +1,11 @@
-import { Component, Injector, OnInit, inject, signal } from '@angular/core';
+import { Component, Injector, effect, inject, input, signal, untracked } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router, RouterLink } from '@angular/router';
 import { BreakdownView, BudgetItem } from './budget.model';
 import { BudgetStore } from './data-access/budget-store';
 import { AddItemForm } from './ui/add-item-form';
@@ -12,6 +13,7 @@ import { BudgetEntries, GroupOrder } from './ui/budget-entries';
 import { CategoryBreakdownCard } from './ui/category-breakdown';
 import { EditItemDialog } from './ui/edit-item-dialog';
 import { OverviewSummary } from './ui/overview-summary';
+import { parseYear } from './year';
 
 @Component({
   selector: 'app-budget-dashboard',
@@ -24,6 +26,7 @@ import { OverviewSummary } from './ui/overview-summary';
     BudgetEntries,
     CategoryBreakdownCard,
     OverviewSummary,
+    RouterLink,
   ],
   providers: [BudgetStore],
   template: `
@@ -31,13 +34,18 @@ import { OverviewSummary } from './ui/overview-summary';
       <mat-progress-bar mode="indeterminate" class="loading" />
     }
 
+    <a matButton routerLink="/" class="back">
+      <mat-icon svgIcon="arrow_back" />
+      Alle Jahre
+    </a>
+
     <nav class="year" aria-label="Jahr wählen">
       <button
         matIconButton
         type="button"
         aria-label="Vorheriges Jahr"
         [disabled]="!store.hasPreviousYear()"
-        (click)="store.previousYear()"
+        (click)="showYear(store.year() - 1)"
       >
         <mat-icon svgIcon="chevron_left" />
       </button>
@@ -47,7 +55,7 @@ import { OverviewSummary } from './ui/overview-summary';
         type="button"
         aria-label="Nächstes Jahr"
         [disabled]="!store.hasNextYear()"
-        (click)="store.nextYear()"
+        (click)="showYear(store.year() + 1)"
       >
         <mat-icon svgIcon="chevron_right" />
       </button>
@@ -109,6 +117,10 @@ import { OverviewSummary } from './ui/overview-summary';
       right: 0;
       z-index: 10;
     }
+    .back {
+      align-self: flex-start;
+      margin-bottom: -16px;
+    }
     .year {
       display: flex;
       align-items: center;
@@ -155,8 +167,12 @@ import { OverviewSummary } from './ui/overview-summary';
     }
   `,
 })
-export class BudgetDashboard implements OnInit {
+export class BudgetDashboard {
+  /** The year from the address, `/jahre/2026` (JU-11). */
+  readonly year = input<string>();
+
   protected readonly store = inject(BudgetStore);
+  private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly injector = inject(Injector);
@@ -165,8 +181,24 @@ export class BudgetDashboard implements OnInit {
   /** View of the 50/30/20 card, kept while the page is open (TD-1). */
   protected readonly breakdownView = signal<BreakdownView>('bars');
 
-  ngOnInit(): void {
-    void this.store.load();
+  constructor() {
+    // Shows the plan of the year in the address; an address without a valid year leads back to the
+    // yearly overview (HP-1, JU-11).
+    effect(() => {
+      const year = parseYear(this.year());
+      untracked(() => {
+        if (year === null) {
+          void this.router.navigateByUrl('/');
+        } else {
+          void this.store.selectYear(year);
+        }
+      });
+    });
+  }
+
+  /** Changes the address to the plan of another year, which then shows it. */
+  protected showYear(year: number): Promise<boolean> {
+    return this.router.navigate(['/jahre', year]);
   }
 
   protected async createPlan(): Promise<void> {

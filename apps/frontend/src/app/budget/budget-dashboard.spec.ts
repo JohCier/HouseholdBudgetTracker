@@ -1,6 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router, provideRouter } from '@angular/router';
 import { Subject } from 'rxjs';
 import { BudgetDashboard } from './budget-dashboard';
 import { BudgetItem, HouseholdPlanOverview } from './budget.model';
@@ -50,17 +51,19 @@ describe('BudgetDashboard', () => {
       loading: signal(false),
       loadError: signal(null),
       load: vi.fn(async () => undefined),
+      selectYear: vi.fn(async () => undefined),
       removeItem: vi.fn(async () => undefined),
       restoreItem: vi.fn(async () => undefined),
     };
     TestBed.configureTestingModule({
-      providers: [{ provide: MatSnackBar, useValue: snackBar }],
+      providers: [provideRouter([]), { provide: MatSnackBar, useValue: snackBar }],
     });
     // The dashboard provides a store of its own, replace that with the fake.
     TestBed.overrideComponent(BudgetDashboard, {
       set: { providers: [{ provide: BudgetStore, useValue: store }] },
     });
     const fixture = TestBed.createComponent(BudgetDashboard);
+    fixture.componentRef.setInput('year', String(store.year()));
     await fixture.whenStable();
 
     (fixture.nativeElement as HTMLElement)
@@ -90,16 +93,18 @@ describe('BudgetDashboard', () => {
       loading: signal(false),
       loadError: signal(null),
       load: vi.fn(async () => undefined),
+      selectYear: vi.fn(async () => undefined),
       changeItem: vi.fn(async () => undefined),
     };
     TestBed.configureTestingModule({
-      providers: [{ provide: MatSnackBar, useValue: snackBar }],
+      providers: [provideRouter([]), { provide: MatSnackBar, useValue: snackBar }],
     });
     // The dashboard provides a store of its own, replace that with the fake.
     TestBed.overrideComponent(BudgetDashboard, {
       set: { providers: [{ provide: BudgetStore, useValue: store }] },
     });
     const fixture = TestBed.createComponent(BudgetDashboard);
+    fixture.componentRef.setInput('year', String(store.year()));
     await fixture.whenStable();
 
     (fixture.nativeElement as HTMLElement)
@@ -156,18 +161,20 @@ describe('BudgetDashboard', () => {
       loadError: signal(null),
       subcategorySuggestions: vi.fn(() => []),
       load: vi.fn(async () => undefined),
+      selectYear: vi.fn(async () => undefined),
       reorderSubcategories: vi.fn(async () => {
         throw new Error('Die Reihenfolge konnte nicht gespeichert werden.');
       }),
     };
     TestBed.configureTestingModule({
-      providers: [{ provide: MatSnackBar, useValue: snackBar }],
+      providers: [provideRouter([]), { provide: MatSnackBar, useValue: snackBar }],
     });
     // The dashboard provides a store of its own, replace that with the fake.
     TestBed.overrideComponent(BudgetDashboard, {
       set: { providers: [{ provide: BudgetStore, useValue: store }] },
     });
     const fixture = TestBed.createComponent(BudgetDashboard);
+    fixture.componentRef.setInput('year', String(store.year()));
     await fixture.whenStable();
 
     (fixture.nativeElement as HTMLElement)
@@ -198,16 +205,18 @@ describe('BudgetDashboard', () => {
       loading: signal(false),
       loadError: signal(null),
       load: vi.fn(async () => undefined),
+      selectYear: vi.fn(async () => undefined),
       createPlan: vi.fn(async () => undefined),
     };
     TestBed.configureTestingModule({
-      providers: [{ provide: MatSnackBar, useValue: { open: vi.fn() } }],
+      providers: [provideRouter([]), { provide: MatSnackBar, useValue: { open: vi.fn() } }],
     });
     // The dashboard provides a store of its own, replace that with the fake.
     TestBed.overrideComponent(BudgetDashboard, {
       set: { providers: [{ provide: BudgetStore, useValue: store }] },
     });
     const fixture = TestBed.createComponent(BudgetDashboard);
+    fixture.componentRef.setInput('year', String(store.year()));
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
 
@@ -220,5 +229,70 @@ describe('BudgetDashboard', () => {
     await fixture.whenStable();
 
     expect(store.createPlan).toHaveBeenCalled();
+  });
+
+  // JU-11
+  it('shows the plan of the year in the address and changes the address with the arrows', async () => {
+    const store = {
+      year: signal(2026),
+      hasPreviousYear: signal(true),
+      hasNextYear: signal(true),
+      planId: signal(null),
+      planMissing: signal(true),
+      items: signal([]),
+      overview: signal(null),
+      loading: signal(false),
+      loadError: signal(null),
+      selectYear: vi.fn(async () => undefined),
+    };
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    TestBed.overrideComponent(BudgetDashboard, {
+      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+    });
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(BudgetDashboard);
+    fixture.componentRef.setInput('year', '2026');
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(store.selectYear).toHaveBeenCalledWith(2026);
+    expect(element.querySelector('a[href="/"]')?.textContent).toContain('Alle Jahre');
+
+    element.querySelector<HTMLButtonElement>('button[aria-label="Nächstes Jahr"]')!.click();
+    expect(navigate).toHaveBeenCalledWith(['/jahre', 2027]);
+    element.querySelector<HTMLButtonElement>('button[aria-label="Vorheriges Jahr"]')!.click();
+    expect(navigate).toHaveBeenCalledWith(['/jahre', 2025]);
+
+    fixture.componentRef.setInput('year', '2025');
+    await fixture.whenStable();
+    expect(store.selectYear).toHaveBeenLastCalledWith(2025);
+  });
+
+  // HP-1
+  it('leads back to the yearly overview for an address without a valid year', async () => {
+    const store = {
+      year: signal(2026),
+      hasPreviousYear: signal(true),
+      hasNextYear: signal(true),
+      planId: signal(null),
+      planMissing: signal(false),
+      items: signal([]),
+      overview: signal(null),
+      loading: signal(false),
+      loadError: signal(null),
+      selectYear: vi.fn(async () => undefined),
+    };
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    TestBed.overrideComponent(BudgetDashboard, {
+      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+    });
+    const navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(BudgetDashboard);
+    fixture.componentRef.setInput('year', '2201');
+    await fixture.whenStable();
+
+    expect(navigateByUrl).toHaveBeenCalledWith('/');
+    expect(store.selectYear).not.toHaveBeenCalled();
   });
 });
