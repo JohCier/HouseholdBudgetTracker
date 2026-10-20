@@ -10,6 +10,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Year } from './budget.model';
 import { YearlyOverviewStore } from './data-access/yearly-overview-store';
 import { copiedMessage, openCopyPlanDialog } from './ui/copy-plan-dialog';
+import { deletedMessage, openDeletePlanDialog } from './ui/delete-plan-dialog';
 import { YearChange } from './ui/year-change';
 
 /**
@@ -105,6 +106,16 @@ import { YearChange } from './ui/year-change';
                   >
                     <mat-icon svgIcon="content_copy" />
                   </button>
+                  <button
+                    matIconButton
+                    type="button"
+                    class="delete-plan"
+                    [attr.aria-label]="'Plan ' + entry.year + ' löschen'"
+                    title="Plan löschen"
+                    (click)="$event.stopPropagation(); deletePlan(entry.year)"
+                  >
+                    <mat-icon svgIcon="delete" />
+                  </button>
                 </td>
               </tr>
             }
@@ -183,9 +194,14 @@ import { YearChange } from './ui/year-change';
       text-align: right;
     }
     .actions {
-      width: 48px;
+      width: 96px;
       padding: 4px 8px;
       vertical-align: middle;
+      white-space: nowrap;
+    }
+    .delete-plan {
+      --mat-icon-button-icon-color: var(--mat-sys-error);
+      --mat-icon-button-state-layer-color: var(--mat-sys-error);
     }
     .visually-hidden {
       position: absolute;
@@ -239,6 +255,16 @@ export class YearlyOverviewPage implements OnInit {
       if (copied) {
         await this.open(copied.targetYear);
         this.snackBar.open(copiedMessage(copied), undefined, { duration: 3000 });
+      }
+    });
+  }
+
+  /** Deletes the plan of the year after asking; the overview stays open without it (PL-7 to PL-9). */
+  protected deletePlan(year: Year): void {
+    openDeletePlanDialog(this.dialog, year).subscribe(async (deleted) => {
+      if (deleted) {
+        await this.store.load();
+        this.snackBar.open(deletedMessage(year), undefined, { duration: 3000 });
       }
     });
   }

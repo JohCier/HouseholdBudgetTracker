@@ -8,6 +8,7 @@ import de.jcss.hbt.domain.householdplan.event.BudgetItemsReordered;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCopied;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCreated;
+import de.jcss.hbt.domain.householdplan.event.HouseholdPlanDeleted;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanEvent;
 import de.jcss.hbt.domain.householdplan.event.IncomeAdded;
 import de.jcss.hbt.domain.householdplan.event.SubcategoriesReordered;
@@ -142,6 +143,14 @@ public final class HouseholdPlan {
         subcategoryOrders.clear();
         subcategoryOrders.putAll(source.subcategoryOrders);
         record(new HouseholdPlanCopied(id, source.id, overwritten, Instant.now()));
+    }
+
+    /**
+     * Marks the plan as deleted with all its items (PL-2, PL-6): records a single event naming the
+     * number of items, none per item. Removing the plan from its repository is up to the caller.
+     */
+    public void delete() {
+        record(new HouseholdPlanDeleted(id, year, items.size(), Instant.now()));
     }
 
     /**

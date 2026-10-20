@@ -25,6 +25,7 @@ import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
 import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.CopyHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
+import de.jcss.hbt.domain.householdplan.command.DeleteHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderBudgetItemsCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderSubcategoriesCommand;
@@ -691,6 +692,26 @@ class HouseholdPlanControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.type").value("urn:hbt:plan-not-found"))
                 .andExpect(jsonPath("$.detail").value("Household plan not found: " + PLAN));
+    }
+
+    /** PL-1, PL-2 */
+    @Test
+    void deletePlanReturns204() throws Exception {
+        mockMvc.perform(delete("/api/plans/{planId}", PLAN))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        verify(plans).deletePlan(new DeleteHouseholdPlanCommand(OWNER, PLAN_ID));
+    }
+
+    /** PL-1, HP-4 */
+    @Test
+    void deleteUnknownPlanReturns404() throws Exception {
+        doThrow(new HouseholdPlanNotFoundException(PLAN_ID)).when(plans).deletePlan(any());
+
+        mockMvc.perform(delete("/api/plans/{planId}", PLAN))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.type").value("urn:hbt:plan-not-found"));
     }
 
     /** AU-1, AU-4 */

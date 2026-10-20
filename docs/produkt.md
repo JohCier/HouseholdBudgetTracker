@@ -23,6 +23,7 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 | Haushaltsplan | Pro Jahr einen Plan anlegen, zwischen Jahren wechseln | [haushaltsplan.md](specs/haushaltsplan.md) |
 | Jahresübersicht | Startseite mit allen Plänen: Einnahmen, Ausgaben, Überschuss und Veränderung zum Vorjahr je Jahr | [jahresuebersicht.md](specs/jahresuebersicht.md) |
 | Plan als Vorlage übernehmen | Einen Plan mit allen Posten in ein frei wählbares Jahr übernehmen (vorgeschlagen: Folgejahr), aus Planansicht, Jahresübersicht oder einem Jahr ohne Plan; einen bestehenden Plan nach Rückfrage überschreiben | [plan-uebernehmen.md](specs/plan-uebernehmen.md) |
+| Plan löschen | Einen Plan mit allen Posten nach Rückfrage endgültig löschen, aus der Jahresübersicht oder der Planansicht | [plan-loeschen.md](specs/plan-loeschen.md) |
 | Posten | Einnahmen und Ausgaben (mit Kategorie) erfassen, löschen, Löschen rückgängig machen | [posten.md](specs/posten.md) |
 | Posten bearbeiten | Beschreibung, Betrag und Kategorie eines Postens ändern | [posten-bearbeiten.md](specs/posten-bearbeiten.md) |
 | Notiz zum Posten | Optionaler Freitext je Posten, beim Erfassen und Bearbeiten | [posten-notiz.md](specs/posten-notiz.md) |

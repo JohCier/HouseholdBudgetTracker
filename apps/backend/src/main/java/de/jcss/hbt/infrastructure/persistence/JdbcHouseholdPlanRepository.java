@@ -134,6 +134,14 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
         insertSubcategoryOrders(plan.id(), plan.subcategoryOrders());
     }
 
+    /** Items and the order of their groups go with the plan through {@code ON DELETE CASCADE}. */
+    @Override
+    public void remove(HouseholdPlan plan) {
+        jdbcClient.sql("DELETE FROM household_plan WHERE id = :id")
+                .param("id", plan.id().value())
+                .update();
+    }
+
     /**
      * Compares the items with the stored ones and writes only the differences: deletes the
      * removed items, inserts the new ones and updates those whose values or position changed.

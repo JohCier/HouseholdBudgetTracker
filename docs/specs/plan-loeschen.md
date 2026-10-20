@@ -1,6 +1,6 @@
 # Haushaltsplan löschen
 
-Status: geplant
+Status: umgesetzt
 
 ## Zweck
 
@@ -79,23 +79,25 @@ Jahresübersicht löschen" in [jahresuebersicht.md](jahresuebersicht.md) und das
 
 ## Umsetzung
 
-Noch nicht umgesetzt. Geplant:
-
-- Domäne: `HouseholdPlan.delete` zeichnet `HouseholdPlanDeleted` auf (PL-6); `HouseholdPlanRepository.delete`
+- Domäne: `HouseholdPlan.delete` zeichnet `HouseholdPlanDeleted` mit Jahr und Anzahl der Posten auf (PL-6);
+  `HouseholdPlanRepository.remove`
 - Ablauf: `HouseholdPlanApplicationService.deletePlan` mit `DeleteHouseholdPlanCommand` lädt den Plan gesperrt und
-  nur für den Besitzer (HP-4, HP-6) und löscht ihn in einer Transaktion (PL-4); Posten und Reihenfolge fallen über
-  `ON DELETE CASCADE` weg
-- API: `DELETE /api/plans/{planId}`, antwortet mit 204, für fremde oder unbekannte Pläne mit 404
-- Frontend: Bestätigungsdialog wie `budget/ui/copy-plan-dialog.ts`, geöffnet aus `budget/yearly-overview-page.ts` und
-  `budget/budget-dashboard.ts`
+  nur für den Besitzer (HP-4, HP-6), sonst `HouseholdPlanNotFoundException` (404), und entfernt ihn in einer
+  Transaktion (PL-4); `JdbcHouseholdPlanRepository.remove` löscht die Zeile in `household_plan`, Posten und
+  Reihenfolge der Gruppen fallen über `ON DELETE CASCADE` weg (PL-2). Das Protokoll hat keinen Fremdschlüssel und
+  behält frühere Einträge (PL-6)
+- API: `DELETE /api/plans/{planId}`, antwortet mit 204, für fremde, unbekannte oder schon gelöschte Pläne mit 404
+- Frontend: `budget/ui/delete-plan-dialog.ts` fragt nach und nennt Jahr und Anzahl der Posten, die er über
+  `GET /api/plans?year=` ermittelt (PL-8); geöffnet aus `budget/yearly-overview-page.ts` (Papierkorb je Zeile, die
+  Übersicht lädt danach neu) und `budget/budget-dashboard.ts` („Plan löschen", danach die Jahresübersicht) (PL-7,
+  PL-9)
+- Tests: `HouseholdPlanTest`, `HouseholdPlanApplicationServiceTest`, `HouseholdPlanControllerTest`,
+  `JdbcHouseholdPlanRepositoryTest`, `HouseholdPlanIntegrationTest`, `delete-plan-dialog.spec.ts`,
+  `budget-dashboard.spec.ts`, `yearly-overview-page.spec.ts`, `budget-api.spec.ts`
 - E2E: `e2e/tests/plan-loeschen.spec.ts`
 
 ## Offene Fragen
 
-1. Reicht ein einfacher Bestätigungsdialog (PL-8), oder soll der Benutzer zur Sicherheit das Jahr eintippen?
-   Vorschlag: einfacher Dialog, weil er Jahr und Anzahl der Posten nennt.
-2. Wie sieht „Plan löschen" aus? Vorschlag: in der Planansicht eine Textschaltfläche mit Papierkorb-Symbol neben
-   „Als Vorlage übernehmen", in der Jahresübersicht ein Papierkorb-Symbol mit Tooltip neben dem Symbol fürs
-   Übernehmen, beide in der Warnfarbe.
-3. Nach dem Löschen in der Planansicht: zur Jahresübersicht (Vorschlag, PL-9) oder im selben Jahr bleiben und dort
-   „Haushaltsplan anlegen" anbieten?
+Keine. Entschieden am 20.10.2026: einfacher Bestätigungsdialog ohne Eintippen des Jahres (PL-8), Textschaltfläche
+„Plan löschen" in der Planansicht und Papierkorb-Symbol je Zeile der Jahresübersicht, beide in der Warnfarbe (PL-7),
+nach dem Löschen aus der Planansicht zur Jahresübersicht (PL-9).

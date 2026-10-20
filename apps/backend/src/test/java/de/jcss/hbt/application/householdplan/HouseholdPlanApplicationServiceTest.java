@@ -20,12 +20,14 @@ import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
 import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.CopyHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
+import de.jcss.hbt.domain.householdplan.command.DeleteHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemChanged;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCopied;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCreated;
+import de.jcss.hbt.domain.householdplan.event.HouseholdPlanDeleted;
 import de.jcss.hbt.domain.householdplan.event.IncomeAdded;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverviewQueryHandler;
@@ -334,6 +336,58 @@ class HouseholdPlanApplicationServiceTest {
                 .isInstanceOf(DomainValidationException.class);
     }
 
+    /** PL-1 to PL-3, PL-6 */
+    @Test
+    void deletePlanRemovesItWithAllItemsAndKeepsOtherPlans() {
+        service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("3000.00"), null, null));
+        service.addIncome(new AddIncomeCommand(OWNER, planId, BudgetItemDescription.of("Bonus"), money("500.00"), null, null));
+        HouseholdPlanId other = service.copyPlan(new CopyHouseholdPlanCommand(OWNER, planId, Year.of(2027), false)).id();
+        publishedEvents.clear();
+
+        service.deletePlan(new DeleteHouseholdPlanCommand(OWNER, planId));
+
+        assertThat(repository.plans).containsOnlyKeys(other);
+        assertThat(repository.plans.get(other).items()).hasSize(2);
+        assertThat(publishedEvents).singleElement()
+                .isInstanceOfSatisfying(HouseholdPlanDeleted.class, event -> {
+                    assertThat(event.planId()).isEqualTo(planId);
+                    assertThat(event.year()).isEqualTo(YEAR);
+                    assertThat(event.itemCount()).isEqualTo(2);
+                });
+        assertThatThrownBy(() -> service.getOverview(OWNER, YEAR)).isInstanceOf(HouseholdPlanNotFoundException.class);
+    }
+
+    /** PL-2: the year is free again */
+    @Test
+    void deletedPlanCanBeCreatedAgainEmpty() {
+        service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("3000.00"), null, null));
+        service.deletePlan(new DeleteHouseholdPlanCommand(OWNER, planId));
+
+        HouseholdPlanId recreated = service.createPlan(new CreateHouseholdPlanCommand(OWNER, YEAR)).id();
+
+        assertThat(repository.plans.get(recreated).items()).isEmpty();
+    }
+
+    /** PL-1, HP-4 */
+    @Test
+    void deletePlanOfSomeoneElseIsNotFound() {
+        publishedEvents.clear();
+
+        assertThatThrownBy(() -> service.deletePlan(new DeleteHouseholdPlanCommand(SOMEONE_ELSE, planId)))
+                .isInstanceOf(HouseholdPlanNotFoundException.class);
+        assertThat(repository.plans).containsOnlyKeys(planId);
+        assertThat(publishedEvents).isEmpty();
+    }
+
+    /** PL-2 */
+    @Test
+    void deletingAPlanTwiceIsNotFound() {
+        service.deletePlan(new DeleteHouseholdPlanCommand(OWNER, planId));
+
+        assertThatThrownBy(() -> service.deletePlan(new DeleteHouseholdPlanCommand(OWNER, planId)))
+                .isInstanceOf(HouseholdPlanNotFoundException.class);
+    }
+
     private static final class FakeRepository implements HouseholdPlanRepository {
 
         private final Map<HouseholdPlanId, HouseholdPlan> plans = new HashMap<>();
@@ -371,6 +425,11 @@ class HouseholdPlanApplicationServiceTest {
             plans.put(plan.id(),
                     HouseholdPlan.reconstitute(plan.id(), plan.owner(), plan.year(), List.copyOf(plan.items()),
                             plan.subcategoryOrders()));
+        }
+
+        @Override
+        public void remove(HouseholdPlan plan) {
+            plans.remove(plan.id());
         }
 
         HouseholdPlanOverviewQueryHandler queryHandler() {

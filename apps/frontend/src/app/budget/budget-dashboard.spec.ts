@@ -293,6 +293,53 @@ describe('BudgetDashboard', () => {
     expect(navigate).toHaveBeenCalledWith(['/jahre', 2027]);
   });
 
+  // PL-7, PL-9
+  it('deletes the plan shown after asking and shows the yearly overview', async () => {
+    const snackBar = { open: vi.fn() };
+    const dialog = { open: vi.fn(() => ({ afterClosed: () => of(true) })) };
+    const store = {
+      year: signal(2026),
+      hasPreviousYear: signal(true),
+      hasNextYear: signal(true),
+      planId: signal('plan-2026'),
+      planMissing: signal(false),
+      items: signal([item]),
+      overview: signal(overview),
+      subcategorySuggestions: vi.fn(() => []),
+      loading: signal(false),
+      loadError: signal(null),
+      selectYear: vi.fn(async () => undefined),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: MatSnackBar, useValue: snackBar },
+        { provide: MatDialog, useValue: dialog },
+      ],
+    });
+    TestBed.overrideComponent(BudgetDashboard, {
+      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+    });
+    const navigateByUrl = vi
+      .spyOn(TestBed.inject(Router), 'navigateByUrl')
+      .mockResolvedValue(true);
+    const fixture = TestBed.createComponent(BudgetDashboard);
+    fixture.componentRef.setInput('year', '2026');
+    await fixture.whenStable();
+
+    [...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) => button.textContent?.includes('Plan löschen'))!
+      .click();
+
+    expect(dialog.open).toHaveBeenCalledWith(expect.anything(), { data: { year: 2026 } });
+    await vi.waitFor(() =>
+      expect(snackBar.open).toHaveBeenCalledWith('Plan 2026 gelöscht.', undefined, {
+        duration: 3000,
+      }),
+    );
+    expect(navigateByUrl).toHaveBeenCalledWith('/');
+  });
+
   // PU-12, PU-15
   it('takes over another plan for a year without one if the user has other plans', async () => {
     const snackBar = { open: vi.fn() };

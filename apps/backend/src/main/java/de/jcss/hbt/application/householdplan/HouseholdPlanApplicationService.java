@@ -12,6 +12,7 @@ import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
 import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.CopyHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
+import de.jcss.hbt.domain.householdplan.command.DeleteHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderBudgetItemsCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderSubcategoriesCommand;
@@ -101,6 +102,18 @@ public class HouseholdPlanApplicationService {
             throw new HouseholdPlanAlreadyExistsException(command.targetYear());
         }
         return new CopiedHouseholdPlan(target.id(), existing.isPresent(), overviewOf(target, command.owner()));
+    }
+
+    /**
+     * Deletes a plan of the user with all its items (PL-1, PL-2); other plans stay as they are (PL-3).
+     *
+     * @throws HouseholdPlanNotFoundException if it is not a plan of the user, or no longer exists
+     */
+    public void deletePlan(DeleteHouseholdPlanCommand command) {
+        HouseholdPlan plan = load(command.planId(), command.owner());
+        plan.delete();
+        repository.remove(plan);
+        publishEvents(plan);
     }
 
     public AddedBudgetItem addIncome(AddIncomeCommand command) {

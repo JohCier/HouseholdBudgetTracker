@@ -290,6 +290,31 @@ class JdbcHouseholdPlanRepositoryTest {
         assertThat(repository.findFor(OwnerId.of(UUID.randomUUID()), Year.of(2031))).isEmpty();
     }
 
+    /** PL-2, PL-3 */
+    @Test
+    void removesAPlanWithItsItemsAndOrdersAndKeepsOtherPlans() {
+        HouseholdPlan removed = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
+        HouseholdPlan kept = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2027));
+        for (HouseholdPlan plan : List.of(removed, kept)) {
+            expense(plan, "Wartung", "Auto");
+            expense(plan, "Kaltmiete", "Miete");
+            plan.reorderSubcategories(LIVING, List.of(BudgetItemSubcategory.of("Miete"), BudgetItemSubcategory.of("Auto")));
+            repository.add(plan);
+        }
+
+        repository.remove(repository.findById(removed.id()).orElseThrow());
+
+        assertThat(repository.findById(removed.id())).isEmpty();
+        assertThat(repository.existsFor(OWNER, YEAR)).isFalse();
+        assertThat(jdbcClient.sql("SELECT COUNT(*) FROM budget_item WHERE household_plan_id = :id")
+                .param("id", removed.id().value()).query(Integer.class).single()).isZero();
+        assertThat(jdbcClient.sql("SELECT COUNT(*) FROM subcategory_order WHERE household_plan_id = :id")
+                .param("id", removed.id().value()).query(Integer.class).single()).isZero();
+        HouseholdPlan other = repository.findById(kept.id()).orElseThrow();
+        assertThat(other.items()).hasSize(2);
+        assertThat(other.subcategoryOrders()).hasSize(1);
+    }
+
     @Test
     void removingTheLastItemLeavesAnEmptyPlan() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
