@@ -44,7 +44,7 @@ Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant".
 
 | Bereich | Was der Benutzer tun kann | Spec |
 |---|---|---|
-| Unterkategorie | Posten frei benennbaren Unterkategorien zuordnen; Einträge gruppiert nach Art, Kategorie und Unterkategorie mit Summen ansehen | [unterkategorie.md](specs/unterkategorie.md) |
+| Unterkategorie | Posten frei benennbaren Unterkategorien zuordnen; Einträge gruppiert nach Art, Kategorie und Unterkategorie mit Summen ansehen und frei sortieren | [unterkategorie.md](specs/unterkategorie.md) |
 
 ## Weiterführend
 
