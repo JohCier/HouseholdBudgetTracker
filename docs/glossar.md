@@ -17,6 +17,11 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Ausgabe | `ItemType.EXPENSE` | Posten mit genau einer Kategorie |
 | Beschreibung | `BudgetItemDescription` | Wofür der Posten steht, z. B. „Miete". 1 bis 255 Zeichen, nicht nur Leerzeichen |
 | Notiz | `BudgetItemNote` | Optionaler Freitext zum Posten, höchstens 1000 Zeichen; ohne Einfluss auf die Auswertung |
+| Unterkategorie | `BudgetItemSubcategory` | Optionaler, frei wählbarer Name zur weiteren Gruppierung von Posten, z. B. „Auto"; 1 bis 50 Zeichen, unabhängig von der Kategorie und ohne Einfluss auf die Auswertung |
+| Sonstiges | `BudgetItemSubcategory.OTHER` | Gruppe der Posten ohne Unterkategorie oder mit der Unterkategorie „Sonstiges"; steht am Ende, solange der Benutzer sie nicht verschiebt |
+| Bereich | `ItemSection` | Die Einnahmen oder eine Kategorie der Ausgaben; darin werden die Posten nach Unterkategorie gruppiert |
+| Gruppe | `OverviewItemGroup` | Die Posten eines Bereichs mit derselben Unterkategorie, mit ihrer Summe |
+| Reihenfolge der Gruppen | `SubcategoryOrder` | Wie der Benutzer die Gruppen eines Bereichs angeordnet hat; je Plan gespeichert |
 | Betrag | `Money` | Geldbetrag in Euro mit höchstens zwei Nachkommastellen; im Posten immer positiv |
 | Kategorie | `ExpenseCategory` | Einer der drei Töpfe der 50/30/20-Regel |
 | Lebensunterhalt | `LEBENSUNTERHALT` | Miete, Lebensmittel, Versicherungen; Ziel: höchstens 50 % des Einkommens |
@@ -58,5 +63,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | `IncomeAdded` | Eine Einnahme wurde erfasst |
 | `ExpenseAdded` | Eine Ausgabe wurde erfasst |
 | `BudgetItemRemoved` | Ein Posten wurde gelöscht |
-| `BudgetItemChanged` | Beschreibung, Betrag, Kategorie oder Notiz eines Postens wurden geändert |
+| `BudgetItemChanged` | Beschreibung, Betrag, Kategorie, Unterkategorie oder Notiz eines Postens wurden geändert |
+| `BudgetItemsReordered` | Die Posten einer Unterkategorie-Gruppe wurden umsortiert |
+| `SubcategoriesReordered` | Die Unterkategorie-Gruppen der Einnahmen oder einer Kategorie wurden umsortiert |
 | `UserRegistered` | Ein Benutzer hat sich registriert |

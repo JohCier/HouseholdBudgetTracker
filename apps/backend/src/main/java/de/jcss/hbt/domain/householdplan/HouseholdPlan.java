@@ -4,10 +4,12 @@ import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
 import de.jcss.hbt.domain.exception.DomainValidationException;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemChanged;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
+import de.jcss.hbt.domain.householdplan.event.BudgetItemsReordered;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCreated;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanEvent;
 import de.jcss.hbt.domain.householdplan.event.IncomeAdded;
+import de.jcss.hbt.domain.householdplan.event.SubcategoriesReordered;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 
@@ -15,8 +17,10 @@ import java.time.Instant;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -30,6 +34,12 @@ import java.util.Set;
  * The items can be read from outside (e.g. by a repository to store them), but only be
  * changed through this class: the list handed out is unmodifiable, the items themselves
  * are immutable.
+ * <p>
+ * The plan also keeps the order in which its entries are shown (UK-14 to UK-18): the items are
+ * held in display order, the newest first unless the user moved them; the order of the
+ * subcategory groups of each {@link ItemSection} is a {@link SubcategoryOrder}. An item always
+ * takes the spelling of the subcategory other items of the plan already have, so all items
+ * of a group are spelled alike (UK-5).
  * <p>
  * That a user has at most one plan per year spans several aggregates and is therefore
  * ensured by the application layer, not by this class.
@@ -52,13 +62,17 @@ public final class HouseholdPlan {
     private final OwnerId owner;
     private final Year year;
     private final List<BudgetItem> items;
+    private final Map<ItemSection, SubcategoryOrder> subcategoryOrders;
     private final List<HouseholdPlanEvent> domainEvents = new ArrayList<>();
 
-    private HouseholdPlan(HouseholdPlanId id, OwnerId owner, Year year, List<BudgetItem> items) {
+    private HouseholdPlan(HouseholdPlanId id, OwnerId owner, Year year, List<BudgetItem> items,
+                          Map<ItemSection, SubcategoryOrder> subcategoryOrders) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.owner = Objects.requireNonNull(owner, "owner must not be null");
         this.year = Objects.requireNonNull(year, "year must not be null");
         this.items = new ArrayList<>(requireDistinctItems(items));
+        this.subcategoryOrders = new HashMap<>(
+                Objects.requireNonNull(subcategoryOrders, "subcategoryOrders must not be null"));
     }
 
     private static List<BudgetItem> requireDistinctItems(List<BudgetItem> items) {
@@ -84,14 +98,20 @@ public final class HouseholdPlan {
             throw new DomainValidationException(
                     "year must be between %d and %d, but was %s".formatted(FIRST_YEAR, LAST_YEAR, year));
         }
-        HouseholdPlan plan = new HouseholdPlan(id, owner, year, List.of());
+        HouseholdPlan plan = new HouseholdPlan(id, owner, year, List.of(), Map.of());
         plan.record(new HouseholdPlanCreated(id, owner, year, Instant.now()));
         return plan;
     }
 
-    /** Rebuilds a stored plan, e.g. in a repository; records no events. */
-    public static HouseholdPlan reconstitute(HouseholdPlanId id, OwnerId owner, Year year, List<BudgetItem> items) {
-        return new HouseholdPlan(id, owner, year, items);
+    /**
+     * Rebuilds a stored plan, e.g. in a repository; records no events.
+     *
+     * @param items             in display order, the topmost first
+     * @param subcategoryOrders the arranged order of the groups per section; sections never arranged are missing
+     */
+    public static HouseholdPlan reconstitute(HouseholdPlanId id, OwnerId owner, Year year, List<BudgetItem> items,
+                                             Map<ItemSection, SubcategoryOrder> subcategoryOrders) {
+        return new HouseholdPlan(id, owner, year, items, subcategoryOrders);
     }
 
     /** Whether the plan belongs to the given user, i.e. whether they may see and change it. */
@@ -99,40 +119,61 @@ public final class HouseholdPlan {
         return owner.equals(user);
     }
 
-    /** @param note {@code null} if the income has no note */
-    public BudgetItemId addIncome(BudgetItemDescription description, Money amount, BudgetItemNote note) {
-        BudgetItem item = BudgetItem.income(BudgetItemId.generate(), description, amount, note);
-        items.add(item);
+    /**
+     * Adds an income on top of its group (UK-17).
+     *
+     * @param subcategory {@code null} if the income has no subcategory
+     * @param note        {@code null} if the income has no note
+     */
+    public BudgetItemId addIncome(BudgetItemDescription description, Money amount,
+                                  BudgetItemSubcategory subcategory, BudgetItemNote note) {
+        BudgetItem item = BudgetItem.income(BudgetItemId.generate(), description, amount,
+                spellingOf(subcategory, null), note);
+        items.addFirst(item);
         record(new IncomeAdded(id, item.id(), Instant.now()));
         return item.id();
     }
 
-    /** @param note {@code null} if the expense has no note */
+    /**
+     * Adds an expense on top of its group (UK-17).
+     *
+     * @param subcategory {@code null} if the expense has no subcategory
+     * @param note        {@code null} if the expense has no note
+     */
     public BudgetItemId addExpense(BudgetItemDescription description, Money amount, ExpenseCategory category,
-                                   BudgetItemNote note) {
-        BudgetItem item = BudgetItem.expense(BudgetItemId.generate(), description, amount, category, note);
-        items.add(item);
+                                   BudgetItemSubcategory subcategory, BudgetItemNote note) {
+        BudgetItem item = BudgetItem.expense(BudgetItemId.generate(), description, amount, category,
+                spellingOf(subcategory, null), note);
+        items.addFirst(item);
         record(new ExpenseAdded(id, item.id(), Instant.now()));
         return item.id();
     }
 
     /**
-     * Gives an item new values while it keeps its id and its position among the items.
+     * Gives an item new values while it keeps its id. It keeps its position among the items as
+     * long as it stays in its group; moved to another group, it goes on top of it (PB-4, UK-17).
      * Records an event only if a value actually changed.
      *
-     * @param category the new category of an expense; {@code null} for an income
-     * @param note     the new note; {@code null} to remove it
+     * @param category    the new category of an expense; {@code null} for an income
+     * @param subcategory the new subcategory; {@code null} to remove it
+     * @param note        the new note; {@code null} to remove it
      * @throws BudgetItemNotFoundException if the item is not part of this plan
      */
     public void changeItem(BudgetItemId itemId, BudgetItemDescription description, Money amount,
-                           ExpenseCategory category, BudgetItemNote note) {
+                           ExpenseCategory category, BudgetItemSubcategory subcategory, BudgetItemNote note) {
         int index = indexOf(itemId);
         BudgetItem current = items.get(index);
-        BudgetItem changed = current.changedTo(description, amount, category, note);
+        BudgetItem changed = current.changedTo(description, amount, category, spellingOf(subcategory, itemId), note);
         if (changed.hasSameValuesAs(current)) {
             return;
         }
-        items.set(index, changed);
+        if (changed.isInSameGroupAs(current)) {
+            items.set(index, changed);
+        } else {
+            items.remove(index);
+            items.addFirst(changed);
+            forgetVanishedGroups();
+        }
         record(new BudgetItemChanged(id, itemId, Instant.now()));
     }
 
@@ -152,7 +193,111 @@ public final class HouseholdPlan {
         if (!items.removeIf(item -> item.hasId(itemId))) {
             throw new BudgetItemNotFoundException(itemId);
         }
+        forgetVanishedGroups();
         record(new BudgetItemRemoved(id, itemId, Instant.now()));
+    }
+
+    /**
+     * Puts the items of one subcategory group in the given order (UK-14). The other items keep
+     * their positions. Records an event only if the order actually changed.
+     *
+     * @param order all items of one group, each once, the topmost first
+     * @throws BudgetItemNotFoundException if an item is not part of this plan
+     * @throws DomainValidationException   if the items are not exactly those of one group
+     */
+    public void reorderItems(List<BudgetItemId> order) {
+        Objects.requireNonNull(order, "order must not be null");
+        if (order.isEmpty()) {
+            throw new DomainValidationException("the order must name the items of a group");
+        }
+        BudgetItem first = items.get(indexOf(order.getFirst()));
+        List<Integer> positions = new ArrayList<>();
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).isInSameGroupAs(first)) {
+                positions.add(i);
+            }
+        }
+        List<BudgetItem> reordered = new ArrayList<>();
+        for (BudgetItemId itemId : order) {
+            BudgetItem item = items.get(indexOf(itemId));
+            if (!item.isInSameGroupAs(first) || reordered.contains(item)) {
+                throw new DomainValidationException("the order must name each item of one group once");
+            }
+            reordered.add(item);
+        }
+        if (reordered.size() != positions.size()) {
+            throw new DomainValidationException("the order must name all items of the group");
+        }
+        boolean changed = false;
+        for (int i = 0; i < positions.size(); i++) {
+            changed |= !items.set(positions.get(i), reordered.get(i)).equals(reordered.get(i));
+        }
+        if (changed) {
+            record(new BudgetItemsReordered(id, Instant.now()));
+        }
+    }
+
+    /**
+     * Puts the subcategory groups of a section in the given order (UK-14). Records an event only
+     * if the order shown actually changed.
+     *
+     * @param order all groups of the section, each once, the topmost first
+     * @throws DomainValidationException if the order does not name exactly the groups of the section
+     */
+    public void reorderSubcategories(ItemSection section, List<BudgetItemSubcategory> order) {
+        Objects.requireNonNull(section, "section must not be null");
+        SubcategoryOrder arranged = new SubcategoryOrder(order);
+        List<BudgetItemSubcategory> groups = groupsOf(section);
+        if (groups.size() != arranged.subcategories().size() || !groups.stream().allMatch(arranged::names)) {
+            throw new DomainValidationException("the order must name all subcategories of the section");
+        }
+        boolean changed = !arranged.arrange(groups).equals(subcategoryOrderOf(section).arrange(groups));
+        subcategoryOrders.put(section, arranged);
+        if (changed) {
+            record(new SubcategoriesReordered(id, Instant.now()));
+        }
+    }
+
+    /** The subcategory groups the section has, each once, in the spelling of its items. */
+    private List<BudgetItemSubcategory> groupsOf(ItemSection section) {
+        List<BudgetItemSubcategory> groups = new ArrayList<>();
+        for (BudgetItem item : items) {
+            if (item.section().equals(section) && groups.stream().noneMatch(item.group()::isSameAs)) {
+                groups.add(item.group());
+            }
+        }
+        return groups;
+    }
+
+    /** Drops the groups that have no items any more from the arranged orders, so they count as new should they come back (UK-18). */
+    private void forgetVanishedGroups() {
+        for (ItemSection section : List.copyOf(subcategoryOrders.keySet())) {
+            SubcategoryOrder remaining = subcategoryOrders.get(section).retainingOnly(groupsOf(section));
+            if (remaining.isEmpty()) {
+                subcategoryOrders.remove(section);
+            } else {
+                subcategoryOrders.put(section, remaining);
+            }
+        }
+    }
+
+    /**
+     * The spelling an item gets for the given subcategory: that of another item of the plan with
+     * the same subcategory if there is one, so a group is spelled alike (UK-5); "Sonstiges" always
+     * as {@link BudgetItemSubcategory#OTHER}.
+     *
+     * @param itemId the item the subcategory is for, which does not count as another; {@code null} for a new one
+     */
+    private BudgetItemSubcategory spellingOf(BudgetItemSubcategory subcategory, BudgetItemId itemId) {
+        if (subcategory == null || subcategory.isOther()) {
+            return subcategory == null ? null : BudgetItemSubcategory.OTHER;
+        }
+        return items.stream()
+                .filter(item -> !item.hasId(itemId))
+                .flatMap(item -> item.subcategory().stream())
+                .filter(subcategory::isSameAs)
+                .findFirst()
+                .orElse(subcategory);
     }
 
     /** Income, expenses per category and balance of all items of this plan. */
@@ -190,9 +335,19 @@ public final class HouseholdPlan {
         return year;
     }
 
-    /** The items in the order they were added. */
+    /** The items in display order, the topmost first (UK-16, UK-17). */
     public List<BudgetItem> items() {
         return Collections.unmodifiableList(items);
+    }
+
+    /** The order the user arranged the groups of a section in, {@link SubcategoryOrder#NONE} if never (UK-14). */
+    public SubcategoryOrder subcategoryOrderOf(ItemSection section) {
+        return subcategoryOrders.getOrDefault(section, SubcategoryOrder.NONE);
+    }
+
+    /** The arranged orders of all sections the user arranged the groups of. */
+    public Map<ItemSection, SubcategoryOrder> subcategoryOrders() {
+        return Map.copyOf(subcategoryOrders);
     }
 
     @Override

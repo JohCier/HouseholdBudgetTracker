@@ -8,7 +8,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { BreakdownView, BudgetItem } from './budget.model';
 import { BudgetStore } from './data-access/budget-store';
 import { AddItemForm } from './ui/add-item-form';
-import { BudgetItemTable } from './ui/budget-item-table';
+import { BudgetEntries, GroupOrder } from './ui/budget-entries';
 import { CategoryBreakdownCard } from './ui/category-breakdown';
 import { EditItemDialog } from './ui/edit-item-dialog';
 import { OverviewSummary } from './ui/overview-summary';
@@ -21,7 +21,7 @@ import { OverviewSummary } from './ui/overview-summary';
     MatIconModule,
     MatProgressBarModule,
     AddItemForm,
-    BudgetItemTable,
+    BudgetEntries,
     CategoryBreakdownCard,
     OverviewSummary,
   ],
@@ -75,11 +75,15 @@ import { OverviewSummary } from './ui/overview-summary';
             />
           }
         </div>
-        <app-budget-item-table
-          [items]="store.items()"
-          (edit)="edit($event)"
-          (remove)="remove($event)"
-        />
+        @if (store.overview(); as overview) {
+          <app-budget-entries
+            [overview]="overview"
+            (edit)="edit($event)"
+            (remove)="remove($event)"
+            (reorderItems)="reorderItems($event)"
+            (reorderGroups)="reorderGroups($event)"
+          />
+        }
       </div>
     } @else if (store.planMissing() && !store.loadError()) {
       <mat-card appearance="outlined" class="no-plan">
@@ -188,6 +192,24 @@ export class BudgetDashboard implements OnInit {
           this.snackBar.open('Eintrag geändert', undefined, { duration: 3000 });
         }
       });
+  }
+
+  /** Saves a new order of the items of a group; on failure the stored order shows again (UK-14). */
+  protected async reorderItems(itemIds: string[]): Promise<void> {
+    try {
+      await this.store.reorderItems(itemIds);
+    } catch (error) {
+      this.snackBar.open((error as Error).message, 'OK', { duration: 6000 });
+    }
+  }
+
+  /** Saves a new order of the groups of a section, see {@link reorderItems} (UK-14). */
+  protected async reorderGroups(order: GroupOrder): Promise<void> {
+    try {
+      await this.store.reorderSubcategories(order.section, order.subcategories);
+    } catch (error) {
+      this.snackBar.open((error as Error).message, 'OK', { duration: 6000 });
+    }
   }
 
   protected async remove(item: BudgetItem): Promise<void> {

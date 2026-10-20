@@ -15,4 +15,11 @@ public enum ItemTypeDto {
             case EXPENSE -> EXPENSE;
         };
     }
+
+    public ItemType toDomain() {
+        return switch (this) {
+            case INCOME -> ItemType.INCOME;
+            case EXPENSE -> ItemType.EXPENSE;
+        };
+    }
 }

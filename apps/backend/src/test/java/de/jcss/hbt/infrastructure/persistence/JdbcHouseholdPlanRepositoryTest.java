@@ -6,11 +6,14 @@ import de.jcss.hbt.domain.householdplan.BudgetItem;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.BudgetItemNote;
+import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.ItemSection;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
+import de.jcss.hbt.domain.householdplan.SubcategoryOrder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +29,8 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.time.Instant;
 import java.time.Year;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -45,6 +50,7 @@ class JdbcHouseholdPlanRepositoryTest {
 
     private static final Year YEAR = Year.of(2026);
     private static final OwnerId OWNER = OwnerId.of(UUID.randomUUID());
+    private static final ItemSection LIVING = ItemSection.expenses(ExpenseCategory.LEBENSUNTERHALT);
 
     @Autowired
     private JdbcHouseholdPlanRepository repository;
@@ -66,8 +72,8 @@ class JdbcHouseholdPlanRepositoryTest {
     @Test
     void storesAndRestoresPlanWithAllItemAttributesInOrder() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
-        plan.addIncome(description("Gehalt"), money("2500.00"), null);
-        plan.addExpense(description("Miete"), money("850.50"), ExpenseCategory.LEBENSUNTERHALT, null);
+        plan.addIncome(description("Gehalt"), money("2500.00"), null, null);
+        plan.addExpense(description("Miete"), money("850.50"), ExpenseCategory.LEBENSUNTERHALT, null, null);
 
         repository.add(plan);
 
@@ -82,32 +88,32 @@ class JdbcHouseholdPlanRepositoryTest {
     @Test
     void savingAgainAddsNewAndDeletesRemovedItems() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
-        BudgetItemId kept = plan.addIncome(description("Gehalt"), money("100.00"), null);
-        BudgetItemId removed = plan.addIncome(description("Bonus"), money("50.00"), null);
+        BudgetItemId kept = plan.addIncome(description("Gehalt"), money("100.00"), null, null);
+        BudgetItemId removed = plan.addIncome(description("Bonus"), money("50.00"), null, null);
         repository.add(plan);
 
         HouseholdPlan loaded = repository.findById(plan.id()).orElseThrow();
         loaded.removeItem(removed);
         BudgetItemId added =
-                loaded.addExpense(description("ETF"), money("20.00"), ExpenseCategory.SPAREN_INVESTIEREN, null);
+                loaded.addExpense(description("ETF"), money("20.00"), ExpenseCategory.SPAREN_INVESTIEREN, null, null);
         repository.save(loaded);
 
         assertThat(repository.findById(plan.id()).orElseThrow().items())
                 .extracting(BudgetItem::id)
-                .containsExactly(kept, added);
+                .containsExactly(added, kept);
     }
 
     /** PB-4 */
     @Test
     void savingAChangedItemUpdatesItAndKeepsItsCreationTime() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
-        BudgetItemId changed = plan.addExpense(description("Miete"), money("850.00"), ExpenseCategory.LEBENSUNTERHALT, null);
-        BudgetItemId later = plan.addIncome(description("Gehalt"), money("2500.00"), null);
+        BudgetItemId changed = plan.addExpense(description("Miete"), money("850.00"), ExpenseCategory.LEBENSUNTERHALT, null, null);
+        BudgetItemId later = plan.addIncome(description("Gehalt"), money("2500.00"), null, null);
         repository.add(plan);
         Instant createdAt = createdAtOf(changed);
 
         HouseholdPlan loaded = repository.findById(plan.id()).orElseThrow();
-        loaded.changeItem(changed, description("Warmmiete"), money("900.00"), ExpenseCategory.FREIZEIT_SPASS, null);
+        loaded.changeItem(changed, description("Warmmiete"), money("900.00"), ExpenseCategory.FREIZEIT_SPASS, null, null);
         repository.save(loaded);
 
         HouseholdPlan restored = repository.findById(plan.id()).orElseThrow();
@@ -125,29 +131,30 @@ class JdbcHouseholdPlanRepositoryTest {
     void storesAddedChangedAndRemovedNotes() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
         BudgetItemId rent = plan.addExpense(description("Miete"), money("850.00"), ExpenseCategory.LEBENSUNTERHALT,
+                null,
                 new BudgetItemNote("Warmmiete\ninkl. Nebenkosten"));
-        BudgetItemId salary = plan.addIncome(description("Gehalt"), money("2500.00"), null);
+        BudgetItemId salary = plan.addIncome(description("Gehalt"), money("2500.00"), null, null);
         repository.add(plan);
 
         HouseholdPlan loaded = repository.findById(plan.id()).orElseThrow();
         assertThat(loaded.items()).extracting(BudgetItem::note)
-                .containsExactly(Optional.of(new BudgetItemNote("Warmmiete\ninkl. Nebenkosten")), Optional.empty());
+                .containsExactly(Optional.empty(), Optional.of(new BudgetItemNote("Warmmiete\ninkl. Nebenkosten")));
 
-        loaded.changeItem(rent, description("Miete"), money("850.00"), ExpenseCategory.LEBENSUNTERHALT, null);
-        loaded.changeItem(salary, description("Gehalt"), money("2500.00"), null, new BudgetItemNote("netto"));
+        loaded.changeItem(rent, description("Miete"), money("850.00"), ExpenseCategory.LEBENSUNTERHALT, null, null);
+        loaded.changeItem(salary, description("Gehalt"), money("2500.00"), null, null, new BudgetItemNote("netto"));
         repository.save(loaded);
 
         assertThat(repository.findById(plan.id()).orElseThrow().items()).extracting(BudgetItem::note)
-                .containsExactly(Optional.empty(), Optional.of(new BudgetItemNote("netto")));
+                .containsExactly(Optional.of(new BudgetItemNote("netto")), Optional.empty());
     }
 
     /** Saving writes only what a command changed, not every item of the plan again. */
     @Test
-    void savingTakesOneQueryAndOneWriteHoweverManyItemsThePlanHas() {
+    void savingTakesTwoQueriesAndOneWriteHoweverManyItemsThePlanHas() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
         BudgetItemId first = null;
         for (int i = 0; i < 20; i++) {
-            BudgetItemId id = plan.addIncome(description("Einnahme " + i), money("10.00"), null);
+            BudgetItemId id = plan.addIncome(description("Einnahme " + i), money("10.00"), null, null);
             first = first == null ? id : first;
         }
         repository.add(plan);
@@ -156,24 +163,30 @@ class JdbcHouseholdPlanRepositoryTest {
                 new JdbcHouseholdPlanRepository(JdbcClient.create(countingStatements(dataSource, statements)));
 
         HouseholdPlan loaded = counting.findById(plan.id()).orElseThrow();
-        loaded.addIncome(description("Bonus"), money("5.00"), null);
+        loaded.addIncome(description("Bonus"), money("5.00"), null, null);
         statements.set(0);
         counting.save(loaded);
-        assertThat(statements).as("add").hasValue(2);
+        assertThat(statements).as("add").hasValue(3);
 
-        loaded.changeItem(first, description("Gehalt"), money("10.00"), null, null);
+        loaded.changeItem(first, description("Gehalt"), money("10.00"), null, null, null);
         statements.set(0);
         counting.save(loaded);
-        assertThat(statements).as("change").hasValue(2);
+        assertThat(statements).as("change").hasValue(3);
 
         loaded.removeItem(first);
         statements.set(0);
         counting.save(loaded);
-        assertThat(statements).as("remove").hasValue(2);
+        assertThat(statements).as("remove").hasValue(3);
+
+        BudgetItemId bottom = loaded.items().getLast().id();
+        loaded.changeItem(bottom, description("Gehalt"), money("10.00"), null, BudgetItemSubcategory.of("Gehalt"), null);
+        statements.set(0);
+        counting.save(loaded);
+        assertThat(statements).as("move on top of another group").hasValue(3);
 
         statements.set(0);
         counting.save(loaded);
-        assertThat(statements).as("nothing changed").hasValue(1);
+        assertThat(statements).as("nothing changed").hasValue(2);
         assertThat(repository.findById(plan.id()).orElseThrow().items()).hasSize(20);
     }
 
@@ -199,10 +212,59 @@ class JdbcHouseholdPlanRepositoryTest {
         }));
     }
 
+    /** UK-1, UK-4, UK-15 */
+    @Test
+    void storesSubcategoriesAndTheOrderOfItemsAndGroups() {
+        HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
+        BudgetItemId maintenance = expense(plan, "Wartung", "Auto");
+        BudgetItemId tax = expense(plan, "Steuer", "Auto");
+        BudgetItemId rent = expense(plan, "Kaltmiete", "Miete");
+        BudgetItemId other = expense(plan, "Kleinkram", null);
+        repository.add(plan);
+
+        HouseholdPlan loaded = repository.findById(plan.id()).orElseThrow();
+        loaded.reorderItems(List.of(maintenance, tax));
+        loaded.reorderSubcategories(LIVING, List.of(BudgetItemSubcategory.OTHER, BudgetItemSubcategory.of("Miete"),
+                BudgetItemSubcategory.of("Auto")));
+        repository.save(loaded);
+
+        HouseholdPlan restored = repository.findById(plan.id()).orElseThrow();
+        assertThat(restored.items()).extracting(BudgetItem::id).containsExactly(other, rent, maintenance, tax);
+        assertThat(restored.items()).extracting(item -> item.subcategory().map(BudgetItemSubcategory::value))
+                .containsExactly(Optional.empty(), Optional.of("Miete"), Optional.of("Auto"), Optional.of("Auto"));
+        assertThat(restored.subcategoryOrders()).isEqualTo(Map.of(LIVING, new SubcategoryOrder(List.of(
+                BudgetItemSubcategory.OTHER, BudgetItemSubcategory.of("Miete"), BudgetItemSubcategory.of("Auto")))));
+
+        restored.removeItem(rent);
+        repository.save(restored);
+
+        assertThat(repository.findById(plan.id()).orElseThrow().subcategoryOrders()).isEqualTo(Map.of(LIVING,
+                new SubcategoryOrder(List.of(BudgetItemSubcategory.OTHER, BudgetItemSubcategory.of("Auto")))));
+    }
+
+    /** UK-15 */
+    @Test
+    void ordersOfOnePlanDoNotAffectAnother() {
+        HouseholdPlan first = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
+        HouseholdPlan second = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2027));
+        for (HouseholdPlan plan : List.of(first, second)) {
+            expense(plan, "Wartung", "Auto");
+            expense(plan, "Kaltmiete", "Miete");
+            repository.add(plan);
+        }
+
+        HouseholdPlan loaded = repository.findById(first.id()).orElseThrow();
+        loaded.reorderSubcategories(LIVING, List.of(BudgetItemSubcategory.of("Miete"), BudgetItemSubcategory.of("Auto")));
+        repository.save(loaded);
+
+        assertThat(repository.findById(first.id()).orElseThrow().subcategoryOrders()).hasSize(1);
+        assertThat(repository.findById(second.id()).orElseThrow().subcategoryOrders()).isEmpty();
+    }
+
     @Test
     void removingTheLastItemLeavesAnEmptyPlan() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
-        BudgetItemId itemId = plan.addIncome(description("Gehalt"), money("100.00"), null);
+        BudgetItemId itemId = plan.addIncome(description("Gehalt"), money("100.00"), null, null);
         repository.add(plan);
 
         plan.removeItem(itemId);
@@ -227,13 +289,13 @@ class JdbcHouseholdPlanRepositoryTest {
                 HouseholdPlan first = repository.findById(planId).orElseThrow();
                 second.set(executor.submit(() -> transaction.executeWithoutResult(otherStatus -> {
                     HouseholdPlan other = repository.findById(planId).orElseThrow();
-                    other.addIncome(description("Bonus"), money("50.00"), null);
+                    other.addIncome(description("Bonus"), money("50.00"), null, null);
                     repository.save(other);
                 })));
                 assertThatThrownBy(() -> second.get().get(500, TimeUnit.MILLISECONDS))
                         .as("second transaction waits for the first one")
                         .isInstanceOf(TimeoutException.class);
-                first.addIncome(description("Gehalt"), money("100.00"), null);
+                first.addIncome(description("Gehalt"), money("100.00"), null, null);
                 repository.save(first);
             });
             second.get().get(10, TimeUnit.SECONDS);
@@ -241,7 +303,7 @@ class JdbcHouseholdPlanRepositoryTest {
 
         assertThat(repository.findById(planId).orElseThrow().items())
                 .extracting(item -> item.description().value())
-                .containsExactly("Gehalt", "Bonus");
+                .containsExactly("Bonus", "Gehalt");
     }
 
     @Test
@@ -281,6 +343,11 @@ class JdbcHouseholdPlanRepositoryTest {
                 .param("id", itemId.value())
                 .query((rs, rowNum) -> rs.getTimestamp("created_at").toInstant())
                 .single();
+    }
+
+    private static BudgetItemId expense(HouseholdPlan plan, String description, String subcategory) {
+        return plan.addExpense(description(description), money("10.00"), ExpenseCategory.LEBENSUNTERHALT,
+                BudgetItemSubcategory.ofNullable(subcategory), null);
     }
 
     private static BudgetItemDescription description(String value) {

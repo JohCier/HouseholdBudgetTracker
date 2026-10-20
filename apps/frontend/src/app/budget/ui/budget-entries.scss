@@ -1,0 +1,162 @@
+mat-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-top: 16px;
+}
+
+.area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.area-header,
+.section-header,
+.group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+h3,
+h4 {
+  margin: 0;
+}
+
+h3 {
+  font: var(--mat-sys-title-medium);
+}
+
+h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: var(--mat-sys-title-small);
+}
+
+.total,
+.amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+// Each section is marked by the color of the incomes or of its category (UK-19)
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 12px;
+  border-left: 4px solid var(--section-color);
+}
+
+.INCOME {
+  --section-color: var(--app-income-color);
+}
+
+.LEBENSUNTERHALT {
+  --section-color: var(--app-lebensunterhalt-color);
+}
+
+.FREIZEIT_SPASS {
+  --section-color: var(--app-freizeit-spass-color);
+}
+
+.SPAREN_INVESTIEREN {
+  --section-color: var(--app-sparen-investieren-color);
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--section-color);
+}
+
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.group {
+  border-radius: 8px;
+  background: var(--mat-sys-surface);
+}
+
+.group-header {
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.group-name {
+  flex: 1;
+}
+
+// Indented below the header of their group, so items and groups are told apart at a glance
+.items {
+  margin-left: 32px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface);
+}
+
+.description {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 0;
+  overflow-wrap: anywhere;
+}
+
+.handle {
+  cursor: grab;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.handle-space {
+  flex: 0 0 48px;
+}
+
+.income-amount {
+  color: var(--app-income-color);
+}
+
+.expense-amount {
+  color: var(--mat-sys-error);
+}
+
+.actions {
+  white-space: nowrap;
+}
+
+.note {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  color: var(--mat-sys-on-surface-variant);
+  padding: 16px 0 0;
+  margin: 0;
+}
+
+.cdk-drag-preview {
+  box-shadow: var(--mat-sys-level3);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.4;
+}
+
+.cdk-drag-animating,
+.cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder) {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}

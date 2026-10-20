@@ -3,6 +3,8 @@ import {
   addExpense,
   addIncome,
   categoryRow,
+  itemIn,
+  itemDescriptions,
   itemRow,
   openEditDialog,
   registerWithPlan,
@@ -19,35 +21,36 @@ test.describe('Posten bearbeiten', () => {
     page,
   }) => {
     await addIncome(page, 'Gehalt', '3000');
+    await addExpense(page, 'Wasser', '20', 'Lebensunterhalt');
     await addExpense(page, 'Miete', '850', 'Lebensunterhalt');
-    await addExpense(page, 'Kino', '20', 'Freizeit & Spaß');
-    await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('850,00 €');
+    await addExpense(page, 'Strom', '40', 'Lebensunterhalt');
+    await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('910,00 €');
 
     const dialog = await openEditDialog(page, 'Miete');
     await expect(dialog).toContainText('Ausgabe bearbeiten');
     await expect(dialog.getByLabel('Beschreibung')).toHaveValue('Miete');
     await expect(dialog.getByLabel('Betrag')).toHaveValue('850');
-    await expect(dialog.getByRole('combobox', { name: 'Kategorie' })).toContainText(
+    await expect(dialog.getByRole('combobox', { name: 'Kategorie', exact: true })).toContainText(
       'Lebensunterhalt',
     );
     await dialog.getByLabel('Betrag').fill('900');
     await dialog.getByRole('button', { name: 'Speichern' }).click();
     await expect(dialog).toBeHidden();
 
-    await expect(itemRow(page, 'Miete')).toContainText('Lebensunterhalt');
+    await expect(itemIn(page, 'Lebensunterhalt', 'Miete')).toBeVisible();
     await expect(itemRow(page, 'Miete')).toContainText('−900,00 €');
-    await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('900,00 €');
-    await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('30 % von max. 50 %');
-    await expect(tile(page, 'Ausgaben')).toHaveText('920,00 €');
+    await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('960,00 €');
+    await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('32 % von max. 50 %');
+    await expect(tile(page, 'Ausgaben')).toHaveText('960,00 €');
 
     // Saved on the server, and still in its original place (PB-4)
     await page.reload();
-    const rows = page.locator('app-budget-item-table tr[mat-row]');
-    await expect(rows).toHaveCount(3);
-    await expect(rows.nth(0)).toContainText('Kino');
-    await expect(rows.nth(1)).toContainText('Miete');
-    await expect(rows.nth(1)).toContainText('−900,00 €');
-    await expect(rows.nth(2)).toContainText('Gehalt');
+    await expect(itemDescriptions(page, 'Lebensunterhalt', 'Sonstiges')).toHaveText([
+      'Strom',
+      'Miete',
+      'Wasser',
+    ]);
+    await expect(itemRow(page, 'Miete')).toContainText('−900,00 €');
   });
 
   test('die Kategorie einer Ausgabe ändern verschiebt ihren Betrag (PB-1, PB-7)', async ({
@@ -60,12 +63,12 @@ test.describe('Posten bearbeiten', () => {
     await expect(categoryRow(page, 'Freizeit & Spaß')).toContainText('20 % von max. 30 %');
 
     const dialog = await openEditDialog(page, 'Fondssparen');
-    await dialog.getByRole('combobox', { name: 'Kategorie' }).click();
+    await dialog.getByRole('combobox', { name: 'Kategorie', exact: true }).click();
     await page.getByRole('option', { name: 'Sparen & Investieren' }).click();
     await dialog.getByRole('button', { name: 'Speichern' }).click();
     await expect(dialog).toBeHidden();
 
-    await expect(itemRow(page, 'Fondssparen')).toContainText('Sparen & Investieren');
+    await expect(itemIn(page, 'Sparen & Investieren', 'Fondssparen')).toBeVisible();
     await expect(categoryRow(page, 'Freizeit & Spaß')).toContainText('0 % von max. 30 %');
     await expect(categoryRow(page, 'Sparen & Investieren')).toContainText('400,00 €');
     await expect(categoryRow(page, 'Sparen & Investieren')).toContainText('20 % von mind. 20 %');
@@ -78,14 +81,14 @@ test.describe('Posten bearbeiten', () => {
 
     const dialog = await openEditDialog(page, 'Gehalt');
     await expect(dialog).toContainText('Einnahme bearbeiten');
-    await expect(dialog.getByRole('combobox', { name: 'Kategorie' })).toHaveCount(0);
+    await expect(dialog.getByRole('combobox', { name: 'Kategorie', exact: true })).toHaveCount(0);
     await expect(dialog.getByRole('radio')).toHaveCount(0);
     await dialog.getByLabel('Beschreibung').fill('Nettogehalt');
     await dialog.getByLabel('Betrag').fill('3200.50');
     await dialog.getByRole('button', { name: 'Speichern' }).click();
     await expect(dialog).toBeHidden();
 
-    await expect(itemRow(page, 'Nettogehalt')).toContainText('Einnahme');
+    await expect(itemIn(page, 'Einnahmen', 'Nettogehalt')).toBeVisible();
     await expect(itemRow(page, 'Nettogehalt')).toContainText('+3.200,50 €');
     await expect(tile(page, 'Einnahmen')).toHaveText('3.200,50 €');
   });

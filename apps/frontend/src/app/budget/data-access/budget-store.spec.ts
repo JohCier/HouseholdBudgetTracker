@@ -12,6 +12,7 @@ const item: BudgetItem = {
   amount: '2000.00',
   type: 'INCOME',
   category: null,
+  subcategory: null,
   note: null,
 };
 const overview = (year: number, items = [item]): HouseholdPlanOverview => ({
@@ -23,6 +24,8 @@ const overview = (year: number, items = [item]): HouseholdPlanOverview => ({
   expensesExceedIncome: false,
   categoryBreakdowns: [],
   items,
+  incomeGroups: items.length === 0 ? [] : [{ subcategory: 'Sonstiges', total: '2000.00', items }],
+  expenseCategories: [],
 });
 const yearOf = (planId: string) => Number(planId.replace('plan-', ''));
 const added: BudgetItem = { ...item, id: 'added', description: 'Bonus' };
@@ -47,6 +50,8 @@ describe('BudgetStore', () => {
         of(overview(yearOf(planId), [{ ...item, amount: '2100.00' }])),
       ),
       removeItem: vi.fn((planId: string) => of(overview(yearOf(planId), []))),
+      reorderItems: vi.fn((planId: string) => of(overview(yearOf(planId)))),
+      reorderSubcategories: vi.fn((planId: string) => of(overview(yearOf(planId)))),
     };
     TestBed.configureTestingModule({
       providers: [BudgetStore, { provide: BudgetApi, useValue: api }],
@@ -309,5 +314,80 @@ describe('BudgetStore', () => {
 
     expect(store.loadError()).toBe('Server nicht erreichbar.');
     expect(store.loading()).toBe(false);
+  });
+
+  it('suggests the predefined and the used subcategories of a type (UK-7, UK-8)', async () => {
+    api.getOverview.mockReturnValue(
+      of(
+        overview(2026, [
+          { ...item, subcategory: 'Mieteinnahmen' },
+          { ...added, subcategory: 'gehalt' },
+        ]),
+      ),
+    );
+    await store.selectYear(2026);
+
+    const incomes = store.subcategorySuggestions('INCOME');
+    expect(incomes).toContain('Mieteinnahmen');
+    expect(incomes).toContain('gehalt');
+    expect(incomes).not.toContain('Gehalt');
+    expect(incomes).toContain('Sonstiges');
+    expect(store.subcategorySuggestions('EXPENSE')).not.toContain('Mieteinnahmen');
+  });
+
+  // UK-14
+  it('shows a new order of the items right away and saves it', async () => {
+    api.getOverview.mockReturnValue(of(overview(2026, [item, added])));
+    await store.selectYear(2026);
+    api.getOverview.mockClear();
+    const response = new Subject<HouseholdPlanOverview>();
+    api.reorderItems.mockReturnValue(response);
+
+    const saved = store.reorderItems(['added', '1']);
+
+    expect(store.overview()!.incomeGroups[0].items.map((i) => i.id)).toEqual(['added', '1']);
+    expect(api.reorderItems).toHaveBeenCalledWith('plan-2026', { itemIds: ['added', '1'] });
+    response.next(overview(2026, [added, item]));
+    response.complete();
+    await saved;
+    expect(store.items()).toEqual([added, item]);
+    expect(api.getOverview).not.toHaveBeenCalled();
+  });
+
+  // UK-14
+  it('shows a new order of the groups right away and loads the stored one if saving fails', async () => {
+    const groups = {
+      ...overview(2026),
+      incomeGroups: [
+        { subcategory: 'Gehalt', total: '2000.00', items: [item] },
+        { subcategory: 'Sonstiges', total: '2000.00', items: [added] },
+      ],
+    };
+    api.getOverview.mockReturnValue(of(groups));
+    await store.selectYear(2026);
+    const response = new Subject<HouseholdPlanOverview>();
+    api.reorderSubcategories.mockReturnValue(response);
+
+    const saved = store.reorderSubcategories({ type: 'INCOME', category: null }, [
+      'Sonstiges',
+      'Gehalt',
+    ]);
+
+    expect(store.overview()!.incomeGroups.map((g) => g.subcategory)).toEqual([
+      'Sonstiges',
+      'Gehalt',
+    ]);
+    expect(api.reorderSubcategories).toHaveBeenCalledWith('plan-2026', {
+      type: 'INCOME',
+      subcategories: ['Sonstiges', 'Gehalt'],
+    });
+    response.error(new HttpErrorResponse({ status: 0 }));
+    await expect(saved).rejects.toThrow('Server nicht erreichbar.');
+    await vi.waitFor(() =>
+      expect(store.overview()!.incomeGroups.map((g) => g.subcategory)).toEqual([
+        'Gehalt',
+        'Sonstiges',
+      ]),
+    );
   });
 });

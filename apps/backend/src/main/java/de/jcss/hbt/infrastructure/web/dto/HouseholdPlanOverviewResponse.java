@@ -19,7 +19,10 @@ public record HouseholdPlanOverviewResponse(
         @Schema(implementation = String.class, format = "decimal", example = "700.00") BigDecimal balance,
         boolean expensesExceedIncome,
         List<CategoryBreakdownResponse> categoryBreakdowns,
-        @Schema(description = "Most recently added first") List<BudgetItemResponse> items
+        @Schema(description = "In display order, the topmost first") List<BudgetItemResponse> items,
+        @Schema(description = "The incomes grouped by subcategory, in display order") List<ItemGroupResponse> incomeGroups,
+        @Schema(description = "The categories that have expenses, in the order of the 50/30/20 rule")
+        List<CategoryItemsResponse> expenseCategories
 ) {
 
     public static HouseholdPlanOverviewResponse from(HouseholdPlanOverview overview) {
@@ -31,7 +34,9 @@ public record HouseholdPlanOverviewResponse(
                 overview.balance().value(),
                 overview.expensesExceedIncome(),
                 overview.categoryBreakdowns().stream().map(CategoryBreakdownResponse::from).toList(),
-                overview.items().stream().map(BudgetItemResponse::from).toList()
+                overview.items().stream().map(BudgetItemResponse::from).toList(),
+                overview.incomeGroups().stream().map(ItemGroupResponse::from).toList(),
+                overview.expenseCategories().stream().map(CategoryItemsResponse::from).toList()
         );
     }
 }

@@ -40,10 +40,16 @@ export async function registerWithPlan(page: Page): Promise<string> {
 
 export type Category = 'Lebensunterhalt' | 'Freizeit & Spaß' | 'Sparen & Investieren';
 
-export async function addIncome(page: Page, description: string, amount: string): Promise<void> {
+export async function addIncome(
+  page: Page,
+  description: string,
+  amount: string,
+  subcategory?: string,
+): Promise<void> {
   await page.getByRole('radio', { name: 'Einnahme' }).click();
   await page.getByLabel('Beschreibung').fill(description);
   await page.getByLabel('Betrag').fill(amount);
+  await fillSubcategory(page, subcategory);
   await page.getByRole('button', { name: 'Hinzufügen' }).click();
   await expect(itemRow(page, description)).toBeVisible();
 }
@@ -53,14 +59,24 @@ export async function addExpense(
   description: string,
   amount: string,
   category: Category,
+  subcategory?: string,
 ): Promise<void> {
   await page.getByRole('radio', { name: 'Ausgabe' }).click();
   await page.getByLabel('Beschreibung').fill(description);
   await page.getByLabel('Betrag').fill(amount);
-  await page.getByRole('combobox', { name: 'Kategorie' }).click();
+  await page.getByRole('combobox', { name: 'Kategorie', exact: true }).click();
   await page.getByRole('option', { name: category }).click();
+  await fillSubcategory(page, subcategory);
   await page.getByRole('button', { name: 'Hinzufügen' }).click();
   await expect(itemRow(page, description)).toBeVisible();
+}
+
+/** Types the subcategory, if any, and closes the suggestions, so they cover nothing (UK-6). */
+async function fillSubcategory(page: Page, subcategory: string | undefined): Promise<void> {
+  if (subcategory !== undefined) {
+    await page.getByRole('combobox', { name: 'Unterkategorie (optional)' }).fill(subcategory);
+    await page.keyboard.press('Tab');
+  }
 }
 
 /**
@@ -75,8 +91,38 @@ export async function openEditDialog(page: Page, description: string) {
   return dialog;
 }
 
+/** Entry of an item in the card "Einträge". */
 export function itemRow(page: Page, description: string) {
-  return page.getByRole('row').filter({ hasText: description });
+  return page.locator('app-budget-entries .item').filter({ hasText: description });
+}
+
+/** The incomes or one category of the expenses in the card "Einträge" (UK-9, UK-10). */
+export function entrySection(page: Page, section: 'Einnahmen' | Category) {
+  return page.locator(`app-budget-entries section[aria-label="${section}"]`);
+}
+
+/** Entry of an item within the incomes or one category of the expenses (UK-9, UK-10). */
+export function itemIn(page: Page, section: 'Einnahmen' | Category, description: string) {
+  return entrySection(page, section).locator('.item').filter({ hasText: description });
+}
+
+/** Subcategory group within the incomes or a category, with its sum and its items (UK-11). */
+export function itemGroup(page: Page, section: 'Einnahmen' | Category, subcategory: string) {
+  return entrySection(page, section).getByRole('group', { name: subcategory, exact: true });
+}
+
+/** Names of the subcategory groups of the incomes or a category, top first (UK-14). */
+export function groupNames(page: Page, section: 'Einnahmen' | Category) {
+  return entrySection(page, section).locator('.group-name');
+}
+
+/** Descriptions of the items of a group, top first (UK-14). */
+export function itemDescriptions(
+  page: Page,
+  section: 'Einnahmen' | Category,
+  subcategory: string,
+) {
+  return itemGroup(page, section, subcategory).locator('.item .description');
 }
 
 /** Value of one of the tiles "Einnahmen", "Ausgaben", "Saldo". */

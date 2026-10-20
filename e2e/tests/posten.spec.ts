@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { addExpense, addIncome, itemRow, registerWithPlan } from './support';
+import {
+  addExpense,
+  addIncome,
+  itemIn,
+  itemDescriptions,
+  itemRow,
+  registerWithPlan,
+} from './support';
 
 // docs/specs/posten.md
 test.describe('Posten', () => {
@@ -13,24 +20,22 @@ test.describe('Posten', () => {
     await addExpense(page, 'Miete', '850', 'Lebensunterhalt');
     await addIncome(page, 'Gehalt', '3000');
 
-    await expect(itemRow(page, 'Miete')).toContainText('Ausgabe');
-    await expect(itemRow(page, 'Miete')).toContainText('Lebensunterhalt');
+    await expect(itemIn(page, 'Lebensunterhalt', 'Miete')).toBeVisible();
     await expect(itemRow(page, 'Miete')).toContainText('−850,00 €');
-    await expect(itemRow(page, 'Gehalt')).toContainText('Einnahme');
-    await expect(itemRow(page, 'Gehalt')).toContainText('–');
+    await expect(itemIn(page, 'Einnahmen', 'Gehalt')).toBeVisible();
     await expect(itemRow(page, 'Gehalt')).toContainText('+3.000,00 €');
   });
 
-  test('der neueste Posten steht oben (PO-10)', async ({ page }) => {
-    await addIncome(page, 'Gehalt', '3000');
+  test('der neueste Posten steht oben in seiner Gruppe (PO-10, UK-17)', async ({ page }) => {
     await addExpense(page, 'Miete', '850', 'Lebensunterhalt');
-    await addExpense(page, 'Kino', '20', 'Freizeit & Spaß');
+    await addExpense(page, 'Strom', '60', 'Lebensunterhalt');
+    await addExpense(page, 'Wasser', '30', 'Lebensunterhalt');
 
-    const rows = page.locator('app-budget-item-table tr[mat-row]');
-    await expect(rows).toHaveCount(3);
-    await expect(rows.nth(0)).toContainText('Kino');
-    await expect(rows.nth(1)).toContainText('Miete');
-    await expect(rows.nth(2)).toContainText('Gehalt');
+    await expect(itemDescriptions(page, 'Lebensunterhalt', 'Sonstiges')).toHaveText([
+      'Wasser',
+      'Strom',
+      'Miete',
+    ]);
   });
 
   test('ungültige Beträge werden abgelehnt, ohne die Anfrage zu senden (PO-4)', async ({
@@ -74,7 +79,7 @@ test.describe('Posten', () => {
     await expect(page.getByText('Noch keine Einträge in diesem Haushaltsplan.')).toBeVisible();
 
     await page.getByRole('button', { name: 'Rückgängig' }).click();
-    await expect(itemRow(page, 'Miete')).toContainText('Lebensunterhalt');
+    await expect(itemIn(page, 'Lebensunterhalt', 'Miete')).toBeVisible();
     await expect(itemRow(page, 'Miete')).toContainText('−850,00 €');
 
     // Restored on the server, not only in the browser

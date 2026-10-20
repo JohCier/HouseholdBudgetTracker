@@ -15,6 +15,8 @@ public record BudgetItemResponse(
         ItemTypeDto type,
         @Schema(nullable = true, description = "Only set for expenses")
         ExpenseCategoryDto category,
+        @Schema(nullable = true, description = "Only set if the item has a subcategory; otherwise it is listed under \"Sonstiges\"")
+        String subcategory,
         @Schema(nullable = true, description = "Only set if the item has a note")
         String note
 ) {
@@ -26,6 +28,7 @@ public record BudgetItemResponse(
                 item.amount().value(),
                 ItemTypeDto.from(item.type()),
                 item.category() == null ? null : ExpenseCategoryDto.from(item.category()),
+                item.subcategory() == null ? null : item.subcategory().value(),
                 item.note() == null ? null : item.note().value()
         );
     }

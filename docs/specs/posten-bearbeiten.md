@@ -19,8 +19,8 @@ das frühere Nicht-Ziel „Keine Bearbeitung eines Postens" in [produkt.md](../p
   gelöscht und neu angelegt.
 - **PB-3**: Für die geänderten Werte gelten dieselben Regeln wie beim Erfassen (PO-3, PO-4, PO-5). Verletzt ein Wert
   eine Regel, bleibt der Posten unverändert.
-- **PB-4**: Ein geänderter Posten behält seine ID und seinen Platz in der Übersicht; maßgeblich für die Reihenfolge
-  (PO-10) bleibt der Zeitpunkt der ursprünglichen Erfassung.
+- **PB-4**: Ein geänderter Posten behält seine ID und seinen Platz in der Übersicht (PO-10); wechselt er die
+  Unterkategorie-Gruppe, steht er oben in der neuen (UK-17).
 - **PB-5**: Eine Änderung wird als Domain Event `BudgetItemChanged` protokolliert (HP-7). Bleiben alle Werte gleich,
   wird die Anfrage angenommen, aber nichts protokolliert.
 - **PB-6**: Das Ändern eines Postens, der nicht (mehr) zum Plan gehört, wird abgelehnt (wie PO-8).

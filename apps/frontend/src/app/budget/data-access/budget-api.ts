@@ -8,6 +8,8 @@ import {
   ChangeBudgetItemRequest,
   CreatedHouseholdPlanResponse,
   HouseholdPlanOverview,
+  ReorderBudgetItemsRequest,
+  ReorderSubcategoriesRequest,
   Year,
 } from '../budget.model';
 
@@ -59,6 +61,25 @@ export class BudgetApi {
   removeItem(planId: string, itemId: string): Observable<HouseholdPlanOverview> {
     return this.http.delete<HouseholdPlanOverview>(
       `${this.planUrl(planId)}/items/${encodeURIComponent(itemId)}`,
+    );
+  }
+
+  /** Puts the items of one subcategory group in a new order (UK-14). */
+  reorderItems(
+    planId: string,
+    request: ReorderBudgetItemsRequest,
+  ): Observable<HouseholdPlanOverview> {
+    return this.http.put<HouseholdPlanOverview>(`${this.planUrl(planId)}/item-order`, request);
+  }
+
+  /** Puts the subcategory groups of the incomes or of one category in a new order (UK-14). */
+  reorderSubcategories(
+    planId: string,
+    request: ReorderSubcategoriesRequest,
+  ): Observable<HouseholdPlanOverview> {
+    return this.http.put<HouseholdPlanOverview>(
+      `${this.planUrl(planId)}/subcategory-order`,
+      request,
     );
   }
 

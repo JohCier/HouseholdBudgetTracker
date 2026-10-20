@@ -150,6 +150,46 @@
         "tags" : [ "household-plans" ]
       }
     },
+    "/api/plans/{planId}/item-order" : {
+      "put" : {
+        "operationId" : "reorderItems",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "planId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReorderBudgetItemsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HouseholdPlanOverviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "household-plans" ]
+      }
+    },
     "/api/plans/{planId}/items/{itemId}" : {
       "delete" : {
         "operationId" : "removeItem",
@@ -233,6 +273,46 @@
         } ],
         "tags" : [ "household-plans" ]
       }
+    },
+    "/api/plans/{planId}/subcategory-order" : {
+      "put" : {
+        "operationId" : "reorderSubcategories",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "planId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReorderSubcategoriesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HouseholdPlanOverviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "household-plans" ]
+      }
     }
   },
   "components" : {
@@ -260,6 +340,13 @@
             "type" : "string",
             "description" : "Optional; empty or blank means no note",
             "nullable" : true
+          },
+          "subcategory" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string",
+            "description" : "Optional; empty or blank means none, i.e. \"Sonstiges\"",
+            "nullable" : true
           }
         }
       },
@@ -283,6 +370,13 @@
             "type" : "string",
             "description" : "Optional; empty or blank means no note",
             "nullable" : true
+          },
+          "subcategory" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string",
+            "description" : "Optional; empty or blank means none, i.e. \"Sonstiges\"",
+            "nullable" : true
           }
         }
       },
@@ -300,7 +394,7 @@
         }
       },
       "BudgetItemResponse" : {
-        "required" : [ "amount", "category", "description", "id", "note", "type" ],
+        "required" : [ "amount", "category", "description", "id", "note", "subcategory", "type" ],
         "type" : "object",
         "properties" : {
           "amount" : {
@@ -327,11 +421,15 @@
             "description" : "Only set if the item has a note",
             "nullable" : true
           },
+          "subcategory" : {
+            "type" : "string",
+            "description" : "Only set if the item has a subcategory; otherwise it is listed under \"Sonstiges\"",
+            "nullable" : true
+          },
           "type" : {
             "$ref" : "#/components/schemas/ItemType"
           }
-        },
-        "description" : "Most recently added first"
+        }
       },
       "CategoryBreakdownResponse" : {
         "required" : [ "actualPercentageOfIncome", "category", "targetDirection", "targetMet", "targetPercentageOfIncome", "total", "unplanned" ],
@@ -367,6 +465,27 @@
           }
         }
       },
+      "CategoryItemsResponse" : {
+        "required" : [ "category", "groups", "total" ],
+        "type" : "object",
+        "properties" : {
+          "category" : {
+            "$ref" : "#/components/schemas/ExpenseCategory"
+          },
+          "groups" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemGroupResponse"
+            }
+          },
+          "total" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "11350.0"
+          }
+        },
+        "description" : "The categories that have expenses, in the order of the 50/30/20 rule"
+      },
       "ChangeBudgetItemRequest" : {
         "required" : [ "amount", "description" ],
         "type" : "object",
@@ -389,6 +508,13 @@
             "minLength" : 0,
             "type" : "string",
             "description" : "Optional; empty or blank means no note",
+            "nullable" : true
+          },
+          "subcategory" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string",
+            "description" : "Optional; empty or blank means none, i.e. \"Sonstiges\"",
             "nullable" : true
           }
         }
@@ -421,11 +547,11 @@
       },
       "ExpenseCategory" : {
         "type" : "string",
-        "description" : "Required for an expense, must be absent for an income",
+        "description" : "Required for the expenses, must be absent for the incomes",
         "enum" : [ "LEBENSUNTERHALT", "FREIZEIT_SPASS", "SPAREN_INVESTIEREN" ]
       },
       "HouseholdPlanOverviewResponse" : {
-        "required" : [ "balance", "categoryBreakdowns", "expensesExceedIncome", "id", "items", "totalExpense", "totalIncome", "year" ],
+        "required" : [ "balance", "categoryBreakdowns", "expenseCategories", "expensesExceedIncome", "id", "incomeGroups", "items", "totalExpense", "totalIncome", "year" ],
         "type" : "object",
         "properties" : {
           "balance" : {
@@ -439,6 +565,13 @@
               "$ref" : "#/components/schemas/CategoryBreakdownResponse"
             }
           },
+          "expenseCategories" : {
+            "type" : "array",
+            "description" : "The categories that have expenses, in the order of the 50/30/20 rule",
+            "items" : {
+              "$ref" : "#/components/schemas/CategoryItemsResponse"
+            }
+          },
           "expensesExceedIncome" : {
             "type" : "boolean"
           },
@@ -446,9 +579,16 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "incomeGroups" : {
+            "type" : "array",
+            "description" : "The incomes grouped by subcategory, in display order",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemGroupResponse"
+            }
+          },
           "items" : {
             "type" : "array",
-            "description" : "Most recently added first",
+            "description" : "In display order, the topmost first",
             "items" : {
               "$ref" : "#/components/schemas/BudgetItemResponse"
             }
@@ -470,9 +610,69 @@
           }
         }
       },
+      "ItemGroupResponse" : {
+        "required" : [ "items", "subcategory", "total" ],
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/BudgetItemResponse"
+            }
+          },
+          "subcategory" : {
+            "type" : "string",
+            "description" : "\"Sonstiges\" for the items without a subcategory",
+            "example" : "Auto"
+          },
+          "total" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "1750.0"
+          }
+        }
+      },
       "ItemType" : {
         "type" : "string",
         "enum" : [ "INCOME", "EXPENSE" ]
+      },
+      "ReorderBudgetItemsRequest" : {
+        "required" : [ "itemIds" ],
+        "type" : "object",
+        "properties" : {
+          "itemIds" : {
+            "minItems" : 1,
+            "type" : "array",
+            "description" : "All items of one group, each once, the topmost first",
+            "items" : {
+              "type" : "string",
+              "description" : "All items of one group, each once, the topmost first",
+              "format" : "uuid"
+            }
+          }
+        }
+      },
+      "ReorderSubcategoriesRequest" : {
+        "required" : [ "subcategories", "type" ],
+        "type" : "object",
+        "properties" : {
+          "category" : {
+            "$ref" : "#/components/schemas/ExpenseCategory"
+          },
+          "subcategories" : {
+            "minItems" : 1,
+            "type" : "array",
+            "description" : "All subcategories of the section, each once, the topmost first; \"Sonstiges\" for the items without one",
+            "items" : {
+              "minLength" : 1,
+              "type" : "string",
+              "description" : "All subcategories of the section, each once, the topmost first; \"Sonstiges\" for the items without one"
+            }
+          },
+          "type" : {
+            "$ref" : "#/components/schemas/ItemType"
+          }
+        }
       },
       "TargetDirection" : {
         "type" : "string",

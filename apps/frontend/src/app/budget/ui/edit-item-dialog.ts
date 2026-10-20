@@ -8,11 +8,18 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { BudgetItem, EXPENSE_CATEGORIES, ExpenseCategory } from '../budget.model';
 import { BudgetStore } from '../data-access/budget-store';
-import { NOTE_MAX_LENGTH, maxTwoDecimals, noteOf } from './item-validators';
+import {
+  NOTE_MAX_LENGTH,
+  SUBCATEGORY_MAX_LENGTH,
+  maxTwoDecimals,
+  noteOf,
+  subcategoryOf,
+} from './item-validators';
+import { SubcategoryField } from './subcategory-field';
 
 /**
- * Changes description, amount, note and, for an expense, the category of an item. Emptying the
- * note removes it (PN-4). Whether it is
+ * Changes description, amount, subcategory, note and, for an expense, the category of an item.
+ * Emptying the note removes it (PN-4), emptying the subcategory moves the item to "Sonstiges" (UK-4). Whether it is
  * an income or an expense cannot be changed. Closes with `true` once the change is saved;
  * on an error it stays open and shows the message, so nothing typed is lost.
  * Needs the dashboard's {@link BudgetStore}, so it is opened with the dashboard's injector.
@@ -27,6 +34,7 @@ import { NOTE_MAX_LENGTH, maxTwoDecimals, noteOf } from './item-validators';
     MatInputModule,
     MatSelectModule,
     TextFieldModule,
+    SubcategoryField,
   ],
   template: `
     <h2 mat-dialog-title>{{ isExpense ? 'Ausgabe' : 'Einnahme' }} bearbeiten</h2>
@@ -71,6 +79,11 @@ import { NOTE_MAX_LENGTH, maxTwoDecimals, noteOf } from './item-validators';
             }
           </mat-form-field>
         }
+
+        <app-subcategory-field
+          [control]="form.controls.subcategory"
+          [suggestions]="subcategories"
+        />
 
         <mat-form-field>
           <mat-label>Notiz (optional)</mat-label>
@@ -117,6 +130,7 @@ export class EditItemDialog {
   protected readonly categories = EXPENSE_CATEGORIES;
   protected readonly noteMaxLength = NOTE_MAX_LENGTH;
   protected readonly isExpense = this.item.type === 'EXPENSE';
+  protected readonly subcategories = this.store.subcategorySuggestions(this.item.type);
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
 
@@ -136,6 +150,10 @@ export class EditItemDialog {
       { value: this.item.category, disabled: !this.isExpense },
       Validators.required,
     ),
+    subcategory: this.fb.control(
+      this.item.subcategory ?? '',
+      Validators.maxLength(SUBCATEGORY_MAX_LENGTH),
+    ),
     note: this.fb.control(this.item.note ?? '', Validators.maxLength(NOTE_MAX_LENGTH)),
   });
 
@@ -144,7 +162,7 @@ export class EditItemDialog {
       this.form.markAllAsTouched();
       return;
     }
-    const { description, amount, category, note } = this.form.getRawValue();
+    const { description, amount, category, subcategory, note } = this.form.getRawValue();
     this.saving.set(true);
     this.error.set(null);
     try {
@@ -152,6 +170,7 @@ export class EditItemDialog {
         description: description.trim(),
         amount: String(amount),
         ...(this.isExpense ? { category: category! } : {}),
+        ...subcategoryOf(subcategory),
         ...noteOf(note),
       });
       this.dialogRef.close(true);

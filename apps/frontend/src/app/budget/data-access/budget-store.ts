@@ -7,7 +7,11 @@ import {
   BudgetItem,
   ChangeBudgetItemRequest,
   HouseholdPlanOverview,
+  ItemGroup,
+  ItemSection,
+  ItemType,
   Year,
+  subcategorySuggestions,
 } from '../budget.model';
 import { FIRST_YEAR, LAST_YEAR, currentYear } from '../year';
 import { BudgetApi } from './budget-api';
@@ -46,6 +50,9 @@ export class BudgetStore {
   /** True once it is known that the selected year has no plan yet. */
   readonly planMissing = computed(() => this._overview() === null);
   readonly items = computed<BudgetItem[]>(() => this._overview()?.items ?? []);
+  /** Subcategories to suggest for new or changed incomes resp. expenses (UK-7). */
+  readonly incomeSubcategories = computed(() => subcategorySuggestions('INCOME', this.items()));
+  readonly expenseSubcategories = computed(() => subcategorySuggestions('EXPENSE', this.items()));
   readonly loading = this._loading.asReadonly();
   readonly loadError = this._loadError.asReadonly();
 
@@ -107,6 +114,10 @@ export class BudgetStore {
     );
   }
 
+  subcategorySuggestions(type: ItemType): string[] {
+    return type === 'INCOME' ? this.incomeSubcategories() : this.expenseSubcategories();
+  }
+
   /** Gives an item of the selected year's plan new values; it keeps its id and position. */
   async changeItem(itemId: string, request: ChangeBudgetItemRequest): Promise<void> {
     return this.mutate(this.api.changeItem(this.requirePlanId(), itemId, request));
@@ -117,13 +128,42 @@ export class BudgetStore {
   }
 
   /**
-   * Re-creates a previously removed item (with a new id) and its note in the plan it was
-   * removed from, even if another year has been selected in the meantime (PO-9, PN-8).
+   * Puts the items of one subcategory group in a new order (UK-14). The new order shows right
+   * away; should saving it fail, the overview is loaded again, so the stored order shows.
+   */
+  reorderItems(itemIds: string[]): Promise<void> {
+    const planId = this.requirePlanId();
+    this.showReordered((groups) => groups.map((group) => withItemOrder(group, itemIds)));
+    return this.mutateOrReload(this.api.reorderItems(planId, { itemIds }));
+  }
+
+  /** Puts the subcategory groups of a section in a new order, see {@link reorderItems} (UK-14). */
+  reorderSubcategories(section: ItemSection, subcategories: string[]): Promise<void> {
+    const planId = this.requirePlanId();
+    this.showReordered((groups, groupSection) =>
+      groupSection.type === section.type && groupSection.category === section.category
+        ? withGroupOrder(groups, subcategories)
+        : groups,
+    );
+    return this.mutateOrReload(
+      this.api.reorderSubcategories(planId, {
+        type: section.type,
+        ...(section.category ? { category: section.category } : {}),
+        subcategories,
+      }),
+    );
+  }
+
+  /**
+   * Re-creates a previously removed item (with a new id), its subcategory and its note in the
+   * plan it was removed from, even if another year has been selected in the meantime (PO-9,
+   * PN-8, UK-4).
    */
   restoreItem(planId: string, item: BudgetItem): Promise<void> {
     const request = {
       description: item.description,
       amount: item.amount,
+      ...(item.subcategory ? { subcategory: item.subcategory } : {}),
       ...(item.note ? { note: item.note } : {}),
     };
     const added =
@@ -139,6 +179,33 @@ export class BudgetStore {
       throw new Error(`Für ${this._year()} gibt es noch keinen Haushaltsplan.`);
     }
     return planId;
+  }
+
+  /** Shows the overview with the groups of each section rearranged; sums stay as they are (UK-13). */
+  private showReordered(
+    rearrange: (groups: ItemGroup[], section: ItemSection) => ItemGroup[],
+  ): void {
+    const overview = this._overview();
+    if (!overview) {
+      return;
+    }
+    this._overview.set({
+      ...overview,
+      incomeGroups: rearrange(overview.incomeGroups, { type: 'INCOME', category: null }),
+      expenseCategories: overview.expenseCategories.map((category) => ({
+        ...category,
+        groups: rearrange(category.groups, { type: 'EXPENSE', category: category.category }),
+      })),
+    });
+  }
+
+  private async mutateOrReload(request: Observable<HouseholdPlanOverview>): Promise<void> {
+    try {
+      await this.mutate(request);
+    } catch (error) {
+      void this.load();
+      throw error;
+    }
   }
 
   private async mutate(request: Observable<HouseholdPlanOverview>): Promise<void> {
@@ -164,4 +231,20 @@ export class BudgetStore {
     this._loadError.set(null);
     this._loading.set(false);
   }
+}
+
+/** The group with its items in the given order, if they are its items; otherwise unchanged. */
+function withItemOrder(group: ItemGroup, itemIds: string[]): ItemGroup {
+  const items = itemIds.map((id) => group.items.find((item) => item.id === id));
+  return items.length === group.items.length && items.every((item) => item !== undefined)
+    ? { ...group, items: items as BudgetItem[] }
+    : group;
+}
+
+/** The groups in the given order of their names, if they are exactly these; otherwise unchanged. */
+function withGroupOrder(groups: ItemGroup[], subcategories: string[]): ItemGroup[] {
+  const ordered = subcategories.map((name) => groups.find((group) => group.subcategory === name));
+  return ordered.length === groups.length && ordered.every((group) => group !== undefined)
+    ? (ordered as ItemGroup[])
+    : groups;
 }

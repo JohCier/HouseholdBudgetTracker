@@ -4,10 +4,7 @@
   align-items: center;
   gap: 16px;
 
-  // One fixed color per category, the same in pie and legend (TD-2)
-  --app-lebensunterhalt-color: light-dark(#2a78d6, #3987e5);
-  --app-freizeit-spass-color: light-dark(#eb6834, #d95926);
-  --app-sparen-investieren-color: light-dark(#1baf7a, #199e70);
+  // The colors of the categories are defined globally in styles.scss (TD-2, UK-19)
 }
 
 .pie {
