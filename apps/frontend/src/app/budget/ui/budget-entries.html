@@ -73,14 +73,20 @@
     (cdkDropListDropped)="dropGroup(section, $event)"
   >
     @for (group of section.groups; track group.subcategory; let groupIndex = $index) {
-      <div class="group" cdkDrag role="group" [attr.aria-label]="group.subcategory">
-        <div class="group-header">
+      <div
+        class="group"
+        cdkDrag
+        [cdkDragDisabled]="section.groups.length < 2"
+        role="group"
+        [attr.aria-label]="group.subcategory"
+      >
+        <!-- The whole header grabs the group, not just the small handle (UK-14) -->
+        <div class="group-header" cdkDragHandle [class.draggable]="section.groups.length > 1">
           @if (section.groups.length > 1) {
             <button
               matIconButton
               type="button"
               class="handle"
-              cdkDragHandle
               matTooltip="Ziehen zum Verschieben"
               [attr.aria-label]="'Unterkategorie ' + group.subcategory + ' verschieben'"
               (keydown.arrowup)="moveGroupBy(section, groupIndex, -1, $event)"

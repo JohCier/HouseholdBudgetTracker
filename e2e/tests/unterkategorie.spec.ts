@@ -20,7 +20,7 @@ function groupTotal(page: Page, section: Parameters<typeof itemGroup>[1], subcat
 }
 
 /**
- * Drags an entry by its handle onto the place of another one, in small steps, as the drag and
+ * Drags an entry by what it is grabbed at onto the place of another one, in small steps, as the drag and
  * drop of the page only starts after the pointer has moved a bit (UK-14). Waits until the new
  * order has been saved. On a slow machine the page may not pick up the gesture; as long as no
  * new order has been sent, the gesture is repeated, so a lost gesture does not fail the test but
@@ -30,16 +30,27 @@ async function drag(page: Page, handle: Locator, target: Locator): Promise<void>
   const isOrder = (request: Request) => request.method() === 'PUT' && /-order$/.test(request.url());
   let sent: Request | undefined;
   await expect(async () => {
+    // The mouse only reaches what is in view; the page may have scrolled while entries were added
+    await handle.scrollIntoViewIfNeeded();
     const from = (await handle.boundingBox())!;
     const to = (await target.boundingBox())!;
     const x = from.x + from.width / 2;
     const request = page.waitForRequest(isOrder, { timeout: 3000 });
     request.catch(() => undefined);
-    await page.mouse.move(x, from.y + from.height / 2);
+    const y = from.y + from.height / 2;
+    // Names what the pointer grabs, so a gesture the page ignores can be told apart from one aimed wrong
+    const grabbed = await page.evaluate(
+      ([px, py]) => document.elementFromPoint(px, py)?.outerHTML.slice(0, 300) ?? 'nothing',
+      [x, y],
+    );
+    await page.mouse.move(x, y);
     await page.mouse.down();
     try {
-      await page.mouse.move(x, from.y + from.height / 2 + 10, { steps: 5 });
-      await expect(page.locator('.cdk-drag-preview')).toBeVisible({ timeout: 2000 });
+      await page.mouse.move(x, y + 10, { steps: 5 });
+      await expect(
+        page.locator('.cdk-drag-preview'),
+        `drag preview after grabbing ${grabbed} at ${Math.round(x)}, ${Math.round(y)}`,
+      ).toBeVisible({ timeout: 2000 });
       await page.mouse.move(x, to.y + 4, { steps: 20 });
     } finally {
       await page.mouse.up();
@@ -240,6 +251,21 @@ test.describe('Unterkategorie', () => {
     await expect(groupNames(page, 'Lebensunterhalt')).toHaveText(['Miete', 'Auto']);
 
     await page.reload();
+    await expect(groupNames(page, 'Lebensunterhalt')).toHaveText(['Miete', 'Auto']);
+  });
+
+  test('eine Gruppe lässt sich auch an ihrem Namen greifen und verschieben (UK-14)', async ({
+    page,
+  }) => {
+    await addExpense(page, 'Miete', '9600', 'Lebensunterhalt', 'Miete');
+    await addExpense(page, 'Wartung', '400', 'Lebensunterhalt', 'Auto');
+    await expect(groupNames(page, 'Lebensunterhalt')).toHaveText(['Auto', 'Miete']);
+
+    await drag(
+      page,
+      itemGroup(page, 'Lebensunterhalt', 'Miete').locator('.group-name'),
+      itemGroup(page, 'Lebensunterhalt', 'Auto'),
+    );
     await expect(groupNames(page, 'Lebensunterhalt')).toHaveText(['Miete', 'Auto']);
   });
 
