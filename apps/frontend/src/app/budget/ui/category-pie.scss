@@ -1,0 +1,99 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+
+  // One fixed color per category, the same in pie and legend (TD-2)
+  --app-lebensunterhalt-color: light-dark(#2a78d6, #3987e5);
+  --app-freizeit-spass-color: light-dark(#eb6834, #d95926);
+  --app-sparen-investieren-color: light-dark(#1baf7a, #199e70);
+}
+
+.pie {
+  width: 100%;
+  max-width: 200px;
+}
+
+.slice {
+  // A thin gap in the surface color separates neighbouring slices
+  stroke: var(--mat-sys-surface);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.empty {
+  fill: var(--mat-sys-surface-container-highest);
+}
+
+.empty-hint {
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.LEBENSUNTERHALT {
+  fill: var(--app-lebensunterhalt-color);
+  background-color: var(--app-lebensunterhalt-color);
+}
+
+.FREIZEIT_SPASS {
+  fill: var(--app-freizeit-spass-color);
+  background-color: var(--app-freizeit-spass-color);
+}
+
+.SPAREN_INVESTIEREN {
+  fill: var(--app-sparen-investieren-color);
+  background-color: var(--app-sparen-investieren-color);
+}
+
+.legend {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legend-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.swatch {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin-top: 4px;
+  border-radius: 3px;
+}
+
+.legend-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.legend-header {
+  display: flex;
+  justify-content: space-between;
+  font: var(--mat-sys-title-small);
+}
+
+.total {
+  font-variant-numeric: tabular-nums;
+}
+
+.ratio,
+.unplanned {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.missed .ratio {
+  color: var(--mat-sys-error);
+}
