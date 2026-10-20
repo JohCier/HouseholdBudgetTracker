@@ -74,9 +74,9 @@ legt die Farben der Kategorien neu fest (UK-19), auch für die Torte (TD-2).
 
 - **UK-14**: Der Benutzer kann die Unterkategorie-Gruppen innerhalb einer Kategorie bzw. im Bereich „Einnahmen" frei
   umsortieren, ebenso die Posten innerhalb einer Gruppe. Er verschiebt dazu eine Gruppe oder einen Posten per Ziehen und
-  Ablegen an einem Griff. Die Bereiche „Einnahmen" und „Ausgaben" und die Kategorien behalten ihre feste Reihenfolge
-  (UK-9, UK-10), und ein Posten wechselt durch Verschieben nicht seine Gruppe; dafür ändert der Benutzer seine
-  Unterkategorie (UK-4).
+  Ablegen an einem Griff; eine Gruppe greift er außerdem an ihrer ganzen Kopfzeile mit dem Namen. Die Bereiche
+  „Einnahmen" und „Ausgaben" und die Kategorien behalten ihre feste Reihenfolge (UK-9, UK-10), und ein Posten wechselt
+  durch Verschieben nicht seine Gruppe; dafür ändert der Benutzer seine Unterkategorie (UK-4).
 - **UK-15**: Die Reihenfolge gehört zum Plan und wird gespeichert: Sie gilt nach dem Neuladen, nach erneuter Anmeldung
   und auf anderen Geräten. Jeder Plan (jedes Jahr) hat seine eigene Reihenfolge. Wie die übrigen Werte des Plans ändert
   sie nur der Besitzer (PO-6).
@@ -186,9 +186,9 @@ legt die Farben der Kategorien neu fest (UK-19), auch für die Torte (TD-2).
 - Frontend: `budget/ui/subcategory-field.ts` (Feld „Unterkategorie (optional)" mit `mat-autocomplete`, UK-6) in
   `add-item-form` und `edit-item-dialog`; Vorschläge aus `subcategorySuggestions` in `budget.model.ts` (UK-7, UK-8).
   `budget/ui/budget-entries.ts` ersetzt die Tabelle `budget-item-table.ts`: Bereiche, Kategorien und Gruppen mit
-  Summen, Verschieben mit `@angular/cdk/drag-drop` am Griff oder mit den Pfeiltasten auf dem Griff (UK-14);
-  `BudgetStore.reorderItems` und `reorderSubcategories` zeigen die neue Reihenfolge sofort und laden die Übersicht neu,
-  wenn das Speichern scheitert. Farbvariablen `--app-income-color` und `--app-<kategorie>-color` in `styles.scss`, auch
+  Summen, Verschieben mit `@angular/cdk/drag-drop` am Griff (bei Gruppen an der ganzen Kopfzeile) oder mit den
+  Pfeiltasten auf dem Griff (UK-14); `BudgetStore.reorderItems` und `reorderSubcategories` zeigen die neue Reihenfolge
+  sofort und laden die Übersicht neu, wenn das Speichern scheitert. Farbvariablen `--app-income-color` und `--app-<kategorie>-color` in `styles.scss`, auch
   für die Torte (UK-19)
 - Tests: `BudgetItemSubcategoryTest`, `SubcategoryOrderTest`, `HouseholdPlanSubcategoryTest`, `HouseholdPlanTest`,
   `HouseholdPlanOverviewGroupsTest`, `HouseholdPlanControllerTest`, `JdbcHouseholdPlanRepositoryTest`,

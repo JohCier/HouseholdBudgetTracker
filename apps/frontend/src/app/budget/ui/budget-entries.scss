@@ -120,6 +120,11 @@ h4 {
   color: var(--mat-sys-on-surface-variant);
 }
 
+.group-header.draggable {
+  cursor: grab;
+  user-select: none;
+}
+
 .group-name {
   flex: 1;
 }

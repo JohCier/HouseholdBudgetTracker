@@ -20,7 +20,7 @@ function groupTotal(page: Page, section: Parameters<typeof itemGroup>[1], subcat
 }
 
 /**
- * Drags an entry by its handle onto the place of another one, in small steps, as the drag and
+ * Drags an entry by what it is grabbed at onto the place of another one, in small steps, as the drag and
  * drop of the page only starts after the pointer has moved a bit (UK-14). Waits until the new
  * order has been saved. On a slow machine the page may not pick up the gesture; as long as no
  * new order has been sent, the gesture is repeated, so a lost gesture does not fail the test but
@@ -240,6 +240,21 @@ test.describe('Unterkategorie', () => {
     await expect(groupNames(page, 'Lebensunterhalt')).toHaveText(['Miete', 'Auto']);
 
     await page.reload();
+    await expect(groupNames(page, 'Lebensunterhalt')).toHaveText(['Miete', 'Auto']);
+  });
+
+  test('eine Gruppe lässt sich auch an ihrem Namen greifen und verschieben (UK-14)', async ({
+    page,
+  }) => {
+    await addExpense(page, 'Miete', '9600', 'Lebensunterhalt', 'Miete');
+    await addExpense(page, 'Wartung', '400', 'Lebensunterhalt', 'Auto');
+    await expect(groupNames(page, 'Lebensunterhalt')).toHaveText(['Auto', 'Miete']);
+
+    await drag(
+      page,
+      itemGroup(page, 'Lebensunterhalt', 'Miete').locator('.group-name'),
+      itemGroup(page, 'Lebensunterhalt', 'Auto'),
+    );
     await expect(groupNames(page, 'Lebensunterhalt')).toHaveText(['Miete', 'Auto']);
   });
 
