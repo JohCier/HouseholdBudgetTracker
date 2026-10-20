@@ -4,6 +4,7 @@ import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
 import de.jcss.hbt.domain.exception.DomainValidationException;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemChanged;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
+import de.jcss.hbt.domain.householdplan.event.HouseholdPlanDeleted;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCreated;
 import de.jcss.hbt.domain.householdplan.event.IncomeAdded;
@@ -151,6 +152,21 @@ class HouseholdPlanTest {
 
         assertThat(plan.items()).isEmpty();
         assertThat(plan.pullDomainEvents()).isEmpty();
+    }
+
+    /** PL-6 */
+    @Test
+    void deleteRecordsOneEventWithTheNumberOfItemsAndNoneForTheItems() {
+        HouseholdPlan plan = emptyPlan();
+        plan.addIncome(salary, amount, null, null);
+        plan.addIncome(salary, amount, null, null);
+        plan.pullDomainEvents();
+
+        plan.delete();
+
+        assertThat(plan.pullDomainEvents())
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+                .containsExactly(new HouseholdPlanDeleted(planId, plan.year(), 2, Instant.now()));
     }
 
     @Test

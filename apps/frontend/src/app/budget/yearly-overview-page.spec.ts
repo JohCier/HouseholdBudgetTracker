@@ -132,6 +132,43 @@ describe('YearlyOverviewPage', () => {
     expect(navigate).toHaveBeenCalledExactlyOnceWith(['/jahre', currentYear() + 1]);
   });
 
+  // PL-7, PL-9
+  it('deletes the plan of a row after asking without opening it, and stays on the overview', async () => {
+    dialog.open.mockReturnValue({ afterClosed: () => of(true) });
+    const element = await render([entry(currentYear()), entry(currentYear() - 1)]);
+
+    row(element, currentYear())
+      .querySelector<HTMLButtonElement>(`button[aria-label="Plan ${currentYear()} löschen"]`)!
+      .click();
+
+    expect(dialog.open).toHaveBeenCalledWith(expect.anything(), {
+      data: { year: currentYear() },
+    });
+    http.expectOne('/api/plans/years').flush({ years: [entry(currentYear() - 1)] });
+    await vi.waitFor(() =>
+      expect(snackBar.open).toHaveBeenCalledWith(
+        `Plan ${currentYear()} gelöscht.`,
+        undefined,
+        { duration: 3000 },
+      ),
+    );
+    expect(navigate).not.toHaveBeenCalled();
+    expect(element.querySelectorAll('tbody tr')).toHaveLength(1);
+  });
+
+  // PL-8
+  it('changes nothing if deleting a plan is cancelled', async () => {
+    dialog.open.mockReturnValue({ afterClosed: () => of(undefined) });
+    const element = await render([entry(currentYear())]);
+
+    row(element, currentYear())
+      .querySelector<HTMLButtonElement>(`button[aria-label="Plan ${currentYear()} löschen"]`)!
+      .click();
+
+    expect(snackBar.open).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
   // JU-13, JU-12
   it('offers to create the plan of the current year if the user has none yet', async () => {
     const element = await render([]);

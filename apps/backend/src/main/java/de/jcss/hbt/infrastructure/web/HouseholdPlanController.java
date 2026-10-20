@@ -18,6 +18,7 @@ import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
 import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.CopyHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
+import de.jcss.hbt.domain.householdplan.command.DeleteHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderBudgetItemsCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderSubcategoriesCommand;
@@ -110,6 +111,13 @@ public class HouseholdPlanController {
                 HouseholdPlanId.of(planId), Year.of(request.targetYear()), Boolean.TRUE.equals(request.overwrite())));
         return ResponseEntity.status(copied.overwritten() ? HttpStatus.OK : HttpStatus.CREATED)
                 .body(CopiedHouseholdPlanResponse.from(copied));
+    }
+
+    /** Deletes a plan with all its items (PL-1, PL-2): 204, or 404 if it is not a plan of the user. */
+    @DeleteMapping("/{planId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deletePlan(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId) {
+        plans.deletePlan(new DeleteHouseholdPlanCommand(owner(user), HouseholdPlanId.of(planId)));
     }
 
     @PostMapping("/{planId}/incomes")

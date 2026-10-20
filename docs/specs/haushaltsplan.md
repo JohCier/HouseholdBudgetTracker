@@ -46,7 +46,7 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
 
 ## Nicht im Umfang
 
-- Plan löschen oder auf ein anderes Jahr verschieben
+- Plan auf ein anderes Jahr verschieben; löschen siehe [plan-loeschen.md](plan-loeschen.md)
 - Plan mit anderen Benutzern teilen
 
 ## Umsetzung

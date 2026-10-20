@@ -60,6 +60,17 @@ describe('BudgetApi', () => {
     expect(await result).toEqual({ id: 'copy', overview: emptyOverview });
   });
 
+  // PL-1, PL-2
+  it('deletes a plan', async () => {
+    const result = firstValueFrom(api.deletePlan(planId));
+
+    const req = http.expectOne(`/api/plans/${planId}`);
+    expect(req.request.method).toBe('DELETE');
+    req.flush(null, { status: 204, statusText: 'No Content' });
+
+    expect(await result).toBeNull();
+  });
+
   // JU-1
   it('fetches the yearly overview of all plans', async () => {
     const result = firstValueFrom(api.getYearlyOverview());

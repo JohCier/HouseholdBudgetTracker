@@ -91,6 +91,29 @@
         "tags" : [ "household-plans" ]
       }
     },
+    "/api/plans/{planId}" : {
+      "delete" : {
+        "operationId" : "deletePlan",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "planId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "household-plans" ]
+      }
+    },
     "/api/plans/{planId}/copies" : {
       "post" : {
         "operationId" : "copyPlan",

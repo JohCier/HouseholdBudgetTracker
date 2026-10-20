@@ -59,6 +59,11 @@ export class BudgetApi {
     return this.http.post<CopiedHouseholdPlanResponse>(`${this.planUrl(planId)}/copies`, request);
   }
 
+  /** Deletes a plan with all its items (PL-1, PL-2); fails with 404 if it is no longer there. */
+  deletePlan(planId: string): Observable<void> {
+    return this.http.delete<void>(this.planUrl(planId));
+  }
+
   addIncome(planId: string, request: AddIncomeRequest): Observable<AddedBudgetItemResponse> {
     return this.http.post<AddedBudgetItemResponse>(`${this.planUrl(planId)}/incomes`, request);
   }

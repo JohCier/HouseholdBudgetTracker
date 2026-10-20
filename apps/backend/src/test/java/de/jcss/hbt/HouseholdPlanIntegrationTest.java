@@ -442,6 +442,54 @@ class HouseholdPlanIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    /** PL-1 to PL-3, PL-6 */
+    @Test
+    void deletingAPlanRemovesItWithAllItemsAndIsAudited() throws Exception {
+        String deleted = createPlan(2026);
+        post("/api/plans/" + deleted + "/incomes", """
+                {"description":"Gehalt","amount":"3000.00","period":"YEARLY"}""");
+        post("/api/plans/" + deleted + "/expenses", """
+                {"description":"Miete","amount":"900.00","period":"MONTHLY","category":"LEBENSUNTERHALT"}""");
+        String kept = createPlan(2027);
+        post("/api/plans/" + kept + "/incomes", """
+                {"description":"Bonus","amount":"500.00","period":"YEARLY"}""");
+        jdbcClient.sql("DELETE FROM audit_log").update();
+
+        mockMvc.perform(delete("/api/plans/{planId}", deleted).cookie(alice))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/plans").param("year", "2026").cookie(alice))
+                .andExpect(status().isNotFound());
+        assertThat(JsonPath.<List<String>>read(overview(2027), "$.items[*].description")).containsExactly("Bonus");
+        assertThat(jdbcClient.sql("SELECT COUNT(*) FROM budget_item WHERE household_plan_id = :id")
+                .param("id", UUID.fromString(deleted)).query(Integer.class).single()).isZero();
+        assertThat(jdbcClient.sql("""
+                        SELECT event_type, household_plan_id, (payload ->> 'year')::int AS year,
+                               (payload ->> 'itemCount')::int AS item_count
+                        FROM audit_log ORDER BY id""")
+                .query().listOfRows())
+                .extracting(row -> row.get("event_type"), row -> row.get("household_plan_id"),
+                        row -> row.get("year"), row -> row.get("item_count"))
+                .containsExactly(tuple("HouseholdPlanDeleted", UUID.fromString(deleted), 2026, 2));
+
+        mockMvc.perform(delete("/api/plans/{planId}", deleted).cookie(alice))
+                .andExpect(status().isNotFound());
+        String recreated = createPlan(2026);
+        assertThat(JsonPath.<List<Object>>read(overview(2026), "$.items")).isEmpty();
+        assertThat(recreated).isNotEqualTo(deleted);
+    }
+
+    /** PL-1, HP-4 */
+    @Test
+    void plansOfOthersCannotBeDeleted() throws Exception {
+        String plan = createPlan(2026);
+
+        mockMvc.perform(delete("/api/plans/{planId}", plan).cookie(bob))
+                .andExpect(status().isNotFound());
+
+        assertThat(JsonPath.<String>read(overview(2026), "$.id")).isEqualTo(plan);
+    }
+
     private ResultActions changeItem(String planId, String itemId, String json)
             throws Exception {
         return mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", planId, itemId)

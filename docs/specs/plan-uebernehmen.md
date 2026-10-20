@@ -115,7 +115,7 @@ neuer Plan ist weiterhin leer, außer er entsteht durch Übernahme, und ein best
 - Mehrere Pläne zusammenführen oder Posten zu einem bestehenden Plan hinzufügen, ohne ihn zu überschreiben
 - Nur einen Teil der Posten übernehmen oder Beträge bei der Übernahme pauschal anpassen (z. B. +3 %)
 - Überschreiben rückgängig machen (PU-10)
-- Pläne löschen
+- Pläne löschen, siehe [plan-loeschen.md](plan-loeschen.md)
 
 ## Umsetzung
 

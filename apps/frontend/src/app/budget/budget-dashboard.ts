@@ -19,6 +19,7 @@ import {
   openCopyPlanDialog,
 } from './ui/copy-plan-dialog';
 import { CategoryBreakdownCard } from './ui/category-breakdown';
+import { deletedMessage, openDeletePlanDialog } from './ui/delete-plan-dialog';
 import { EditItemDialog } from './ui/edit-item-dialog';
 import { OverviewSummary } from './ui/overview-summary';
 import { parseYear } from './year';
@@ -70,10 +71,16 @@ import { parseYear } from './year';
         </button>
       </nav>
       @if (store.planId()) {
-        <button matButton type="button" (click)="copyPlan()">
-          <mat-icon svgIcon="content_copy" />
-          Als Vorlage übernehmen
-        </button>
+        <div class="actions">
+          <button matButton type="button" (click)="copyPlan()">
+            <mat-icon svgIcon="content_copy" />
+            Als Vorlage übernehmen
+          </button>
+          <button matButton type="button" class="delete-plan" (click)="deletePlan()">
+            <mat-icon svgIcon="delete" />
+            Plan löschen
+          </button>
+        </div>
       }
     </div>
 
@@ -149,6 +156,10 @@ import { parseYear } from './year';
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
+    }
+    .delete-plan {
+      --mat-button-text-label-text-color: var(--mat-sys-error);
+      --mat-button-text-state-layer-color: var(--mat-sys-error);
     }
     .toolbar {
       display: flex;
@@ -266,6 +277,17 @@ export class BudgetDashboard {
   /** Takes over another plan as template for the year shown, which has none yet (PU-12). */
   protected copyPlanHere(): void {
     this.openCopyDialog({ targetYear: this.store.year(), sourceYears: this.otherPlanYears() });
+  }
+
+  /** Deletes the plan shown after asking, then shows the yearly overview (PL-7 to PL-9). */
+  protected deletePlan(): void {
+    const year = this.store.year();
+    openDeletePlanDialog(this.dialog, year).subscribe(async (deleted) => {
+      if (deleted) {
+        await this.router.navigateByUrl('/');
+        this.snackBar.open(deletedMessage(year), undefined, { duration: 3000 });
+      }
+    });
   }
 
   private openCopyDialog(data: CopyPlanDialogData): void {

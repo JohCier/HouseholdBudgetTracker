@@ -34,4 +34,7 @@ public interface HouseholdPlanRepository {
 
     /** Brings a plan taken from this collection via {@link #findById} up to date with its changes. */
     void save(HouseholdPlan plan);
+
+    /** Removes a plan taken from this collection via {@link #findById}, with all its items (PL-2). */
+    void remove(HouseholdPlan plan);
 }

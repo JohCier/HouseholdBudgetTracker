@@ -12,6 +12,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Besitzer | `OwnerId` | Der Benutzer, der den Plan angelegt hat. Nur er sieht und ändert ihn. Im Backend nur über seine ID bekannt |
 | Jahr | `java.time.Year` | Das Kalenderjahr, für das ein Plan gilt (1900 bis 2200) |
 | Als Vorlage übernehmen | `CopyHouseholdPlan` (Command) | Alle Posten eines Plans mit ihrer Reihenfolge in ein anderes Jahr kopieren; legt dort einen Plan an oder überschreibt ihn nach Bestätigung; die Quelle bleibt unverändert |
+| Plan löschen | `DeleteHouseholdPlan` (Command) | Einen Plan mit allen Posten nach Rückfrage endgültig entfernen; das Jahr hat danach keinen Plan mehr |
 | Quelle | `sourcePlanId` | Der Plan, der als Vorlage übernommen wird |
 | Zieljahr | `targetYear` | Das Jahr, in das ein Plan übernommen wird; vorgeschlagen ist das Folgejahr, das Jahr direkt nach der Quelle |
 | Posten, Eintrag | `BudgetItem` (Entity) | Eine Einnahme oder Ausgabe in einem Plan, ohne eigenes Datum, als Monats- oder Jahresbetrag |
@@ -72,6 +73,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 |---|---|
 | `HouseholdPlanCreated` | Ein Plan wurde angelegt |
 | `HouseholdPlanCopied` | Ein Plan wurde als Vorlage in ein anderes Jahr übernommen, ggf. unter Überschreiben des dortigen Plans |
+| `HouseholdPlanDeleted` | Ein Plan wurde mit allen Posten gelöscht |
 | `IncomeAdded` | Eine Einnahme wurde erfasst |
 | `ExpenseAdded` | Eine Ausgabe wurde erfasst |
 | `BudgetItemRemoved` | Ein Posten wurde gelöscht |
