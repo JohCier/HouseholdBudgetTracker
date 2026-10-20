@@ -1,7 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { of } from 'rxjs';
 import { Router, provideRouter } from '@angular/router';
 import { YearlyOverviewEntry } from './budget.model';
 import { currentYear } from './year';
@@ -25,15 +27,22 @@ describe('YearlyOverviewPage', () => {
   let http: HttpTestingController;
   let navigate: ReturnType<typeof vi.fn>;
   let snackBar: { open: ReturnType<typeof vi.fn> };
+  let dialog: { open: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     snackBar = { open: vi.fn() };
+    dialog = {
+      open: vi.fn(() => ({
+        afterClosed: () => of({ sourceYear: currentYear(), targetYear: currentYear() + 1 }),
+      })),
+    };
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MatSnackBar, useValue: snackBar },
+        { provide: MatDialog, useValue: dialog },
       ],
     });
     http = TestBed.inject(HttpTestingController);
@@ -73,11 +82,9 @@ describe('YearlyOverviewPage', () => {
     expect(cells[1].textContent).toContain('−3,00 %');
     expect(cells[2].textContent).toContain('6,650.00');
     expect(cells[2].textContent).toContain('+33,00 %');
-    expect(cells.map((cell) => cell.querySelector('app-year-change span')!.className)).toEqual([
-      'good',
-      'good',
-      'good',
-    ]);
+    expect(
+      cells.slice(0, 3).map((cell) => cell.querySelector('app-year-change span')!.className),
+    ).toEqual(['good', 'good', 'good']);
     expect(row(element, currentYear() - 1).textContent).toContain('–');
   });
 
@@ -100,6 +107,29 @@ describe('YearlyOverviewPage', () => {
     expect(row(element, currentYear()).querySelector('a')!.getAttribute('href')).toBe(
       `/jahre/${currentYear()}`,
     );
+  });
+
+  // PU-12, PU-15
+  it('takes over the plan of a row as template without opening it, then opens the target year', async () => {
+    const element = await render([entry(currentYear())]);
+
+    row(element, currentYear())
+      .querySelector<HTMLButtonElement>(
+        `button[aria-label="Plan ${currentYear()} als Vorlage übernehmen"]`,
+      )!
+      .click();
+
+    expect(dialog.open).toHaveBeenCalledWith(expect.anything(), {
+      data: { sourceYear: currentYear() },
+    });
+    await vi.waitFor(() =>
+      expect(snackBar.open).toHaveBeenCalledWith(
+        `Plan ${currentYear()} nach ${currentYear() + 1} übernommen.`,
+        undefined,
+        { duration: 3000 },
+      ),
+    );
+    expect(navigate).toHaveBeenCalledExactlyOnceWith(['/jahre', currentYear() + 1]);
   });
 
   // JU-13, JU-12

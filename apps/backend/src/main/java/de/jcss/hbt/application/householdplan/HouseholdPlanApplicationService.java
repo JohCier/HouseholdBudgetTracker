@@ -10,6 +10,7 @@ import de.jcss.hbt.domain.householdplan.OwnerId;
 import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
 import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
 import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
+import de.jcss.hbt.domain.householdplan.command.CopyHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderBudgetItemsCommand;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Year;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Entry point for all use cases of household plans.
@@ -43,7 +45,8 @@ import java.util.Objects;
  * {@link HouseholdPlanOverviewQueryHandler}, bypassing the aggregate and its repository.
  * <p>
  * Contains no business rules of its own. The only check it makes, that the user has no plan
- * for the year yet, is a process step before creating one: it spans several aggregates
+ * for the year yet, is a process step before creating one (when copying a plan, before deciding
+ * whether to create or to overwrite one): it spans several aggregates
  * and gives a clear error early, while the unique constraint behind
  * {@link HouseholdPlanRepository#add} remains the actual safeguard against races.
  * Concurrent changes to the same plan are serialized by {@link HouseholdPlanRepository#findById}.
@@ -72,6 +75,32 @@ public class HouseholdPlanApplicationService {
         repository.add(plan);
         publishEvents(plan);
         return new CreatedHouseholdPlan(plan.id(), overviewOf(plan, command.owner()));
+    }
+
+    /**
+     * Copies a plan of the user to the target year: into a new plan if the user has none for
+     * it yet, otherwise over the one they have, but only if the command allows that (PU-8, PU-9).
+     * Only the plan of the target year is changed; the source is just read (PU-5).
+     *
+     * @throws HouseholdPlanNotFoundException      if the source is not a plan of the user
+     * @throws HouseholdPlanAlreadyExistsException if the user has a plan for the target year and it may not be overwritten
+     */
+    public CopiedHouseholdPlan copyPlan(CopyHouseholdPlanCommand command) {
+        HouseholdPlan source = load(command.sourcePlanId(), command.owner());
+        Optional<HouseholdPlan> existing = repository.findFor(command.owner(), command.targetYear());
+        HouseholdPlan target;
+        if (existing.isEmpty()) {
+            target = HouseholdPlan.createFrom(source, HouseholdPlanId.generate(), command.targetYear());
+            repository.add(target);
+            publishEvents(target);
+        } else if (command.overwrite()) {
+            target = existing.get();
+            target.overwriteWith(source);
+            saveAndPublishEvents(target);
+        } else {
+            throw new HouseholdPlanAlreadyExistsException(command.targetYear());
+        }
+        return new CopiedHouseholdPlan(target.id(), existing.isPresent(), overviewOf(target, command.owner()));
     }
 
     public AddedBudgetItem addIncome(AddIncomeCommand command) {

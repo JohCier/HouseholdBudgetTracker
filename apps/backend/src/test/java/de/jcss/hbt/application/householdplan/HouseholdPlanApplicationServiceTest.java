@@ -17,11 +17,13 @@ import de.jcss.hbt.domain.householdplan.OwnerId;
 import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
 import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
 import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
+import de.jcss.hbt.domain.householdplan.command.CopyHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemChanged;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
+import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCopied;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCreated;
 import de.jcss.hbt.domain.householdplan.event.IncomeAdded;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
@@ -277,6 +279,60 @@ class HouseholdPlanApplicationServiceTest {
     }
 
     /** Stores plans by rebuilding them, as a real repository would, so no state leaks between calls. */
+    /** PU-8, PU-11 */
+    @Test
+    void copyPlanCreatesThePlanOfTheTargetYear() {
+        service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, Money.of(new BigDecimal("3000.00")), null, null));
+        publishedEvents.clear();
+
+        CopiedHouseholdPlan copied = service.copyPlan(new CopyHouseholdPlanCommand(OWNER, planId, Year.of(2027), false));
+
+        assertThat(copied.overwritten()).isFalse();
+        assertThat(copied.overview().year()).isEqualTo(Year.of(2027));
+        assertThat(repository.plans.get(copied.id()).items()).singleElement()
+                .satisfies(item -> assertThat(item.description()).isEqualTo(SALARY));
+        assertThat(repository.plans.get(planId).items()).hasSize(1);
+        assertThat(publishedEvents).hasExactlyElementsOfTypes(HouseholdPlanCreated.class, HouseholdPlanCopied.class);
+    }
+
+    /** PU-9 */
+    @Test
+    void copyPlanOverwritesThePlanOfTheTargetYearOnlyIfAllowed() {
+        service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, Money.of(new BigDecimal("3000.00")), null, null));
+        HouseholdPlanId target = service.createPlan(new CreateHouseholdPlanCommand(OWNER, Year.of(2027))).id();
+        service.addIncome(new AddIncomeCommand(OWNER, target, BudgetItemDescription.of("Bonus"),
+                Money.of(new BigDecimal("500.00")), null, null));
+        publishedEvents.clear();
+
+        assertThatThrownBy(() -> service.copyPlan(new CopyHouseholdPlanCommand(OWNER, planId, Year.of(2027), false)))
+                .isInstanceOf(HouseholdPlanAlreadyExistsException.class);
+        assertThat(repository.plans.get(target).items()).singleElement()
+                .satisfies(item -> assertThat(item.description().value()).isEqualTo("Bonus"));
+
+        CopiedHouseholdPlan copied = service.copyPlan(new CopyHouseholdPlanCommand(OWNER, planId, Year.of(2027), true));
+
+        assertThat(copied.id()).isEqualTo(target);
+        assertThat(copied.overwritten()).isTrue();
+        assertThat(repository.plans.get(target).items()).singleElement()
+                .satisfies(item -> assertThat(item.description()).isEqualTo(SALARY));
+        assertThat(publishedEvents).hasExactlyElementsOfTypes(HouseholdPlanCopied.class);
+    }
+
+    /** HP-4 */
+    @Test
+    void copyPlanOfSomeoneElseIsNotFound() {
+        assertThatThrownBy(() -> service.copyPlan(new CopyHouseholdPlanCommand(SOMEONE_ELSE, planId, Year.of(2027), false)))
+                .isInstanceOf(HouseholdPlanNotFoundException.class);
+        assertThat(repository.plans).hasSize(1);
+    }
+
+    /** PU-2 */
+    @Test
+    void copyPlanIntoItsOwnYearIsRejected() {
+        assertThatThrownBy(() -> service.copyPlan(new CopyHouseholdPlanCommand(OWNER, planId, YEAR, true)))
+                .isInstanceOf(DomainValidationException.class);
+    }
+
     private static final class FakeRepository implements HouseholdPlanRepository {
 
         private final Map<HouseholdPlanId, HouseholdPlan> plans = new HashMap<>();
@@ -286,6 +342,14 @@ class HouseholdPlanApplicationServiceTest {
             return Optional.ofNullable(plans.get(id))
                     .map(plan -> HouseholdPlan.reconstitute(plan.id(), plan.owner(), plan.year(), plan.items(),
                             plan.subcategoryOrders()));
+        }
+
+        @Override
+        public Optional<HouseholdPlan> findFor(OwnerId owner, Year year) {
+            return plans.values().stream()
+                    .filter(plan -> plan.isOwnedBy(owner) && plan.year().equals(year))
+                    .findFirst()
+                    .flatMap(plan -> findById(plan.id()));
         }
 
         @Override

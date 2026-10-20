@@ -82,7 +82,8 @@ Benutzer den Plan eines Jahres.
 - Veränderung der einzelnen Kategorien der 50/30/20-Regel zum Vorjahr
 - Diagramme über mehrere Jahre
 - Vergleich mit einem frei gewählten Jahr statt dem Vorjahr
-- Pläne aus der Jahresübersicht löschen oder kopieren (siehe „Nicht im Umfang" in [haushaltsplan.md](haushaltsplan.md))
+- Pläne aus der Jahresübersicht löschen (siehe „Nicht im Umfang" in [haushaltsplan.md](haushaltsplan.md)); kopieren
+  siehe [plan-uebernehmen.md](plan-uebernehmen.md)
 - Monatsbeträge in der Jahresübersicht
 
 ## Umsetzung

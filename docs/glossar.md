@@ -11,6 +11,9 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Haushaltsplan, Plan | `HouseholdPlan` (Aggregate Root) | Alle Einnahmen und Ausgaben, die ein Benutzer für ein Kalenderjahr plant. Höchstens einer pro Benutzer und Jahr |
 | Besitzer | `OwnerId` | Der Benutzer, der den Plan angelegt hat. Nur er sieht und ändert ihn. Im Backend nur über seine ID bekannt |
 | Jahr | `java.time.Year` | Das Kalenderjahr, für das ein Plan gilt (1900 bis 2200) |
+| Als Vorlage übernehmen | `CopyHouseholdPlan` (Command) | Alle Posten eines Plans mit ihrer Reihenfolge in ein anderes Jahr kopieren; legt dort einen Plan an oder überschreibt ihn nach Bestätigung; die Quelle bleibt unverändert |
+| Quelle | `sourcePlanId` | Der Plan, der als Vorlage übernommen wird |
+| Zieljahr | `targetYear` | Das Jahr, in das ein Plan übernommen wird; vorgeschlagen ist das Folgejahr, das Jahr direkt nach der Quelle |
 | Posten, Eintrag | `BudgetItem` (Entity) | Eine Einnahme oder Ausgabe in einem Plan, als Jahresbetrag ohne eigenes Datum |
 | Art des Postens | `ItemType` (`INCOME`, `EXPENSE`) | Einnahme oder Ausgabe |
 | Einnahme | `ItemType.INCOME` | Posten ohne Kategorie, erhöht das Einkommen |
@@ -63,6 +66,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Event | Wann |
 |---|---|
 | `HouseholdPlanCreated` | Ein Plan wurde angelegt |
+| `HouseholdPlanCopied` | Ein Plan wurde als Vorlage in ein anderes Jahr übernommen, ggf. unter Überschreiben des dortigen Plans |
 | `IncomeAdded` | Eine Einnahme wurde erfasst |
 | `ExpenseAdded` | Eine Ausgabe wurde erfasst |
 | `BudgetItemRemoved` | Ein Posten wurde gelöscht |

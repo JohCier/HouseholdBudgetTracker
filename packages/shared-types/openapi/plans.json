@@ -91,6 +91,46 @@
         "tags" : [ "household-plans" ]
       }
     },
+    "/api/plans/{planId}/copies" : {
+      "post" : {
+        "operationId" : "copyPlan",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "planId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CopyHouseholdPlanRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CopiedHouseholdPlanResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "household-plans" ]
+      }
+    },
     "/api/plans/{planId}/expenses" : {
       "post" : {
         "operationId" : "addExpense",
@@ -537,6 +577,35 @@
             "type" : "string",
             "description" : "Optional; empty or blank means none, i.e. \"Sonstiges\"",
             "nullable" : true
+          }
+        }
+      },
+      "CopiedHouseholdPlanResponse" : {
+        "required" : [ "id", "overview" ],
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "overview" : {
+            "$ref" : "#/components/schemas/HouseholdPlanOverviewResponse"
+          }
+        }
+      },
+      "CopyHouseholdPlanRequest" : {
+        "required" : [ "targetYear" ],
+        "type" : "object",
+        "properties" : {
+          "overwrite" : {
+            "type" : "boolean"
+          },
+          "targetYear" : {
+            "maximum" : 2200,
+            "minimum" : 1900,
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 2027
           }
         }
       },
