@@ -1,4 +1,4 @@
-import { expect, Page } from '@playwright/test';
+import { expect, Locator, Page } from '@playwright/test';
 
 export const PASSWORD = 'geheim-1234';
 
@@ -77,7 +77,7 @@ export async function addIncome(
   await page.getByLabel('Betrag').fill(amount);
   await choosePeriod(page, period);
   await fillSubcategory(page, subcategory);
-  await page.getByRole('button', { name: 'Hinzufügen' }).click();
+  await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
   await expect(itemRow(page, description)).toBeVisible();
 }
 
@@ -96,7 +96,7 @@ export async function addExpense(
   await page.getByRole('combobox', { name: 'Kategorie', exact: true }).click();
   await page.getByRole('option', { name: category }).click();
   await fillSubcategory(page, subcategory);
-  await page.getByRole('button', { name: 'Hinzufügen' }).click();
+  await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
   await expect(itemRow(page, description)).toBeVisible();
 }
 
@@ -138,6 +138,23 @@ export function itemIn(page: Page, section: 'Einnahmen' | Category, description:
 /** Subcategory group within the incomes or a category, with its sum and its items (UK-11). */
 export function itemGroup(page: Page, section: 'Einnahmen' | Category, subcategory: string) {
   return entrySection(page, section).getByRole('group', { name: subcategory, exact: true });
+}
+
+/**
+ * Row with the sum below a subcategory group, or below a category or the incomes or expenses as a
+ * whole (EG-5, EG-6).
+ */
+export function sumRow(
+  page: Page,
+  of: 'Einnahmen' | 'Ausgaben' | Category,
+  subcategory?: string,
+): Locator {
+  if (subcategory !== undefined) {
+    return itemGroup(page, of as 'Einnahmen' | Category, subcategory).locator('.group-summary');
+  }
+  return page
+    .locator('app-budget-entries .summary')
+    .filter({ has: page.getByText(`Summe ${of}`, { exact: true }) });
 }
 
 /** Names of the subcategory groups of the incomes or a category, top first (UK-14). */

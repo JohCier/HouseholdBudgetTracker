@@ -38,7 +38,8 @@ import java.util.UUID;
  * <p>
  * The display order of the items is stored in {@code budget_item.position}, the highest on
  * top. Positions need not be consecutive: saving keeps every stored position that still fits the
- * order, so adding an item on top, moving one there or removing one writes no other item. The
+ * order, so adding an item at the bottom, moving one there or removing one writes no other item; positions
+ * below zero are fine. The
  * arranged order of the subcategory groups is stored in {@code subcategory_order}.
  * <p>
  * Concurrent changes are prevented by locking the plan row in {@link #findById}
@@ -180,17 +181,17 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
     }
 
     /**
-     * The positions of the items in display order, rising from the bottom up. Each item keeps its
-     * stored position as long as it lies above that of the item below; otherwise it gets the next
-     * position above.
+     * The positions of the items in display order, falling from the top down. Each item keeps its
+     * stored position as long as it lies below that of the item above; otherwise it gets the next
+     * position below. Without stored positions the bottom item gets 0.
      */
     private static List<Integer> positionsOf(List<BudgetItem> items, Map<BudgetItemId, Integer> storedPositions) {
         Integer[] positions = new Integer[items.size()];
-        int below = -1;
-        for (int index = items.size() - 1; index >= 0; index--) {
+        int above = storedPositions.values().stream().max(Integer::compare).map(max -> max + 1).orElse(items.size());
+        for (int index = 0; index < items.size(); index++) {
             Integer stored = storedPositions.get(items.get(index).id());
-            below = stored != null && stored > below ? stored : below + 1;
-            positions[index] = below;
+            above = stored != null && stored < above ? stored : above - 1;
+            positions[index] = above;
         }
         return List.of(positions);
     }

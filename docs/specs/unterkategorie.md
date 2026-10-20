@@ -65,9 +65,10 @@ legt die Farben der Kategorien neu fest (UK-19), auch für die Torte (TD-2).
 - **UK-11**: Innerhalb einer Kategorie bzw. im Bereich „Einnahmen" sind die Posten nach Unterkategorie gruppiert, in
   der Reihenfolge nach UK-14 bis UK-18. Die Spalten „Art" und „Kategorie" der bisherigen Tabelle entfallen, weil die
   Gruppen sie zeigen.
-- **UK-12**: Jeder Bereich, jede Kategorie und jede Unterkategorie-Gruppe zeigt die Summe ihrer Posten. Die Summe von
-  „Einnahmen" ist das Einkommen, die von „Ausgaben" die Ausgaben (AW-1). Die Summe einer Kategorie enthält nur die
-  erfassten Ausgaben, nicht den Überschuss (AW-10); der steht weiterhin nur in der Auswertung.
+- **UK-12**: Jeder Bereich, jede Kategorie und jede Unterkategorie-Gruppe zeigt die Summe ihrer Posten, seit
+  [eintraege-gruppen.md](eintraege-gruppen.md) in einer Zeile unter den Posten (EG-5, EG-6). Die Summe von „Einnahmen"
+  ist das Einkommen, die von „Ausgaben" die Ausgaben (AW-1). Die Summe einer Kategorie enthält nur die erfassten
+  Ausgaben, nicht den Überschuss (AW-10); der steht weiterhin nur in der Auswertung.
 - **UK-13**: Alle Summen der gruppierten Anzeige rechnet das Backend (wie AW-9); die Oberfläche addiert nichts selbst.
 
 ### Reihenfolge
@@ -81,12 +82,13 @@ legt die Farben der Kategorien neu fest (UK-19), auch für die Torte (TD-2).
   und auf anderen Geräten. Jeder Plan (jedes Jahr) hat seine eigene Reihenfolge. Wie die übrigen Werte des Plans ändert
   sie nur der Besitzer (PO-6).
 - **UK-16**: Solange der Benutzer nichts verschoben hat, stehen die Gruppen alphabetisch mit „Sonstiges" am Ende, und
-  die Posten einer Gruppe stehen wie bisher nach PO-10 (neuester oben).
-- **UK-17**: Ein neuer Posten steht oben in seiner Gruppe. Eine neue Gruppe (der erste Posten mit einer Unterkategorie,
-  die es in der Kategorie bzw. bei den Einnahmen noch nicht gibt) steht am Ende, vor „Sonstiges", sofern „Sonstiges"
-  am Ende steht; mehrere neue Gruppen stehen untereinander alphabetisch. Ein bearbeiteter Posten behält seinen Platz (PB-4); bekommt er eine andere Unterkategorie
-  oder Kategorie, steht er oben in seiner neuen Gruppe. Ein durch „Rückgängig" wiederhergestellter Posten (PO-9) steht
-  wie ein neuer Posten oben in seiner Gruppe.
+  die Posten einer Gruppe stehen nach PO-10.
+- **UK-17**: Ein neuer Posten steht unten in seiner Gruppe (EG-1; bis zu [eintraege-gruppen.md](eintraege-gruppen.md)
+  oben). Eine neue Gruppe (der erste Posten mit einer Unterkategorie, die es in der Kategorie bzw. bei den Einnahmen
+  noch nicht gibt) steht am Ende, vor „Sonstiges", sofern „Sonstiges" am Ende steht; mehrere neue Gruppen stehen
+  untereinander alphabetisch. Ein bearbeiteter Posten behält seinen Platz (PB-4); bekommt er eine andere Unterkategorie
+  oder Kategorie, steht er unten in seiner neuen Gruppe (EG-2). Ein durch „Rückgängig" wiederhergestellter Posten (PO-9)
+  steht wie ein neuer Posten unten in seiner Gruppe (EG-3).
 - **UK-18**: Verschwindet der letzte Posten einer Gruppe, verschwindet die Gruppe; kommt sie später wieder, gilt sie als
   neue Gruppe (UK-17).
 
@@ -132,11 +134,11 @@ legt die Farben der Kategorien neu fest (UK-19), auch für die Torte (TD-2).
 - **Gegeben** die Posten „Wartung", „Steuer" und „Sprit" in der Gruppe „Auto", **wenn** der Benutzer „Sprit" nach
   oben zieht und die Seite neu lädt, **dann** steht „Sprit" oben in der Gruppe (UK-14, UK-15).
 - **Gegeben** eine umsortierte Gruppe „Auto", **wenn** der Benutzer dort einen neuen Posten erfasst, **dann** steht er
-  oben in „Auto", und die übrigen Posten behalten ihre Reihenfolge (UK-17).
+  unten in „Auto", und die übrigen Posten behalten ihre Reihenfolge (UK-17, EG-1).
 - **Gegeben** die Gruppen „Auto" und „Sonstiges", **wenn** der Benutzer einen Posten mit der neuen Unterkategorie
   „Urlaub" erfasst, **dann** steht „Urlaub" nach „Auto" und vor „Sonstiges" (UK-17).
 - **Gegeben** ein Posten in „Auto", **wenn** der Benutzer seine Unterkategorie auf „Miete" ändert, **dann** steht er
-  oben in „Miete" (UK-17).
+  unten in „Miete" (UK-17, EG-2).
 - **Gegeben** die Pläne für 2026 und 2027, **wenn** der Benutzer im Plan 2026 umsortiert, **dann** bleibt die
   Reihenfolge im Plan 2027 unverändert (UK-15).
 - **Gegeben** der Plan eines anderen Benutzers, **wenn** dessen Reihenfolge geändert werden soll, **dann** antwortet die
@@ -162,8 +164,8 @@ legt die Farben der Kategorien neu fest (UK-19), auch für die Torte (TD-2).
 - Domäne: Value Object `BudgetItemSubcategory` (UK-2; `ofNullable` macht aus leerem Text „keine Unterkategorie",
   `isSameAs` vergleicht ohne Groß- und Kleinschreibung, `groupOf` ordnet Posten ohne Unterkategorie „Sonstiges" zu),
   optionales Feld in `BudgetItem`, Value Object `ItemSection` für die Einnahmen bzw. eine Kategorie der Ausgaben.
-  `HouseholdPlan` hält die Posten in Anzeigereihenfolge: `addIncome` und `addExpense` setzen den neuen Posten an den
-  Anfang, `changeItem` setzt ihn nur bei einer neuen Gruppe dorthin (UK-17). Die Schreibweise wird beim Speichern
+  `HouseholdPlan` hält die Posten in Anzeigereihenfolge: `addIncome` und `addExpense` setzen den neuen Posten ans
+  Ende, `changeItem` setzt ihn nur bei einer neuen Gruppe dorthin (UK-17, EG-1, EG-2). Die Schreibweise wird beim Speichern
   vereinheitlicht: Ein Posten übernimmt die Schreibweise eines vorhandenen Postens der Gruppe, „sonstiges" wird immer
   als „Sonstiges" gespeichert; so zeigt die Gruppe die Schreibweise ihres ältesten Postens (UK-5). Die Reihenfolge der
   Gruppen hält je Bereich das Value Object `SubcategoryOrder`; `arrange` stellt erst die verschobenen Gruppen, dann

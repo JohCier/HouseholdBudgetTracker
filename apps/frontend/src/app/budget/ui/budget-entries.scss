@@ -13,7 +13,8 @@ mat-card-content {
 
 .area-header,
 .section-header,
-.group-header {
+.group-header,
+.summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -130,8 +131,30 @@ h4 {
 }
 
 // Indented below the header of their group, so items and groups are told apart at a glance
-.items {
+.items,
+.group-summary {
   margin-left: 32px;
+}
+
+// The sum below the entries it sums up, set apart from them (EG-5 to EG-7)
+.summary {
+  min-height: 40px;
+  border-top: 1px solid var(--mat-sys-outline);
+  font: var(--mat-sys-title-small);
+}
+
+.group-summary {
+  font: var(--mat-sys-label-large);
+}
+
+.area-summary {
+  font: var(--mat-sys-title-medium);
+  border-top-width: 2px;
+}
+
+.summary-label {
+  flex: 1;
+  min-width: 0;
 }
 
 .item {

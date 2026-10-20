@@ -97,16 +97,16 @@ class HouseholdPlanSubcategoryTest {
                 .containsExactly(new BudgetItemChanged(planId, itemId, Instant.now()));
     }
 
-    /** UK-17 */
+    /** EG-2 */
     @Test
-    void itemMovedToAnotherGroupGoesOnTopOfIt() {
+    void itemMovedToAnotherGroupGoesToItsBottom() {
         BudgetItemId rent = expense("Kaltmiete", RENT);
         BudgetItemId moved = expense("Wartung", CAR);
         BudgetItemId newest = expense("Nebenkosten", RENT);
 
         plan.changeItem(moved, description("Wartung"), amount, ExpenseCategory.LEBENSUNTERHALT, RENT, null);
 
-        assertThat(plan.items()).extracting(BudgetItem::id).containsExactly(moved, newest, rent);
+        assertThat(plan.items()).extracting(BudgetItem::id).containsExactly(rent, newest, moved);
     }
 
     /** UK-14 */
@@ -120,7 +120,7 @@ class HouseholdPlanSubcategoryTest {
 
         plan.reorderItems(List.of(maintenance, fuel, tax));
 
-        assertThat(plan.items()).extracting(BudgetItem::id).containsExactly(maintenance, fuel, rent, tax);
+        assertThat(plan.items()).extracting(BudgetItem::id).containsExactly(maintenance, rent, fuel, tax);
         assertThat(plan.pullDomainEvents())
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
                 .containsExactly(new BudgetItemsReordered(planId, Instant.now()));
@@ -133,7 +133,7 @@ class HouseholdPlanSubcategoryTest {
         BudgetItemId second = expense("Steuer", CAR);
         plan.pullDomainEvents();
 
-        plan.reorderItems(List.of(second, first));
+        plan.reorderItems(List.of(first, second));
 
         assertThat(plan.pullDomainEvents()).isEmpty();
     }

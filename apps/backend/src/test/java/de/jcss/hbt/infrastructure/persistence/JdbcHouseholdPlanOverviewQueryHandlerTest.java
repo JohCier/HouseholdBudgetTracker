@@ -54,7 +54,7 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
     }
 
     @Test
-    void loadsThePlanOfTheYearWithItsItemsMostRecentlyAddedFirst() {
+    void loadsThePlanOfTheYearWithItsItemsMostRecentlyAddedLast() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2026));
         BudgetItemId income = plan.addIncome(description("Gehalt"), yearly("2000.00"), null, null);
         BudgetItemId expense = plan.addExpense(description("Miete"), yearly("850.50"), ExpenseCategory.LEBENSUNTERHALT,
@@ -70,9 +70,9 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
         assertThat(overview.planId()).isEqualTo(plan.id());
         assertThat(overview.year()).isEqualTo(Year.of(2026));
         assertThat(overview.items()).containsExactly(
+                new OverviewItem(income, description("Gehalt"), yearly("2000.00"), ItemType.INCOME, null, null, null),
                 new OverviewItem(expense, description("Miete"), yearly("850.50"), ItemType.EXPENSE,
-                        ExpenseCategory.LEBENSUNTERHALT, null, new BudgetItemNote("Warmmiete")),
-                new OverviewItem(income, description("Gehalt"), yearly("2000.00"), ItemType.INCOME, null, null, null));
+                        ExpenseCategory.LEBENSUNTERHALT, null, new BudgetItemNote("Warmmiete")));
         assertThat(overview.totalIncome()).isEqualTo(money("2000.00"));
         assertThat(overview.totalExpense()).isEqualTo(money("850.50"));
     }

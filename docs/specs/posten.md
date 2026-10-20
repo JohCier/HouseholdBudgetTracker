@@ -24,8 +24,8 @@ ihnen ergibt sich die Auswertung nach der 50/30/20-Regel.
 - **PO-9**: Nach dem Löschen kann der Benutzer das Löschen kurz rückgängig machen. Der Posten wird dann mit gleicher
   Beschreibung, gleichem Betrag und gleicher Kategorie, aber neuer ID wieder angelegt, auch wenn inzwischen ein anderes
   Jahr angezeigt wird.
-- **PO-10**: Ein neu erfasster Posten steht oben. Seit [unterkategorie.md](unterkategorie.md) gilt das innerhalb
-  seiner Unterkategorie-Gruppe, deren Reihenfolge der Benutzer frei ändern kann (UK-14, UK-17).
+- **PO-10**: Ein neu erfasster Posten steht unten in seiner Unterkategorie-Gruppe, deren Reihenfolge der Benutzer frei
+  ändern kann ([EG-1](eintraege-gruppen.md), UK-14). Bis zu [eintraege-gruppen.md](eintraege-gruppen.md) stand er oben.
 
 ## Akzeptanzkriterien
 

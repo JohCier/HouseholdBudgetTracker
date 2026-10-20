@@ -38,15 +38,15 @@ test.describe('Posten', () => {
     await expect(page.getByRole('radio', { name: 'Ausgabe' })).toBeChecked();
   });
 
-  test('der neueste Posten steht oben in seiner Gruppe (PO-10, UK-17)', async ({ page }) => {
+  test('der neueste Posten steht unten in seiner Gruppe (PO-10, EG-1)', async ({ page }) => {
     await addExpense(page, 'Miete', '850', 'Lebensunterhalt');
     await addExpense(page, 'Strom', '60', 'Lebensunterhalt');
     await addExpense(page, 'Wasser', '30', 'Lebensunterhalt');
 
     await expect(itemDescriptions(page, 'Lebensunterhalt', 'Sonstiges')).toHaveText([
-      'Wasser',
-      'Strom',
       'Miete',
+      'Strom',
+      'Wasser',
     ]);
   });
 
@@ -62,12 +62,12 @@ test.describe('Posten', () => {
 
     for (const amount of ['0', '-5']) {
       await page.getByLabel('Betrag').fill(amount);
-      await page.getByRole('button', { name: 'Hinzufügen' }).click();
+      await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
       await expect(page.getByText('Bitte einen positiven Betrag angeben.')).toBeVisible();
     }
 
     await page.getByLabel('Betrag').fill('10.005');
-    await page.getByRole('button', { name: 'Hinzufügen' }).click();
+    await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
     await expect(page.getByText('Höchstens zwei Nachkommastellen.')).toBeVisible();
 
     expect(requests).toEqual([]);
@@ -77,7 +77,7 @@ test.describe('Posten', () => {
   test('eine Ausgabe braucht eine Kategorie (PO-5)', async ({ page }) => {
     await page.getByLabel('Beschreibung').fill('Miete');
     await page.getByLabel('Betrag').fill('850');
-    await page.getByRole('button', { name: 'Hinzufügen' }).click();
+    await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
 
     await expect(page.getByText('Bitte eine Kategorie wählen.')).toBeVisible();
     await expect(page.getByText('Noch keine Einträge in diesem Haushaltsplan.')).toBeVisible();

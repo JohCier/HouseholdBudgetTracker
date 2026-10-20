@@ -46,9 +46,9 @@ test.describe('Posten bearbeiten', () => {
     // Saved on the server, and still in its original place (PB-4)
     await page.reload();
     await expect(itemDescriptions(page, 'Lebensunterhalt', 'Sonstiges')).toHaveText([
-      'Strom',
-      'Miete',
       'Wasser',
+      'Miete',
+      'Strom',
     ]);
     await expect(itemRow(page, 'Miete')).toContainText('−900,00 €');
   });
