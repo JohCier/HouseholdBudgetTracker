@@ -5,11 +5,19 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { firstValueFrom } from 'rxjs';
 import { Router, RouterLink } from '@angular/router';
-import { BreakdownView, BudgetItem } from './budget.model';
+import { BreakdownView, BudgetItem, Year } from './budget.model';
+import { BudgetApi } from './data-access/budget-api';
 import { BudgetStore } from './data-access/budget-store';
 import { AddItemForm } from './ui/add-item-form';
 import { BudgetEntries, GroupOrder } from './ui/budget-entries';
+import {
+  CopiedPlan,
+  CopyPlanDialogData,
+  copiedMessage,
+  openCopyPlanDialog,
+} from './ui/copy-plan-dialog';
 import { CategoryBreakdownCard } from './ui/category-breakdown';
 import { EditItemDialog } from './ui/edit-item-dialog';
 import { OverviewSummary } from './ui/overview-summary';
@@ -39,27 +47,35 @@ import { parseYear } from './year';
       Alle Jahre
     </a>
 
-    <nav class="year" aria-label="Jahr wählen">
-      <button
-        matIconButton
-        type="button"
-        aria-label="Vorheriges Jahr"
-        [disabled]="!store.hasPreviousYear()"
-        (click)="showYear(store.year() - 1)"
-      >
-        <mat-icon svgIcon="chevron_left" />
-      </button>
-      <h1>{{ store.year() }}</h1>
-      <button
-        matIconButton
-        type="button"
-        aria-label="Nächstes Jahr"
-        [disabled]="!store.hasNextYear()"
-        (click)="showYear(store.year() + 1)"
-      >
-        <mat-icon svgIcon="chevron_right" />
-      </button>
-    </nav>
+    <div class="toolbar">
+      <nav class="year" aria-label="Jahr wählen">
+        <button
+          matIconButton
+          type="button"
+          aria-label="Vorheriges Jahr"
+          [disabled]="!store.hasPreviousYear()"
+          (click)="showYear(store.year() - 1)"
+        >
+          <mat-icon svgIcon="chevron_left" />
+        </button>
+        <h1>{{ store.year() }}</h1>
+        <button
+          matIconButton
+          type="button"
+          aria-label="Nächstes Jahr"
+          [disabled]="!store.hasNextYear()"
+          (click)="showYear(store.year() + 1)"
+        >
+          <mat-icon svgIcon="chevron_right" />
+        </button>
+      </nav>
+      @if (store.planId()) {
+        <button matButton type="button" (click)="copyPlan()">
+          <mat-icon svgIcon="content_copy" />
+          Als Vorlage übernehmen
+        </button>
+      }
+    </div>
 
     @if (store.loadError(); as error) {
       <div class="load-error" role="alert">
@@ -97,9 +113,17 @@ import { parseYear } from './year';
       <mat-card appearance="outlined" class="no-plan">
         <mat-card-content>
           <p>Für {{ store.year() }} gibt es noch keinen Haushaltsplan.</p>
-          <button matButton="filled" type="button" [disabled]="creating()" (click)="createPlan()">
-            Haushaltsplan anlegen
-          </button>
+          <div class="actions">
+            <button matButton="filled" type="button" [disabled]="creating()" (click)="createPlan()">
+              Haushaltsplan anlegen
+            </button>
+            @if (otherPlanYears().length > 0) {
+              <button matButton="outlined" type="button" (click)="copyPlanHere()">
+                <mat-icon svgIcon="content_copy" />
+                Aus anderem Jahr übernehmen
+              </button>
+            }
+          </div>
         </mat-card-content>
       </mat-card>
     }
@@ -120,6 +144,18 @@ import { parseYear } from './year';
     .back {
       align-self: flex-start;
       margin-bottom: -16px;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
     }
     .year {
       display: flex;
@@ -172,6 +208,7 @@ export class BudgetDashboard {
   readonly year = input<string>();
 
   protected readonly store = inject(BudgetStore);
+  private readonly api = inject(BudgetApi);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
@@ -180,6 +217,8 @@ export class BudgetDashboard {
   protected readonly creating = signal(false);
   /** View of the 50/30/20 card, kept while the page is open (TD-1). */
   protected readonly breakdownView = signal<BreakdownView>('bars');
+  /** The years the user has plans for, other than the one shown; looked up for a year without plan (PU-12). */
+  protected readonly otherPlanYears = signal<Year[]>([]);
 
   constructor() {
     // Shows the plan of the year in the address; an address without a valid year leads back to the
@@ -193,6 +232,13 @@ export class BudgetDashboard {
           void this.store.selectYear(year);
         }
       });
+    });
+    effect(() => {
+      if (this.store.planMissing()) {
+        untracked(() => void this.lookUpOtherPlanYears(this.store.year()));
+      } else {
+        this.otherPlanYears.set([]);
+      }
     });
   }
 
@@ -209,6 +255,47 @@ export class BudgetDashboard {
       this.snackBar.open((error as Error).message, 'OK', { duration: 6000 });
     } finally {
       this.creating.set(false);
+    }
+  }
+
+  /** Takes over the plan shown as template for another year, which then shows (PU-12 to PU-15). */
+  protected copyPlan(): void {
+    this.openCopyDialog({ sourceYear: this.store.year() });
+  }
+
+  /** Takes over another plan as template for the year shown, which has none yet (PU-12). */
+  protected copyPlanHere(): void {
+    this.openCopyDialog({ targetYear: this.store.year(), sourceYears: this.otherPlanYears() });
+  }
+
+  private openCopyDialog(data: CopyPlanDialogData): void {
+    openCopyPlanDialog(this.dialog, data).subscribe((copied) => {
+      if (copied) {
+        void this.showCopied(copied);
+      }
+    });
+  }
+
+  private async showCopied(copied: CopiedPlan): Promise<void> {
+    if (copied.targetYear === this.store.year()) {
+      await this.store.load();
+    } else {
+      await this.showYear(copied.targetYear);
+    }
+    this.snackBar.open(copiedMessage(copied), undefined, { duration: 3000 });
+  }
+
+  private async lookUpOtherPlanYears(year: Year): Promise<void> {
+    try {
+      const overview = await firstValueFrom(this.api.getYearlyOverview());
+      if (this.store.year() === year && this.store.planMissing()) {
+        this.otherPlanYears.set(
+          overview.years.map((entry) => entry.year).filter((y) => y !== year),
+        );
+      }
+    } catch {
+      // Without the list the year just offers to create a plan.
+      this.otherPlanYears.set([]);
     }
   }
 

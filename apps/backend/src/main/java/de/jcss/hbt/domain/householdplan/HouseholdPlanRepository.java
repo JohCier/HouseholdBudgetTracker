@@ -19,6 +19,9 @@ public interface HouseholdPlanRepository {
      */
     Optional<HouseholdPlan> findById(HouseholdPlanId id);
 
+    /** Takes the plan of the owner for the year out of the collection to change it, locked like {@link #findById}. */
+    Optional<HouseholdPlan> findFor(OwnerId owner, Year year);
+
     /** Whether the owner already has a plan for the year. */
     boolean existsFor(OwnerId owner, Year year);
 

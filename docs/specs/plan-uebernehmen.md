@@ -1,6 +1,6 @@
 # Plan als Vorlage übernehmen
 
-Status: geplant
+Status: umgesetzt
 
 ## Zweck
 
@@ -119,9 +119,27 @@ neuer Plan ist weiterhin leer, außer er entsteht durch Übernahme, und ein best
 
 ## Umsetzung
 
-Wird nach der Umsetzung ergänzt. Die Aktion in der Jahresübersicht (PU-12) setzt
-[jahresuebersicht.md](jahresuebersicht.md) voraus, die Übernahme der Angabe monatlich/jährlich (PU-3)
-[monats-jahresbetrag.md](monats-jahresbetrag.md); umgesetzt wird diese Spec nach den beiden.
+- Domäne: `HouseholdPlan.createFrom` (PU-8) und `HouseholdPlan.overwriteWith` (PU-9) kopieren über
+  `BudgetItem.copy` alle Posten mit neuer ID und alle Werte des Postens (PU-3, PU-5) sowie die Reihenfolge der Posten
+  und `SubcategoryOrder` (PU-4); beide lehnen das Jahr der Quelle mit `DomainValidationException` ab (PU-2) und
+  zeichnen `HouseholdPlanCopied` auf (PU-11), `createFrom` über `create` zusätzlich `HouseholdPlanCreated`. Die
+  Angabe monatlich/jährlich aus [monats-jahresbetrag.md](monats-jahresbetrag.md) übernimmt `BudgetItem.copy`, sobald
+  `BudgetItem` sie trägt
+- Ablauf: `HouseholdPlanApplicationService.copyPlan` mit `CopyHouseholdPlanCommand` lädt die Quelle (HP-4), sucht
+  den Plan des Zieljahres über `HouseholdPlanRepository.findFor` (gesperrt wie `findById`) und legt ihn an oder
+  überschreibt ihn nur mit `overwrite`, sonst `HouseholdPlanAlreadyExistsException` (409); alles in einer
+  Transaktion (PU-7)
+- API: `POST /api/plans/{planId}/copies` mit `CopyHouseholdPlanRequest` (`targetYear` 1900 bis 2200, `overwrite`),
+  antwortet mit `CopiedHouseholdPlanResponse`: 201 für einen neuen Plan, 200 nach dem Überschreiben
+- Frontend: `budget/ui/copy-plan-dialog.ts` fragt Zieljahr bzw. Vorlage ab, prüft über `GET /api/plans?year=`, ob
+  das Zieljahr einen Plan hat, und warnt dann (PU-13, PU-14); geöffnet aus `budget/budget-dashboard.ts`
+  („Als Vorlage übernehmen", in Jahren ohne Plan „Aus anderem Jahr übernehmen" mit den Jahren aus
+  `GET /api/plans/years`) und je Zeile aus `budget/yearly-overview-page.ts` (PU-12); danach ist das Zieljahr
+  geöffnet (PU-15)
+- Tests: `HouseholdPlanCopyTest`, `HouseholdPlanApplicationServiceTest`, `HouseholdPlanControllerTest`,
+  `JdbcHouseholdPlanRepositoryTest`, `HouseholdPlanIntegrationTest`, `copy-plan-dialog.spec.ts`,
+  `budget-dashboard.spec.ts`, `yearly-overview-page.spec.ts`, `budget-api.spec.ts`
+- E2E: `e2e/tests/plan-uebernehmen.spec.ts`
 
 ## Offene Fragen
 

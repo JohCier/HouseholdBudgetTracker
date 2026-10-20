@@ -24,6 +24,8 @@ export type CreateHouseholdPlanRequest = Schemas['CreateHouseholdPlanRequest'];
 export type CreatedHouseholdPlanResponse = Schemas['CreatedHouseholdPlanResponse'];
 export type YearlyOverview = Schemas['YearlyOverviewResponse'];
 export type YearlyOverviewEntry = Schemas['YearlyOverviewEntryResponse'];
+export type CopyHouseholdPlanRequest = Schemas['CopyHouseholdPlanRequest'];
+export type CopiedHouseholdPlanResponse = Schemas['CopiedHouseholdPlanResponse'];
 
 /** A calendar year, e.g. 2026. */
 export type Year = number;

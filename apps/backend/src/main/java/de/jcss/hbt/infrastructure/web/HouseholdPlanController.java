@@ -1,6 +1,7 @@
 package de.jcss.hbt.infrastructure.web;
 
 import de.jcss.hbt.application.householdplan.AddedBudgetItem;
+import de.jcss.hbt.application.householdplan.CopiedHouseholdPlan;
 import de.jcss.hbt.application.householdplan.HouseholdPlanApplicationService;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
@@ -14,6 +15,7 @@ import de.jcss.hbt.domain.householdplan.OwnerId;
 import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
 import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
 import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
+import de.jcss.hbt.domain.householdplan.command.CopyHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderBudgetItemsCommand;
@@ -22,6 +24,8 @@ import de.jcss.hbt.infrastructure.web.dto.AddExpenseRequest;
 import de.jcss.hbt.infrastructure.web.dto.AddIncomeRequest;
 import de.jcss.hbt.infrastructure.web.dto.AddedBudgetItemResponse;
 import de.jcss.hbt.infrastructure.web.dto.ChangeBudgetItemRequest;
+import de.jcss.hbt.infrastructure.web.dto.CopiedHouseholdPlanResponse;
+import de.jcss.hbt.infrastructure.web.dto.CopyHouseholdPlanRequest;
 import de.jcss.hbt.infrastructure.web.dto.CreateHouseholdPlanRequest;
 import de.jcss.hbt.infrastructure.web.dto.CreatedHouseholdPlanResponse;
 import de.jcss.hbt.infrastructure.web.dto.ExpenseCategoryDto;
@@ -36,6 +40,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -90,6 +95,20 @@ public class HouseholdPlanController {
     @GetMapping("/years")
     public YearlyOverviewResponse yearlyOverview(@AuthenticationPrincipal Jwt user) {
         return YearlyOverviewResponse.from(plans.getYearlyOverview(owner(user)));
+    }
+
+    /**
+     * Takes over a plan as template for another year (PU-1 to PU-9): 201 with a new plan, 200 if the
+     * plan of the target year was overwritten, 409 if it exists and may not be overwritten.
+     */
+    @PostMapping("/{planId}/copies")
+    public ResponseEntity<CopiedHouseholdPlanResponse> copyPlan(@AuthenticationPrincipal Jwt user,
+                                                                @PathVariable UUID planId,
+                                                                @Valid @RequestBody CopyHouseholdPlanRequest request) {
+        CopiedHouseholdPlan copied = plans.copyPlan(new CopyHouseholdPlanCommand(owner(user),
+                HouseholdPlanId.of(planId), Year.of(request.targetYear()), Boolean.TRUE.equals(request.overwrite())));
+        return ResponseEntity.status(copied.overwritten() ? HttpStatus.OK : HttpStatus.CREATED)
+                .body(CopiedHouseholdPlanResponse.from(copied));
     }
 
     @PostMapping("/{planId}/incomes")

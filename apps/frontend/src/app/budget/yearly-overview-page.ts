@@ -2,11 +2,14 @@ import { CurrencyPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialog } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { Year } from './budget.model';
 import { YearlyOverviewStore } from './data-access/yearly-overview-store';
+import { copiedMessage, openCopyPlanDialog } from './ui/copy-plan-dialog';
 import { YearChange } from './ui/year-change';
 
 /**
@@ -20,6 +23,7 @@ import { YearChange } from './ui/year-change';
     CurrencyPipe,
     MatButtonModule,
     MatCardModule,
+    MatIconModule,
     MatProgressBarModule,
     RouterLink,
     YearChange,
@@ -63,6 +67,7 @@ import { YearChange } from './ui/year-change';
               <th scope="col" class="amount">Einnahmen</th>
               <th scope="col" class="amount">Ausgaben</th>
               <th scope="col" class="amount">Überschuss</th>
+              <th scope="col" class="actions"><span class="visually-hidden">Aktionen</span></th>
             </tr>
           </thead>
           <tbody>
@@ -89,6 +94,17 @@ import { YearChange } from './ui/year-change';
                     <span class="deficit-label">Defizit</span>
                   }
                   <app-year-change kind="balance" [change]="entry.balanceChange" />
+                </td>
+                <td class="actions">
+                  <button
+                    matIconButton
+                    type="button"
+                    [attr.aria-label]="'Plan ' + entry.year + ' als Vorlage übernehmen'"
+                    title="Als Vorlage übernehmen"
+                    (click)="$event.stopPropagation(); copyPlan(entry.year)"
+                  >
+                    <mat-icon svgIcon="content_copy" />
+                  </button>
                 </td>
               </tr>
             }
@@ -166,6 +182,18 @@ import { YearChange } from './ui/year-change';
     .amount {
       text-align: right;
     }
+    .actions {
+      width: 48px;
+      padding: 4px 8px;
+      vertical-align: middle;
+    }
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
     td.amount {
       font-variant-numeric: tabular-nums;
     }
@@ -192,6 +220,7 @@ export class YearlyOverviewPage implements OnInit {
   protected readonly store = inject(YearlyOverviewStore);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   protected readonly creating = signal(false);
 
@@ -202,6 +231,16 @@ export class YearlyOverviewPage implements OnInit {
   /** Opens the plan of the year (JU-11). */
   protected open(year: Year): Promise<boolean> {
     return this.router.navigate(['/jahre', year]);
+  }
+
+  /** Takes over the plan of the year as template for another year and opens that one (PU-12, PU-15). */
+  protected copyPlan(sourceYear: Year): void {
+    openCopyPlanDialog(this.dialog, { sourceYear }).subscribe(async (copied) => {
+      if (copied) {
+        await this.open(copied.targetYear);
+        this.snackBar.open(copiedMessage(copied), undefined, { duration: 3000 });
+      }
+    });
   }
 
   /** Creates the plan of the current year and opens it (JU-12). */

@@ -12,11 +12,14 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
 - **HP-1**: Ein Plan gilt für genau ein Kalenderjahr von 1900 bis einschließlich 2200.
   Pläne für andere Jahre werden weder angelegt noch abgerufen. Bereits gespeicherte Pläne außerhalb dieser Jahre
   bleiben in der Datenbank, sind aber nicht mehr erreichbar.
-- **HP-2**: Ein Benutzer hat höchstens einen Plan pro Jahr. Ein zweiter Plan für dasselbe Jahr wird abgelehnt.
+- **HP-2**: Ein Benutzer hat höchstens einen Plan pro Jahr. Ein zweiter Plan für dasselbe Jahr wird abgelehnt; wird
+  ein Plan in ein Jahr übernommen, das schon einen hat, wird dieser nur nach Bestätigung überschrieben (PU-9 in
+  [plan-uebernehmen.md](plan-uebernehmen.md)).
 - **HP-3**: Ein Plan gehört dem Benutzer, der ihn angelegt hat (Besitzer). Der Besitzer ändert sich nie.
 - **HP-4**: Nur der Besitzer sieht und ändert seinen Plan. Pläne anderer Benutzer werden behandelt, als gäbe es sie
   nicht, damit ihre Existenz nicht verraten wird.
-- **HP-5**: Ein neuer Plan ist leer. Posten kommen erst danach hinzu (siehe [posten.md](posten.md)).
+- **HP-5**: Ein neuer Plan ist leer. Posten kommen erst danach hinzu (siehe [posten.md](posten.md)), außer der Plan
+  entsteht durch Übernahme eines anderen Plans (PU-8 in [plan-uebernehmen.md](plan-uebernehmen.md)).
 - **HP-6**: Gleichzeitige Änderungen am selben Plan werden nacheinander ausgeführt, keine geht verloren.
 - **HP-7**: Jede Änderung wird als Domain Event protokolliert, aber nur, wenn sie erfolgreich gespeichert wurde.
 
@@ -45,7 +48,6 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
 
 - Plan löschen oder auf ein anderes Jahr verschieben
 - Plan mit anderen Benutzern teilen
-- Plan aus dem Vorjahr kopieren
 
 ## Umsetzung
 

@@ -48,6 +48,18 @@ describe('BudgetApi', () => {
     await expect(result).rejects.toMatchObject({ status: 500 });
   });
 
+  // PU-2, PU-9
+  it('copies a plan to a target year, overwriting only if allowed', async () => {
+    const result = firstValueFrom(api.copyPlan(planId, { targetYear: 2027, overwrite: false }));
+
+    const req = http.expectOne(`/api/plans/${planId}/copies`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ targetYear: 2027, overwrite: false });
+    req.flush({ id: 'copy', overview: emptyOverview });
+
+    expect(await result).toEqual({ id: 'copy', overview: emptyOverview });
+  });
+
   // JU-1
   it('fetches the yearly overview of all plans', async () => {
     const result = firstValueFrom(api.getYearlyOverview());

@@ -1,6 +1,7 @@
 package de.jcss.hbt.infrastructure.web;
 
 import de.jcss.hbt.application.householdplan.AddedBudgetItem;
+import de.jcss.hbt.application.householdplan.CopiedHouseholdPlan;
 import de.jcss.hbt.application.householdplan.CreatedHouseholdPlan;
 import de.jcss.hbt.application.householdplan.HouseholdPlanApplicationService;
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
@@ -21,6 +22,7 @@ import de.jcss.hbt.domain.householdplan.OwnerId;
 import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
 import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
 import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
+import de.jcss.hbt.domain.householdplan.command.CopyHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderBudgetItemsCommand;
@@ -112,6 +114,90 @@ class HouseholdPlanControllerTest {
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(plans);
+    }
+
+    /** PU-8, PU-15 */
+    @Test
+    void copyPlanReturns201WithIdAndOverviewOfTheNewPlan() throws Exception {
+        HouseholdPlanId target = HouseholdPlanId.generate();
+        when(plans.copyPlan(new CopyHouseholdPlanCommand(OWNER, PLAN_ID, Year.of(2027), false)))
+                .thenReturn(new CopiedHouseholdPlan(target, false, EMPTY_OVERVIEW));
+
+        mockMvc.perform(post("/api/plans/{planId}/copies", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"targetYear":2027}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(target.value().toString()))
+                .andExpect(jsonPath("$.overview.year").value(2026));
+    }
+
+    /** PU-9 */
+    @Test
+    void copyPlanReturns200IfItOverwroteThePlanOfTheTargetYear() throws Exception {
+        when(plans.copyPlan(new CopyHouseholdPlanCommand(OWNER, PLAN_ID, Year.of(2027), true)))
+                .thenReturn(new CopiedHouseholdPlan(PLAN_ID, true, EMPTY_OVERVIEW));
+
+        mockMvc.perform(post("/api/plans/{planId}/copies", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"targetYear":2027,"overwrite":true}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(PLAN.toString()));
+    }
+
+    /** PU-9 */
+    @Test
+    void copyPlanReturns409IfTheTargetYearHasAPlanThatMayNotBeOverwritten() throws Exception {
+        when(plans.copyPlan(any())).thenThrow(new HouseholdPlanAlreadyExistsException(Year.of(2027)));
+
+        mockMvc.perform(post("/api/plans/{planId}/copies", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"targetYear":2027,"overwrite":false}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.type").value("urn:hbt:plan-already-exists"));
+    }
+
+    /** PU-2, HP-1 */
+    @Test
+    void copyPlanRejectsTargetYearsOutOfRangeOrMissing() throws Exception {
+        for (String body : List.of("{\"targetYear\":1899}", "{\"targetYear\":2201}", "{}")) {
+            mockMvc.perform(post("/api/plans/{planId}/copies", PLAN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isBadRequest());
+        }
+        verifyNoInteractions(plans);
+    }
+
+    /** PU-2 */
+    @Test
+    void copyPlanIntoTheYearOfTheSourceReturns400() throws Exception {
+        when(plans.copyPlan(any())).thenThrow(new DomainValidationException("the target year must differ"));
+
+        mockMvc.perform(post("/api/plans/{planId}/copies", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"targetYear":2026}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    /** HP-4 */
+    @Test
+    void copyPlanOfSomeoneElseReturns404() throws Exception {
+        when(plans.copyPlan(any())).thenThrow(new HouseholdPlanNotFoundException(PLAN_ID));
+
+        mockMvc.perform(post("/api/plans/{planId}/copies", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"targetYear":2027}
+                                """))
+                .andExpect(status().isNotFound());
     }
 
     /** AU-1, AU-3, AU-4 */

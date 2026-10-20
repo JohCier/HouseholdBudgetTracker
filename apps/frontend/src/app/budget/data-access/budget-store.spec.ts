@@ -40,6 +40,7 @@ describe('BudgetStore', () => {
     api = {
       getOverview: vi.fn((year: number) => of(plannedYears.includes(year) ? overview(year) : null)),
       getYearlyOverview: vi.fn(() => of({ years: [] })),
+      copyPlan: vi.fn(),
       createPlan: vi.fn((year: number) => of({ id: `plan-${year}`, overview: overview(year, []) })),
       addIncome: vi.fn((planId: string) =>
         of({ id: 'added', overview: overview(yearOf(planId), [item, added]) }),
