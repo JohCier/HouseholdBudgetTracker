@@ -1,21 +1,12 @@
-import { expect, Locator, Page, test } from "@playwright/test";
-import {
-  addExpense,
-  addIncome,
-  itemRow,
-  registerWithPlan,
-  sumRow,
-  yearRow,
-} from "./support";
+import { expect, Locator, Page, test } from '@playwright/test';
+import { addExpense, addIncome, itemRow, registerWithPlan, sumRow, yearRow } from './support';
 
 const PHONE = { width: 390, height: 844 };
 
 /** Whether the page is wider than the screen, so it scrolls sideways (MA-1). */
 async function scrollsSideways(page: Page): Promise<boolean> {
   return page.evaluate(
-    () =>
-      document.documentElement.scrollWidth >
-      document.documentElement.clientWidth,
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
 }
 
@@ -38,137 +29,116 @@ async function rightEdge(locator: Locator): Promise<number> {
 }
 
 // docs/specs/mobile-ansicht.md
-test.describe("Ansicht auf schmalen Bildschirmen", () => {
+test.describe('Ansicht auf schmalen Bildschirmen', () => {
   test.beforeEach(async ({ page }) => {
     // Filled in on a wide screen, as the form is the same on every width
     await registerWithPlan(page);
-    await addIncome(page, "Gehalt", "3000", undefined, "Monatlich");
+    await addIncome(page, 'Gehalt', '3000', undefined, 'Monatlich');
+    await addExpense(page, 'Darlehen', '830', 'Lebensunterhalt', 'Haus', 'Monatlich');
     await addExpense(
       page,
-      "Darlehen",
-      "830",
-      "Lebensunterhalt",
-      "Haus",
-      "Monatlich",
+      'Grundsteuer und Gebäudeversicherung',
+      '1200',
+      'Lebensunterhalt',
+      'Haus',
     );
-    await addExpense(
-      page,
-      "Grundsteuer und Gebäudeversicherung",
-      "1200",
-      "Lebensunterhalt",
-      "Haus",
-    );
-    await addExpense(
-      page,
-      "Streaming",
-      "18",
-      "Freizeit & Spaß",
-      undefined,
-      "Monatlich",
-    );
+    await addExpense(page, 'Streaming', '18', 'Freizeit & Spaß', undefined, 'Monatlich');
   });
 
-  test("der Plan ist auf dem Handy nicht breiter als der Bildschirm (MA-1)", async ({
-    page,
-  }) => {
+  test('der Plan ist auf dem Handy nicht breiter als der Bildschirm (MA-1)', async ({ page }) => {
     await page.setViewportSize(PHONE);
     await expect.poll(() => scrollsSideways(page)).toBe(false);
   });
 
-  test("ein Posten steht auf dem Handy in zwei Zeilen, die Beträge unter ihren Spalten (MA-2, MA-4)", async ({
+  test('ein Posten steht auf dem Handy in zwei Zeilen, die Beträge unter ihren Spalten (MA-2, MA-4)', async ({
     page,
   }) => {
     await page.setViewportSize(PHONE);
-    const item = itemRow(page, "Grundsteuer und Gebäudeversicherung");
-    const description = item.locator(".description");
-    const monthly = item.locator(".amount.monthly");
-    const yearly = item.locator(".amount.yearly");
+    const item = itemRow(page, 'Grundsteuer und Gebäudeversicherung');
+    const description = item.locator('.description');
+    const monthly = item.locator('.amount.monthly');
+    const yearly = item.locator('.amount.yearly');
 
     // At most three lines, instead of one letter per line
     const lineHeight = await description.evaluate((element) =>
       parseFloat(getComputedStyle(element).lineHeight),
     );
-    expect((await box(description)).height).toBeLessThanOrEqual(
-      3 * lineHeight + 16,
-    );
+    expect((await box(description)).height).toBeLessThanOrEqual(3 * lineHeight + 16);
     // The amounts below the description, lined up below "Monat" and "Jahr"
     expect((await box(monthly)).y).toBeGreaterThanOrEqual(
       (await box(description)).y + (await box(description)).height - 1,
     );
-    const columns = page.locator("app-budget-entries .columns");
-    const monthColumn = columns.getByText("Monat", { exact: true });
-    const yearColumn = columns.getByText("Jahr", { exact: true });
-    expect(
-      Math.abs((await rightEdge(monthly)) - (await rightEdge(monthColumn))),
-    ).toBeLessThan(2);
-    expect(
-      Math.abs((await rightEdge(yearly)) - (await rightEdge(yearColumn))),
-    ).toBeLessThan(2);
+    const columns = page.locator('app-budget-entries .columns');
+    const monthColumn = columns.getByText('Monat', { exact: true });
+    const yearColumn = columns.getByText('Jahr', { exact: true });
+    expect(Math.abs((await rightEdge(monthly)) - (await rightEdge(monthColumn)))).toBeLessThan(2);
+    expect(Math.abs((await rightEdge(yearly)) - (await rightEdge(yearColumn)))).toBeLessThan(2);
     await expectWithinScreenWidth(
-      page.getByRole("button", {
-        name: "Eintrag Grundsteuer und Gebäudeversicherung löschen",
+      page.getByRole('button', {
+        name: 'Eintrag Grundsteuer und Gebäudeversicherung löschen',
       }),
     );
   });
 
-  test("ein Posten ohne Griff steht bündig mit einem Posten mit Griff (MA-4)", async ({
-    page,
-  }) => {
+  test('ein Posten ohne Griff steht bündig mit einem Posten mit Griff (MA-4)', async ({ page }) => {
     await page.setViewportSize(PHONE);
-    const withHandle = await box(
-      itemRow(page, "Darlehen").locator(".description"),
-    );
-    const withoutHandle = await box(
-      itemRow(page, "Streaming").locator(".description"),
-    );
+    const withHandle = await box(itemRow(page, 'Darlehen').locator('.description'));
+    const withoutHandle = await box(itemRow(page, 'Streaming').locator('.description'));
     expect(Math.abs(withHandle.x - withoutHandle.x)).toBeLessThan(2);
   });
 
-  test("in einer Summenzeile stehen auf dem Handy die Beträge unter der Bezeichnung (MA-3)", async ({
+  test('passt eine Summenzeile nicht in eine Zeile, stehen die Beträge unter der Bezeichnung (MA-3)', async ({
     page,
   }) => {
     await page.setViewportSize(PHONE);
-    const sum = sumRow(page, "Lebensunterhalt", "Haus");
-    const label = await box(sum.getByText("Summe Haus"));
-    const monthly = sum.locator(".total.monthly");
-    await expect(monthly).toHaveText("930,00 €");
-    await expect(sum.locator(".total.yearly")).toHaveText("11.160,00 €");
-    expect((await box(monthly)).y).toBeGreaterThanOrEqual(
-      label.y + label.height - 1,
-    );
-    const monthColumn = page
-      .locator("app-budget-entries .columns")
-      .getByText("Monat");
-    expect(
-      Math.abs((await rightEdge(monthly)) - (await rightEdge(monthColumn))),
-    ).toBeLessThan(2);
-    await expectWithinScreenWidth(
-      page.getByRole("button", { name: "Posten in Haus hinzufügen" }),
-    );
+    const sum = sumRow(page, 'Lebensunterhalt', 'Haus');
+    const label = await box(sum.getByText('Summe Haus'));
+    const monthly = sum.locator('.total.monthly');
+    await expect(monthly).toHaveText('930,00 €');
+    await expect(sum.locator('.total.yearly')).toHaveText('11.160,00 €');
+    expect((await box(monthly)).y).toBeGreaterThanOrEqual(label.y + label.height - 1);
+    const monthColumn = page.locator('app-budget-entries .columns').getByText('Monat');
+    expect(Math.abs((await rightEdge(monthly)) - (await rightEdge(monthColumn)))).toBeLessThan(2);
+    await expectWithinScreenWidth(page.getByRole('button', { name: 'Posten in Haus hinzufügen' }));
   });
 
-  test("auf einem breiten Bildschirm steht ein Posten weiterhin in einer Zeile (MA-2)", async ({
+  test('passt eine Summenzeile in eine Zeile, bleibt sie einzeilig, auch wenn die Posten zweizeilig stehen (MA-2, MA-3)', async ({
+    page,
+  }) => {
+    // Next to the form the card is narrow enough for two-line items, but "Summe Haus" fits on one line
+    await page.setViewportSize({ width: 900, height: 900 });
+    const item = itemRow(page, 'Darlehen');
+    expect((await box(item.locator('.amount.monthly'))).y).toBeGreaterThanOrEqual(
+      (await box(item.locator('.description'))).y +
+        (await box(item.locator('.description'))).height -
+        1,
+    );
+    const sum = sumRow(page, 'Lebensunterhalt', 'Haus');
+    const label = await box(sum.getByText('Summe Haus'));
+    const monthly = sum.locator('.total.monthly');
+    expect((await box(monthly)).y).toBeLessThan(label.y + label.height);
+    const monthColumn = page.locator('app-budget-entries .columns').getByText('Monat');
+    expect(Math.abs((await rightEdge(monthly)) - (await rightEdge(monthColumn)))).toBeLessThan(2);
+  });
+
+  test('auf einem breiten Bildschirm steht ein Posten weiterhin in einer Zeile (MA-2)', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
-    const item = itemRow(page, "Darlehen");
-    const description = await box(item.locator(".description"));
-    const monthly = await box(item.locator(".amount.monthly"));
+    const item = itemRow(page, 'Darlehen');
+    const description = await box(item.locator('.description'));
+    const monthly = await box(item.locator('.amount.monthly'));
     expect(monthly.y).toBeLessThan(description.y + description.height);
     expect(monthly.x).toBeGreaterThan(description.x + description.width - 1);
   });
 
-  test("die Jahresübersicht passt auf den Bildschirm des Handys (MA-1, MA-5)", async ({
-    page,
-  }) => {
+  test('die Jahresübersicht passt auf den Bildschirm des Handys (MA-1, MA-5)', async ({ page }) => {
     await page.setViewportSize(PHONE);
-    await page.goto("/");
+    await page.goto('/');
     const year = new Date().getFullYear();
     await expect(yearRow(page, year)).toBeVisible();
     await expect.poll(() => scrollsSideways(page)).toBe(false);
-    await expect(
-      page.getByRole("button", { name: `Plan ${year} löschen` }),
-    ).toBeInViewport({
+    await expect(page.getByRole('button', { name: `Plan ${year} löschen` })).toBeInViewport({
       ratio: 1,
     });
   });
@@ -177,12 +147,10 @@ test.describe("Ansicht auf schmalen Bildschirmen", () => {
     page,
   }) => {
     await page.setViewportSize(PHONE);
-    await page
-      .getByRole("button", { name: "Posten in Haus hinzufügen" })
-      .click();
-    const dialog = page.getByRole("dialog");
-    await expect(dialog.getByLabel("Beschreibung")).toBeFocused();
-    const type = dialog.getByRole("radiogroup", { name: "Art des Eintrags" });
+    await page.getByRole('button', { name: 'Posten in Haus hinzufügen' }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByLabel('Beschreibung')).toBeFocused();
+    const type = dialog.getByRole('radiogroup', { name: 'Art des Eintrags' });
     expect((await box(type)).height).toBeGreaterThanOrEqual(36);
   });
 });

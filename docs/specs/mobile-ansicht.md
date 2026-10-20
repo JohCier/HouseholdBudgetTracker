@@ -1,6 +1,6 @@
 # Ansicht auf schmalen Bildschirmen
 
-Status: in Arbeit
+Status: umgesetzt
 
 ## Zweck
 
@@ -21,8 +21,10 @@ nicht, nur die Anordnung (insbesondere MJ-12 und EG-5 bis EG-7).
   Formular), steht ein Posten in zwei Zeilen: oben Griff, Beschreibung und die Knöpfe „Bearbeiten" und „Löschen",
   darunter rechtsbündig Monats- und Jahresbetrag. Die Spaltenköpfe „Monat" und „Jahr" stehen über diesen Beträgen.
   Ist die Karte breit genug, bleibt alles in einer Zeile wie bisher (MJ-12).
-- **MA-3**: Ebenso stehen bei schmaler Karte in jeder Summenzeile (EG-5, EG-6) oben „Summe ‹…›" und gegebenenfalls
-  der Knopf „Posten hinzufügen" (EG-9), darunter die Beträge in den Spalten „Monat" und „Jahr".
+- **MA-3**: Bei schmaler Karte bleibt eine Summenzeile (EG-5, EG-6) einzeilig, wenn „Summe ‹…›", gegebenenfalls der
+  Knopf „Posten hinzufügen" (EG-9) und beide Beträge nebeneinander passen. Sonst stehen oben „Summe ‹…›" und der
+  Knopf, darunter die Beträge. Die Beträge stehen in beiden Fällen in den Spalten „Monat" und „Jahr"; der Knopf steht
+  bei schmaler Karte neben der Bezeichnung.
 - **MA-4**: Die Beschreibung eines Postens bricht nur zwischen Wörtern oder mit Silbentrennung um, nie Buchstabe für
   Buchstabe. Posten ohne Griff (allein in ihrer Gruppe) stehen bündig mit Posten mit Griff.
 - **MA-5**: In der Jahresübersicht passen auf dem Handy alle Spalten auf den Bildschirm; die Knöpfe „Als Vorlage
@@ -37,8 +39,10 @@ nicht, nur die Anordnung (insbesondere MJ-12 und EG-5 bis EG-7).
   Benutzer den Plan öffnet, **dann** ist die Seite nicht breiter als der Bildschirm (MA-1).
 - **Gegeben** derselbe Plan, **dann** steht die Beschreibung „Grundsteuer und Gebäudeversicherung" auf höchstens drei
   Zeilen, und Monats- und Jahresbetrag stehen unter ihr, rechtsbündig unter „Monat" und „Jahr" (MA-2, MA-4).
-- **Gegeben** die Gruppe „Haus", **dann** steht unter „Summe Haus" der Monats- und der Jahresbetrag, unter „Monat" und
-  „Jahr"; der Knopf „Posten in Haus hinzufügen" ist sichtbar (MA-3).
+- **Gegeben** die Gruppe „Haus" auf einem 390 px breiten Bildschirm, **dann** steht unter „Summe Haus" der Monats- und
+  der Jahresbetrag, unter „Monat" und „Jahr"; der Knopf „Posten in Haus hinzufügen" ist sichtbar (MA-3).
+- **Gegeben** derselbe Plan auf einem 900 px breiten Bildschirm (Karte neben dem Formular), **dann** stehen die Posten
+  zweizeilig, „Summe Haus" aber mit ihren Beträgen in einer Zeile (MA-2, MA-3).
 - **Gegeben** derselbe Plan auf einem 1280 px breiten Bildschirm, **dann** stehen Beschreibung und Beträge eines
   Postens in einer Zeile (MA-2).
 - **Gegeben** die Jahresübersicht auf einem 390 px breiten Bildschirm, **dann** ist die Seite nicht breiter als der
@@ -55,18 +59,17 @@ nicht, nur die Anordnung (insbesondere MJ-12 und EG-5 bis EG-7).
 ## Umsetzung
 
 - `budget/ui/budget-entries.scss`: Die Karte ist ein Container (`container-type: inline-size`); unter 600 px
-  Kartenbreite ordnet ein Grid Posten und Summenzeilen zweizeilig an (MA-2, MA-3). Die Beschreibung trennt mit
+  Kartenbreite ordnet ein Grid die Posten zweizeilig an (MA-2). In Summenzeilen bilden die Beträge eine Einheit
+  (`.amounts`), die als Ganzes in die nächste Zeile umbricht, wenn sie nicht neben die Bezeichnung passt (MA-3). Die Beschreibung trennt mit
   `hyphens: auto`, der Platzhalter für den Griff ist so breit wie der Griff (MA-4)
 - `budget/budget-dashboard.ts`: Die Spalten des Rasters dürfen schmaler als ihr Inhalt werden (`minmax(0, 1fr)`,
   `min-width: 0`), sodass keine Karte die Seite verbreitert (MA-1)
 - `budget/yearly-overview-page.ts`: Unter 600 px Bildschirmbreite stehen die Knöpfe untereinander, die Karte scrollt
   im Notfall waagerecht (MA-1, MA-5)
 - `budget/ui/add-item-dialog.ts`, `edit-item-dialog.ts`, `copy-plan-dialog.ts`: Felder schrumpfen nicht (MA-6)
-- E2E: `e2e/tests/mobile-ansicht.spec.ts` (MA-1 bis MA-6) mit einem Viewport von 390 × 844 px
+- E2E: `e2e/tests/mobile-ansicht.spec.ts` (MA-1 bis MA-6) mit Viewports von 390 × 844 px, 900 px und 1280 px
 
 ## Offene Fragen
 
-- Reicht die zweizeilige Anordnung, oder soll auf dem Handy nur ein Betrag (z. B. der Monatsbetrag) zu sehen sein, um
-  Platz zu sparen?
-- Sollen die Summenzeilen bei schmaler Karte auch einzeilig bleiben dürfen, wenn Bezeichnung und Beträge
-  nebeneinander passen? Heute stehen sie immer zweizeilig, damit alle Zeilen gleich aufgebaut sind.
+Keine. Entschieden bei der Freigabe: Auf dem Handy bleiben Monats- und Jahresbetrag zu sehen (MA-2); Summenzeilen
+stehen einzeilig, wenn alles nebeneinander passt, sonst zweizeilig (MA-3).
