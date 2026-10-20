@@ -184,10 +184,12 @@
         </div>
         <div class="summary group-summary">
           <span class="summary-label">Summe {{ group.subcategory }}</span>
-          <span class="amount-column total monthly">{{
-            group.monthlyTotal | currency: 'EUR'
-          }}</span>
-          <span class="amount-column total yearly">{{ group.total | currency: 'EUR' }}</span>
+          <span class="amounts">
+            <span class="amount-column total monthly">{{
+              group.monthlyTotal | currency: 'EUR'
+            }}</span>
+            <span class="amount-column total yearly">{{ group.total | currency: 'EUR' }}</span>
+          </span>
           <span class="actions">
             <button
               matIconButton
@@ -216,18 +218,20 @@
 >
   <div class="summary" [class.area-summary]="area">
     <span class="summary-label">Summe {{ label }}</span>
-    <span
-      class="amount-column total monthly"
-      [class.income-amount]="sign === '+'"
-      [class.expense-amount]="sign === '−'"
-      >{{ sign }}{{ monthly | currency: 'EUR' }}</span
-    >
-    <span
-      class="amount-column total yearly"
-      [class.income-amount]="sign === '+'"
-      [class.expense-amount]="sign === '−'"
-      >{{ sign }}{{ yearly | currency: 'EUR' }}</span
-    >
+    <span class="amounts">
+      <span
+        class="amount-column total monthly"
+        [class.income-amount]="sign === '+'"
+        [class.expense-amount]="sign === '−'"
+        >{{ sign }}{{ monthly | currency: 'EUR' }}</span
+      >
+      <span
+        class="amount-column total yearly"
+        [class.income-amount]="sign === '+'"
+        [class.expense-amount]="sign === '−'"
+        >{{ sign }}{{ yearly | currency: 'EUR' }}</span
+      >
+    </span>
     <span class="actions-space"></span>
   </div>
 </ng-template>

@@ -60,7 +60,7 @@ import { YearChange } from './ui/year-change';
     }
 
     @if (store.years().length > 0) {
-      <mat-card appearance="outlined">
+      <mat-card appearance="outlined" class="years">
         <table>
           <thead>
             <tr>
@@ -224,10 +224,22 @@ import { YearChange } from './ui/year-change';
     .deficit-label {
       color: var(--mat-sys-error);
     }
+    /* Scrolls inside the card rather than widening the page, should the amounts get very long (MA-1) */
+    .years {
+      overflow-x: auto;
+    }
     @media (max-width: 600px) {
       th,
       td {
-        padding: 8px;
+        padding: 8px 4px;
+      }
+      /* The buttons on top of each other, so the four columns of amounts fit on a phone (MA-4) */
+      .actions {
+        width: 48px;
+        padding: 4px 0;
+      }
+      .actions button {
+        display: block;
       }
     }
   `,
