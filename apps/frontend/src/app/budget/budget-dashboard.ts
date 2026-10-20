@@ -204,6 +204,10 @@ import { parseYear } from './year';
       gap: 16px;
       padding-top: 16px;
     }
+    /* Narrower than their content, so a wide card cannot push the page past the screen (MA-1) */
+    .grid > * {
+      min-width: 0;
+    }
     .side {
       display: flex;
       flex-direction: column;
@@ -211,7 +215,7 @@ import { parseYear } from './year';
     }
     @media (max-width: 860px) {
       .grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
       }
     }
   `,

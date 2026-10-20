@@ -1,3 +1,10 @@
+// The layout follows the width of the card, not of the screen: next to the form on a wide screen
+// the card is about as narrow as on a phone (MA-2)
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
 mat-card-content {
   display: flex;
   flex-direction: column;
@@ -177,8 +184,9 @@ h4 {
   color: var(--mat-sys-on-surface-variant);
 }
 
+// As wide as the handle, so items without one line up with those that have one
 .handle-space {
-  flex: 0 0 48px;
+  flex: 0 0 40px;
 }
 
 .income-amount {
@@ -205,6 +213,83 @@ h4 {
   color: var(--mat-sys-on-surface-variant);
   padding: 16px 0 0;
   margin: 0;
+}
+
+// Too narrow for one line per item: the amounts move to a second line below the description, so the
+// description keeps its width (MA-2, MA-3)
+@container (max-width: 599px) {
+  .amount-column {
+    flex-basis: 7rem;
+  }
+
+  .columns .actions-space,
+  .summary .actions-space {
+    display: none;
+  }
+
+  .items,
+  .group-summary {
+    margin-left: 16px;
+  }
+
+  .item,
+  .summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) 7rem 7rem;
+    grid-template-areas:
+      'handle description description actions'
+      'handle . monthly yearly';
+    column-gap: 8px;
+    align-items: center;
+  }
+
+  .summary {
+    grid-template-areas:
+      'description description description actions'
+      '. . monthly yearly';
+    padding-bottom: 4px;
+  }
+
+  .handle,
+  .handle-space {
+    grid-area: handle;
+  }
+
+  .handle-space {
+    width: 40px;
+  }
+
+  .description,
+  .summary-label {
+    grid-area: description;
+  }
+
+  .description {
+    padding-bottom: 0;
+    hyphens: auto;
+  }
+
+  .summary-label {
+    padding-top: 8px;
+  }
+
+  .monthly {
+    grid-area: monthly;
+  }
+
+  .yearly {
+    grid-area: yearly;
+  }
+
+  .monthly,
+  .yearly {
+    padding-bottom: 8px;
+  }
+
+  .actions {
+    grid-area: actions;
+    justify-self: end;
+  }
 }
 
 .cdk-drag-preview {
