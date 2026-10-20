@@ -2,6 +2,7 @@ package de.jcss.hbt.domain.householdplan.command;
 
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemNote;
+import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
@@ -12,11 +13,13 @@ import java.util.Objects;
 /**
  * Plan an income of the given amount in a household plan of the given owner.
  *
- * @param note {@code null} if the income has no note
+ * @param subcategory {@code null} if the income has no subcategory
+ * @param note        {@code null} if the income has no note
  */
 @Command
 public record AddIncomeCommand(OwnerId owner, HouseholdPlanId planId, BudgetItemDescription description,
-                               Money amount, BudgetItemNote note) {
+                               Money amount, BudgetItemSubcategory subcategory,
+                               BudgetItemNote note) {
 
     public AddIncomeCommand {
         Objects.requireNonNull(owner, "owner must not be null");

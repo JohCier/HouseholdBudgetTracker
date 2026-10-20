@@ -12,6 +12,8 @@ import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
 import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
+import de.jcss.hbt.domain.householdplan.command.ReorderBudgetItemsCommand;
+import de.jcss.hbt.domain.householdplan.command.ReorderSubcategoriesCommand;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverviewQueryHandler;
 import org.springframework.context.ApplicationEventPublisher;
@@ -73,7 +75,8 @@ public class HouseholdPlanApplicationService {
 
     public AddedBudgetItem addIncome(AddIncomeCommand command) {
         HouseholdPlan plan = load(command.planId(), command.owner());
-        BudgetItemId itemId = plan.addIncome(command.description(), command.amount(), command.note());
+        BudgetItemId itemId = plan.addIncome(command.description(), command.amount(), command.subcategory(),
+                command.note());
         saveAndPublishEvents(plan);
         return new AddedBudgetItem(itemId, overviewOf(plan, command.owner()));
     }
@@ -81,7 +84,7 @@ public class HouseholdPlanApplicationService {
     public AddedBudgetItem addExpense(AddExpenseCommand command) {
         HouseholdPlan plan = load(command.planId(), command.owner());
         BudgetItemId itemId = plan.addExpense(command.description(), command.amount(), command.category(),
-                command.note());
+                command.subcategory(), command.note());
         saveAndPublishEvents(plan);
         return new AddedBudgetItem(itemId, overviewOf(plan, command.owner()));
     }
@@ -89,7 +92,7 @@ public class HouseholdPlanApplicationService {
     public HouseholdPlanOverview changeItem(ChangeBudgetItemCommand command) {
         HouseholdPlan plan = load(command.planId(), command.owner());
         plan.changeItem(command.itemId(), command.description(), command.amount(), command.category(),
-                command.note());
+                command.subcategory(), command.note());
         saveAndPublishEvents(plan);
         return overviewOf(plan, command.owner());
     }
@@ -97,6 +100,20 @@ public class HouseholdPlanApplicationService {
     public HouseholdPlanOverview removeItem(RemoveBudgetItemCommand command) {
         HouseholdPlan plan = load(command.planId(), command.owner());
         plan.removeItem(command.itemId());
+        saveAndPublishEvents(plan);
+        return overviewOf(plan, command.owner());
+    }
+
+    public HouseholdPlanOverview reorderItems(ReorderBudgetItemsCommand command) {
+        HouseholdPlan plan = load(command.planId(), command.owner());
+        plan.reorderItems(command.order());
+        saveAndPublishEvents(plan);
+        return overviewOf(plan, command.owner());
+    }
+
+    public HouseholdPlanOverview reorderSubcategories(ReorderSubcategoriesCommand command) {
+        HouseholdPlan plan = load(command.planId(), command.owner());
+        plan.reorderSubcategories(command.section(), command.order());
         saveAndPublishEvents(plan);
         return overviewOf(plan, command.owner());
     }

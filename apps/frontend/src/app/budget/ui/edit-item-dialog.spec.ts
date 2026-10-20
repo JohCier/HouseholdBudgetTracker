@@ -12,6 +12,7 @@ const rent: BudgetItem = {
   amount: '850.00',
   type: 'EXPENSE',
   category: 'LEBENSUNTERHALT',
+  subcategory: null,
   note: null,
 };
 const salary: BudgetItem = {
@@ -20,18 +21,25 @@ const salary: BudgetItem = {
   amount: '3000.00',
   type: 'INCOME',
   category: null,
+  subcategory: null,
   note: null,
 };
 
 // PB-1, PB-2, PB-3
 describe('EditItemDialog', () => {
-  let store: { changeItem: ReturnType<typeof vi.fn> };
+  let store: {
+    changeItem: ReturnType<typeof vi.fn>;
+    subcategorySuggestions: ReturnType<typeof vi.fn>;
+  };
   let dialogRef: { close: ReturnType<typeof vi.fn> };
   let fixture: ComponentFixture<EditItemDialog>;
   let element: HTMLElement;
 
   async function open(item: BudgetItem) {
-    store = { changeItem: vi.fn(async () => undefined) };
+    store = {
+      changeItem: vi.fn(async () => undefined),
+      subcategorySuggestions: vi.fn(() => ['Auto']),
+    };
     dialogRef = { close: vi.fn() };
     TestBed.configureTestingModule({
       providers: [
@@ -47,7 +55,7 @@ describe('EditItemDialog', () => {
 
   function input(name: string): HTMLInputElement {
     return element.querySelector<HTMLInputElement>(
-      `input[formcontrolname="${name}"], textarea[formcontrolname="${name}"]`,
+      `[formcontrolname="${name}"], input[name="${name}"]`,
     )!;
   }
 
@@ -135,6 +143,31 @@ describe('EditItemDialog', () => {
       amount: '3000',
       note: 'brutto',
     });
+  });
+
+  it('shows the current subcategory and saves a changed one (UK-4)', async () => {
+    await open({ ...rent, subcategory: 'Wohnen' });
+    expect(input('subcategory').value).toBe('Wohnen');
+
+    await type('subcategory', 'Auto');
+    await save();
+
+    expect(store.changeItem).toHaveBeenCalledWith('2', {
+      description: 'Miete',
+      amount: '850',
+      category: 'LEBENSUNTERHALT',
+      subcategory: 'Auto',
+    });
+    expect(store.subcategorySuggestions).toHaveBeenCalledWith('EXPENSE');
+  });
+
+  it('moves the item to "Sonstiges" when the subcategory is emptied (UK-4)', async () => {
+    await open({ ...salary, subcategory: 'Gehalt' });
+
+    await type('subcategory', '');
+    await save();
+
+    expect(store.changeItem).toHaveBeenCalledWith('1', { description: 'Gehalt', amount: '3000' });
   });
 
   it('removes the note when it is emptied (PN-4)', async () => {

@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,7 +25,7 @@ class HouseholdPlanOverviewTest {
 
     @Test
     void withNoItemsEverythingIsZeroAndNoTargetIsMissed() {
-        HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, YEAR, List.of());
+        HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, YEAR, List.of(), Map.of());
 
         assertThat(overview.planId()).isEqualTo(PLAN_ID);
         assertThat(overview.year()).isEqualTo(YEAR);
@@ -108,7 +109,7 @@ class HouseholdPlanOverviewTest {
     @Test
     void spendingWithoutIncomeMissesCeilings() {
         HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, YEAR,
-                List.of(expense(ExpenseCategory.FREIZEIT_SPASS, "50.00")));
+                List.of(expense(ExpenseCategory.FREIZEIT_SPASS, "50.00")), Map.of());
 
         assertThat(breakdownFor(overview, ExpenseCategory.FREIZEIT_SPASS).targetMet()).isFalse();
         assertThat(breakdownFor(overview, ExpenseCategory.LEBENSUNTERHALT).targetMet()).isTrue();
@@ -122,7 +123,7 @@ class HouseholdPlanOverviewTest {
         OverviewItem rent = expense(ExpenseCategory.LEBENSUNTERHALT, "900.00");
         OverviewItem etf = expense(ExpenseCategory.SPAREN_INVESTIEREN, "400.00");
 
-        HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, YEAR, List.of(etf, salary, rent, bonus));
+        HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, YEAR, List.of(etf, salary, rent, bonus), Map.of());
 
         assertThat(overview.items()).containsExactly(etf, salary, rent, bonus);
         assertThat(overview.totalIncome()).isEqualTo(money("2000.00"));
@@ -156,17 +157,17 @@ class HouseholdPlanOverviewTest {
     private static HouseholdPlanOverview overview(String income, OverviewItem... expenses) {
         List<OverviewItem> items = new ArrayList<>(List.of(expenses));
         items.add(income(income));
-        return HouseholdPlanOverview.of(PLAN_ID, YEAR, items);
+        return HouseholdPlanOverview.of(PLAN_ID, YEAR, items, Map.of());
     }
 
     private static OverviewItem income(String amount) {
         return new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Einnahme"), money(amount),
-                ItemType.INCOME, null, null);
+                ItemType.INCOME, null, null, null);
     }
 
     private static OverviewItem expense(ExpenseCategory category, String amount) {
         return new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Ausgabe"), money(amount),
-                ItemType.EXPENSE, category, null);
+                ItemType.EXPENSE, category, null, null);
     }
 
     private static Money money(String amount) {

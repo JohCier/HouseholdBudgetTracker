@@ -49,6 +49,11 @@
         </mat-form-field>
       }
 
+      <app-subcategory-field
+        [control]="form.controls.subcategory"
+        [suggestions]="subcategories()"
+      />
+
       <mat-form-field>
         <mat-label>Notiz (optional)</mat-label>
         <textarea matInput formControlName="note" rows="2" cdkTextareaAutosize></textarea>

@@ -11,10 +11,14 @@ export type ExpenseCategory = Schemas['ExpenseCategory'];
 export type TargetDirection = Schemas['TargetDirection'];
 export type BudgetItem = Schemas['BudgetItemResponse'];
 export type CategoryBreakdown = Schemas['CategoryBreakdownResponse'];
+export type ItemGroup = Schemas['ItemGroupResponse'];
+export type CategoryItems = Schemas['CategoryItemsResponse'];
 export type HouseholdPlanOverview = Schemas['HouseholdPlanOverviewResponse'];
 export type AddIncomeRequest = Schemas['AddIncomeRequest'];
 export type AddExpenseRequest = Schemas['AddExpenseRequest'];
 export type ChangeBudgetItemRequest = Schemas['ChangeBudgetItemRequest'];
+export type ReorderBudgetItemsRequest = Schemas['ReorderBudgetItemsRequest'];
+export type ReorderSubcategoriesRequest = Schemas['ReorderSubcategoriesRequest'];
 export type AddedBudgetItemResponse = Schemas['AddedBudgetItemResponse'];
 export type CreateHouseholdPlanRequest = Schemas['CreateHouseholdPlanRequest'];
 export type CreatedHouseholdPlanResponse = Schemas['CreatedHouseholdPlanResponse'];
@@ -59,4 +63,71 @@ export function targetLabel(breakdown: CategoryBreakdown): string {
 /** Hint for a missed target, depending on whether the target is a ceiling or a floor. */
 export function missedTargetLabel(breakdown: CategoryBreakdown): string {
   return breakdown.targetDirection === 'AT_LEAST' ? 'Ziel nicht erreicht' : 'Ziel überschritten';
+}
+
+/**
+ * Where an item is listed among the entries: the incomes, or the expenses of one category
+ * (UK-9, UK-10). Its subcategory groups can be put in another order (UK-14).
+ */
+export interface ItemSection {
+  type: ItemType;
+  category: ExpenseCategory | null;
+}
+
+/** The group of the items without a subcategory, also offered as a subcategory of its own (UK-1, UK-8). */
+export const OTHER_SUBCATEGORY = 'Sonstiges';
+
+/** Predefined subcategories offered for expenses (UK-8). */
+export const EXPENSE_SUBCATEGORIES: readonly string[] = [
+  'Abonnements',
+  'Altersvorsorge',
+  'Auto',
+  'Bildung',
+  'Energie',
+  'Entertainment',
+  'Essen und Trinken',
+  'Geschenke und Spenden',
+  'Gesundheit',
+  'Haus',
+  'Haustiere',
+  'Hobbys',
+  'Internet und Handy',
+  'Investieren',
+  'Kinder',
+  'Kleidung',
+  'Kredite',
+  'Miete',
+  'Mobilität',
+  'Rücklagen',
+  OTHER_SUBCATEGORY,
+  'Urlaub',
+  'Vereine',
+  'Versicherungen',
+];
+
+/** Predefined subcategories offered for incomes (UK-8). */
+export const INCOME_SUBCATEGORIES: readonly string[] = [
+  'Gehalt',
+  'Kapitalerträge',
+  'Kindergeld',
+  'Mieteinnahmen',
+  'Nebenjob',
+  OTHER_SUBCATEGORY,
+];
+
+/**
+ * The subcategories to suggest for an item of the given type: the predefined ones and those the
+ * plan's items of that type already have, alphabetically and each once, ignoring case; a used
+ * spelling wins over the predefined one, as new items take it (UK-5, UK-7).
+ */
+export function subcategorySuggestions(type: ItemType, items: readonly BudgetItem[]): string[] {
+  const predefined = type === 'INCOME' ? INCOME_SUBCATEGORIES : EXPENSE_SUBCATEGORIES;
+  const used = items
+    .filter((item) => item.type === type && item.subcategory)
+    .map((item) => item.subcategory!);
+  const byKey = new Map<string, string>();
+  for (const subcategory of [...predefined, ...used]) {
+    byKey.set(subcategory.toLocaleLowerCase('de'), subcategory);
+  }
+  return [...byKey.values()].sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' }));
 }

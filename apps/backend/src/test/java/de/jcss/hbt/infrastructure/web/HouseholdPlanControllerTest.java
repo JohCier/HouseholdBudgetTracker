@@ -10,8 +10,10 @@ import de.jcss.hbt.domain.exception.HouseholdPlanNotFoundException;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.BudgetItemNote;
+import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.ItemSection;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
@@ -20,6 +22,8 @@ import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
 import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
+import de.jcss.hbt.domain.householdplan.command.ReorderBudgetItemsCommand;
+import de.jcss.hbt.domain.householdplan.command.ReorderSubcategoriesCommand;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
 import de.jcss.hbt.infrastructure.security.SecurityConfig;
@@ -37,6 +41,7 @@ import org.springframework.web.context.WebApplicationContext;
 import java.math.BigDecimal;
 import java.time.Year;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
@@ -66,7 +71,7 @@ class HouseholdPlanControllerTest {
     private static final OwnerId OWNER = OwnerId.of(UUID.randomUUID());
     private static final HouseholdPlanId PLAN_ID = HouseholdPlanId.generate();
     private static final UUID PLAN = PLAN_ID.value();
-    private static final HouseholdPlanOverview EMPTY_OVERVIEW = HouseholdPlanOverview.of(PLAN_ID, Year.of(2026), List.of());
+    private static final HouseholdPlanOverview EMPTY_OVERVIEW = HouseholdPlanOverview.of(PLAN_ID, Year.of(2026), List.of(), Map.of());
 
     @Autowired
     private WebApplicationContext webApplicationContext;
@@ -174,7 +179,7 @@ class HouseholdPlanControllerTest {
         BudgetItemId id = BudgetItemId.generate();
         when(plans.addIncome(any())).thenReturn(new AddedBudgetItem(id, HouseholdPlanOverview.of(PLAN_ID, Year.of(2026),
                 List.of(new OverviewItem(id, BudgetItemDescription.of("Gehalt"), Money.of(new BigDecimal("2000")),
-                        ItemType.INCOME, null, null)))));
+                        ItemType.INCOME, null, null, null)), Map.of())));
 
         mockMvc.perform(post("/api/plans/{planId}/incomes", PLAN)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -197,7 +202,7 @@ class HouseholdPlanControllerTest {
                 .andExpect(status().isCreated());
 
         verify(plans).addExpense(new AddExpenseCommand(OWNER, PLAN_ID, BudgetItemDescription.of("Miete"),
-                Money.of(new BigDecimal("800")), ExpenseCategory.LEBENSUNTERHALT, null));
+                Money.of(new BigDecimal("800")), ExpenseCategory.LEBENSUNTERHALT, null, null));
     }
 
     /** PN-1, PN-3 */
@@ -217,9 +222,175 @@ class HouseholdPlanControllerTest {
                 .andExpect(status().isCreated());
 
         verify(plans).addExpense(new AddExpenseCommand(OWNER, PLAN_ID, BudgetItemDescription.of("Miete"),
-                Money.of(new BigDecimal("800")), ExpenseCategory.LEBENSUNTERHALT, new BudgetItemNote("Warmmiete")));
+                Money.of(new BigDecimal("800")), ExpenseCategory.LEBENSUNTERHALT, null, new BudgetItemNote("Warmmiete")));
         verify(plans).addIncome(new AddIncomeCommand(OWNER, PLAN_ID, BudgetItemDescription.of("Gehalt"),
-                Money.of(new BigDecimal("2000")), null));
+                Money.of(new BigDecimal("2000")), null, null));
+    }
+
+    /** UK-1, UK-2, UK-4 */
+    @Test
+    void itemRequestsPassTheSubcategoryAndTreatABlankOneAsNone() throws Exception {
+        UUID itemId = UUID.randomUUID();
+        mockMvc.perform(post("/api/plans/{planId}/expenses", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":"Wartung","amount":400,"category":"LEBENSUNTERHALT","subcategory":" Auto "}
+                                """))
+                .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/plans/{planId}/incomes", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":"Gehalt","amount":2000,"subcategory":""}
+                                """))
+                .andExpect(status().isCreated());
+        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", PLAN, itemId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":"Gehalt","amount":2000,"subcategory":"Gehalt"}
+                                """))
+                .andExpect(status().isOk());
+
+        verify(plans).addExpense(new AddExpenseCommand(OWNER, PLAN_ID, BudgetItemDescription.of("Wartung"),
+                Money.of(new BigDecimal("400")), ExpenseCategory.LEBENSUNTERHALT, BudgetItemSubcategory.of("Auto"), null));
+        verify(plans).addIncome(new AddIncomeCommand(OWNER, PLAN_ID, BudgetItemDescription.of("Gehalt"),
+                Money.of(new BigDecimal("2000")), null, null));
+        verify(plans).changeItem(new ChangeBudgetItemCommand(OWNER, PLAN_ID, BudgetItemId.of(itemId),
+                BudgetItemDescription.of("Gehalt"), Money.of(new BigDecimal("2000")), null,
+                BudgetItemSubcategory.of("Gehalt"), null));
+    }
+
+    /** UK-2 */
+    @Test
+    void tooLongSubcategoryReturns400() throws Exception {
+        String subcategory = "x".repeat(BudgetItemSubcategory.MAX_LENGTH + 1);
+
+        mockMvc.perform(post("/api/plans/{planId}/incomes", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":"Gehalt","amount":2000,"subcategory":"%s"}
+                                """.formatted(subcategory)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.subcategory").exists());
+        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", PLAN, UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":"Gehalt","amount":2000,"subcategory":"%s"}
+                                """.formatted(subcategory)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.subcategory").exists());
+
+        verifyNoInteractions(plans);
+    }
+
+    /** UK-14 */
+    @Test
+    void reorderItemsReturns200WithOverview() throws Exception {
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        when(plans.reorderItems(any())).thenReturn(EMPTY_OVERVIEW);
+
+        mockMvc.perform(put("/api/plans/{planId}/item-order", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"itemIds":["%s","%s"]}
+                                """.formatted(second, first)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(PLAN.toString()));
+
+        verify(plans).reorderItems(new ReorderBudgetItemsCommand(OWNER, PLAN_ID,
+                List.of(BudgetItemId.of(second), BudgetItemId.of(first))));
+    }
+
+    /** UK-14 */
+    @Test
+    void reorderItemsWithoutItemsReturns400() throws Exception {
+        mockMvc.perform(put("/api/plans/{planId}/item-order", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"itemIds":[]}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.itemIds").exists());
+
+        verifyNoInteractions(plans);
+    }
+
+    /** UK-14, UK-15 */
+    @Test
+    void reorderSubcategoriesReturns200WithOverview() throws Exception {
+        when(plans.reorderSubcategories(any())).thenReturn(EMPTY_OVERVIEW);
+
+        mockMvc.perform(put("/api/plans/{planId}/subcategory-order", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"type":"EXPENSE","category":"LEBENSUNTERHALT","subcategories":["Miete","Auto"]}
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/plans/{planId}/subcategory-order", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"type":"INCOME","subcategories":["Sonstiges","Gehalt"]}
+                                """))
+                .andExpect(status().isOk());
+
+        verify(plans).reorderSubcategories(new ReorderSubcategoriesCommand(OWNER, PLAN_ID,
+                ItemSection.expenses(ExpenseCategory.LEBENSUNTERHALT),
+                List.of(BudgetItemSubcategory.of("Miete"), BudgetItemSubcategory.of("Auto"))));
+        verify(plans).reorderSubcategories(new ReorderSubcategoriesCommand(OWNER, PLAN_ID, ItemSection.INCOME,
+                List.of(BudgetItemSubcategory.OTHER, BudgetItemSubcategory.of("Gehalt"))));
+    }
+
+    /** UK-14 */
+    @Test
+    void reorderSubcategoriesOfAnIncomeCategoryReturns400() throws Exception {
+        mockMvc.perform(put("/api/plans/{planId}/subcategory-order", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"type":"INCOME","category":"LEBENSUNTERHALT","subcategories":["Gehalt"]}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.type").value("urn:hbt:invalid-input"));
+
+        verifyNoInteractions(plans);
+    }
+
+    /** UK-15, HP-4 */
+    @Test
+    void reorderInAPlanOfSomeoneElseReturns404() throws Exception {
+        when(plans.reorderSubcategories(any())).thenThrow(new HouseholdPlanNotFoundException(PLAN_ID));
+
+        mockMvc.perform(put("/api/plans/{planId}/subcategory-order", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"type":"INCOME","subcategories":["Gehalt"]}
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.type").value("urn:hbt:plan-not-found"));
+    }
+
+    /** UK-9 to UK-12 */
+    @Test
+    void overviewListsTheGroupedEntriesWithSums() throws Exception {
+        HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, Year.of(2026), List.of(
+                new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Wartung"),
+                        Money.of(new BigDecimal("400.00")), ItemType.EXPENSE, ExpenseCategory.LEBENSUNTERHALT,
+                        BudgetItemSubcategory.of("Auto"), null),
+                new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Gehalt"),
+                        Money.of(new BigDecimal("3000.00")), ItemType.INCOME, null, null, null)), Map.of());
+        when(plans.getOverview(OWNER, Year.of(2026))).thenReturn(overview);
+
+        mockMvc.perform(get("/api/plans").param("year", "2026"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].subcategory").value("Auto"))
+                .andExpect(jsonPath("$.items[1].subcategory").isEmpty())
+                .andExpect(jsonPath("$.incomeGroups[0].subcategory").value("Sonstiges"))
+                .andExpect(jsonPath("$.incomeGroups[0].total").value("3000.00"))
+                .andExpect(jsonPath("$.incomeGroups[0].items[0].description").value("Gehalt"))
+                .andExpect(jsonPath("$.expenseCategories.length()").value(1))
+                .andExpect(jsonPath("$.expenseCategories[0].category").value("LEBENSUNTERHALT"))
+                .andExpect(jsonPath("$.expenseCategories[0].total").value("400.00"))
+                .andExpect(jsonPath("$.expenseCategories[0].groups[0].subcategory").value("Auto"))
+                .andExpect(jsonPath("$.expenseCategories[0].groups[0].total").value("400.00"));
     }
 
     /** PN-2 */
@@ -258,7 +429,7 @@ class HouseholdPlanControllerTest {
                 .andExpect(status().isOk());
 
         verify(plans).changeItem(new ChangeBudgetItemCommand(OWNER, PLAN_ID, BudgetItemId.of(itemId),
-                BudgetItemDescription.of("Gehalt"), Money.of(new BigDecimal("2100")), null, new BudgetItemNote("netto")));
+                BudgetItemDescription.of("Gehalt"), Money.of(new BigDecimal("2100")), null, null, new BudgetItemNote("netto")));
     }
 
     @Test
@@ -357,7 +528,7 @@ class HouseholdPlanControllerTest {
                 .andExpect(jsonPath("$.id").value(PLAN.toString()));
 
         verify(plans).changeItem(new ChangeBudgetItemCommand(OWNER, PLAN_ID, BudgetItemId.of(itemId),
-                BudgetItemDescription.of("Miete"), Money.of(new BigDecimal("900.00")), ExpenseCategory.SPAREN_INVESTIEREN, null));
+                BudgetItemDescription.of("Miete"), Money.of(new BigDecimal("900.00")), ExpenseCategory.SPAREN_INVESTIEREN, null, null));
     }
 
     /** PB-1 */
@@ -373,7 +544,7 @@ class HouseholdPlanControllerTest {
                 .andExpect(status().isOk());
 
         verify(plans).changeItem(new ChangeBudgetItemCommand(OWNER, PLAN_ID, BudgetItemId.of(itemId),
-                BudgetItemDescription.of("Gehalt"), Money.of(new BigDecimal("2100")), null, null));
+                BudgetItemDescription.of("Gehalt"), Money.of(new BigDecimal("2100")), null, null, null));
     }
 
     /** PB-3 */
@@ -424,9 +595,9 @@ class HouseholdPlanControllerTest {
         BudgetItemId itemId = BudgetItemId.generate();
         when(plans.getOverview(OWNER, Year.of(2026))).thenReturn(HouseholdPlanOverview.of(PLAN_ID, Year.of(2026), List.of(
                 new OverviewItem(itemId, BudgetItemDescription.of("ETF"), Money.of(new BigDecimal("500")),
-                        ItemType.EXPENSE, ExpenseCategory.SPAREN_INVESTIEREN, new BudgetItemNote("ETF-Sparplan")),
+                        ItemType.EXPENSE, ExpenseCategory.SPAREN_INVESTIEREN, null, new BudgetItemNote("ETF-Sparplan")),
                 new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Gehalt"),
-                        Money.of(new BigDecimal("1000")), ItemType.INCOME, null, null))));
+                        Money.of(new BigDecimal("1000")), ItemType.INCOME, null, null, null)), Map.of()));
 
         mockMvc.perform(get("/api/plans").param("year", "2026"))
                 .andExpect(status().isOk())

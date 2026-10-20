@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject } from 'rxjs';
 import { BudgetDashboard } from './budget-dashboard';
-import { BudgetItem } from './budget.model';
+import { BudgetItem, HouseholdPlanOverview } from './budget.model';
 import { BudgetStore } from './data-access/budget-store';
 
 const item: BudgetItem = {
@@ -12,7 +12,26 @@ const item: BudgetItem = {
   amount: '12.50',
   type: 'EXPENSE',
   category: 'FREIZEIT_SPASS',
+  subcategory: null,
   note: null,
+};
+const overview: HouseholdPlanOverview = {
+  id: 'plan-2026',
+  year: 2026,
+  totalIncome: '0.00',
+  totalExpense: '12.50',
+  balance: '-12.50',
+  expensesExceedIncome: true,
+  categoryBreakdowns: [],
+  items: [item],
+  incomeGroups: [],
+  expenseCategories: [
+    {
+      category: 'FREIZEIT_SPASS',
+      total: '12.50',
+      groups: [{ subcategory: 'Sonstiges', total: '12.50', items: [item] }],
+    },
+  ],
 };
 
 describe('BudgetDashboard', () => {
@@ -26,7 +45,8 @@ describe('BudgetDashboard', () => {
       planId: signal('plan-2026'),
       planMissing: signal(false),
       items: signal([item]),
-      overview: signal(null),
+      overview: signal(overview),
+      subcategorySuggestions: vi.fn(() => []),
       loading: signal(false),
       loadError: signal(null),
       load: vi.fn(async () => undefined),
@@ -65,7 +85,8 @@ describe('BudgetDashboard', () => {
       planId: signal('plan-2026'),
       planMissing: signal(false),
       items: signal([item]),
-      overview: signal(null),
+      overview: signal(overview),
+      subcategorySuggestions: vi.fn(() => []),
       loading: signal(false),
       loadError: signal(null),
       load: vi.fn(async () => undefined),
@@ -101,6 +122,67 @@ describe('BudgetDashboard', () => {
     // The dialog reports the saved change only once its closing animation has finished.
     await vi.waitFor(() =>
       expect(snackBar.open).toHaveBeenCalledWith('Eintrag geändert', undefined, { duration: 3000 }),
+    );
+  });
+
+  // UK-14
+  it('saves a new order of the groups and shows why saving it failed', async () => {
+    const snackBar = { open: vi.fn() };
+    const store = {
+      year: signal(2026),
+      hasPreviousYear: signal(true),
+      hasNextYear: signal(true),
+      planId: signal('plan-2026'),
+      planMissing: signal(false),
+      items: signal([item, { ...item, id: '2', description: 'Tank', subcategory: 'Auto' }]),
+      overview: signal<HouseholdPlanOverview>({
+        ...overview,
+        expenseCategories: [
+          {
+            category: 'FREIZEIT_SPASS',
+            total: '25.00',
+            groups: [
+              {
+                subcategory: 'Auto',
+                total: '12.50',
+                items: [{ ...item, id: '2', description: 'Tank', subcategory: 'Auto' }],
+              },
+              { subcategory: 'Sonstiges', total: '12.50', items: [item] },
+            ],
+          },
+        ],
+      }),
+      loading: signal(false),
+      loadError: signal(null),
+      subcategorySuggestions: vi.fn(() => []),
+      load: vi.fn(async () => undefined),
+      reorderSubcategories: vi.fn(async () => {
+        throw new Error('Die Reihenfolge konnte nicht gespeichert werden.');
+      }),
+    };
+    TestBed.configureTestingModule({
+      providers: [{ provide: MatSnackBar, useValue: snackBar }],
+    });
+    // The dashboard provides a store of its own, replace that with the fake.
+    TestBed.overrideComponent(BudgetDashboard, {
+      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+    });
+    const fixture = TestBed.createComponent(BudgetDashboard);
+    await fixture.whenStable();
+
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('button[aria-label="Unterkategorie Auto verschieben"]')!
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+    await fixture.whenStable();
+
+    expect(store.reorderSubcategories).toHaveBeenCalledWith(
+      { type: 'EXPENSE', category: 'FREIZEIT_SPASS' },
+      ['Sonstiges', 'Auto'],
+    );
+    expect(snackBar.open).toHaveBeenCalledWith(
+      'Die Reihenfolge konnte nicht gespeichert werden.',
+      'OK',
+      { duration: 6000 },
     );
   });
 

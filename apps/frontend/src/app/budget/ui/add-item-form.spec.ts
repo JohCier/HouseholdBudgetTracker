@@ -6,13 +6,23 @@ import { BudgetStore } from '../data-access/budget-store';
 import { AddItemForm } from './add-item-form';
 
 describe('AddItemForm', () => {
-  let store: { addIncome: ReturnType<typeof vi.fn>; addExpense: ReturnType<typeof vi.fn> };
+  let store: {
+    addIncome: ReturnType<typeof vi.fn>;
+    addExpense: ReturnType<typeof vi.fn>;
+    subcategorySuggestions: ReturnType<typeof vi.fn>;
+  };
   let snackBar: { open: ReturnType<typeof vi.fn> };
   let fixture: ComponentFixture<AddItemForm>;
   let element: HTMLElement;
 
   beforeEach(async () => {
-    store = { addIncome: vi.fn(async () => undefined), addExpense: vi.fn(async () => undefined) };
+    store = {
+      addIncome: vi.fn(async () => undefined),
+      addExpense: vi.fn(async () => undefined),
+      subcategorySuggestions: vi.fn((type: string) =>
+        type === 'INCOME' ? ['Gehalt', 'Sonstiges'] : ['Auto', 'Wohnen', 'Sonstiges'],
+      ),
+    };
     snackBar = { open: vi.fn() };
     TestBed.configureTestingModule({
       providers: [
@@ -27,7 +37,7 @@ describe('AddItemForm', () => {
 
   function input(name: string): HTMLInputElement {
     return element.querySelector<HTMLInputElement>(
-      `input[formcontrolname="${name}"], textarea[formcontrolname="${name}"]`,
+      `[formcontrolname="${name}"], input[name="${name}"]`,
     )!;
   }
 
@@ -47,6 +57,10 @@ describe('AddItemForm', () => {
     const select = await TestbedHarnessEnvironment.loader(fixture).getHarness(MatSelectHarness);
     await select.open();
     await select.clickOptions({ text: label });
+  }
+
+  function options(): string[] {
+    return [...document.querySelectorAll('mat-option')].map((option) => option.textContent!.trim());
   }
 
   async function submit() {
@@ -103,6 +117,55 @@ describe('AddItemForm', () => {
       note: 'netto,\nnach Steuern',
     });
     expect(input('note').value).toBe('');
+  });
+
+  it('adds an item with its subcategory and clears it (UK-1)', async () => {
+    await type('description', 'Sprit');
+    await type('amount', '80');
+    await chooseCategory('Lebensunterhalt');
+    await type('subcategory', '  Auto  ');
+    await submit();
+
+    expect(store.addExpense).toHaveBeenCalledWith({
+      description: 'Sprit',
+      amount: '80',
+      category: 'LEBENSUNTERHALT',
+      subcategory: 'Auto',
+    });
+    expect(input('subcategory').value).toBe('');
+  });
+
+  it('sends no subcategory for a blank one, so the item goes to "Sonstiges" (UK-1)', async () => {
+    await chooseType('Einnahme');
+    await type('description', 'Gehalt');
+    await type('amount', '3000');
+    await type('subcategory', '   ');
+    await submit();
+
+    expect(store.addIncome).toHaveBeenCalledWith({ description: 'Gehalt', amount: '3000' });
+  });
+
+  it('suggests the subcategories of the chosen type, filtered by what has been typed (UK-6, UK-7)', async () => {
+    const field = input('subcategory');
+    field.focus();
+    field.dispatchEvent(new Event('focusin'));
+    await type('subcategory', 'o');
+    expect(options()).toEqual(['Auto', 'Wohnen', 'Sonstiges']);
+
+    await chooseType('Einnahme');
+    await type('subcategory', 'geh');
+    expect(options()).toEqual(['Gehalt']);
+  });
+
+  it('rejects a subcategory longer than 50 characters (UK-2)', async () => {
+    await chooseType('Einnahme');
+    await type('description', 'Gehalt');
+    await type('amount', '3000');
+    await type('subcategory', 'x'.repeat(51));
+    await submit();
+
+    expect(store.addIncome).not.toHaveBeenCalled();
+    expect(element.textContent).toContain('Höchstens 50 Zeichen.');
   });
 
   it('sends no note for a blank one (PN-3)', async () => {

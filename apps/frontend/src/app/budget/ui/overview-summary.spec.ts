@@ -11,6 +11,8 @@ function overview(changes: Partial<HouseholdPlanOverview>): HouseholdPlanOvervie
     balance: '1000.00',
     expensesExceedIncome: false,
     items: [],
+    incomeGroups: [],
+    expenseCategories: [],
     categoryBreakdowns: [],
     ...changes,
   };

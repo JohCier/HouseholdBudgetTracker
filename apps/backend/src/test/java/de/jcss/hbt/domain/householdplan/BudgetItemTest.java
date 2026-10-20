@@ -18,7 +18,7 @@ class BudgetItemTest {
 
     @Test
     void createsIncomeWithoutCategory() {
-        BudgetItem item = BudgetItem.income(id, SALARY, amount, null);
+        BudgetItem item = BudgetItem.income(id, SALARY, amount, null, null);
 
         assertThat(item.type()).isEqualTo(ItemType.INCOME);
         assertThat(item.category()).isEmpty();
@@ -28,7 +28,7 @@ class BudgetItemTest {
 
     @Test
     void createsExpenseWithCategory() {
-        BudgetItem item = BudgetItem.expense(id, RENT, amount, ExpenseCategory.LEBENSUNTERHALT, null);
+        BudgetItem item = BudgetItem.expense(id, RENT, amount, ExpenseCategory.LEBENSUNTERHALT, null, null);
 
         assertThat(item.type()).isEqualTo(ItemType.EXPENSE);
         assertThat(item.category()).contains(ExpenseCategory.LEBENSUNTERHALT);
@@ -36,53 +36,53 @@ class BudgetItemTest {
 
     @Test
     void expenseRequiresCategory() {
-        assertThatThrownBy(() -> BudgetItem.expense(id, RENT, amount, null, null))
+        assertThatThrownBy(() -> BudgetItem.expense(id, RENT, amount, null, null, null))
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("category");
     }
 
     @Test
     void requiresDescription() {
-        assertThatThrownBy(() -> BudgetItem.income(id, null, amount, null))
+        assertThatThrownBy(() -> BudgetItem.income(id, null, amount, null, null))
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("description");
     }
 
     @Test
     void rejectsMissingOrNonPositiveAmount() {
-        assertThatThrownBy(() -> BudgetItem.income(id, SALARY, null, null))
+        assertThatThrownBy(() -> BudgetItem.income(id, SALARY, null, null, null))
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("amount");
 
-        assertThatThrownBy(() -> BudgetItem.income(id, SALARY, Money.ZERO, null))
+        assertThatThrownBy(() -> BudgetItem.income(id, SALARY, Money.ZERO, null, null))
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("amount");
 
-        assertThatThrownBy(() -> BudgetItem.income(id, SALARY, Money.of(new BigDecimal("-1.00")), null))
+        assertThatThrownBy(() -> BudgetItem.income(id, SALARY, Money.of(new BigDecimal("-1.00")), null, null))
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("amount");
     }
 
     @Test
     void reconstitutesIncomeAndExpense() {
-        BudgetItem income = BudgetItem.reconstitute(id, SALARY, amount, ItemType.INCOME, null, null);
-        BudgetItem expense = BudgetItem.reconstitute(id, RENT, amount, ItemType.EXPENSE, ExpenseCategory.FREIZEIT_SPASS, null);
+        BudgetItem income = BudgetItem.reconstitute(id, SALARY, amount, ItemType.INCOME, null, null, null);
+        BudgetItem expense = BudgetItem.reconstitute(id, RENT, amount, ItemType.EXPENSE, ExpenseCategory.FREIZEIT_SPASS, null, null);
 
-        assertThat(income).usingRecursiveComparison().isEqualTo(BudgetItem.income(id, SALARY, amount, null));
+        assertThat(income).usingRecursiveComparison().isEqualTo(BudgetItem.income(id, SALARY, amount, null, null));
         assertThat(expense).usingRecursiveComparison()
-                .isEqualTo(BudgetItem.expense(id, RENT, amount, ExpenseCategory.FREIZEIT_SPASS, null));
+                .isEqualTo(BudgetItem.expense(id, RENT, amount, ExpenseCategory.FREIZEIT_SPASS, null, null));
     }
 
     @Test
     void reconstituteEnforcesTheSameRules() {
         assertThatThrownBy(() -> BudgetItem.reconstitute(id, SALARY, amount, ItemType.INCOME,
-                ExpenseCategory.LEBENSUNTERHALT, null))
+                ExpenseCategory.LEBENSUNTERHALT, null, null))
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("category");
-        assertThatThrownBy(() -> BudgetItem.reconstitute(id, RENT, amount, ItemType.EXPENSE, null, null))
+        assertThatThrownBy(() -> BudgetItem.reconstitute(id, RENT, amount, ItemType.EXPENSE, null, null, null))
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("category");
-        assertThatThrownBy(() -> BudgetItem.reconstitute(id, SALARY, Money.ZERO, ItemType.INCOME, null, null))
+        assertThatThrownBy(() -> BudgetItem.reconstitute(id, SALARY, Money.ZERO, ItemType.INCOME, null, null, null))
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("amount");
     }
@@ -90,38 +90,38 @@ class BudgetItemTest {
     /** PB-1, PB-2, PB-3 */
     @Test
     void changedCopyKeepsIdAndTypeAndEnforcesTheSameRules() {
-        BudgetItem expense = BudgetItem.expense(id, RENT, amount, ExpenseCategory.LEBENSUNTERHALT, null);
+        BudgetItem expense = BudgetItem.expense(id, RENT, amount, ExpenseCategory.LEBENSUNTERHALT, null, null);
         Money newAmount = Money.of(new BigDecimal("900.00"));
 
-        BudgetItem changed = expense.changedTo(SALARY, newAmount, ExpenseCategory.FREIZEIT_SPASS, null);
+        BudgetItem changed = expense.changedTo(SALARY, newAmount, ExpenseCategory.FREIZEIT_SPASS, null, null);
 
         assertThat(changed.id()).isEqualTo(id);
         assertThat(changed.type()).isEqualTo(ItemType.EXPENSE);
         assertThat(changed.description()).isEqualTo(SALARY);
         assertThat(changed.amount()).isEqualTo(newAmount);
         assertThat(changed.category()).contains(ExpenseCategory.FREIZEIT_SPASS);
-        assertThatThrownBy(() -> expense.changedTo(RENT, amount, null, null))
+        assertThatThrownBy(() -> expense.changedTo(RENT, amount, null, null, null))
                 .isInstanceOf(DomainValidationException.class);
-        assertThatThrownBy(() -> BudgetItem.income(id, SALARY, amount, null)
-                .changedTo(SALARY, amount, ExpenseCategory.LEBENSUNTERHALT, null))
+        assertThatThrownBy(() -> BudgetItem.income(id, SALARY, amount, null, null)
+                .changedTo(SALARY, amount, ExpenseCategory.LEBENSUNTERHALT, null, null))
                 .isInstanceOf(DomainValidationException.class);
     }
 
     @Test
     void comparesValuesIgnoringTheId() {
-        BudgetItem item = BudgetItem.expense(id, RENT, amount, ExpenseCategory.LEBENSUNTERHALT, null);
+        BudgetItem item = BudgetItem.expense(id, RENT, amount, ExpenseCategory.LEBENSUNTERHALT, null, null);
 
         assertThat(item.hasSameValuesAs(BudgetItem.expense(BudgetItemId.generate(), RENT,
-                Money.of(new BigDecimal("100")), ExpenseCategory.LEBENSUNTERHALT, null))).isTrue();
-        assertThat(item.hasSameValuesAs(item.changedTo(RENT, amount, ExpenseCategory.FREIZEIT_SPASS, null))).isFalse();
-        assertThat(item.hasSameValuesAs(item.changedTo(SALARY, amount, ExpenseCategory.LEBENSUNTERHALT, null))).isFalse();
-        assertThat(item.hasSameValuesAs(BudgetItem.income(id, RENT, amount, null))).isFalse();
+                Money.of(new BigDecimal("100")), ExpenseCategory.LEBENSUNTERHALT, null, null))).isTrue();
+        assertThat(item.hasSameValuesAs(item.changedTo(RENT, amount, ExpenseCategory.FREIZEIT_SPASS, null, null))).isFalse();
+        assertThat(item.hasSameValuesAs(item.changedTo(SALARY, amount, ExpenseCategory.LEBENSUNTERHALT, null, null))).isFalse();
+        assertThat(item.hasSameValuesAs(BudgetItem.income(id, RENT, amount, null, null))).isFalse();
     }
 
     @Test
     void addsItsAmountToTheSummary() {
-        BudgetSummary summary = BudgetItem.expense(id, RENT, amount, ExpenseCategory.LEBENSUNTERHALT, null)
-                .addTo(BudgetItem.income(BudgetItemId.generate(), SALARY, amount, null).addTo(BudgetSummary.EMPTY));
+        BudgetSummary summary = BudgetItem.expense(id, RENT, amount, ExpenseCategory.LEBENSUNTERHALT, null, null)
+                .addTo(BudgetItem.income(BudgetItemId.generate(), SALARY, amount, null, null).addTo(BudgetSummary.EMPTY));
 
         assertThat(summary.totalIncome()).isEqualTo(amount);
         assertThat(summary.expensesIn(ExpenseCategory.LEBENSUNTERHALT)).isEqualTo(amount);
@@ -130,9 +130,9 @@ class BudgetItemTest {
 
     @Test
     void equalityIsBasedOnIdOnly() {
-        BudgetItem first = BudgetItem.income(id, SALARY, amount, null);
+        BudgetItem first = BudgetItem.income(id, SALARY, amount, null, null);
         BudgetItem second = BudgetItem.income(id, BudgetItemDescription.of("Andere Beschreibung"),
-                Money.of(new BigDecimal("1.00")), null);
+                Money.of(new BigDecimal("1.00")), null, null);
 
         assertThat(first).isEqualTo(second);
         assertThat(first).hasSameHashCodeAs(second);

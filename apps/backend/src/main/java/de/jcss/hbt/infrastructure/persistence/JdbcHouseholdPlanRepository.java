@@ -5,13 +5,16 @@ import de.jcss.hbt.domain.householdplan.BudgetItem;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.BudgetItemNote;
+import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanRepository;
+import de.jcss.hbt.domain.householdplan.ItemSection;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
+import de.jcss.hbt.domain.householdplan.SubcategoryOrder;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -31,6 +34,11 @@ import java.util.UUID;
  * data passes the same invariants as new input. Expects to run within the transaction of
  * the calling application service.
  * <p>
+ * The display order of the items is stored in {@code budget_item.position}, the highest on
+ * top. Positions need not be consecutive: saving keeps every stored position that still fits the
+ * order, so adding an item on top, moving one there or removing one writes no other item. The
+ * arranged order of the subcategory groups is stored in {@code subcategory_order}.
+ * <p>
  * Concurrent changes are prevented by locking the plan row in {@link #findById}
  * ({@code SELECT ... FOR UPDATE}) until the transaction ends: a second transaction
  * loading the same plan waits and then sees the stored changes, so none get lost.
@@ -46,6 +54,7 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                 Money.of(rs.getBigDecimal("amount")),
                 ItemType.valueOf(rs.getString("type")),
                 category == null ? null : ExpenseCategory.valueOf(category),
+                BudgetItemSubcategory.ofNullable(rs.getString("subcategory")),
                 BudgetItemNote.ofNullable(rs.getString("note")));
     };
 
@@ -62,21 +71,26 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                 .query((rs, rowNum) -> new PlanRow(OwnerId.of(rs.getObject("owner_id", UUID.class)),
                         Year.of(rs.getInt("year"))))
                 .optional()
-                .map(row -> HouseholdPlan.reconstitute(id, row.owner(), row.year(), findItems(id)));
+                .map(row -> HouseholdPlan.reconstitute(id, row.owner(), row.year(), findItems(id),
+                        ItemSectionColumn.subcategoryOrdersOf(jdbcClient, id)));
     }
 
     private record PlanRow(OwnerId owner, Year year) {
     }
 
     private List<BudgetItem> findItems(HouseholdPlanId planId) {
+        return findStoredItems(planId).stream().map(StoredItem::item).toList();
+    }
+
+    private List<StoredItem> findStoredItems(HouseholdPlanId planId) {
         return jdbcClient.sql("""
-                        SELECT id, description, amount, type, category, note
+                        SELECT id, description, amount, type, category, subcategory, note, position
                         FROM budget_item
                         WHERE household_plan_id = :planId
-                        ORDER BY created_at, id
+                        ORDER BY position DESC
                         """)
                 .param("planId", planId.value())
-                .query(ITEM_ROW_MAPPER)
+                .query((rs, rowNum) -> new StoredItem(ITEM_ROW_MAPPER.mapRow(rs, rowNum), rs.getInt("position")))
                 .list();
     }
 
@@ -100,39 +114,78 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
         } catch (DuplicateKeyException e) {
             throw new HouseholdPlanAlreadyExistsException(plan.year());
         }
-        plan.items().forEach(item -> insertItem(plan.id(), item));
+        List<BudgetItem> items = plan.items();
+        List<Integer> positions = positionsOf(items, Map.of());
+        for (int index = 0; index < items.size(); index++) {
+            insertItem(plan.id(), items.get(index), positions.get(index));
+        }
+        insertSubcategoryOrders(plan.id(), plan.subcategoryOrders());
     }
 
     /**
      * Compares the items with the stored ones and writes only the differences: deletes the
-     * removed items, inserts the new ones and updates the changed ones. As a command changes a
-     * single item, saving takes one query and one write however many items the plan has. The
-     * creation time of an existing item is kept, so a changed item keeps its position.
+     * removed items, inserts the new ones and updates those whose values or position changed.
+     * As a command changes a single item, saving takes two queries and one write however many
+     * items the plan has. The arranged order of the groups is only rewritten if it changed.
      */
     @Override
     public void save(HouseholdPlan plan) {
-        Map<BudgetItemId, BudgetItem> stored = new HashMap<>();
-        findItems(plan.id()).forEach(item -> stored.put(item.id(), item));
-        for (BudgetItem item : plan.items()) {
-            BudgetItem storedItem = stored.remove(item.id());
+        Map<BudgetItemId, StoredItem> stored = new HashMap<>();
+        findStoredItems(plan.id()).forEach(item -> stored.put(item.item().id(), item));
+        List<BudgetItem> items = plan.items();
+        Map<BudgetItemId, Integer> storedPositions = new HashMap<>();
+        stored.forEach((id, item) -> storedPositions.put(id, item.position()));
+        List<Integer> positions = positionsOf(items, storedPositions);
+        for (int index = 0; index < items.size(); index++) {
+            BudgetItem item = items.get(index);
+            int position = positions.get(index);
+            StoredItem storedItem = stored.remove(item.id());
             if (storedItem == null) {
-                insertItem(plan.id(), item);
-            } else if (!sameValues(item, storedItem)) {
-                updateItem(item);
+                insertItem(plan.id(), item, position);
+            } else if (!sameValues(item, storedItem.item()) || position != storedItem.position()) {
+                updateItem(item, position);
             }
         }
         deleteItems(stored.keySet());
+        Map<ItemSection, SubcategoryOrder> orders = plan.subcategoryOrders();
+        if (!orders.equals(ItemSectionColumn.subcategoryOrdersOf(jdbcClient, plan.id()))) {
+            jdbcClient.sql("DELETE FROM subcategory_order WHERE household_plan_id = :planId")
+                    .param("planId", plan.id().value())
+                    .update();
+            insertSubcategoryOrders(plan.id(), orders);
+        }
+    }
+
+    private record StoredItem(BudgetItem item, int position) {
+    }
+
+    /**
+     * The positions of the items in display order, rising from the bottom up. Each item keeps its
+     * stored position as long as it lies above that of the item below; otherwise it gets the next
+     * position above.
+     */
+    private static List<Integer> positionsOf(List<BudgetItem> items, Map<BudgetItemId, Integer> storedPositions) {
+        Integer[] positions = new Integer[items.size()];
+        int below = -1;
+        for (int index = items.size() - 1; index >= 0; index--) {
+            Integer stored = storedPositions.get(items.get(index).id());
+            below = stored != null && stored > below ? stored : below + 1;
+            positions[index] = below;
+        }
+        return List.of(positions);
     }
 
     private static boolean sameValues(BudgetItem item, BudgetItem other) {
         return item.description().equals(other.description()) && item.amount().equals(other.amount())
-                && item.category().equals(other.category()) && item.note().equals(other.note());
+                && item.category().equals(other.category()) && item.subcategory().equals(other.subcategory())
+                && item.note().equals(other.note());
     }
 
-    private void insertItem(HouseholdPlanId planId, BudgetItem item) {
+    private void insertItem(HouseholdPlanId planId, BudgetItem item, int position) {
         jdbcClient.sql("""
-                        INSERT INTO budget_item (id, household_plan_id, description, amount, type, category, note)
-                        VALUES (:id, :planId, :description, :amount, :type, :category, :note)
+                        INSERT INTO budget_item (id, household_plan_id, description, amount, type, category,
+                                                 subcategory, note, position)
+                        VALUES (:id, :planId, :description, :amount, :type, :category, :subcategory, :note, :position)
                         """)
                 .param("id", item.id().value())
                 .param("planId", planId.value())
@@ -140,23 +193,45 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                 .param("amount", item.amount().value())
                 .param("type", item.type().name())
                 .param("category", categoryOf(item))
+                .param("subcategory", subcategoryOf(item))
                 .param("note", noteOf(item))
+                .param("position", position)
                 .update();
     }
 
     /** The type of an item never changes, see {@link BudgetItem}. */
-    private void updateItem(BudgetItem item) {
+    private void updateItem(BudgetItem item, int position) {
         jdbcClient.sql("""
                         UPDATE budget_item
-                        SET description = :description, amount = :amount, category = :category, note = :note
+                        SET description = :description, amount = :amount, category = :category,
+                            subcategory = :subcategory, note = :note, position = :position
                         WHERE id = :id
                         """)
                 .param("id", item.id().value())
                 .param("description", item.description().value())
                 .param("amount", item.amount().value())
                 .param("category", categoryOf(item))
+                .param("subcategory", subcategoryOf(item))
                 .param("note", noteOf(item))
+                .param("position", position)
                 .update();
+    }
+
+    private void insertSubcategoryOrders(HouseholdPlanId planId, Map<ItemSection, SubcategoryOrder> orders) {
+        orders.forEach((section, order) -> {
+            List<BudgetItemSubcategory> subcategories = order.subcategories();
+            for (int position = 0; position < subcategories.size(); position++) {
+                jdbcClient.sql("""
+                                INSERT INTO subcategory_order (household_plan_id, section, position, subcategory)
+                                VALUES (:planId, :section, :position, :subcategory)
+                                """)
+                        .param("planId", planId.value())
+                        .param("section", ItemSectionColumn.of(section))
+                        .param("position", position)
+                        .param("subcategory", subcategories.get(position).value())
+                        .update();
+            }
+        });
     }
 
     private void deleteItems(Collection<BudgetItemId> ids) {
@@ -170,6 +245,10 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
 
     private static String categoryOf(BudgetItem item) {
         return item.category().map(Enum::name).orElse(null);
+    }
+
+    private static String subcategoryOf(BudgetItem item) {
+        return item.subcategory().map(BudgetItemSubcategory::value).orElse(null);
     }
 
     private static String noteOf(BudgetItem item) {

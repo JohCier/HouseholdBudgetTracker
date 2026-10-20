@@ -1,0 +1,139 @@
+<mat-card appearance="outlined">
+  <mat-card-header>
+    <mat-card-title>Einträge</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    @if (empty()) {
+      <p class="empty">Noch keine Einträge in diesem Haushaltsplan.</p>
+    } @else {
+      @if (incomes(); as incomes) {
+        <section class="area" aria-label="Einnahmen">
+          <div class="section income" [class]="incomes.colorClass">
+            <div class="section-header">
+              <h3>Einnahmen</h3>
+              <span class="total income-amount">+{{ incomes.total | currency: 'EUR' }}</span>
+            </div>
+            <ng-container *ngTemplateOutlet="groupList; context: { $implicit: incomes }" />
+          </div>
+        </section>
+      }
+      @if (expenseCategories().length > 0) {
+        <section class="area" aria-label="Ausgaben">
+          <div class="area-header">
+            <h3>Ausgaben</h3>
+            <span class="total expense-amount"
+              >−{{ overview().totalExpense | currency: 'EUR' }}</span
+            >
+          </div>
+          @for (category of expenseCategories(); track category.colorClass) {
+            <section
+              class="section"
+              [class]="category.colorClass"
+              [attr.aria-label]="category.label"
+            >
+              <div class="section-header">
+                <h4><span class="swatch"></span>{{ category.label }}</h4>
+                <span class="total">{{ category.total | currency: 'EUR' }}</span>
+              </div>
+              <ng-container *ngTemplateOutlet="groupList; context: { $implicit: category }" />
+            </section>
+          }
+        </section>
+      }
+    }
+  </mat-card-content>
+</mat-card>
+
+<ng-template #groupList let-section>
+  <div
+    class="groups"
+    cdkDropList
+    cdkDropListLockAxis="y"
+    (cdkDropListDropped)="dropGroup(section, $event)"
+  >
+    @for (group of section.groups; track group.subcategory; let groupIndex = $index) {
+      <div class="group" cdkDrag role="group" [attr.aria-label]="group.subcategory">
+        <div class="group-header">
+          @if (section.groups.length > 1) {
+            <button
+              matIconButton
+              type="button"
+              class="handle"
+              cdkDragHandle
+              matTooltip="Ziehen zum Verschieben"
+              [attr.aria-label]="'Unterkategorie ' + group.subcategory + ' verschieben'"
+              (keydown.arrowup)="moveGroupBy(section, groupIndex, -1, $event)"
+              (keydown.arrowdown)="moveGroupBy(section, groupIndex, 1, $event)"
+            >
+              <mat-icon svgIcon="drag_indicator" />
+            </button>
+          } @else {
+            <span class="handle-space"></span>
+          }
+          <span class="group-name">{{ group.subcategory }}</span>
+          <span class="total">{{ group.total | currency: 'EUR' }}</span>
+        </div>
+        <div
+          class="items"
+          cdkDropList
+          cdkDropListLockAxis="y"
+          (cdkDropListDropped)="dropItem(group, $event)"
+        >
+          @for (item of group.items; track item.id; let itemIndex = $index) {
+            <div class="item" cdkDrag>
+              @if (group.items.length > 1) {
+                <button
+                  matIconButton
+                  type="button"
+                  class="handle"
+                  cdkDragHandle
+                  matTooltip="Ziehen zum Verschieben"
+                  [attr.aria-label]="'Eintrag ' + item.description + ' verschieben'"
+                  (keydown.arrowup)="moveItemBy(group, itemIndex, -1, $event)"
+                  (keydown.arrowdown)="moveItemBy(group, itemIndex, 1, $event)"
+                >
+                  <mat-icon svgIcon="drag_indicator" />
+                </button>
+              } @else {
+                <span class="handle-space"></span>
+              }
+              <div class="description">
+                {{ item.description }}
+                @if (item.note) {
+                  <div class="note">{{ item.note }}</div>
+                }
+              </div>
+              <span
+                class="amount"
+                [class.income-amount]="item.type === 'INCOME'"
+                [class.expense-amount]="item.type === 'EXPENSE'"
+              >
+                {{ item.type === 'EXPENSE' ? '−' : '+' }}{{ item.amount | currency: 'EUR' }}
+              </span>
+              <span class="actions">
+                <button
+                  matIconButton
+                  type="button"
+                  matTooltip="Bearbeiten"
+                  [attr.aria-label]="'Eintrag ' + item.description + ' bearbeiten'"
+                  (click)="edit.emit(item)"
+                >
+                  <mat-icon svgIcon="edit" />
+                </button>
+                <button
+                  matIconButton
+                  type="button"
+                  matTooltip="Löschen"
+                  [attr.aria-label]="'Eintrag ' + item.description + ' löschen'"
+                  (click)="remove.emit(item)"
+                >
+                  <mat-icon svgIcon="delete" />
+                </button>
+              </span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</ng-template>

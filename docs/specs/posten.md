@@ -23,7 +23,8 @@ ihnen ergibt sich die Auswertung nach der 50/30/20-Regel.
 - **PO-9**: Nach dem Löschen kann der Benutzer das Löschen kurz rückgängig machen. Der Posten wird dann mit gleicher
   Beschreibung, gleichem Betrag und gleicher Kategorie, aber neuer ID wieder angelegt, auch wenn inzwischen ein anderes
   Jahr angezeigt wird.
-- **PO-10**: Die Übersicht zeigt die Posten absteigend nach Erfassungszeitpunkt an, der neueste steht oben.
+- **PO-10**: Ein neu erfasster Posten steht oben. Seit [unterkategorie.md](unterkategorie.md) gilt das innerhalb
+  seiner Unterkategorie-Gruppe, deren Reihenfolge der Benutzer frei ändern kann (UK-14, UK-17).
 
 ## Akzeptanzkriterien
 
@@ -42,7 +43,7 @@ ihnen ergibt sich die Auswertung nach der 50/30/20-Regel.
 
 - Posten bearbeiten (eigene Spec: [posten-bearbeiten.md](posten-bearbeiten.md))
 - Posten mit Datum, wiederkehrende Posten, Monatsbeträge
-- Eigene Kategorien oder Unterkategorien
+- Eigene Kategorien der 50/30/20-Regel (Unterkategorien: [unterkategorie.md](unterkategorie.md))
 - Andere Währungen als Euro
 - Eine fachliche Obergrenze für Beträge. Technisch begrenzt bleibt der Betrag auf zehn Vorkommastellen (Spalte
   `amount`); das ist keine fachliche Regel.

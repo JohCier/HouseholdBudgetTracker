@@ -22,7 +22,13 @@ html {
 body {
   // Follow the user's system setting for light/dark mode.
   color-scheme: light dark;
+  // Fixed colors of the incomes and the categories, the same in the entries, the pie and its
+  // legend (TD-2, UK-19): incomes green, Lebensunterhalt a soft brown, Freizeit & Spaß a mango
+  // mustard, Sparen & Investieren blue. The income color is also used for text, hence darker.
   --app-income-color: light-dark(#1b6d36, #7fd99a);
+  --app-lebensunterhalt-color: light-dark(#a07a5a, #c49a78);
+  --app-freizeit-spass-color: light-dark(#e0a020, #f0b840);
+  --app-sparen-investieren-color: light-dark(#2a78d6, #4a90e2);
 
   // Set a default background, font and text colors for the application using
   // Angular Material's system-level CSS variables. Learn more about these

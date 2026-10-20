@@ -1,6 +1,6 @@
 # Unterkategorie und gruppierte Einträge
 
-Status: geplant
+Status: umgesetzt
 
 ## Zweck
 
@@ -83,8 +83,8 @@ legt die Farben der Kategorien neu fest (UK-19), auch für die Torte (TD-2).
 - **UK-16**: Solange der Benutzer nichts verschoben hat, stehen die Gruppen alphabetisch mit „Sonstiges" am Ende, und
   die Posten einer Gruppe stehen wie bisher nach PO-10 (neuester oben).
 - **UK-17**: Ein neuer Posten steht oben in seiner Gruppe. Eine neue Gruppe (der erste Posten mit einer Unterkategorie,
-  die es in der Kategorie bzw. bei den Einnahmen noch nicht gibt) steht am Ende, vor „Sonstiges", solange „Sonstiges"
-  nicht verschoben wurde. Ein bearbeiteter Posten behält seinen Platz (PB-4); bekommt er eine andere Unterkategorie
+  die es in der Kategorie bzw. bei den Einnahmen noch nicht gibt) steht am Ende, vor „Sonstiges", sofern „Sonstiges"
+  am Ende steht; mehrere neue Gruppen stehen untereinander alphabetisch. Ein bearbeiteter Posten behält seinen Platz (PB-4); bekommt er eine andere Unterkategorie
   oder Kategorie, steht er oben in seiner neuen Gruppe. Ein durch „Rückgängig" wiederhergestellter Posten (PO-9) steht
   wie ein neuer Posten oben in seiner Gruppe.
 - **UK-18**: Verschwindet der letzte Posten einer Gruppe, verschwindet die Gruppe; kommt sie später wieder, gilt sie als
@@ -159,20 +159,42 @@ legt die Farben der Kategorien neu fest (UK-19), auch für die Torte (TD-2).
 
 ## Umsetzung
 
-Noch nicht umgesetzt. Geplant:
-
-- Domäne: Value Object `BudgetItemSubcategory` (UK-2, UK-5), optionales Feld in `BudgetItem`; `HouseholdPlan.addIncome`,
-  `addExpense` und `changeItem` nehmen es entgegen; `BudgetSummary` bleibt unverändert (UK-3)
-- Persistenz: Spalte `budget_item.subcategory VARCHAR(50)` (Migration `V7__budget_item_subcategory.sql`); die
-  Reihenfolge der Gruppen und Posten als Positionen im Plan (UK-15), ihre Änderung als Domain Event protokolliert (HP-7)
-- Read Model: `HouseholdPlanOverview` liefert zusätzlich die gruppierte Sicht mit Summen je Bereich, Kategorie und
-  Unterkategorie (UK-9 bis UK-13)
-- API: optionales Feld `subcategory` in `AddIncomeRequest`, `AddExpenseRequest`, `ChangeBudgetItemRequest` und
-  `BudgetItemResponse`; ein Endpunkt, der die Reihenfolge der Gruppen bzw. der Posten einer Gruppe setzt und die
-  Übersicht zurückgibt (AU-4); Vertrag `plans.json` neu schreiben
-- Frontend: Feld „Unterkategorie (optional)" mit Vorschlägen (`mat-autocomplete`) in Formular und Dialog; die Karte
-  „Einträge" zeigt die Gruppen statt der flachen Tabelle, Umsortieren mit `@angular/cdk/drag-drop`; neue
-  Farbvariablen für Einnahmen und Kategorien, auch in `category-pie.scss`
-- E2E: `e2e/tests/unterkategorie.spec.ts`
+- Domäne: Value Object `BudgetItemSubcategory` (UK-2; `ofNullable` macht aus leerem Text „keine Unterkategorie",
+  `isSameAs` vergleicht ohne Groß- und Kleinschreibung, `groupOf` ordnet Posten ohne Unterkategorie „Sonstiges" zu),
+  optionales Feld in `BudgetItem`, Value Object `ItemSection` für die Einnahmen bzw. eine Kategorie der Ausgaben.
+  `HouseholdPlan` hält die Posten in Anzeigereihenfolge: `addIncome` und `addExpense` setzen den neuen Posten an den
+  Anfang, `changeItem` setzt ihn nur bei einer neuen Gruppe dorthin (UK-17). Die Schreibweise wird beim Speichern
+  vereinheitlicht: Ein Posten übernimmt die Schreibweise eines vorhandenen Postens der Gruppe, „sonstiges" wird immer
+  als „Sonstiges" gespeichert; so zeigt die Gruppe die Schreibweise ihres ältesten Postens (UK-5). Die Reihenfolge der
+  Gruppen hält je Bereich das Value Object `SubcategoryOrder`; `arrange` stellt erst die verschobenen Gruppen, dann
+  die übrigen alphabetisch vor ein am Ende stehendes „Sonstiges" (UK-16, UK-17). `reorderItems` und
+  `reorderSubcategories` prüfen, dass genau die Posten einer Gruppe bzw. die Gruppen eines Bereichs genannt sind, und
+  zeichnen `BudgetItemsReordered` bzw. `SubcategoriesReordered` auf, wenn sich die Reihenfolge ändert (UK-14). Gruppen
+  ohne Posten fallen aus der Reihenfolge (UK-18). `BudgetSummary` bleibt unverändert (UK-3)
+- Commands: `AddIncomeCommand`, `AddExpenseCommand`, `ChangeBudgetItemCommand` mit optionaler Unterkategorie, neu
+  `ReorderBudgetItemsCommand` und `ReorderSubcategoriesCommand`
+- Persistenz: Migration `V7__budget_item_subcategory_and_order.sql` mit den Spalten `budget_item.subcategory
+  VARCHAR(50)` und `budget_item.position` (höchste oben, vorhandene Posten nach Erfassungszeitpunkt) und der Tabelle
+  `subcategory_order` (UK-15). `JdbcHouseholdPlanRepository` behält gespeicherte Positionen, solange sie zur
+  Reihenfolge passen, sodass Erfassen, Löschen und Verschieben eines Postens nur eine Zeile schreiben
+- Read Model: `HouseholdPlanOverview` liefert zusätzlich `incomeGroups` und `expenseCategories` (Read Models
+  `OverviewItemGroup`, `OverviewCategoryItems`) mit den Summen je Kategorie und Gruppe (UK-9 bis UK-13)
+- API: optionales Feld `subcategory` (höchstens 50 Zeichen, sonst 400) in `AddIncomeRequest`, `AddExpenseRequest`,
+  `ChangeBudgetItemRequest` und `BudgetItemResponse`; `PUT /api/plans/{planId}/item-order` (`itemIds` der Posten
+  einer Gruppe) und `PUT /api/plans/{planId}/subcategory-order` (`type`, bei Ausgaben `category`, `subcategories`)
+  antworten mit der Übersicht (AU-4), bei einem fremden Plan mit 404 (UK-15)
+- Frontend: `budget/ui/subcategory-field.ts` (Feld „Unterkategorie (optional)" mit `mat-autocomplete`, UK-6) in
+  `add-item-form` und `edit-item-dialog`; Vorschläge aus `subcategorySuggestions` in `budget.model.ts` (UK-7, UK-8).
+  `budget/ui/budget-entries.ts` ersetzt die Tabelle `budget-item-table.ts`: Bereiche, Kategorien und Gruppen mit
+  Summen, Verschieben mit `@angular/cdk/drag-drop` am Griff oder mit den Pfeiltasten auf dem Griff (UK-14);
+  `BudgetStore.reorderItems` und `reorderSubcategories` zeigen die neue Reihenfolge sofort und laden die Übersicht neu,
+  wenn das Speichern scheitert. Farbvariablen `--app-income-color` und `--app-<kategorie>-color` in `styles.scss`, auch
+  für die Torte (UK-19)
+- Tests: `BudgetItemSubcategoryTest`, `SubcategoryOrderTest`, `HouseholdPlanSubcategoryTest`, `HouseholdPlanTest`,
+  `HouseholdPlanOverviewGroupsTest`, `HouseholdPlanControllerTest`, `JdbcHouseholdPlanRepositoryTest`,
+  `JdbcHouseholdPlanOverviewQueryHandlerTest`, `budget-entries.spec.ts`, `add-item-form.spec.ts`,
+  `edit-item-dialog.spec.ts`, `budget-store.spec.ts`, `budget-api.spec.ts`, `budget-dashboard.spec.ts`
+- E2E: `e2e/tests/unterkategorie.spec.ts` (UK-1 bis UK-7, UK-9 bis UK-12, UK-14 bis UK-17, UK-19; UK-13, UK-18, der
+  Fall 404 und das Protokoll decken die Backend-Tests ab)
 
 ## Offene Fragen

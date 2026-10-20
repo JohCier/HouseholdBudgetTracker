@@ -95,16 +95,16 @@ class HouseholdPlanApplicationServiceTest {
 
     @Test
     void plansOfOtherOwnersCannotBeChangedAndAppearNotToExist() {
-        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null)).id();
+        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null, null)).id();
         publishedEvents.clear();
 
-        assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(SOMEONE_ELSE, planId, SALARY, money("1.00"), null)))
+        assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(SOMEONE_ELSE, planId, SALARY, money("1.00"), null, null)))
                 .isInstanceOf(HouseholdPlanNotFoundException.class);
         assertThatThrownBy(() -> service.addExpense(new AddExpenseCommand(SOMEONE_ELSE, planId, SALARY,
-                money("1.00"), ExpenseCategory.FREIZEIT_SPASS, null)))
+                money("1.00"), ExpenseCategory.FREIZEIT_SPASS, null, null)))
                 .isInstanceOf(HouseholdPlanNotFoundException.class);
         assertThatThrownBy(() -> service.changeItem(new ChangeBudgetItemCommand(SOMEONE_ELSE, planId, itemId, SALARY,
-                money("1.00"), null, null)))
+                money("1.00"), null, null, null)))
                 .isInstanceOf(HouseholdPlanNotFoundException.class);
         assertThatThrownBy(() -> service.removeItem(new RemoveBudgetItemCommand(SOMEONE_ELSE, planId, itemId)))
                 .isInstanceOf(HouseholdPlanNotFoundException.class);
@@ -121,7 +121,7 @@ class HouseholdPlanApplicationServiceTest {
 
     @Test
     void addIncomeStoresItemAndPublishesEvent() {
-        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null)).id();
+        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null, null)).id();
 
         assertThat(storedItems()).extracting(BudgetItem::id).containsExactly(itemId);
         assertThat(publishedEvents.getLast()).isInstanceOfSatisfying(IncomeAdded.class,
@@ -131,7 +131,7 @@ class HouseholdPlanApplicationServiceTest {
     @Test
     void addExpenseStoresItemAndPublishesEvent() {
         BudgetItemId itemId = service.addExpense(new AddExpenseCommand(
-                OWNER, planId, BudgetItemDescription.of("Miete"), money("800.00"), ExpenseCategory.LEBENSUNTERHALT, null)).id();
+                OWNER, planId, BudgetItemDescription.of("Miete"), money("800.00"), ExpenseCategory.LEBENSUNTERHALT, null, null)).id();
 
         assertThat(storedItems().getFirst().category()).contains(ExpenseCategory.LEBENSUNTERHALT);
         assertThat(publishedEvents.getLast()).isInstanceOfSatisfying(ExpenseAdded.class,
@@ -142,7 +142,7 @@ class HouseholdPlanApplicationServiceTest {
     void nonPositiveAmountIsADomainErrorAndPublishesNothing() {
         publishedEvents.clear();
 
-        assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, Money.ZERO, null)))
+        assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, Money.ZERO, null, null)))
                 .isInstanceOf(DomainValidationException.class);
         assertThat(storedItems()).isEmpty();
         assertThat(publishedEvents).isEmpty();
@@ -151,9 +151,9 @@ class HouseholdPlanApplicationServiceTest {
     /** PB-1, PB-5 */
     @Test
     void changeItemStoresItAndPublishesEvent() {
-        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null)).id();
+        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null, null)).id();
 
-        service.changeItem(new ChangeBudgetItemCommand(OWNER, planId, itemId, SALARY, money("2100.00"), null, null));
+        service.changeItem(new ChangeBudgetItemCommand(OWNER, planId, itemId, SALARY, money("2100.00"), null, null, null));
 
         assertThat(storedItems()).singleElement().satisfies(item -> {
             assertThat(item.id()).isEqualTo(itemId);
@@ -167,13 +167,13 @@ class HouseholdPlanApplicationServiceTest {
     @Test
     void changingUnknownItemThrows() {
         assertThatThrownBy(() -> service.changeItem(new ChangeBudgetItemCommand(OWNER, planId, BudgetItemId.generate(),
-                SALARY, money("1.00"), null, null)))
+                SALARY, money("1.00"), null, null, null)))
                 .isInstanceOf(BudgetItemNotFoundException.class);
     }
 
     @Test
     void removeItemDeletesItAndPublishesEvent() {
-        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null)).id();
+        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null, null)).id();
 
         service.removeItem(new RemoveBudgetItemCommand(OWNER, planId, itemId));
 
@@ -201,9 +201,9 @@ class HouseholdPlanApplicationServiceTest {
     /** AU-1, AU-2, AU-3 */
     @Test
     void addingAnItemAnswersWithTheOverviewIncludingIt() {
-        AddedBudgetItem income = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null));
+        AddedBudgetItem income = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null, null));
         AddedBudgetItem expense = service.addExpense(new AddExpenseCommand(OWNER, planId,
-                BudgetItemDescription.of("Miete"), money("850.00"), ExpenseCategory.LEBENSUNTERHALT, null));
+                BudgetItemDescription.of("Miete"), money("850.00"), ExpenseCategory.LEBENSUNTERHALT, null, null));
 
         assertThat(income.overview().items()).extracting(OverviewItem::id).containsExactly(income.id());
         assertThat(expense.overview().items()).extracting(OverviewItem::id).contains(income.id(), expense.id());
@@ -214,10 +214,10 @@ class HouseholdPlanApplicationServiceTest {
     /** AU-1, AU-2 */
     @Test
     void changingAndRemovingAnItemAnswerWithTheOverviewAfterwards() {
-        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null)).id();
+        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null, null)).id();
 
         HouseholdPlanOverview changed = service.changeItem(
-                new ChangeBudgetItemCommand(OWNER, planId, itemId, SALARY, money("2100.00"), null, null));
+                new ChangeBudgetItemCommand(OWNER, planId, itemId, SALARY, money("2100.00"), null, null, null));
         assertThat(changed.totalIncome().value()).isEqualByComparingTo("2100.00");
 
         HouseholdPlanOverview removed = service.removeItem(new RemoveBudgetItemCommand(OWNER, planId, itemId));
@@ -229,13 +229,13 @@ class HouseholdPlanApplicationServiceTest {
     void commandsForUnknownPlanThrow() {
         HouseholdPlanId unknown = HouseholdPlanId.generate();
 
-        assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(OWNER, unknown, SALARY, money("10.00"), null)))
+        assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(OWNER, unknown, SALARY, money("10.00"), null, null)))
                 .isInstanceOf(HouseholdPlanNotFoundException.class);
     }
 
     @Test
     void overviewOfAYearContainsThePlanAndItsItems() {
-        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null)).id();
+        BudgetItemId itemId = service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("2000.00"), null, null)).id();
 
         HouseholdPlanOverview overview = service.getOverview(OWNER, YEAR);
 
@@ -267,7 +267,8 @@ class HouseholdPlanApplicationServiceTest {
         @Override
         public Optional<HouseholdPlan> findById(HouseholdPlanId id) {
             return Optional.ofNullable(plans.get(id))
-                    .map(plan -> HouseholdPlan.reconstitute(plan.id(), plan.owner(), plan.year(), plan.items()));
+                    .map(plan -> HouseholdPlan.reconstitute(plan.id(), plan.owner(), plan.year(), plan.items(),
+                            plan.subcategoryOrders()));
         }
 
         @Override
@@ -286,7 +287,8 @@ class HouseholdPlanApplicationServiceTest {
         @Override
         public void save(HouseholdPlan plan) {
             plans.put(plan.id(),
-                    HouseholdPlan.reconstitute(plan.id(), plan.owner(), plan.year(), List.copyOf(plan.items())));
+                    HouseholdPlan.reconstitute(plan.id(), plan.owner(), plan.year(), List.copyOf(plan.items()),
+                            plan.subcategoryOrders()));
         }
 
         Optional<HouseholdPlanOverview> overviewOf(OwnerId owner, Year year) {
@@ -295,8 +297,9 @@ class HouseholdPlanApplicationServiceTest {
                     .findFirst()
                     .map(plan -> HouseholdPlanOverview.of(plan.id(), plan.year(), plan.items().stream()
                             .map(item -> new OverviewItem(item.id(), item.description(), item.amount(),
-                                    item.type(), item.category().orElse(null), null))
-                            .toList()));
+                                    item.type(), item.category().orElse(null), item.subcategory().orElse(null),
+                                    item.note().orElse(null)))
+                            .toList(), plan.subcategoryOrders()));
         }
     }
 }

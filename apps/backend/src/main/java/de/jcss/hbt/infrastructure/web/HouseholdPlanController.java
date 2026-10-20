@@ -5,8 +5,10 @@ import de.jcss.hbt.application.householdplan.HouseholdPlanApplicationService;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.BudgetItemNote;
+import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.ItemSection;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
 import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
@@ -14,6 +16,8 @@ import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
 import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
+import de.jcss.hbt.domain.householdplan.command.ReorderBudgetItemsCommand;
+import de.jcss.hbt.domain.householdplan.command.ReorderSubcategoriesCommand;
 import de.jcss.hbt.infrastructure.web.dto.AddExpenseRequest;
 import de.jcss.hbt.infrastructure.web.dto.AddIncomeRequest;
 import de.jcss.hbt.infrastructure.web.dto.AddedBudgetItemResponse;
@@ -22,6 +26,8 @@ import de.jcss.hbt.infrastructure.web.dto.CreateHouseholdPlanRequest;
 import de.jcss.hbt.infrastructure.web.dto.CreatedHouseholdPlanResponse;
 import de.jcss.hbt.infrastructure.web.dto.ExpenseCategoryDto;
 import de.jcss.hbt.infrastructure.web.dto.HouseholdPlanOverviewResponse;
+import de.jcss.hbt.infrastructure.web.dto.ReorderBudgetItemsRequest;
+import de.jcss.hbt.infrastructure.web.dto.ReorderSubcategoriesRequest;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -85,7 +91,7 @@ public class HouseholdPlanController {
                                              @Valid @RequestBody AddIncomeRequest request) {
         AddedBudgetItem added = plans.addIncome(new AddIncomeCommand(owner(user), HouseholdPlanId.of(planId),
                 BudgetItemDescription.of(request.description()), Money.of(request.amount()),
-                BudgetItemNote.ofNullable(request.note())));
+                BudgetItemSubcategory.ofNullable(request.subcategory()), BudgetItemNote.ofNullable(request.note())));
         return AddedBudgetItemResponse.from(added);
     }
 
@@ -95,7 +101,8 @@ public class HouseholdPlanController {
                                               @Valid @RequestBody AddExpenseRequest request) {
         AddedBudgetItem added = plans.addExpense(new AddExpenseCommand(owner(user), HouseholdPlanId.of(planId),
                 BudgetItemDescription.of(request.description()), Money.of(request.amount()),
-                request.category().toDomain(), BudgetItemNote.ofNullable(request.note())));
+                request.category().toDomain(), BudgetItemSubcategory.ofNullable(request.subcategory()),
+                BudgetItemNote.ofNullable(request.note())));
         return AddedBudgetItemResponse.from(added);
     }
 
@@ -107,7 +114,28 @@ public class HouseholdPlanController {
         ExpenseCategoryDto category = request.category();
         return HouseholdPlanOverviewResponse.from(plans.changeItem(new ChangeBudgetItemCommand(owner(user), HouseholdPlanId.of(planId), BudgetItemId.of(itemId),
                 BudgetItemDescription.of(request.description()), Money.of(request.amount()),
-                category == null ? null : category.toDomain(), BudgetItemNote.ofNullable(request.note()))));
+                category == null ? null : category.toDomain(), BudgetItemSubcategory.ofNullable(request.subcategory()),
+                BudgetItemNote.ofNullable(request.note()))));
+    }
+
+    /** Puts the items of one subcategory group in a new order (UK-14). */
+    @PutMapping("/{planId}/item-order")
+    public HouseholdPlanOverviewResponse reorderItems(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId,
+                                                      @Valid @RequestBody ReorderBudgetItemsRequest request) {
+        return HouseholdPlanOverviewResponse.from(plans.reorderItems(new ReorderBudgetItemsCommand(owner(user),
+                HouseholdPlanId.of(planId), request.itemIds().stream().map(BudgetItemId::of).toList())));
+    }
+
+    /** Puts the subcategory groups of the incomes or of the expenses of one category in a new order (UK-14). */
+    @PutMapping("/{planId}/subcategory-order")
+    public HouseholdPlanOverviewResponse reorderSubcategories(@AuthenticationPrincipal Jwt user,
+                                                              @PathVariable UUID planId,
+                                                              @Valid @RequestBody ReorderSubcategoriesRequest request) {
+        ExpenseCategoryDto category = request.category();
+        ItemSection section = new ItemSection(request.type().toDomain(), category == null ? null : category.toDomain());
+        return HouseholdPlanOverviewResponse.from(plans.reorderSubcategories(new ReorderSubcategoriesCommand(
+                owner(user), HouseholdPlanId.of(planId), section,
+                request.subcategories().stream().map(BudgetItemSubcategory::of).toList())));
     }
 
     @DeleteMapping("/{planId}/items/{itemId}")

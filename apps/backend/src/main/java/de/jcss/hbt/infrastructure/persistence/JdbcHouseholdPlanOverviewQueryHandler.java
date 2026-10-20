@@ -3,6 +3,7 @@ package de.jcss.hbt.infrastructure.persistence;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.BudgetItemNote;
+import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.ItemType;
@@ -22,7 +23,8 @@ import java.util.UUID;
 
 /**
  * Reads the overview straight from the tables, without reconstituting the
- * {@code HouseholdPlan} aggregate. Items are listed most recently added first.
+ * {@code HouseholdPlan} aggregate. Items are listed in display order, the highest position on
+ * top (UK-14), see {@link JdbcHouseholdPlanRepository}.
  */
 @Component
 public class JdbcHouseholdPlanOverviewQueryHandler implements HouseholdPlanOverviewQueryHandler {
@@ -35,6 +37,7 @@ public class JdbcHouseholdPlanOverviewQueryHandler implements HouseholdPlanOverv
                 Money.of(rs.getBigDecimal("amount")),
                 ItemType.valueOf(rs.getString("type")),
                 category == null ? null : ExpenseCategory.valueOf(category),
+                BudgetItemSubcategory.ofNullable(rs.getString("subcategory")),
                 BudgetItemNote.ofNullable(rs.getString("note")));
     };
 
@@ -51,15 +54,16 @@ public class JdbcHouseholdPlanOverviewQueryHandler implements HouseholdPlanOverv
                 .param("year", year.getValue())
                 .query((rs, rowNum) -> HouseholdPlanId.of(rs.getObject("id", UUID.class)))
                 .optional()
-                .map(planId -> HouseholdPlanOverview.of(planId, year, itemsOf(planId)));
+                .map(planId -> HouseholdPlanOverview.of(planId, year, itemsOf(planId),
+                        ItemSectionColumn.subcategoryOrdersOf(jdbcClient, planId)));
     }
 
     private List<OverviewItem> itemsOf(HouseholdPlanId planId) {
         return jdbcClient.sql("""
-                        SELECT id, description, amount, type, category, note
+                        SELECT id, description, amount, type, category, subcategory, note
                         FROM budget_item
                         WHERE household_plan_id = :planId
-                        ORDER BY created_at DESC, id
+                        ORDER BY position DESC
                         """)
                 .param("planId", planId.value())
                 .query(ITEM_ROW_MAPPER)

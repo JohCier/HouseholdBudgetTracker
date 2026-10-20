@@ -100,4 +100,22 @@ describe('BudgetApi', () => {
     req.flush(emptyOverview);
     expect(await removed).toEqual(emptyOverview);
   });
+
+  // UK-14
+  it('puts the items and the subcategory groups of a plan in a new order', async () => {
+    const items = firstValueFrom(api.reorderItems(planId, { itemIds: ['b', 'a'] }));
+    const itemOrder = http.expectOne(`/api/plans/${planId}/item-order`);
+    expect(itemOrder.request.method).toBe('PUT');
+    expect(itemOrder.request.body).toEqual({ itemIds: ['b', 'a'] });
+    itemOrder.flush(emptyOverview);
+    expect(await items).toEqual(emptyOverview);
+
+    const request = { type: 'INCOME' as const, subcategories: ['Gehalt', 'Sonstiges'] };
+    const groups = firstValueFrom(api.reorderSubcategories(planId, request));
+    const groupOrder = http.expectOne(`/api/plans/${planId}/subcategory-order`);
+    expect(groupOrder.request.method).toBe('PUT');
+    expect(groupOrder.request.body).toEqual(request);
+    groupOrder.flush(emptyOverview);
+    expect(await groups).toEqual(emptyOverview);
+  });
 });
