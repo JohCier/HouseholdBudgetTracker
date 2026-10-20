@@ -1,10 +1,17 @@
-import { expect, Locator, test } from '@playwright/test';
+import { expect, Locator, Page, test } from '@playwright/test';
 import { addExpense, addIncome, balanceSheet, registerWithPlan } from './support';
 
 async function box(locator: Locator) {
   const result = await locator.boundingBox();
   expect(result).not.toBeNull();
   return result!;
+}
+
+/** Whether the page is wider than the screen, so it scrolls sideways (MA-1). */
+async function scrollsSideways(page: Page): Promise<boolean> {
+  return page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  );
 }
 
 // docs/specs/bilanz.md
@@ -81,5 +88,6 @@ test.describe('Bilanz in der Übersicht', () => {
     expect(sheet.x).toBeGreaterThanOrEqual(0);
     expect(sheet.x + sheet.width).toBeLessThanOrEqual(390);
     expect(yearly.x + yearly.width).toBeLessThanOrEqual(sheet.x + sheet.width);
+    await expect.poll(() => scrollsSideways(page)).toBe(false);
   });
 });

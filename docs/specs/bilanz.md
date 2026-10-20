@@ -23,8 +23,8 @@ AW-2, MJ-8, MJ-9), ändert sich nicht.
   Gesamteinnahmen sind wie bisher in der Farbe der Einnahmen, die Gesamtausgaben und ein negativer Saldo in der
   Fehlerfarbe dargestellt.
 - **BI-4**: Die Beträge sind die bisherigen: Monatssummen nach MJ-9, Jahressummen nach AW-1 und AW-2.
-- **BI-5**: Der Kasten behält seine zwei Spalten auch auf schmalen Bildschirmen (ab 360 px Breite, vgl. MA-1 in der
-  Spec zur Ansicht auf schmalen Bildschirmen) und ist nicht breiter als der Bildschirm.
+- **BI-5**: Der Kasten behält seine zwei Spalten auch auf schmalen Bildschirmen (ab 360 px Breite, MA-1 in
+  [mobile-ansicht.md](mobile-ansicht.md)) und ist nicht breiter als der Bildschirm.
 - **BI-6**: Die Warnung „Deine Ausgaben übersteigen deine Einnahmen." (AW-6) steht unverändert unter dem Kasten.
 
 ## Akzeptanzkriterien

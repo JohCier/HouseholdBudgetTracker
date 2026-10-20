@@ -145,6 +145,10 @@ import { SubcategoryField } from './subcategory-field';
       gap: 4px;
       min-width: min(360px, 70vw);
     }
+    /* On a low screen the content scrolls; its fields keep their height instead of being squeezed (MA-5) */
+    mat-dialog-content > * {
+      flex-shrink: 0;
+    }
     mat-button-toggle-group:first-child {
       margin: 8px 0 16px;
     }
