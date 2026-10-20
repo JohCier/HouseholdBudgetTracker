@@ -8,6 +8,7 @@ import {
   openYear,
   register,
   registerWithPlan,
+  showAmounts,
   tile,
   yearRow,
 } from "./support";
@@ -121,6 +122,7 @@ test.describe("Plan als Vorlage übernehmen", () => {
       String(year + 1),
       String(year),
     ]);
+    await showAmounts(page, "Jährlich");
     await expect(
       yearRow(page, year + 1)
         .locator("td")

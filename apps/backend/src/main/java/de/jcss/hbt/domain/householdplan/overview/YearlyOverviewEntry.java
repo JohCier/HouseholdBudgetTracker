@@ -46,6 +46,21 @@ public record YearlyOverviewEntry(
                 changeOf(previousYear == null ? null : previousYear.balance(), summary.balance()));
     }
 
+    /** Total income per month: the yearly total divided by 12 (JM-3). */
+    public Money monthlyTotalIncome() {
+        return totalIncome.perMonth();
+    }
+
+    /** Total expenses per month: the yearly total divided by 12 (JM-3). */
+    public Money monthlyTotalExpense() {
+        return totalExpense.perMonth();
+    }
+
+    /** The balance per month: the yearly balance divided by 12, not the difference of the monthly totals (JM-3). */
+    public Money monthlyBalance() {
+        return balance.perMonth();
+    }
+
     private static Percentage changeOf(Money previous, Money current) {
         return previous == null ? null : Percentage.changeFrom(previous, current).orElse(null);
     }

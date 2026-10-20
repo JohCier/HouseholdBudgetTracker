@@ -3,11 +3,12 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
-import { Year } from './budget.model';
+import { AMOUNT_PERIODS, Year, YearlyOverviewEntry } from './budget.model';
 import { YearlyOverviewStore } from './data-access/yearly-overview-store';
 import { copiedMessage, openCopyPlanDialog } from './ui/copy-plan-dialog';
 import { deletedMessage, openDeletePlanDialog } from './ui/delete-plan-dialog';
@@ -16,13 +17,14 @@ import { YearChange } from './ui/year-change';
 /**
  * The start page after signing in: all plans of the user with their income, expenses and
  * balance and how these changed from the previous year (JU-1 to JU-13). A row opens the plan
- * of its year.
+ * of its year. The amounts are shown per month or per year, as the user chooses (JM-1 to JM-7).
  */
 @Component({
   selector: 'app-yearly-overview-page',
   imports: [
     CurrencyPipe,
     MatButtonModule,
+    MatButtonToggleModule,
     MatCardModule,
     MatIconModule,
     MatProgressBarModule,
@@ -35,7 +37,20 @@ import { YearChange } from './ui/year-change';
       <mat-progress-bar mode="indeterminate" class="loading" />
     }
 
-    <h1>Haushaltspläne</h1>
+    <div class="heading">
+      <h1>Haushaltspläne</h1>
+      @if (store.years().length > 0) {
+        <mat-button-toggle-group
+          aria-label="Beträge monatlich oder jährlich"
+          [value]="store.period()"
+          (change)="store.setPeriod($event.value)"
+        >
+          @for (period of periods; track period.value) {
+            <mat-button-toggle [value]="period.value">{{ period.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      }
+    </div>
 
     @if (store.loadError(); as error) {
       <div class="load-error" role="alert">
@@ -80,16 +95,16 @@ import { YearChange } from './ui/year-change';
                   }}</a>
                 </th>
                 <td class="amount">
-                  <span class="value">{{ entry.totalIncome | currency: 'EUR' }}</span>
+                  <span class="value">{{ income(entry) | currency: 'EUR' }}</span>
                   <app-year-change kind="income" [change]="entry.incomeChange" />
                 </td>
                 <td class="amount">
-                  <span class="value">{{ entry.totalExpense | currency: 'EUR' }}</span>
+                  <span class="value">{{ expense(entry) | currency: 'EUR' }}</span>
                   <app-year-change kind="expense" [change]="entry.expenseChange" />
                 </td>
                 <td class="amount">
                   <span class="value" [class.deficit]="entry.expensesExceedIncome">
-                    {{ entry.balance | currency: 'EUR' }}
+                    {{ balance(entry) | currency: 'EUR' }}
                   </span>
                   @if (entry.expensesExceedIncome) {
                     <span class="deficit-label">Defizit</span>
@@ -140,6 +155,13 @@ import { YearChange } from './ui/year-change';
     h1 {
       margin: 0;
       font: var(--mat-sys-headline-small);
+    }
+    .heading {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
     }
     .load-error {
       display: flex;
@@ -239,6 +261,24 @@ export class YearlyOverviewPage implements OnInit {
   private readonly dialog = inject(MatDialog);
 
   protected readonly creating = signal(false);
+  protected readonly periods = AMOUNT_PERIODS;
+
+  /** The amounts of the chosen period; the backend works out both (JM-2, JM-3, JM-6). */
+  protected income(entry: YearlyOverviewEntry): string {
+    return this.monthly() ? entry.monthlyTotalIncome : entry.totalIncome;
+  }
+
+  protected expense(entry: YearlyOverviewEntry): string {
+    return this.monthly() ? entry.monthlyTotalExpense : entry.totalExpense;
+  }
+
+  protected balance(entry: YearlyOverviewEntry): string {
+    return this.monthly() ? entry.monthlyBalance : entry.balance;
+  }
+
+  private monthly(): boolean {
+    return this.store.period() === 'MONTHLY';
+  }
 
   ngOnInit(): void {
     void this.store.load();

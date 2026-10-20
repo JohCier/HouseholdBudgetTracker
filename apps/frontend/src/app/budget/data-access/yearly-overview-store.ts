@@ -1,9 +1,12 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { toMessage } from '../../shared/http-error';
-import { Year, YearlyOverviewEntry } from '../budget.model';
+import { AmountPeriod, Year, YearlyOverviewEntry } from '../budget.model';
 import { currentYear } from '../year';
 import { BudgetApi } from './budget-api';
+
+/** Where the browser remembers whether the overview shows monthly or yearly amounts (JM-7). */
+export const PERIOD_STORAGE_KEY = 'hbt.yearlyOverview.period';
 
 /**
  * Signal-based state holder for the yearly overview: all plans of the user, the newest year
@@ -21,6 +24,7 @@ export class YearlyOverviewStore {
   private readonly _years = signal<YearlyOverviewEntry[] | undefined>(undefined);
   private readonly _loading = signal(false);
   private readonly _loadError = signal<string | null>(null);
+  private readonly _period = signal<AmountPeriod>(storedPeriod());
 
   readonly currentYear: Year = currentYear();
   readonly years = computed(() => this._years() ?? []);
@@ -33,6 +37,18 @@ export class YearlyOverviewStore {
   );
   readonly loading = this._loading.asReadonly();
   readonly loadError = this._loadError.asReadonly();
+  /** Whether the amounts are shown per month or per year; monthly unless chosen otherwise (JM-7). */
+  readonly period = this._period.asReadonly();
+
+  /** Switches between monthly and yearly amounts and remembers the choice in the browser (JM-1, JM-7). */
+  setPeriod(period: AmountPeriod): void {
+    this._period.set(period);
+    try {
+      localStorage.setItem(PERIOD_STORAGE_KEY, period);
+    } catch {
+      // Without storage the choice only lasts as long as the page
+    }
+  }
 
   async load(): Promise<void> {
     this._loading.set(true);
@@ -55,5 +71,13 @@ export class YearlyOverviewStore {
     } catch (error) {
       throw new Error(toMessage(error));
     }
+  }
+}
+
+function storedPeriod(): AmountPeriod {
+  try {
+    return localStorage.getItem(PERIOD_STORAGE_KEY) === 'YEARLY' ? 'YEARLY' : 'MONTHLY';
+  } catch {
+    return 'MONTHLY';
   }
 }

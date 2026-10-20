@@ -95,6 +95,27 @@ class YearlyOverviewTest {
         assertThat(entry.balance()).isEqualTo(Money.ZERO);
     }
 
+    // docs/specs/jahresuebersicht-monatsbetraege.md
+    @Test
+    void monthlyTotalsAreTheYearlyTotalsDividedByTwelve() { // JM-3, JM-5
+        YearlyOverviewEntry entry = YearlyOverview.of(List.of(
+                plan(2025, summary("30000.00", "25000.00")),
+                plan(2026, summary("30900.00", "24250.00")))).years().getFirst();
+
+        assertThat(entry.monthlyTotalIncome()).isEqualTo(money("2575.00"));
+        assertThat(entry.monthlyTotalExpense()).isEqualTo(money("2020.83"));
+        assertThat(entry.monthlyBalance()).isEqualTo(money("554.17"));
+        assertThat(entry.balanceChange()).isEqualTo(Percentage.of(33));
+    }
+
+    @Test
+    void monthlyBalanceOfADeficitIsNegative() { // JM-3, JM-4
+        YearlyOverviewEntry entry = YearlyOverview.of(List.of(plan(2026, summary("1000.00", "1100.00")))).years().getFirst();
+
+        assertThat(entry.monthlyBalance()).isEqualTo(money("-8.33"));
+        assertThat(entry.expensesExceedIncome()).isTrue();
+    }
+
     private static YearlyOverview.PlanSummary plan(int year, BudgetSummary summary) {
         return new YearlyOverview.PlanSummary(HouseholdPlanId.generate(), Year.of(year), summary);
     }

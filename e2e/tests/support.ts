@@ -41,6 +41,15 @@ export function yearRow(page: Page, year: number) {
   return page.locator(`app-yearly-overview-page tbody tr[data-year="${year}"]`);
 }
 
+/** Switches the yearly overview to amounts per month or per year; the browser remembers it (JM-1, JM-7). */
+export async function showAmounts(page: Page, period: 'Monatlich' | 'Jährlich'): Promise<void> {
+  const toggle = page
+    .getByRole('radiogroup', { name: 'Beträge monatlich oder jährlich' })
+    .getByRole('radio', { name: period });
+  await toggle.click();
+  await expect(toggle).toBeChecked();
+}
+
 /**
  * Registers a new user and creates the plan for the current year from the yearly overview, which
  * then opens it (JU-12).

@@ -1,6 +1,6 @@
 # Monatsbeträge in der Jahresübersicht
 
-Status: geplant
+Status: umgesetzt
 
 ## Zweck
 
@@ -29,22 +29,23 @@ Diese Spec ändert JU-2 und das Nicht-Ziel „Monatsbeträge in der Jahresübers
   Jahreswerten berechnet; Monatswerte fließen in keine Rechnung ein ([MJ-8](monats-jahresbetrag.md)).
 - **JM-6**: Die Monatswerte rechnet das Backend (JU-9, [MJ-10](monats-jahresbetrag.md)); die Oberfläche wählt nur aus,
   welche Werte sie zeigt.
-- **JM-7**: Beim ersten Öffnen ist „Jährlich" gewählt. Die Anwendung merkt sich die Wahl im Browser: Nach dem Öffnen
+- **JM-7**: Beim ersten Öffnen ist „Monatlich" gewählt. Die Anwendung merkt sich die Wahl im Browser: Nach dem Öffnen
   eines Plans und „Alle Jahre", nach dem Neuladen und nach einer neuen Anmeldung im selben Browser ist die zuletzt
   gewählte Darstellung wieder gewählt.
 
 ## Akzeptanzkriterien
 
 - **Gegeben** ein Benutzer ohne Plan, **dann** zeigt die Jahresübersicht keinen Umschalter (JM-1).
-- **Gegeben** die Jahresübersicht zum ersten Mal, **dann** ist „Jährlich" gewählt, und die Beträge sind Jahresbeträge
-  (JM-2, JM-7).
 - **Gegeben** 2025 mit Einnahmen 30.000,00 € und Ausgaben 25.000,00 €, 2026 mit Einnahmen 30.900,00 € und Ausgaben
-  24.250,00 €, **wenn** der Benutzer „Monatlich" wählt, **dann** zeigt die Zeile 2026 Einnahmen 2.575,00 € (+3,00 %),
-  Ausgaben 2.020,83 € (−3,00 %) und Überschuss 554,17 € (+33,00 %) (JM-3, JM-5).
-- **Gegeben** Einnahmen 1.000,00 € und Ausgaben 1.100,00 € im Jahr, **wenn** der Benutzer „Monatlich" wählt, **dann**
-  zeigt die Zeile Überschuss −8,33 € und „Defizit" (JM-3, JM-4).
-- **Gegeben** „Monatlich" gewählt, **wenn** der Benutzer einen Plan öffnet und mit „Alle Jahre" zurückkehrt oder die
-  Seite neu lädt, **dann** ist „Monatlich" weiter gewählt (JM-7).
+  24.250,00 €, **wenn** der Benutzer die Jahresübersicht zum ersten Mal öffnet, **dann** ist „Monatlich" gewählt, und
+  die Zeile 2026 zeigt Einnahmen 2.575,00 € (+3,00 %), Ausgaben 2.020,83 € (−3,00 %) und Überschuss 554,17 €
+  (+33,00 %) (JM-3, JM-5, JM-7).
+- **Gegeben** dieselben Pläne, **wenn** der Benutzer „Jährlich" wählt, **dann** zeigt die Zeile 2026 Einnahmen
+  30.900,00 €, Ausgaben 24.250,00 € und Überschuss 6.650,00 € mit denselben Veränderungen (JM-2, JM-5).
+- **Gegeben** Einnahmen 1.000,00 € und Ausgaben 1.100,00 € im Jahr, **dann** zeigt die Zeile bei „Monatlich"
+  Überschuss −8,33 € und „Defizit" (JM-3, JM-4).
+- **Gegeben** „Jährlich" gewählt, **wenn** der Benutzer einen Plan öffnet und mit „Alle Jahre" zurückkehrt oder die
+  Seite neu lädt, **dann** ist „Jährlich" weiter gewählt (JM-7).
 
 ## Nicht im Umfang
 
@@ -54,8 +55,16 @@ Diese Spec ändert JU-2 und das Nicht-Ziel „Monatsbeträge in der Jahresübers
 
 ## Umsetzung
 
+- Read Model: `YearlyOverviewEntry.monthlyTotalIncome`, `monthlyTotalExpense`, `monthlyBalance` teilen die
+  Jahreswerte mit `Money.perMonth` durch 12 (JM-3, JM-6); die Veränderungen bleiben bei den Jahreswerten (JM-5)
+- API: `YearlyOverviewEntryResponse` mit `monthlyTotalIncome`, `monthlyTotalExpense`, `monthlyBalance`
+- Frontend: Umschalter mit `AMOUNT_PERIODS` in `budget/yearly-overview-page.ts`, nur bei mindestens einem Plan (JM-1);
+  die Seite zeigt je nach Wahl die Monats- oder Jahreswerte aus der API (JM-2, JM-3). `YearlyOverviewStore.period`
+  beginnt mit „Monatlich" und merkt sich die Wahl unter `hbt.yearlyOverview.period` im `localStorage` (JM-7)
+- Tests: `YearlyOverviewTest`, `HouseholdPlanControllerTest`, `yearly-overview-page.spec.ts`
+- E2E: `e2e/tests/jahresuebersicht-monatsbetraege.spec.ts` (JM-1 bis JM-5, JM-7). Die übrigen E2E-Tests, die
+  Beträge der Jahresübersicht prüfen, wählen vorher mit `showAmounts` „Jährlich"
+
 ## Offene Fragen
 
-- Vorauswahl „Jährlich" (bisheriges Verhalten) oder „Monatlich" (wie beim Erfassen, MJ-11)? Vorschlag: „Jährlich".
-- Die Wahl im Browser merken (JM-7) oder bei jedem Öffnen der Jahresübersicht wieder mit der Vorauswahl beginnen?
-  Vorschlag: im Browser merken, weil die Übersicht sonst nach jedem „Alle Jahre" zurückspringt.
+Keine. Entschieden bei der Freigabe: Vorauswahl „Monatlich"; die Wahl merkt sich der Browser (JM-7).
