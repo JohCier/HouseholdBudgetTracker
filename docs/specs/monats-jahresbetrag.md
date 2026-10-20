@@ -1,6 +1,6 @@
 # Monats- und Jahresbetrag
 
-Status: umgesetzt
+Status: geplant (Änderung von MJ-11 und MJ-14; MJ-1 bis MJ-13 sonst umgesetzt)
 
 ## Zweck
 
@@ -47,13 +47,19 @@ Plans, lässt sich aber als Monatsbetrag angeben und so anzeigen.
 
 - **MJ-11**: Im Formular „Neuer Eintrag" und im Dialog „Bearbeiten" wählt der Benutzer die Angabe neben dem Betrag mit
   einem Umschalter „Monatlich | Jährlich". Beim Erfassen ist „Monatlich" vorausgewählt; nach dem Erfassen bleibt die
-  gewählte Angabe wie die Art (PO-1). Der Dialog „Bearbeiten" zeigt den eingegebenen Betrag mit seiner Angabe.
+  gewählte Angabe wie die Art (PO-1). Auch der Dialog „Bearbeiten" öffnet immer mit „Monatlich" und zeigt den
+  Monatsbetrag des Postens: bei einem monatlichen Posten den eingegebenen Betrag, bei einem jährlichen den Monatsbetrag
+  nach MJ-7 (1.000,00 € jährlich erscheint als 83,33 € monatlich). Wer einen jährlichen Posten so speichert, macht ihn
+  zum monatlichen Posten; sein Jahresbetrag kann dabei durch die Rundung um wenige Cent abweichen (83,33 € × 12 =
+  999,96 €). Wer im Dialog auf „Jährlich" umstellt, rechnet nach MJ-5 nichts um.
 - **MJ-12**: Die Karte „Einträge" zeigt bei jedem Posten und bei jeder Summe (Bereich, Kategorie, Gruppe) zwei
   Spalten: „Monat" und „Jahr". Der vom Benutzer eingegebene Betrag ist hervorgehoben, der abgeleitete schwächer
   dargestellt.
 - **MJ-13**: Die Kacheln oben in der Übersicht zeigen Einnahmen, Ausgaben und Saldo jeweils je Monat und je Jahr.
-- **MJ-14**: Die Karte „50/30/20-Regel" (Balken und Torte) zeigt weiterhin nur Jahresbeträge; die Anteile sind für
-  Monat und Jahr ohnehin gleich.
+- **MJ-14**: Die Karte „50/30/20-Regel" zeigt in beiden Darstellungen, Balken und Torte (TD-1), die Summen der
+  Kategorien und „davon nicht verplant" je Monat: die Jahreswerte der Auswertung ÷ 12, kaufmännisch auf ganze Cent
+  gerundet (MJ-9). Die Anteile am Einkommen, die Zielerreichung und die Größe der Tortenstücke bleiben unverändert,
+  weil sie für Monat und Jahr gleich sind; gerechnet wird weiter mit Jahresbeträgen (MJ-8).
 
 ## Akzeptanzkriterien
 
@@ -72,6 +78,14 @@ Plans, lässt sich aber als Monatsbetrag angeben und so anzeigen.
 - **Gegeben** eine Ausgabe 850,00 € monatlich, **wenn** der Benutzer „Bearbeiten" wählt, **dann** zeigt der Dialog
   850 und „Monatlich"; nach dem Umstellen auf „Jährlich" und „Speichern" ist der Jahresbetrag 850,00 € und ein Event
   `BudgetItemChanged` wird protokolliert (MJ-4, MJ-5, MJ-11).
+- **Gegeben** eine Ausgabe „Versicherung" 1.000,00 € jährlich, **wenn** der Benutzer „Bearbeiten" wählt, **dann** ist
+  „Monatlich" gewählt und der Betrag 83,33; nach „Speichern" zeigt die Karte „Einträge" 83,33 € je Monat
+  hervorgehoben und 999,96 € je Jahr (MJ-11).
+- **Gegeben** eine Ausgabe „Miete" 850,00 € monatlich, **wenn** der Benutzer „Bearbeiten" wählt, **dann** ist
+  „Monatlich" gewählt und der Betrag 850 (MJ-11).
+- **Gegeben** Einnahmen 3.000,00 € monatlich und Ausgaben Lebensunterhalt 1.500,00 € monatlich, **dann** zeigt die
+  Karte „50/30/20-Regel" für Lebensunterhalt 1.500,00 € und 50 %, in den Balken wie in der Legende der Torte, und für
+  Sparen & Investieren „davon nicht verplant: 1.500,00 €" (MJ-14).
 - **Gegeben** ein gelöschter Posten mit Angabe „monatlich", **wenn** der Benutzer „Rückgängig" wählt, **dann** hat der
   Posten wieder dieselbe Angabe und denselben Betrag (MJ-4).
 - **Gegeben** das Formular „Neuer Eintrag", **wenn** es geöffnet wird, **dann** ist „Monatlich" gewählt; nach dem
@@ -83,7 +97,8 @@ Plans, lässt sich aber als Monatsbetrag angeben und so anzeigen.
 
 - Weitere Angaben wie wöchentlich, vierteljährlich oder halbjährlich
 - Beträge für einzelne Monate, Posten, die nur in bestimmten Monaten anfallen, eine Ansicht je Kalendermonat
-- Monatsbeträge in der Karte „50/30/20-Regel" (MJ-14)
+- Jahresbeträge in der Karte „50/30/20-Regel" neben den Monatsbeträgen (MJ-14); die Jahreswerte stehen in den Kacheln
+  und in der Karte „Einträge"
 - Ein Schalter, der die ganze Übersicht nur monatlich oder nur jährlich zeigt
 
 ## Umsetzung
@@ -119,3 +134,8 @@ Plans, lässt sich aber als Monatsbetrag angeben und so anzeigen.
   ihre Jahresbeträge behalten; `tile` liest den Jahreswert
 
 ## Offene Fragen
+
+- Gilt MJ-14 für Balken und Torte? Vorschlag: ja, beide Darstellungen derselben Karte zeigen Monatswerte, damit beim
+  Umschalten nicht andere Beträge erscheinen. Gewünscht war ausdrücklich die Torte.
+- Zeigt die Karte „50/30/20-Regel" nur Monatswerte oder Monat und Jahr? Vorschlag: nur Monatswerte, mit dem Hinweis
+  „je Monat" in der Überschrift der Legende bzw. der Balken.

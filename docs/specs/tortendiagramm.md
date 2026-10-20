@@ -21,7 +21,7 @@ und jederzeit zwischen beiden Darstellungen wechseln.
 - **TD-4**: Bei einem Defizit (AW-3) zeigt die Torte die Aufteilung der Ausgaben; die Stücke ergeben dann zusammen mehr
   als das Einkommen. Die Legende zeigt weiterhin den Anteil am Einkommen (AW-5), sodass die Prozente zusammen über
   100 % liegen können.
-- **TD-5**: Neben der Torte steht eine Legende mit je Kategorie: Name, Summe in Euro, Anteil am Einkommen, Zielanteil
+- **TD-5**: Neben der Torte steht eine Legende mit je Kategorie: Name, Summe in Euro je Monat ([MJ-14](monats-jahresbetrag.md)), Anteil am Einkommen, Zielanteil
   mit Zielrichtung („von max. 50 %", „von mind. 20 %") und bei verfehltem Ziel der Hinweis „Ziel überschritten" bzw.
   „Ziel nicht erreicht" – mit denselben Texten wie in der Balkenansicht. Bei Sparen & Investieren weist die Legende
   wie die Balkenansicht den Überschuss getrennt aus („davon nicht verplant", AW-10).
