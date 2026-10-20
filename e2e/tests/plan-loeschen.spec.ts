@@ -1,5 +1,5 @@
 import { expect, Page, test } from "@playwright/test";
-import { addExpense, addIncome, registerWithPlan, yearRow } from "./support";
+import { addExpense, addIncome, registerWithPlan, showAmounts, yearRow } from "./support";
 
 async function showAllYears(page: Page): Promise<void> {
   await page.getByRole("link", { name: "Alle Jahre" }).click();
@@ -64,6 +64,7 @@ test.describe("Haushaltsplan löschen", () => {
 
     await expect(dialog).toBeHidden();
     await expect(overviewYears(page)).toHaveText([String(year)]);
+    await showAmounts(page, "Jährlich");
     await expect(yearRow(page, year)).toContainText("3.000,00");
   });
 
@@ -121,6 +122,7 @@ test.describe("Haushaltsplan löschen", () => {
     await page.getByRole("dialog").getByRole("button", { name: "Löschen" }).click();
 
     await expect(overviewYears(page)).toHaveText([String(year + 1)]);
+    await showAmounts(page, "Jährlich");
     await expect(yearRow(page, year + 1)).toContainText("3.000,00");
     await expect(yearRow(page, year + 1)).not.toContainText("%");
   });

@@ -17,6 +17,15 @@ public record YearlyOverviewEntryResponse(
         @Schema(implementation = String.class, format = "decimal", example = "24250.00") BigDecimal totalExpense,
         @JsonFormat(shape = JsonFormat.Shape.STRING)
         @Schema(implementation = String.class, format = "decimal", example = "6650.00") BigDecimal balance,
+        @JsonFormat(shape = JsonFormat.Shape.STRING)
+        @Schema(implementation = String.class, format = "decimal", example = "2575.00", description = "The yearly total divided by 12")
+        BigDecimal monthlyTotalIncome,
+        @JsonFormat(shape = JsonFormat.Shape.STRING)
+        @Schema(implementation = String.class, format = "decimal", example = "2020.83", description = "The yearly total divided by 12")
+        BigDecimal monthlyTotalExpense,
+        @JsonFormat(shape = JsonFormat.Shape.STRING)
+        @Schema(implementation = String.class, format = "decimal", example = "554.17", description = "The yearly balance divided by 12")
+        BigDecimal monthlyBalance,
         boolean expensesExceedIncome,
         @Schema(example = "3.00", nullable = true,
                 description = "Change from the previous year in percent; null without a plan of the previous year or if its income was zero")
@@ -36,6 +45,9 @@ public record YearlyOverviewEntryResponse(
                 entry.totalIncome().value(),
                 entry.totalExpense().value(),
                 entry.balance().value(),
+                entry.monthlyTotalIncome().value(),
+                entry.monthlyTotalExpense().value(),
+                entry.monthlyBalance().value(),
                 entry.expensesExceedIncome(),
                 valueOf(entry.incomeChange()),
                 valueOf(entry.expenseChange()),
