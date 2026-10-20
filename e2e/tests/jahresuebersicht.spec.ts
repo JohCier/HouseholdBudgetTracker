@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { addExpense, addIncome, register, registerWithPlan, yearRow } from './support';
+import { addExpense, addIncome, register, registerWithPlan, showAmounts, yearRow } from './support';
 
 /** Cells of a row in the yearly overview: income, expenses, balance. */
 function cells(page: Page, year: number) {
@@ -65,6 +65,7 @@ test.describe('Jahresübersicht', () => {
     await createPreviousYearPlan(page, year - 2);
 
     await showAllYears(page);
+    await showAmounts(page, 'Jährlich');
 
     await expect(page.locator('app-yearly-overview-page tbody th')).toHaveText([
       String(year),
@@ -126,6 +127,7 @@ test.describe('Jahresübersicht', () => {
     await addExpense(page, 'Miete', '1000', 'Lebensunterhalt');
 
     await showAllYears(page);
+    await showAmounts(page, 'Jährlich');
 
     const current = cells(page, year);
     await expect(current.balance).toContainText('-500,00');
@@ -144,6 +146,7 @@ test.describe('Jahresübersicht', () => {
     await registerWithPlan(page);
     await createPreviousYearPlan(page, year - 1);
     await showAllYears(page);
+    await showAmounts(page, 'Jährlich');
     await expect(cells(page, year - 1).income).toContainText('0,00');
 
     await yearRow(page, year - 1).click();

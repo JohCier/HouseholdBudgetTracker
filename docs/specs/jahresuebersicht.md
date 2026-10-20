@@ -20,8 +20,8 @@ Benutzer den Plan eines Jahres.
   (HP-1), das neueste Jahr oben. Pläne anderer Benutzer erscheinen nie.
 - **JU-2**: Je Plan zeigt sie das Jahr, die Einnahmen (AW-1), die Ausgaben (AW-1) und den Überschuss. Der Überschuss
   ist der Saldo nach AW-2 (Einnahmen − Ausgaben) und darf negativ sein; ein negativer Überschuss wird als Defizit
-  gekennzeichnet (AW-3). Alle Beträge sind Jahresbeträge, auch wenn Posten künftig monatlich angegeben werden
-  können.
+  gekennzeichnet (AW-3). Die Beträge sind Jahresbeträge oder, nach Wahl des Benutzers, Monatsbeträge
+  ([JM-1 bis JM-7](jahresuebersicht-monatsbetraege.md)).
 - **JU-3**: Ein Plan ohne Posten erscheint mit 0,00 € in allen drei Spalten.
 
 ### Veränderung zum Vorjahr
@@ -84,7 +84,7 @@ Benutzer den Plan eines Jahres.
 - Vergleich mit einem frei gewählten Jahr statt dem Vorjahr
 - Pläne aus der Jahresübersicht löschen und kopieren: siehe [plan-loeschen.md](plan-loeschen.md) und
   [plan-uebernehmen.md](plan-uebernehmen.md)
-- Monatsbeträge in der Jahresübersicht
+- Monatsbeträge in der Jahresübersicht: siehe [jahresuebersicht-monatsbetraege.md](jahresuebersicht-monatsbetraege.md)
 
 ## Umsetzung
 

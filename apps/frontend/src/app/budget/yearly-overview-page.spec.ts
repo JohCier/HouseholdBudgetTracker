@@ -1,11 +1,13 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { ApplicationRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { of } from 'rxjs';
 import { Router, provideRouter } from '@angular/router';
 import { YearlyOverviewEntry } from './budget.model';
+import { PERIOD_STORAGE_KEY } from './data-access/yearly-overview-store';
 import { currentYear } from './year';
 import { YearlyOverviewPage } from './yearly-overview-page';
 
@@ -15,6 +17,9 @@ const entry = (year: number, changes: Partial<YearlyOverviewEntry> = {}): Yearly
   totalIncome: '30900.00',
   totalExpense: '24250.00',
   balance: '6650.00',
+  monthlyTotalIncome: '2575.00',
+  monthlyTotalExpense: '2020.83',
+  monthlyBalance: '554.17',
   expensesExceedIncome: false,
   incomeChange: null,
   expenseChange: null,
@@ -30,6 +35,7 @@ describe('YearlyOverviewPage', () => {
   let dialog: { open: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
+    localStorage.clear();
     snackBar = { open: vi.fn() };
     dialog = {
       open: vi.fn(() => ({
@@ -59,12 +65,19 @@ describe('YearlyOverviewPage', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
+  function periodToggle(element: HTMLElement, label: string): HTMLButtonElement {
+    return [...element.querySelectorAll<HTMLButtonElement>('mat-button-toggle button')].find(
+      (button) => button.textContent!.trim() === label,
+    )!;
+  }
+
   function row(element: HTMLElement, year: number): HTMLTableRowElement {
     return element.querySelector<HTMLTableRowElement>(`tr[data-year="${year}"]`)!;
   }
 
   // JU-1, JU-2, JU-5, JU-7, JU-8; amounts use the default locale of the tests
   it('lists the plans with their totals and changes from the previous year', async () => {
+    localStorage.setItem(PERIOD_STORAGE_KEY, 'YEARLY');
     const element = await render([
       entry(currentYear(), { incomeChange: 3, expenseChange: -3, balanceChange: 33 }),
       entry(currentYear() - 1),
@@ -95,6 +108,55 @@ describe('YearlyOverviewPage', () => {
     ]);
 
     expect(row(element, currentYear()).textContent).toContain('Defizit');
+  });
+
+  // JM-1, JM-3, JM-5, JM-7
+  it('shows monthly amounts with the same changes unless chosen otherwise', async () => {
+    const element = await render([
+      entry(currentYear(), { incomeChange: 3, expenseChange: -3, balanceChange: 33 }),
+    ]);
+
+    expect(periodToggle(element, 'Monatlich').getAttribute('aria-checked')).toBe('true');
+    const cells = [...row(element, currentYear()).querySelectorAll('td')];
+    expect(cells[0].textContent).toContain('2,575.00');
+    expect(cells[0].textContent).toContain('+3,00 %');
+    expect(cells[1].textContent).toContain('2,020.83');
+    expect(cells[1].textContent).toContain('−3,00 %');
+    expect(cells[2].textContent).toContain('554.17');
+    expect(cells[2].textContent).toContain('+33,00 %');
+  });
+
+  // JM-2, JM-7
+  it('switches to yearly amounts and remembers the choice', async () => {
+    const element = await render([entry(currentYear())]);
+
+    periodToggle(element, 'Jährlich').click();
+    await TestBed.inject(ApplicationRef).whenStable();
+
+    expect(row(element, currentYear()).querySelector('td')!.textContent).toContain('30,900.00');
+    expect(localStorage.getItem(PERIOD_STORAGE_KEY)).toBe('YEARLY');
+  });
+
+  // JM-4
+  it('marks a deficit in monthly amounts', async () => {
+    const element = await render([
+      entry(currentYear(), {
+        balance: '-100.00',
+        monthlyBalance: '-8.33',
+        expensesExceedIncome: true,
+      }),
+    ]);
+
+    const balance = row(element, currentYear()).querySelectorAll('td')[2];
+    expect(balance.textContent).toContain('-€8.33');
+    expect(balance.textContent).toContain('Defizit');
+  });
+
+  // JM-1
+  it('offers no switch without a plan', async () => {
+    const element = await render([]);
+
+    expect(element.querySelector('mat-button-toggle-group')).toBeNull();
   });
 
   // JU-11
@@ -146,11 +208,9 @@ describe('YearlyOverviewPage', () => {
     });
     http.expectOne('/api/plans/years').flush({ years: [entry(currentYear() - 1)] });
     await vi.waitFor(() =>
-      expect(snackBar.open).toHaveBeenCalledWith(
-        `Plan ${currentYear()} gelöscht.`,
-        undefined,
-        { duration: 3000 },
-      ),
+      expect(snackBar.open).toHaveBeenCalledWith(`Plan ${currentYear()} gelöscht.`, undefined, {
+        duration: 3000,
+      }),
     );
     expect(navigate).not.toHaveBeenCalled();
     expect(element.querySelectorAll('tbody tr')).toHaveLength(1);

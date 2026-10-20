@@ -22,6 +22,7 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 | Anmeldung | Registrieren, anmelden, abmelden; Sitzung läuft nach 8 Stunden ab; Sperre nach 5 Fehlversuchen | [anmeldung.md](specs/anmeldung.md) |
 | Haushaltsplan | Pro Jahr einen Plan anlegen, zwischen Jahren wechseln | [haushaltsplan.md](specs/haushaltsplan.md) |
 | Jahresübersicht | Startseite mit allen Plänen: Einnahmen, Ausgaben, Überschuss und Veränderung zum Vorjahr je Jahr | [jahresuebersicht.md](specs/jahresuebersicht.md) |
+| Monatsbeträge in der Jahresübersicht | Die Jahresübersicht wahlweise in Monats- oder Jahresbeträgen ansehen; der Browser merkt sich die Wahl | [jahresuebersicht-monatsbetraege.md](specs/jahresuebersicht-monatsbetraege.md) |
 | Plan als Vorlage übernehmen | Einen Plan mit allen Posten in ein frei wählbares Jahr übernehmen (vorgeschlagen: Folgejahr), aus Planansicht, Jahresübersicht oder einem Jahr ohne Plan; einen bestehenden Plan nach Rückfrage überschreiben | [plan-uebernehmen.md](specs/plan-uebernehmen.md) |
 | Plan löschen | Einen Plan mit allen Posten nach Rückfrage endgültig löschen, aus der Jahresübersicht oder der Planansicht | [plan-loeschen.md](specs/plan-loeschen.md) |
 | Posten | Einnahmen und Ausgaben (mit Kategorie) erfassen, löschen, Löschen rückgängig machen | [posten.md](specs/posten.md) |
