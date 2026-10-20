@@ -1,7 +1,7 @@
 import { TextFieldModule } from '@angular/cdk/text-field';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroupDirective, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
@@ -58,6 +58,8 @@ export class AddItemForm {
   protected readonly submitting = signal(false);
 
   private readonly fb = inject(FormBuilder).nonNullable;
+  /** Resetting through the directive also forgets that the form was submitted, so no field shows an error. */
+  private readonly formDirective = viewChild.required(FormGroupDirective);
 
   protected readonly form = this.fb.group({
     type: this.fb.control<ItemType>('EXPENSE'),
@@ -114,7 +116,7 @@ export class AddItemForm {
       } else {
         await this.store.addExpense({ ...request, category: category! });
       }
-      this.form.reset({
+      this.formDirective().resetForm({
         type,
         description: '',
         amount: null,

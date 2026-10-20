@@ -26,6 +26,18 @@ test.describe('Posten', () => {
     await expect(itemRow(page, 'Gehalt')).toContainText('+3.000,00 €');
   });
 
+  test('nach dem Erfassen ist das Formular leer und zeigt keine Fehlermeldungen (PO-1)', async ({
+    page,
+  }) => {
+    await addExpense(page, 'Miete', '850', 'Lebensunterhalt');
+
+    const form = page.locator('app-add-item-form');
+    await expect(form.getByLabel('Beschreibung')).toHaveValue('');
+    await expect(form.getByLabel('Betrag')).toHaveValue('');
+    await expect(form.locator('mat-error')).toHaveCount(0);
+    await expect(page.getByRole('radio', { name: 'Ausgabe' })).toBeChecked();
+  });
+
   test('der neueste Posten steht oben in seiner Gruppe (PO-10, UK-17)', async ({ page }) => {
     await addExpense(page, 'Miete', '850', 'Lebensunterhalt');
     await addExpense(page, 'Strom', '60', 'Lebensunterhalt');
