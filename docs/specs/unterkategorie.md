@@ -185,11 +185,11 @@ legt die Farben der Kategorien neu fest (UK-19), auch für die Torte (TD-2).
   antworten mit der Übersicht (AU-4), bei einem fremden Plan mit 404 (UK-15)
 - Frontend: `budget/ui/subcategory-field.ts` (Feld „Unterkategorie (optional)" mit `mat-autocomplete`, UK-6) in
   `add-item-form` und `edit-item-dialog`; Vorschläge aus `subcategorySuggestions` in `budget.model.ts` (UK-7, UK-8).
-  `budget/ui/budget-entries.ts` ersetzt die Tabelle `budget-item-table.ts`: Bereiche, Kategorien und Gruppen mit
-  Summen, Verschieben mit `@angular/cdk/drag-drop` am Griff (bei Gruppen an der ganzen Kopfzeile) oder mit den
-  Pfeiltasten auf dem Griff (UK-14); `BudgetStore.reorderItems` und `reorderSubcategories` zeigen die neue Reihenfolge
-  sofort und laden die Übersicht neu, wenn das Speichern scheitert. Farbvariablen `--app-income-color` und `--app-<kategorie>-color` in `styles.scss`, auch
-  für die Torte (UK-19)
+  `budget/ui/budget-entries.ts` ersetzt die Tabelle `budget-item-table.ts`: Bereiche, Kategorien und Gruppen mit Summen,
+  Verschieben mit `@angular/cdk/drag-drop` am Griff (bei Gruppen an der ganzen Kopfzeile) oder mit den Pfeiltasten auf
+  dem Griff (UK-14); `BudgetStore.reorderItems` und `reorderSubcategories` zeigen die neue Reihenfolge sofort und laden
+  die Übersicht neu, wenn das Speichern scheitert. Farbvariablen `--app-income-color` und `--app-<kategorie>-color` in
+  `styles.scss`, auch für die Torte (UK-19)
 - Tests: `BudgetItemSubcategoryTest`, `SubcategoryOrderTest`, `HouseholdPlanSubcategoryTest`, `HouseholdPlanTest`,
   `HouseholdPlanOverviewGroupsTest`, `HouseholdPlanControllerTest`, `JdbcHouseholdPlanRepositoryTest`,
   `JdbcHouseholdPlanOverviewQueryHandlerTest`, `budget-entries.spec.ts`, `add-item-form.spec.ts`,
