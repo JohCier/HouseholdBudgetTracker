@@ -1,4 +1,4 @@
-import { expect, Locator, Page, test } from '@playwright/test';
+import { expect, Locator, Page, Request, test } from '@playwright/test';
 import {
   addExpense,
   addIncome,
@@ -22,20 +22,31 @@ function groupTotal(page: Page, section: Parameters<typeof itemGroup>[1], subcat
 /**
  * Drags an entry by its handle onto the place of another one, in small steps, as the drag and
  * drop of the page only starts after the pointer has moved a bit (UK-14). Waits until the new
- * order has been saved.
+ * order has been saved. On a slow machine the page may not pick up the gesture; as long as no
+ * new order has been sent, the gesture is repeated, so a lost gesture does not fail the test but
+ * a drag that never saves still does.
  */
 async function drag(page: Page, handle: Locator, target: Locator): Promise<void> {
-  const from = (await handle.boundingBox())!;
-  const to = (await target.boundingBox())!;
-  const saved = page.waitForResponse(
-    (response) => response.request().method() === 'PUT' && /-order$/.test(response.url()),
-  );
-  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2 + 10, { steps: 5 });
-  await page.mouse.move(from.x + from.width / 2, to.y + 4, { steps: 20 });
-  await page.mouse.up();
-  expect((await saved).ok()).toBe(true);
+  const isOrder = (request: Request) => request.method() === 'PUT' && /-order$/.test(request.url());
+  let sent: Request | undefined;
+  await expect(async () => {
+    const from = (await handle.boundingBox())!;
+    const to = (await target.boundingBox())!;
+    const x = from.x + from.width / 2;
+    const request = page.waitForRequest(isOrder, { timeout: 3000 });
+    request.catch(() => undefined);
+    await page.mouse.move(x, from.y + from.height / 2);
+    await page.mouse.down();
+    try {
+      await page.mouse.move(x, from.y + from.height / 2 + 10, { steps: 5 });
+      await expect(page.locator('.cdk-drag-preview')).toBeVisible({ timeout: 2000 });
+      await page.mouse.move(x, to.y + 4, { steps: 20 });
+    } finally {
+      await page.mouse.up();
+    }
+    sent = await request;
+  }).toPass({ timeout: 20000 });
+  expect((await sent!.response())!.ok()).toBe(true);
 }
 
 // docs/specs/unterkategorie.md
