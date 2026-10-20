@@ -352,6 +352,96 @@ class HouseholdPlanIntegrationTest {
                 .andExpect(jsonPath("$.errors.amount").exists());
     }
 
+    /** PU-3, PU-4, PU-5, PU-8, PU-11, MJ-1 */
+    @Test
+    void copyingAPlanCreatesTheTargetYearWithAllItemsAndIsAudited() throws Exception {
+        String source = createPlan(2026);
+        post("/api/plans/" + source + "/incomes", """
+                {"description":"Gehalt","amount":"3000.00","period":"YEARLY"}""");
+        post("/api/plans/" + source + "/expenses", """
+                {"description":"Wartung","amount":"400.00","period":"YEARLY","category":"LEBENSUNTERHALT","subcategory":"Auto","note":"Inspektion im Mai"}""");
+        post("/api/plans/" + source + "/expenses", """
+                {"description":"Miete","amount":"900.00","period":"MONTHLY","category":"LEBENSUNTERHALT","subcategory":"Wohnen"}""");
+        mockMvc.perform(put("/api/plans/{planId}/subcategory-order", source).cookie(alice)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"type":"EXPENSE","category":"LEBENSUNTERHALT","subcategories":["Auto","Wohnen"]}"""))
+                .andExpect(status().isOk());
+        jdbcClient.sql("DELETE FROM audit_log").update();
+
+        String target = JsonPath.read(post("/api/plans/" + source + "/copies", """
+                {"targetYear":2027}"""), "$.id");
+
+        String copied = overview(2027);
+        String original = overview(2026);
+        assertThat(JsonPath.<String>read(copied, "$.id")).isEqualTo(target).isNotEqualTo(source);
+        for (String path : List.of("$.items[*].description", "$.items[*].amount", "$.items[*].period",
+                "$.items[*].subcategory", "$.items[*].note", "$.expenseCategories..subcategory",
+                "$.categoryBreakdowns", "$.totalIncome", "$.balance")) {
+            assertThat(JsonPath.<Object>read(copied, path)).as(path).isEqualTo(JsonPath.read(original, path));
+        }
+        assertThat(JsonPath.<List<String>>read(copied, "$.items[*].id"))
+                .doesNotContainAnyElementsOf(JsonPath.read(original, "$.items[*].id"));
+        assertThat(jdbcClient.sql("""
+                        SELECT event_type, household_plan_id, payload ->> 'sourcePlanId' AS source,
+                               payload ->> 'overwritten' AS overwritten
+                        FROM audit_log ORDER BY id""")
+                .query().listOfRows())
+                .extracting(row -> row.get("event_type"), row -> row.get("household_plan_id"),
+                        row -> row.get("source"), row -> row.get("overwritten"))
+                .containsExactly(
+                        tuple("HouseholdPlanCreated", UUID.fromString(target), null, null),
+                        tuple("HouseholdPlanCopied", UUID.fromString(target), source, "false"));
+    }
+
+    /** PU-9, PU-11 */
+    @Test
+    void copyingOverAnExistingPlanNeedsConsentAndReplacesItsItems() throws Exception {
+        String source = createPlan(2026);
+        post("/api/plans/" + source + "/incomes", """
+                {"description":"Gehalt","amount":"3000.00","period":"YEARLY"}""");
+        String target = createPlan(2027);
+        post("/api/plans/" + target + "/incomes", """
+                {"description":"Bonus","amount":"500.00","period":"YEARLY"}""");
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/plans/{planId}/copies", source).cookie(alice)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"targetYear":2027}"""))
+                .andExpect(status().isConflict());
+        assertThat(JsonPath.<List<String>>read(overview(2027), "$.items[*].description")).containsExactly("Bonus");
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/plans/{planId}/copies", source).cookie(alice)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"targetYear":2027,"overwrite":true}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(target))
+                .andExpect(jsonPath("$.overview.items.length()").value(1))
+                .andExpect(jsonPath("$.overview.items[0].description").value("Gehalt"));
+
+        assertThat(JsonPath.<List<String>>read(overview(2027), "$.items[*].description")).containsExactly("Gehalt");
+        assertThat(jdbcClient.sql("""
+                        SELECT COUNT(*) FROM audit_log
+                        WHERE event_type = 'HouseholdPlanCopied' AND (payload ->> 'overwritten')::boolean""")
+                .query(Integer.class).single())
+                .isEqualTo(1);
+    }
+
+    /** HP-4 */
+    @Test
+    void plansOfOthersCannotBeCopied() throws Exception {
+        String source = createPlan(2026);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/plans/{planId}/copies", source).cookie(bob)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"targetYear":2027}"""))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/plans").param("year", "2027").cookie(bob))
+                .andExpect(status().isNotFound());
+    }
+
     private ResultActions changeItem(String planId, String itemId, String json)
             throws Exception {
         return mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", planId, itemId)

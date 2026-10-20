@@ -80,6 +80,16 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
     private record PlanRow(OwnerId owner, Year year) {
     }
 
+    @Override
+    public Optional<HouseholdPlan> findFor(OwnerId owner, Year year) {
+        return jdbcClient.sql("SELECT id FROM household_plan WHERE owner_id = :owner AND year = :year FOR UPDATE")
+                .param("owner", owner.value())
+                .param("year", year.getValue())
+                .query((rs, rowNum) -> HouseholdPlanId.of(rs.getObject("id", UUID.class)))
+                .optional()
+                .flatMap(this::findById);
+    }
+
     private List<BudgetItem> findItems(HouseholdPlanId planId) {
         return findStoredItems(planId).stream().map(StoredItem::item).toList();
     }

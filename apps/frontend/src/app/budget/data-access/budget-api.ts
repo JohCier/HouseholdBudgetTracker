@@ -6,6 +6,8 @@ import {
   AddIncomeRequest,
   AddedBudgetItemResponse,
   ChangeBudgetItemRequest,
+  CopiedHouseholdPlanResponse,
+  CopyHouseholdPlanRequest,
   CreatedHouseholdPlanResponse,
   HouseholdPlanOverview,
   ReorderBudgetItemsRequest,
@@ -43,6 +45,18 @@ export class BudgetApi {
 
   createPlan(year: Year): Observable<CreatedHouseholdPlanResponse> {
     return this.http.post<CreatedHouseholdPlanResponse>(this.baseUrl, { year });
+  }
+
+  /**
+   * Takes over a plan as template for another year (PU-1 to PU-9); answers with the overview
+   * of the plan of the target year. Fails with 409 if that year has a plan that may not be
+   * overwritten.
+   */
+  copyPlan(
+    planId: string,
+    request: CopyHouseholdPlanRequest,
+  ): Observable<CopiedHouseholdPlanResponse> {
+    return this.http.post<CopiedHouseholdPlanResponse>(`${this.planUrl(planId)}/copies`, request);
   }
 
   addIncome(planId: string, request: AddIncomeRequest): Observable<AddedBudgetItemResponse> {

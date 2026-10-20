@@ -279,6 +279,17 @@ class JdbcHouseholdPlanRepositoryTest {
         assertThat(repository.findById(second.id()).orElseThrow().subcategoryOrders()).isEmpty();
     }
 
+    /** PU-8, PU-9 */
+    @Test
+    void findsThePlanOfAnOwnerForAYear() {
+        HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2031));
+        repository.add(plan);
+
+        assertThat(repository.findFor(OWNER, Year.of(2031))).map(HouseholdPlan::id).contains(plan.id());
+        assertThat(repository.findFor(OWNER, Year.of(2032))).isEmpty();
+        assertThat(repository.findFor(OwnerId.of(UUID.randomUUID()), Year.of(2031))).isEmpty();
+    }
+
     @Test
     void removingTheLastItemLeavesAnEmptyPlan() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);

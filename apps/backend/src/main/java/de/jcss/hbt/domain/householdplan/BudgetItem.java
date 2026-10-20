@@ -102,6 +102,11 @@ public final class BudgetItem {
         return reconstitute(id, description, amount, type, category, subcategory, note);
     }
 
+    /** Returns a copy of this item with a new id and the same values, for another plan (PU-3). */
+    BudgetItem copy() {
+        return reconstitute(BudgetItemId.generate(), description, amount, type, category, subcategory, note);
+    }
+
     /** Whether the other item has the same description, amount, type, category, subcategory and note as this one. */
     boolean hasSameValuesAs(BudgetItem other) {
         return description.equals(other.description) && amount.equals(other.amount) && type == other.type

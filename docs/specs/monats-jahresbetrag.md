@@ -92,7 +92,8 @@ Plans, lässt sich aber als Monatsbetrag angeben und so anzeigen.
   mit `annual()` (MJ-6) und `monthly()` (MJ-7); `Money.timesMonthsPerYear` und `Money.perMonth` rechnen mal 12 bzw.
   durch 12, kaufmännisch auf den Cent gerundet. `BudgetItem` hält statt `Money` ein `ItemAmount`; `addTo` gibt der
   `BudgetSummary` den Jahresbetrag (MJ-8). `hasSameValuesAs` vergleicht auch die Angabe, sodass ein Wechsel als
-  `BudgetItemChanged` protokolliert wird (MJ-4); `changedTo` übernimmt den Betrag unverändert (MJ-5)
+  `BudgetItemChanged` protokolliert wird (MJ-4); `changedTo` übernimmt den Betrag unverändert (MJ-5); `copy` übernimmt ihn samt Angabe in einen anderen Plan
+  ([PU-3](plan-uebernehmen.md))
 - Commands: `AddIncomeCommand`, `AddExpenseCommand`, `ChangeBudgetItemCommand` mit `ItemAmount`
 - Persistenz: Migration `V8__budget_item_amount_period.sql` mit der Spalte `budget_item.amount_period`, Vorgabe
   `YEARLY` für bestehende Posten (MJ-3); `amount` bleibt der eingegebene Betrag
@@ -109,7 +110,7 @@ Plans, lässt sich aber als Monatsbetrag angeben und so anzeigen.
   `add-item-form` (Vorauswahl „Monatlich", bleibt nach dem Erfassen) und `edit-item-dialog` (MJ-11); Spalten „Monat"
   und „Jahr" in `budget-entries`, der abgeleitete Betrag mit der Klasse `derived` schwächer (MJ-12); Kacheln in
   `overview-summary` je Monat und Jahr (MJ-13); `BudgetStore.restoreItem` stellt die Angabe wieder her (MJ-4)
-- Tests: `ItemAmountTest`, `MoneyTest`, `BudgetItemTest`, `HouseholdPlanTest`, `HouseholdPlanOverviewTest`,
+- Tests: `ItemAmountTest`, `MoneyTest`, `BudgetItemTest`, `HouseholdPlanTest`, `HouseholdPlanCopyTest`, `HouseholdPlanOverviewTest`,
   `HouseholdPlanOverviewGroupsTest`, `HouseholdPlanControllerTest`, `JdbcHouseholdPlanRepositoryTest`,
   `JdbcHouseholdPlanOverviewQueryHandlerTest`, `add-item-form.spec.ts`, `edit-item-dialog.spec.ts`,
   `budget-entries.spec.ts`, `overview-summary.spec.ts`

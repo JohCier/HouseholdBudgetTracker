@@ -1,10 +1,12 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, provideRouter } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { BudgetDashboard } from './budget-dashboard';
-import { BudgetItem, HouseholdPlanOverview } from './budget.model';
+import { BudgetItem, HouseholdPlanOverview, YearlyOverviewEntry } from './budget.model';
+import { BudgetApi } from './data-access/budget-api';
 import { BudgetStore } from './data-access/budget-store';
 
 const item: BudgetItem = {
@@ -242,6 +244,139 @@ describe('BudgetDashboard', () => {
     await fixture.whenStable();
 
     expect(store.createPlan).toHaveBeenCalled();
+  });
+
+  // PU-12, PU-15
+  it('takes over the plan shown as template and opens the target year', async () => {
+    const snackBar = { open: vi.fn() };
+    const dialog = {
+      open: vi.fn(() => ({ afterClosed: () => of({ sourceYear: 2026, targetYear: 2027 }) })),
+    };
+    const store = {
+      year: signal(2026),
+      hasPreviousYear: signal(true),
+      hasNextYear: signal(true),
+      planId: signal('plan-2026'),
+      planMissing: signal(false),
+      items: signal([item]),
+      overview: signal(overview),
+      subcategorySuggestions: vi.fn(() => []),
+      loading: signal(false),
+      loadError: signal(null),
+      selectYear: vi.fn(async () => undefined),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: MatSnackBar, useValue: snackBar },
+        { provide: MatDialog, useValue: dialog },
+      ],
+    });
+    TestBed.overrideComponent(BudgetDashboard, {
+      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+    });
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(BudgetDashboard);
+    fixture.componentRef.setInput('year', '2026');
+    await fixture.whenStable();
+
+    [...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) => button.textContent?.includes('Als Vorlage übernehmen'))!
+      .click();
+
+    expect(dialog.open).toHaveBeenCalledWith(expect.anything(), { data: { sourceYear: 2026 } });
+    await vi.waitFor(() =>
+      expect(snackBar.open).toHaveBeenCalledWith('Plan 2026 nach 2027 übernommen.', undefined, {
+        duration: 3000,
+      }),
+    );
+    expect(navigate).toHaveBeenCalledWith(['/jahre', 2027]);
+  });
+
+  // PU-12, PU-15
+  it('takes over another plan for a year without one if the user has other plans', async () => {
+    const snackBar = { open: vi.fn() };
+    const dialog = {
+      open: vi.fn(() => ({ afterClosed: () => of({ sourceYear: 2025, targetYear: 2030 }) })),
+    };
+    const api = {
+      getYearlyOverview: vi.fn(() =>
+        of({ years: [{ year: 2031 }, { year: 2025 }] as YearlyOverviewEntry[] }),
+      ),
+    };
+    const store = {
+      year: signal(2030),
+      hasPreviousYear: signal(true),
+      hasNextYear: signal(true),
+      planId: signal(null),
+      planMissing: signal(true),
+      items: signal([]),
+      overview: signal(null),
+      loading: signal(false),
+      loadError: signal(null),
+      load: vi.fn(async () => undefined),
+      selectYear: vi.fn(async () => undefined),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: MatSnackBar, useValue: snackBar },
+        { provide: MatDialog, useValue: dialog },
+        { provide: BudgetApi, useValue: api },
+      ],
+    });
+    TestBed.overrideComponent(BudgetDashboard, {
+      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+    });
+    const fixture = TestBed.createComponent(BudgetDashboard);
+    fixture.componentRef.setInput('year', '2030');
+    await fixture.whenStable();
+
+    [...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) => button.textContent?.includes('Aus anderem Jahr übernehmen'))!
+      .click();
+
+    expect(dialog.open).toHaveBeenCalledWith(expect.anything(), {
+      data: { targetYear: 2030, sourceYears: [2031, 2025] },
+    });
+    await vi.waitFor(() =>
+      expect(snackBar.open).toHaveBeenCalledWith('Plan 2025 nach 2030 übernommen.', undefined, {
+        duration: 3000,
+      }),
+    );
+    expect(store.load).toHaveBeenCalled();
+  });
+
+  // PU-12
+  it('offers only to create the plan of a year without one if the user has no other plans', async () => {
+    const api = { getYearlyOverview: vi.fn(() => of({ years: [] })) };
+    const store = {
+      year: signal(2030),
+      hasPreviousYear: signal(true),
+      hasNextYear: signal(true),
+      planId: signal(null),
+      planMissing: signal(true),
+      items: signal([]),
+      overview: signal(null),
+      loading: signal(false),
+      loadError: signal(null),
+      selectYear: vi.fn(async () => undefined),
+    };
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), { provide: BudgetApi, useValue: api }],
+    });
+    TestBed.overrideComponent(BudgetDashboard, {
+      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+    });
+    const fixture = TestBed.createComponent(BudgetDashboard);
+    fixture.componentRef.setInput('year', '2030');
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(api.getYearlyOverview).toHaveBeenCalled();
+    expect(element.textContent).toContain('Haushaltsplan anlegen');
+    expect(element.textContent).not.toContain('Aus anderem Jahr übernehmen');
+    expect(element.textContent).not.toContain('Als Vorlage übernehmen');
   });
 
   // JU-11
