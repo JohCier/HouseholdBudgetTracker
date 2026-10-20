@@ -94,6 +94,11 @@ h4 {
   flex: 1;
 }
 
+// Indented below the header of their group, so items and groups are told apart at a glance
+.items {
+  margin-left: 32px;
+}
+
 .item {
   display: flex;
   align-items: center;
