@@ -170,6 +170,21 @@ class HouseholdPlanOverviewTest {
         assertThat(overview.totalExpense()).isEqualTo(money("1700.00"));
     }
 
+    /** MJ-14 */
+    @Test
+    void breakdownsShowTheirTotalsPerMonthRounded() {
+        HouseholdPlanOverview overview = overview("2000.00",
+                expense(ExpenseCategory.LEBENSUNTERHALT, "1000.00"),
+                expense(ExpenseCategory.SPAREN_INVESTIEREN, "100.00"));
+
+        CategoryBreakdown sparen = breakdownFor(overview, ExpenseCategory.SPAREN_INVESTIEREN);
+        assertThat(sparen.monthlyTotal()).isEqualTo(money("83.33"));
+        assertThat(sparen.monthlyUnplanned()).isEqualTo(money("75.00"));
+        CategoryBreakdown leben = breakdownFor(overview, ExpenseCategory.LEBENSUNTERHALT);
+        assertThat(leben.monthlyTotal()).isEqualTo(money("83.33"));
+        assertThat(leben.monthlyUnplanned()).isEqualTo(Money.ZERO);
+    }
+
     private static HouseholdPlanOverview overview(String income, OverviewItem... expenses) {
         List<OverviewItem> items = new ArrayList<>(List.of(expenses));
         items.add(income(income));

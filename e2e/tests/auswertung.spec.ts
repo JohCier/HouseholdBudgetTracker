@@ -23,14 +23,14 @@ test.describe('Auswertung nach der 50/30/20-Regel', () => {
   test('ein ausgeglichener Plan hält alle drei Ziele ein (AW-1, AW-2, AW-5, AW-6)', async ({
     page,
   }) => {
-    await addIncome(page, 'Gehalt', '3000');
-    await addExpense(page, 'Miete', '1500', 'Lebensunterhalt');
-    await addExpense(page, 'Urlaub', '600', 'Freizeit & Spaß');
-    await addExpense(page, 'ETF-Sparplan', '900', 'Sparen & Investieren');
+    await addIncome(page, 'Gehalt', '3000', undefined, 'Monatlich');
+    await addExpense(page, 'Miete', '1500', 'Lebensunterhalt', undefined, 'Monatlich');
+    await addExpense(page, 'Urlaub', '600', 'Freizeit & Spaß', undefined, 'Monatlich');
+    await addExpense(page, 'ETF-Sparplan', '900', 'Sparen & Investieren', undefined, 'Monatlich');
 
-    await expect(tile(page, 'Einnahmen')).toHaveText('3.000,00 €');
-    await expect(tile(page, 'Ausgaben')).toHaveText('3.000,00 €');
-    await expect(tile(page, 'Saldo')).toHaveText('0,00 €');
+    await expect(tile(page, 'Einnahmen', 'Monat')).toHaveText('3.000,00 €');
+    await expect(tile(page, 'Ausgaben', 'Monat')).toHaveText('3.000,00 €');
+    await expect(tile(page, 'Saldo', 'Monat')).toHaveText('0,00 €');
     // Equal income and expenses are no deficit (AW-3)
     await expect(page.getByText('Deine Ausgaben übersteigen deine Einnahmen.')).toBeHidden();
 
@@ -44,8 +44,8 @@ test.describe('Auswertung nach der 50/30/20-Regel', () => {
   test('zu hohe Kosten überschreiten das Ziel, der Rest zählt als Sparen (AW-6, AW-10)', async ({
     page,
   }) => {
-    await addIncome(page, 'Gehalt', '2000');
-    await addExpense(page, 'Miete', '1200', 'Lebensunterhalt');
+    await addIncome(page, 'Gehalt', '2000', undefined, 'Monatlich');
+    await addExpense(page, 'Miete', '1200', 'Lebensunterhalt', undefined, 'Monatlich');
 
     await expect(categoryRow(page, 'Lebensunterhalt')).toContainText(
       '60 % von max. 50 % · Ziel überschritten',
@@ -62,13 +62,13 @@ test.describe('Auswertung nach der 50/30/20-Regel', () => {
   test('der Überschuss zählt zu Sparen & Investieren und wird als nicht verplant ausgewiesen (AW-10)', async ({
     page,
   }) => {
-    await addIncome(page, 'Gehalt', '2000');
-    await addExpense(page, 'Miete', '1000', 'Lebensunterhalt');
-    await addExpense(page, 'Urlaub', '600', 'Freizeit & Spaß');
-    await addExpense(page, 'ETF-Sparplan', '100', 'Sparen & Investieren');
+    await addIncome(page, 'Gehalt', '2000', undefined, 'Monatlich');
+    await addExpense(page, 'Miete', '1000', 'Lebensunterhalt', undefined, 'Monatlich');
+    await addExpense(page, 'Urlaub', '600', 'Freizeit & Spaß', undefined, 'Monatlich');
+    await addExpense(page, 'ETF-Sparplan', '100', 'Sparen & Investieren', undefined, 'Monatlich');
 
-    await expect(tile(page, 'Ausgaben')).toHaveText('1.700,00 €');
-    await expect(tile(page, 'Saldo')).toHaveText('300,00 €');
+    await expect(tile(page, 'Ausgaben', 'Monat')).toHaveText('1.700,00 €');
+    await expect(tile(page, 'Saldo', 'Monat')).toHaveText('300,00 €');
     const sparen = categoryRow(page, 'Sparen & Investieren');
     await expect(sparen).toContainText('400,00 €');
     await expect(sparen).toContainText('davon nicht verplant: 300,00 €');

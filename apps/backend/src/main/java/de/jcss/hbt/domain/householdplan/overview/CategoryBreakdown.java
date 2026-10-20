@@ -30,4 +30,14 @@ public record CategoryBreakdown(
                 summary.shareOfIncome(category),
                 category.targetPercentageOfIncome(), category.targetDirection(), summary.isTargetMet(category));
     }
+
+    /** The total per month: the yearly total divided by 12 (MJ-14). */
+    public Money monthlyTotal() {
+        return total.perMonth();
+    }
+
+    /** The unplanned part of the income per month: the yearly part divided by 12 (MJ-14). */
+    public Money monthlyUnplanned() {
+        return unplanned.perMonth();
+    }
 }

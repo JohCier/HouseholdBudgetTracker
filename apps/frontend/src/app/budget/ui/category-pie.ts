@@ -13,7 +13,8 @@ const RADIUS = 80;
 /**
  * Pie chart of the 50/30/20 breakdown (TD-2 to TD-9). Slice sizes follow the category totals,
  * savings including the surplus (TD-3); without a deficit they add up to the income. The legend
- * shows the shares and target hints as computed by the domain (TD-8, AW-9).
+ * shows the amounts per month (MJ-14) and the shares and target hints as computed by the domain
+ * (TD-8, AW-9).
  */
 @Component({
   selector: 'app-category-pie',
@@ -25,8 +26,8 @@ const RADIUS = 80;
         @let description =
           label(b) +
           ': ' +
-          (b.total | currency: 'EUR') +
-          ', ' +
+          (b.monthlyTotal | currency: 'EUR') +
+          ' im Monat, ' +
           (b.actualPercentageOfIncome | number: '1.0-2') +
           ' % des Einkommens';
         @if (slice.path; as path) {
@@ -64,11 +65,11 @@ const RADIUS = 80;
           <div class="legend-text">
             <div class="legend-header">
               <span class="name">{{ label(breakdown) }}</span>
-              <span class="total">{{ breakdown.total | currency: 'EUR' }}</span>
+              <span class="total">{{ breakdown.monthlyTotal | currency: 'EUR' }}</span>
             </div>
             @if (hasUnplanned(breakdown)) {
               <span class="unplanned">
-                davon nicht verplant: {{ breakdown.unplanned | currency: 'EUR' }}
+                davon nicht verplant: {{ breakdown.monthlyUnplanned | currency: 'EUR' }}
               </span>
             }
             <span class="ratio">

@@ -16,7 +16,7 @@ import { CategoryPieChart } from './category-pie';
  * Visualizes actual spend per category against its 50/30/20 target share of income.
  * Living costs and leisure have a ceiling, savings a floor. Income that no expense uses up
  * counts towards savings and is shown there as unplanned (AW-10). A toggle switches between
- * the bars and a pie chart (TD-1).
+ * the bars and a pie chart (TD-1). Both show the amounts per month (MJ-14).
  */
 @Component({
   selector: 'app-category-breakdown',
@@ -32,7 +32,7 @@ import { CategoryPieChart } from './category-pie';
     <mat-card appearance="outlined">
       <mat-card-header>
         <mat-card-title>50/30/20-Regel</mat-card-title>
-        <mat-card-subtitle>Anteil am Jahreseinkommen je Kategorie</mat-card-subtitle>
+        <mat-card-subtitle>Beträge je Monat, Anteil am Einkommen je Kategorie</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
         <mat-button-toggle-group
@@ -52,11 +52,11 @@ import { CategoryPieChart } from './category-pie';
             <div class="row" [class.missed]="!breakdown.targetMet">
               <div class="row-header">
                 <span class="name">{{ label(breakdown) }}</span>
-                <span class="total">{{ breakdown.total | currency: 'EUR' }}</span>
+                <span class="total">{{ breakdown.monthlyTotal | currency: 'EUR' }}</span>
               </div>
               @if (hasUnplanned(breakdown)) {
                 <span class="unplanned">
-                  davon nicht verplant: {{ breakdown.unplanned | currency: 'EUR' }}
+                  davon nicht verplant: {{ breakdown.monthlyUnplanned | currency: 'EUR' }}
                 </span>
               }
               <mat-progress-bar
