@@ -85,6 +85,18 @@ export interface ItemSection {
   category: ExpenseCategory | null;
 }
 
+/**
+ * What to fill in when the user adds an item right in one of the groups shown (EG-10): its
+ * type, category and subcategory; the subcategory is empty for "Sonstiges" (UK-1).
+ */
+export interface NewItemPreset {
+  /** Name of the group, as shown */
+  group: string;
+  type: ItemType;
+  category: ExpenseCategory | null;
+  subcategory: string;
+}
+
 /** The group of the items without a subcategory, also offered as a subcategory of its own (UK-1, UK-8). */
 export const OTHER_SUBCATEGORY = 'Sonstiges';
 

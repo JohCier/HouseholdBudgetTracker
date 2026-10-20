@@ -101,7 +101,7 @@ class JdbcHouseholdPlanRepositoryTest {
 
         assertThat(repository.findById(plan.id()).orElseThrow().items())
                 .extracting(BudgetItem::id)
-                .containsExactly(added, kept);
+                .containsExactly(kept, added);
     }
 
     /** PB-4 */
@@ -118,8 +118,8 @@ class JdbcHouseholdPlanRepositoryTest {
         repository.save(loaded);
 
         HouseholdPlan restored = repository.findById(plan.id()).orElseThrow();
-        assertThat(restored.items()).extracting(BudgetItem::id).containsExactly(changed, later);
-        assertThat(restored.items().getFirst()).satisfies(item -> {
+        assertThat(restored.items()).extracting(BudgetItem::id).containsExactly(later, changed);
+        assertThat(restored.items().getLast()).satisfies(item -> {
             assertThat(item.description()).isEqualTo(description("Warmmiete"));
             assertThat(item.amount()).isEqualTo(money("900.00"));
             assertThat(item.category()).contains(ExpenseCategory.FREIZEIT_SPASS);
@@ -156,14 +156,14 @@ class JdbcHouseholdPlanRepositoryTest {
 
         HouseholdPlan loaded = repository.findById(plan.id()).orElseThrow();
         assertThat(loaded.items()).extracting(BudgetItem::note)
-                .containsExactly(Optional.empty(), Optional.of(new BudgetItemNote("Warmmiete\ninkl. Nebenkosten")));
+                .containsExactly(Optional.of(new BudgetItemNote("Warmmiete\ninkl. Nebenkosten")), Optional.empty());
 
         loaded.changeItem(rent, description("Miete"), money("850.00"), ExpenseCategory.LEBENSUNTERHALT, null, null);
         loaded.changeItem(salary, description("Gehalt"), money("2500.00"), null, null, new BudgetItemNote("netto"));
         repository.save(loaded);
 
         assertThat(repository.findById(plan.id()).orElseThrow().items()).extracting(BudgetItem::note)
-                .containsExactly(Optional.of(new BudgetItemNote("netto")), Optional.empty());
+                .containsExactly(Optional.empty(), Optional.of(new BudgetItemNote("netto")));
     }
 
     /** Saving writes only what a command changed, not every item of the plan again. */
@@ -196,11 +196,11 @@ class JdbcHouseholdPlanRepositoryTest {
         counting.save(loaded);
         assertThat(statements).as("remove").hasValue(3);
 
-        BudgetItemId bottom = loaded.items().getLast().id();
-        loaded.changeItem(bottom, description("Gehalt"), money("10.00"), null, BudgetItemSubcategory.of("Gehalt"), null);
+        BudgetItemId top = loaded.items().getFirst().id();
+        loaded.changeItem(top, description("Gehalt"), money("10.00"), null, BudgetItemSubcategory.of("Gehalt"), null);
         statements.set(0);
         counting.save(loaded);
-        assertThat(statements).as("move on top of another group").hasValue(3);
+        assertThat(statements).as("move to the bottom of another group").hasValue(3);
 
         statements.set(0);
         counting.save(loaded);
@@ -241,15 +241,15 @@ class JdbcHouseholdPlanRepositoryTest {
         repository.add(plan);
 
         HouseholdPlan loaded = repository.findById(plan.id()).orElseThrow();
-        loaded.reorderItems(List.of(maintenance, tax));
+        loaded.reorderItems(List.of(tax, maintenance));
         loaded.reorderSubcategories(LIVING, List.of(BudgetItemSubcategory.OTHER, BudgetItemSubcategory.of("Miete"),
                 BudgetItemSubcategory.of("Auto")));
         repository.save(loaded);
 
         HouseholdPlan restored = repository.findById(plan.id()).orElseThrow();
-        assertThat(restored.items()).extracting(BudgetItem::id).containsExactly(other, rent, maintenance, tax);
+        assertThat(restored.items()).extracting(BudgetItem::id).containsExactly(tax, maintenance, rent, other);
         assertThat(restored.items()).extracting(item -> item.subcategory().map(BudgetItemSubcategory::value))
-                .containsExactly(Optional.empty(), Optional.of("Miete"), Optional.of("Auto"), Optional.of("Auto"));
+                .containsExactly(Optional.of("Auto"), Optional.of("Auto"), Optional.of("Miete"), Optional.empty());
         assertThat(restored.subcategoryOrders()).isEqualTo(Map.of(LIVING, new SubcategoryOrder(List.of(
                 BudgetItemSubcategory.OTHER, BudgetItemSubcategory.of("Miete"), BudgetItemSubcategory.of("Auto")))));
 
@@ -357,7 +357,7 @@ class JdbcHouseholdPlanRepositoryTest {
 
         assertThat(repository.findById(planId).orElseThrow().items())
                 .extracting(item -> item.description().value())
-                .containsExactly("Bonus", "Gehalt");
+                .containsExactly("Gehalt", "Bonus");
     }
 
     @Test

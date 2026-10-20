@@ -73,7 +73,7 @@ test.describe('Notiz zum Posten', () => {
     await page.getByLabel('Beschreibung').fill('Zinsen');
     await page.getByLabel('Betrag').fill('20');
     await page.getByLabel('Notiz (optional)').fill(tooLong);
-    await page.getByRole('button', { name: 'Hinzufügen' }).click();
+    await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
     await expect(page.getByText('Höchstens 1000 Zeichen.')).toBeVisible();
 
     const dialog = await openEditDialog(page, 'Gehalt');

@@ -48,9 +48,9 @@ Plans, lässt sich aber als Monatsbetrag angeben und so anzeigen.
 - **MJ-11**: Im Formular „Neuer Eintrag" und im Dialog „Bearbeiten" wählt der Benutzer die Angabe neben dem Betrag mit
   einem Umschalter „Monatlich | Jährlich". Beim Erfassen ist „Monatlich" vorausgewählt; nach dem Erfassen bleibt die
   gewählte Angabe wie die Art (PO-1). Der Dialog „Bearbeiten" zeigt den eingegebenen Betrag mit seiner Angabe.
-- **MJ-12**: Die Karte „Einträge" zeigt bei jedem Posten und bei jeder Summe (Bereich, Kategorie, Gruppe) zwei
-  Spalten: „Monat" und „Jahr". Der vom Benutzer eingegebene Betrag ist hervorgehoben, der abgeleitete schwächer
-  dargestellt.
+- **MJ-12**: Die Karte „Einträge" zeigt bei jedem Posten und bei jeder Summe (Bereich, Kategorie, Gruppe; als Zeile
+  unter den Posten nach [EG-5, EG-6](eintraege-gruppen.md)) zwei Spalten: „Monat" und „Jahr". Der vom Benutzer
+  eingegebene Betrag ist hervorgehoben, der abgeleitete schwächer dargestellt.
 - **MJ-13**: Die Kacheln oben in der Übersicht zeigen Einnahmen, Ausgaben und Saldo jeweils je Monat und je Jahr.
 - **MJ-14**: Die Karte „50/30/20-Regel" zeigt in beiden Darstellungen, Balken und Torte (TD-1), nur Monatswerte und
   sagt das in ihrer Unterzeile („Beträge je Monat"): Die Summen der Kategorien und „davon nicht verplant" sind die

@@ -16,6 +16,8 @@ import {
   HouseholdPlanOverview,
   ItemGroup,
   ItemSection,
+  NewItemPreset,
+  OTHER_SUBCATEGORY,
   categoryLabel,
 } from '../budget.model';
 
@@ -37,11 +39,13 @@ interface SectionView {
 
 /**
  * The entries of a plan: first the incomes, then the expenses by category in the order of the
- * 50/30/20 rule, each grouped by subcategory with its sum (UK-9 to UK-12). Every item and every
- * sum is shown per month and per year (MJ-12). All amounts and sums come from the server (UK-13,
+ * 50/30/20 rule, each grouped by subcategory (UK-9 to UK-11). Each group, category and area ends
+ * with a row of its sum (EG-5, EG-6); every item and every sum is shown per month and per year
+ * (MJ-12). All amounts and sums come from the server (UK-13,
  * MJ-10). Groups and the items within a group can be dragged to another position by
  * their handle, or moved with the arrow keys while the handle has the focus (UK-14); the new
- * order is emitted, saving it is up to the parent.
+ * order is emitted, saving it is up to the parent. The row of a group's sum offers to add an
+ * item to the group; what to fill in is emitted (EG-9, EG-10).
  */
 @Component({
   selector: 'app-budget-entries',
@@ -65,6 +69,7 @@ export class BudgetEntries {
   readonly remove = output<BudgetItem>();
   readonly reorderItems = output<string[]>();
   readonly reorderGroups = output<GroupOrder>();
+  readonly add = output<NewItemPreset>();
 
   protected readonly empty = computed(() => this.overview().items.length === 0);
 
@@ -101,6 +106,16 @@ export class BudgetEntries {
 
   protected dropItem(group: ItemGroup, event: CdkDragDrop<unknown>): void {
     this.moveItem(group, event.previousIndex, event.currentIndex);
+  }
+
+  /** Asks to add an item to the group, its type, category and subcategory filled in (EG-10). */
+  protected addTo(section: SectionView, group: ItemGroup): void {
+    this.add.emit({
+      group: group.subcategory,
+      type: section.section.type,
+      category: section.section.category,
+      subcategory: group.subcategory === OTHER_SUBCATEGORY ? '' : group.subcategory,
+    });
   }
 
   /** Moves a group one place up or down with the arrow keys on its handle. */

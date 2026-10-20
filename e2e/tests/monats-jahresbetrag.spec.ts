@@ -3,12 +3,12 @@ import {
   addExpense,
   addIncome,
   categoryRow,
-  itemGroup,
   itemRow,
   openEditDialog,
   pieLegendItem,
   registerWithPlan,
   showBreakdownAs,
+  sumRow,
   tile,
 } from './support';
 
@@ -75,9 +75,9 @@ test.describe('Monats- und Jahresbetrag', () => {
     await addExpense(page, 'Magazin', '100', 'Freizeit & Spaß', 'Abos');
 
     await expect(itemAmount(page, 'Podcast', 'Monat')).toHaveText('−8,33 €');
-    const header = itemGroup(page, 'Freizeit & Spaß', 'Abos').locator('.group-header');
-    await expect(header.locator('.total.monthly')).toHaveText('25,00 €');
-    await expect(header.locator('.total.yearly')).toHaveText('300,00 €');
+    const sum = sumRow(page, 'Freizeit & Spaß', 'Abos');
+    await expect(sum.locator('.total.monthly')).toHaveText('25,00 €');
+    await expect(sum.locator('.total.yearly')).toHaveText('300,00 €');
   });
 
   test('das Formular beginnt mit „Monatlich" und behält die gewählte Angabe (MJ-1, MJ-11)', async ({

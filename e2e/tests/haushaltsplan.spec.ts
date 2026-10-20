@@ -59,12 +59,12 @@ test.describe('Haushaltsplan', () => {
     await page.getByRole('button', { name: 'Nächstes Jahr' }).click();
     await expect(page.getByRole('heading', { name: String(year + 1) })).toBeVisible();
     await expect(itemRow(page, 'Gehalt')).toBeHidden();
-    await expect(page.getByRole('button', { name: 'Hinzufügen' })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Hinzufügen', exact: true })).toBeHidden();
 
     failNextYear();
     await expect(page.getByText('Daten konnten nicht geladen werden')).toBeVisible();
     await expect(itemRow(page, 'Gehalt')).toBeHidden();
-    await expect(page.getByRole('button', { name: 'Hinzufügen' })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Hinzufügen', exact: true })).toBeHidden();
   });
 
   for (const [boundary, disabled, enabled] of [

@@ -12,11 +12,12 @@ import {
   pieLegendItem,
   registerWithPlan,
   showBreakdownAs,
+  sumRow,
 } from './support';
 
-/** Total shown in the header of a subcategory group. */
+/** Yearly sum shown below a subcategory group (EG-5). */
 function groupTotal(page: Page, section: Parameters<typeof itemGroup>[1], subcategory: string) {
-  return itemGroup(page, section, subcategory).locator('.group-header .total.yearly');
+  return sumRow(page, section, subcategory).locator('.total.yearly');
 }
 
 /**
@@ -86,12 +87,8 @@ test.describe('Unterkategorie', () => {
     await expect(groupNames(page, 'Lebensunterhalt')).toHaveText(['Auto', 'Miete']);
     await expect(groupTotal(page, 'Lebensunterhalt', 'Auto')).toHaveText('1.750,00 €');
     await expect(groupTotal(page, 'Lebensunterhalt', 'Miete')).toHaveText('9.600,00 €');
-    await expect(entrySection(page, 'Lebensunterhalt').locator('.section-header')).toContainText(
-      '11.350,00 €',
-    );
-    await expect(
-      page.locator('app-budget-entries section[aria-label="Ausgaben"] .area-header'),
-    ).toContainText('−11.350,00 €');
+    await expect(sumRow(page, 'Lebensunterhalt')).toContainText('11.350,00 €');
+    await expect(sumRow(page, 'Ausgaben')).toContainText('−11.350,00 €');
   });
 
   test('Groß- und Kleinschreibung unterscheidet keine Unterkategorien (UK-5)', async ({ page }) => {
@@ -100,8 +97,8 @@ test.describe('Unterkategorie', () => {
 
     await expect(groupNames(page, 'Lebensunterhalt')).toHaveText(['Auto']);
     await expect(itemDescriptions(page, 'Lebensunterhalt', 'Auto')).toHaveText([
-      'Steuer',
       'Wartung',
+      'Steuer',
     ]);
   });
 
@@ -168,8 +165,8 @@ test.describe('Unterkategorie', () => {
 
     await expect(groupNames(page, 'Lebensunterhalt')).toHaveText(['Zuhause', 'Sonstiges']);
     await expect(itemDescriptions(page, 'Lebensunterhalt', 'Sonstiges')).toHaveText([
-      'Gebühren',
       'Strom',
+      'Gebühren',
     ]);
   });
 
@@ -230,7 +227,7 @@ test.describe('Unterkategorie', () => {
     await page.getByLabel('Betrag').fill('3000');
     await page.getByRole('combobox', { name: 'Unterkategorie (optional)' }).fill('x'.repeat(51));
     await page.keyboard.press('Tab');
-    await page.getByRole('button', { name: 'Hinzufügen' }).click();
+    await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
 
     await expect(page.getByText('Höchstens 50 Zeichen.')).toBeVisible();
     expect(requests).toEqual([]);
@@ -272,9 +269,9 @@ test.describe('Unterkategorie', () => {
   test('Posten in ihrer Gruppe frei sortieren, die Reihenfolge bleibt nach dem Neuladen (UK-14, UK-15)', async ({
     page,
   }) => {
-    await addExpense(page, 'Sprit', '1200', 'Lebensunterhalt', 'Auto');
-    await addExpense(page, 'Steuer', '150', 'Lebensunterhalt', 'Auto');
     await addExpense(page, 'Wartung', '400', 'Lebensunterhalt', 'Auto');
+    await addExpense(page, 'Steuer', '150', 'Lebensunterhalt', 'Auto');
+    await addExpense(page, 'Sprit', '1200', 'Lebensunterhalt', 'Auto');
     await expect(itemDescriptions(page, 'Lebensunterhalt', 'Auto')).toHaveText([
       'Wartung',
       'Steuer',
@@ -300,52 +297,12 @@ test.describe('Unterkategorie', () => {
     ]);
   });
 
-  test('neue Posten stehen oben in ihrer Gruppe, neue Gruppen vor „Sonstiges" (UK-17)', async ({
-    page,
-  }) => {
-    await addExpense(page, 'Steuer', '150', 'Lebensunterhalt', 'Auto');
+  test('neue Gruppen stehen vor „Sonstiges" (UK-17)', async ({ page }) => {
     await addExpense(page, 'Wartung', '400', 'Lebensunterhalt', 'Auto');
     await addExpense(page, 'Strom', '60', 'Lebensunterhalt');
-    // Rearranged with the keyboard: Steuer on top
-    await page.getByRole('button', { name: 'Eintrag Steuer verschieben' }).focus();
-    const saved = page.waitForResponse((response) => response.url().endsWith('/item-order'));
-    await page.keyboard.press('ArrowUp');
-    await saved;
-    await expect(itemDescriptions(page, 'Lebensunterhalt', 'Auto')).toHaveText([
-      'Steuer',
-      'Wartung',
-    ]);
-
-    await addExpense(page, 'Sprit', '1200', 'Lebensunterhalt', 'Auto');
-    await expect(itemDescriptions(page, 'Lebensunterhalt', 'Auto')).toHaveText([
-      'Sprit',
-      'Steuer',
-      'Wartung',
-    ]);
 
     await addExpense(page, 'Ferienwohnung', '700', 'Lebensunterhalt', 'Urlaub');
     await expect(groupNames(page, 'Lebensunterhalt')).toHaveText(['Auto', 'Urlaub', 'Sonstiges']);
-  });
-
-  test('ein Posten mit geänderter Unterkategorie steht oben in seiner neuen Gruppe (UK-17)', async ({
-    page,
-  }) => {
-    await addExpense(page, 'Tank', '80', 'Lebensunterhalt', 'Auto');
-    await addExpense(page, 'Kaltmiete', '800', 'Lebensunterhalt', 'Miete');
-    await addExpense(page, 'Nebenkosten', '200', 'Lebensunterhalt', 'Miete');
-
-    const dialog = await openEditDialog(page, 'Tank');
-    await dialog.getByRole('combobox', { name: 'Unterkategorie (optional)' }).fill('Miete');
-    await dialog.getByLabel('Betrag').click();
-    await dialog.getByRole('button', { name: 'Speichern' }).click();
-    await expect(dialog).toBeHidden();
-
-    await expect(groupNames(page, 'Lebensunterhalt')).toHaveText(['Miete']);
-    await expect(itemDescriptions(page, 'Lebensunterhalt', 'Miete')).toHaveText([
-      'Tank',
-      'Nebenkosten',
-      'Kaltmiete',
-    ]);
   });
 
   test('die Reihenfolge gehört zum Plan eines Jahres (UK-15)', async ({ page }) => {

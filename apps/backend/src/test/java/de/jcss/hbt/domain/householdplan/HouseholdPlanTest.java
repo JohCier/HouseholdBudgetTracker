@@ -126,16 +126,16 @@ class HouseholdPlanTest {
         assertThat(emptyPlan().summary()).isEqualTo(BudgetSummary.EMPTY);
     }
 
-    /** UK-17 */
+    /** EG-1 */
     @Test
-    void addsNewItemsOnTopAndRecordsEachChange() {
+    void addsNewItemsAtTheBottomAndRecordsEachChange() {
         HouseholdPlan plan = emptyPlan();
 
         BudgetItemId incomeId = plan.addIncome(salary, amount, null, null);
         BudgetItemId expenseId = plan.addExpense(rent, amount, ExpenseCategory.LEBENSUNTERHALT, null, null);
 
-        assertThat(plan.items()).extracting(BudgetItem::id).containsExactly(expenseId, incomeId);
-        assertThat(plan.items().getFirst().category()).contains(ExpenseCategory.LEBENSUNTERHALT);
+        assertThat(plan.items()).extracting(BudgetItem::id).containsExactly(incomeId, expenseId);
+        assertThat(plan.items().getLast().category()).contains(ExpenseCategory.LEBENSUNTERHALT);
         assertThat(plan.pullDomainEvents())
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
                 .containsExactly(
@@ -192,7 +192,7 @@ class HouseholdPlanTest {
         assertThat(plan.pullDomainEvents()).isEmpty();
     }
 
-    /** PB-1, PB-5, PB-7, UK-17 */
+    /** PB-1, PB-5, PB-7, EG-2 */
     @Test
     void changesItemAndRecordsIt() {
         HouseholdPlan plan = emptyPlan();
@@ -204,8 +204,8 @@ class HouseholdPlanTest {
         plan.changeItem(changedId, BudgetItemDescription.of("Warmmiete"), yearly("900.00"),
                 ExpenseCategory.SPAREN_INVESTIEREN, null, null);
 
-        assertThat(plan.items()).extracting(BudgetItem::id).containsExactly(changedId, last, first);
-        BudgetItem changed = plan.items().getFirst();
+        assertThat(plan.items()).extracting(BudgetItem::id).containsExactly(first, last, changedId);
+        BudgetItem changed = plan.items().getLast();
         assertThat(changed.description()).isEqualTo(BudgetItemDescription.of("Warmmiete"));
         assertThat(changed.amount()).isEqualTo(yearly("900.00"));
         assertThat(changed.type()).isEqualTo(ItemType.EXPENSE);
@@ -237,7 +237,7 @@ class HouseholdPlanTest {
                 .containsExactly(new BudgetItemChanged(planId, itemId, Instant.now()));
     }
 
-    /** PB-4, UK-17 */
+    /** PB-4, EG-2 */
     @Test
     void changedItemKeepsItsPlaceWithinItsGroup() {
         HouseholdPlan plan = emptyPlan();
@@ -248,7 +248,7 @@ class HouseholdPlanTest {
         plan.changeItem(changedId, BudgetItemDescription.of("Bonus"), yearly("900.00"), null,
                 BudgetItemSubcategory.OTHER, new BudgetItemNote("einmalig"));
 
-        assertThat(plan.items()).extracting(BudgetItem::id).containsExactly(last, changedId, first);
+        assertThat(plan.items()).extracting(BudgetItem::id).containsExactly(first, changedId, last);
     }
 
     /** PB-5 */
@@ -272,7 +272,7 @@ class HouseholdPlanTest {
         plan.addExpense(rent, amount, ExpenseCategory.LEBENSUNTERHALT, null, note);
         plan.addIncome(salary, amount, null, null);
 
-        assertThat(plan.items()).extracting(BudgetItem::note).containsExactly(Optional.empty(), Optional.of(note));
+        assertThat(plan.items()).extracting(BudgetItem::note).containsExactly(Optional.of(note), Optional.empty());
     }
 
     /** PN-4, PN-5 */

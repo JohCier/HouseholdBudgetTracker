@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { BudgetItem, HouseholdPlanOverview } from '../budget.model';
+import { BudgetItem, HouseholdPlanOverview, NewItemPreset } from '../budget.model';
 import { BudgetEntries, GroupOrder } from './budget-entries';
 
 const salary: BudgetItem = {
@@ -92,8 +92,8 @@ describe('BudgetEntries', () => {
 
   const text = (element: Element | null) => element?.textContent?.replace(/\s+/g, ' ').trim();
 
-  // UK-9, UK-10, UK-11, UK-12
-  it('shows the incomes first, then the expenses by category, each grouped by subcategory with its sum', async () => {
+  // UK-9, UK-10, UK-11, EG-5, EG-6
+  it('shows the incomes first, then the expenses by category, each grouped by subcategory with its sum below', async () => {
     const { element } = await render(overview);
 
     const areas = [...element.querySelectorAll('section.area')].map((area) =>
@@ -106,17 +106,45 @@ describe('BudgetEntries', () => {
     expect(categories).toEqual(['Lebensunterhalt', 'Sparen & Investieren']);
 
     const living = element.querySelector('section[aria-label="Lebensunterhalt"]')!;
-    expect(text(living.querySelector('.section-header'))).toContain('€1,000.00');
+    expect(text(living.querySelector('.section-header'))).toBe('Lebensunterhalt');
+    expect(text(living.querySelector(':scope > .summary'))).toBe(
+      'Summe Lebensunterhalt€83.33€1,000.00',
+    );
     const groups = [...living.querySelectorAll('[role="group"]')];
     expect(groups.map((group) => group.getAttribute('aria-label'))).toEqual(['Auto', 'Sonstiges']);
-    expect(text(groups[0].querySelector('.group-header'))).toBe('Auto€8.33€100.00');
+    expect(text(groups[0].querySelector('.group-header'))).toBe('Auto');
     expect([...groups[0].querySelectorAll('.item .description')].map((d) => text(d))).toEqual([
       'Sprit Diesel',
       'Steuer',
     ]);
-    expect(text(element.querySelector('section[aria-label="Ausgaben"] .area-header'))).toContain(
-      '€1,500.00',
-    );
+    expect(groups[0].lastElementChild!.classList).toContain('group-summary');
+    expect(text(groups[0].querySelector('.group-summary'))).toBe('Summe Auto€8.33€100.00');
+
+    const expenses = element.querySelector('section[aria-label="Ausgaben"]')!;
+    expect(text(expenses.querySelector('.area-header'))).toBe('Ausgaben');
+    expect(expenses.lastElementChild!.classList).toContain('area-summary');
+    expect(text(expenses.lastElementChild)).toBe('Summe Ausgaben−€125.00−€1,500.00');
+  });
+
+  // EG-9, EG-10
+  it('offers to add an item to each group, filling in what the group stands for', async () => {
+    const { component, element } = await render(overview);
+    const presets: NewItemPreset[] = [];
+    component.add.subscribe((preset) => presets.push(preset));
+    const add = (group: string) =>
+      element
+        .querySelector<HTMLButtonElement>(`button[aria-label="Posten in ${group} hinzufügen"]`)!
+        .click();
+
+    add('Auto');
+    add('Sonstiges');
+    add('Gehalt');
+
+    expect(presets).toEqual([
+      { group: 'Auto', type: 'EXPENSE', category: 'LEBENSUNTERHALT', subcategory: 'Auto' },
+      { group: 'Sonstiges', type: 'EXPENSE', category: 'LEBENSUNTERHALT', subcategory: '' },
+      { group: 'Gehalt', type: 'INCOME', category: null, subcategory: 'Gehalt' },
+    ]);
   });
 
   // MJ-12
@@ -162,11 +190,11 @@ describe('BudgetEntries', () => {
     expect(text(salaryMonthly)).toBe('+€250.00');
     expect(salaryMonthly.classList).toContain('derived');
     expect(salaryYearly.classList).not.toContain('derived');
-    expect(
-      text(element.querySelector('section[aria-label="Lebensunterhalt"] .section-header')),
-    ).toBe('Lebensunterhalt€850.00€10,200.00');
-    expect(text(element.querySelector('section[aria-label="Einnahmen"] .section-header'))).toBe(
-      'Einnahmen+€250.00+€3,000.00',
+    expect(text(element.querySelector('section[aria-label="Lebensunterhalt"] > .summary'))).toBe(
+      'Summe Lebensunterhalt€850.00€10,200.00',
+    );
+    expect(text(element.querySelector('section[aria-label="Einnahmen"] .section > .summary'))).toBe(
+      'Summe Einnahmen+€250.00+€3,000.00',
     );
   });
 

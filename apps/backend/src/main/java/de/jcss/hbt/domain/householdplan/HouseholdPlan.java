@@ -38,7 +38,7 @@ import java.util.Set;
  * are immutable.
  * <p>
  * The plan also keeps the order in which its entries are shown (UK-14 to UK-18): the items are
- * held in display order, the newest first unless the user moved them; the order of the
+ * held in display order, the newest last unless the user moved them (EG-1); the order of the
  * subcategory groups of each {@link ItemSection} is a {@link SubcategoryOrder}. An item always
  * takes the spelling of the subcategory other items of the plan already have, so all items
  * of a group are spelled alike (UK-5).
@@ -170,7 +170,7 @@ public final class HouseholdPlan {
     }
 
     /**
-     * Adds an income on top of its group (UK-17).
+     * Adds an income at the bottom of its group (EG-1).
      *
      * @param subcategory {@code null} if the income has no subcategory
      * @param note        {@code null} if the income has no note
@@ -179,13 +179,13 @@ public final class HouseholdPlan {
                                   BudgetItemSubcategory subcategory, BudgetItemNote note) {
         BudgetItem item = BudgetItem.income(BudgetItemId.generate(), description, amount,
                 spellingOf(subcategory, null), note);
-        items.addFirst(item);
+        items.addLast(item);
         record(new IncomeAdded(id, item.id(), Instant.now()));
         return item.id();
     }
 
     /**
-     * Adds an expense on top of its group (UK-17).
+     * Adds an expense at the bottom of its group (EG-1).
      *
      * @param subcategory {@code null} if the expense has no subcategory
      * @param note        {@code null} if the expense has no note
@@ -194,14 +194,14 @@ public final class HouseholdPlan {
                                    BudgetItemSubcategory subcategory, BudgetItemNote note) {
         BudgetItem item = BudgetItem.expense(BudgetItemId.generate(), description, amount, category,
                 spellingOf(subcategory, null), note);
-        items.addFirst(item);
+        items.addLast(item);
         record(new ExpenseAdded(id, item.id(), Instant.now()));
         return item.id();
     }
 
     /**
      * Gives an item new values while it keeps its id. It keeps its position among the items as
-     * long as it stays in its group; moved to another group, it goes on top of it (PB-4, UK-17).
+     * long as it stays in its group; moved to another group, it goes to the bottom of it (PB-4, EG-2).
      * Records an event only if a value actually changed.
      *
      * @param category    the new category of an expense; {@code null} for an income
@@ -221,7 +221,7 @@ public final class HouseholdPlan {
             items.set(index, changed);
         } else {
             items.remove(index);
-            items.addFirst(changed);
+            items.addLast(changed);
             forgetVanishedGroups();
         }
         record(new BudgetItemChanged(id, itemId, Instant.now()));

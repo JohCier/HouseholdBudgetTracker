@@ -25,6 +25,8 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Sonstiges | `BudgetItemSubcategory.OTHER` | Gruppe der Posten ohne Unterkategorie oder mit der Unterkategorie „Sonstiges"; steht am Ende, solange der Benutzer sie nicht verschiebt |
 | Bereich | `ItemSection` | Die Einnahmen oder eine Kategorie der Ausgaben; darin werden die Posten nach Unterkategorie gruppiert |
 | Gruppe | `OverviewItemGroup` | Die Posten eines Bereichs mit derselben Unterkategorie, mit ihrer Summe |
+| Summenzeile | `.summary` (Oberfläche) | Zeile „Summe ‹…›" unter den Posten einer Gruppe, einer Kategorie, der Einnahmen oder der Ausgaben, je Monat und Jahr |
+| Posten in einer Gruppe erfassen | `NewItemPreset`, `AddItemDialog` | Einen Posten aus einer Gruppe heraus anlegen; Art, Kategorie und Unterkategorie sind mit denen der Gruppe ausgefüllt |
 | Reihenfolge der Gruppen | `SubcategoryOrder` | Wie der Benutzer die Gruppen eines Bereichs angeordnet hat; je Plan gespeichert |
 | Betrag | `Money` | Geldbetrag in Euro mit höchstens zwei Nachkommastellen; im Posten immer positiv |
 | Betrag eines Postens | `ItemAmount` | Der Betrag, wie der Benutzer ihn eingegeben hat, mit seiner Angabe |

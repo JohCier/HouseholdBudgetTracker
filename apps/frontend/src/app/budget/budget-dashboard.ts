@@ -7,9 +7,10 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
 import { Router, RouterLink } from '@angular/router';
-import { BreakdownView, BudgetItem, Year } from './budget.model';
+import { BreakdownView, BudgetItem, NewItemPreset, Year } from './budget.model';
 import { BudgetApi } from './data-access/budget-api';
 import { BudgetStore } from './data-access/budget-store';
+import { AddItemDialog } from './ui/add-item-dialog';
 import { AddItemForm } from './ui/add-item-form';
 import { BudgetEntries, GroupOrder } from './ui/budget-entries';
 import {
@@ -113,6 +114,7 @@ import { parseYear } from './year';
             (remove)="remove($event)"
             (reorderItems)="reorderItems($event)"
             (reorderGroups)="reorderGroups($event)"
+            (add)="addTo($event)"
           />
         }
       </div>
@@ -331,6 +333,21 @@ export class BudgetDashboard {
       .subscribe((saved) => {
         if (saved) {
           this.snackBar.open('Eintrag geändert', undefined, { duration: 3000 });
+        }
+      });
+  }
+
+  /** Adds an item right in one of the groups, its type, category and subcategory filled in (EG-9 to EG-11). */
+  protected addTo(preset: NewItemPreset): void {
+    this.dialog
+      .open<AddItemDialog, NewItemPreset, boolean>(AddItemDialog, {
+        data: preset,
+        injector: this.injector,
+      })
+      .afterClosed()
+      .subscribe((added) => {
+        if (added) {
+          this.snackBar.open('Eintrag hinzugefügt', undefined, { duration: 3000 });
         }
       });
   }

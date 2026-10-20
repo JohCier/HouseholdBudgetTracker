@@ -87,7 +87,7 @@ class HouseholdPlanIntegrationTest {
                 .andExpect(jsonPath("$.id").value(plan2026))
                 .andExpect(jsonPath("$.year").value(2026))
                 .andExpect(jsonPath("$.items.length()").value(3))
-                .andExpect(jsonPath("$.items[0].description").value("Konzert"))
+                .andExpect(jsonPath("$.items[0].description").value("Gehalt"))
                 .andExpect(jsonPath("$.totalIncome").value("2000.00"))
                 .andExpect(jsonPath("$.totalExpense").value("1300.00"))
                 .andExpect(jsonPath("$.balance").value("700.00"))

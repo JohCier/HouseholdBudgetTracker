@@ -16,15 +16,19 @@
           <div class="section income" [class]="incomes.colorClass">
             <div class="section-header">
               <h3>Einnahmen</h3>
-              <span class="amount-column total monthly income-amount"
-                >+{{ incomes.monthlyTotal | currency: 'EUR' }}</span
-              >
-              <span class="amount-column total yearly income-amount"
-                >+{{ incomes.total | currency: 'EUR' }}</span
-              >
-              <span class="actions-space"></span>
             </div>
             <ng-container *ngTemplateOutlet="groupList; context: { $implicit: incomes }" />
+            <ng-container
+              *ngTemplateOutlet="
+                summary;
+                context: {
+                  label: 'Einnahmen',
+                  monthly: incomes.monthlyTotal,
+                  yearly: incomes.total,
+                  sign: '+',
+                }
+              "
+            />
           </div>
         </section>
       }
@@ -32,13 +36,6 @@
         <section class="area" aria-label="Ausgaben">
           <div class="area-header">
             <h3>Ausgaben</h3>
-            <span class="amount-column total monthly expense-amount"
-              >−{{ overview().monthlyTotalExpense | currency: 'EUR' }}</span
-            >
-            <span class="amount-column total yearly expense-amount"
-              >−{{ overview().totalExpense | currency: 'EUR' }}</span
-            >
-            <span class="actions-space"></span>
           </div>
           @for (category of expenseCategories(); track category.colorClass) {
             <section
@@ -48,17 +45,33 @@
             >
               <div class="section-header">
                 <h4><span class="swatch"></span>{{ category.label }}</h4>
-                <span class="amount-column total monthly">{{
-                  category.monthlyTotal | currency: 'EUR'
-                }}</span>
-                <span class="amount-column total yearly">{{
-                  category.total | currency: 'EUR'
-                }}</span>
-                <span class="actions-space"></span>
               </div>
               <ng-container *ngTemplateOutlet="groupList; context: { $implicit: category }" />
+              <ng-container
+                *ngTemplateOutlet="
+                  summary;
+                  context: {
+                    label: category.label,
+                    monthly: category.monthlyTotal,
+                    yearly: category.total,
+                    sign: '',
+                  }
+                "
+              />
             </section>
           }
+          <ng-container
+            *ngTemplateOutlet="
+              summary;
+              context: {
+                label: 'Ausgaben',
+                monthly: overview().monthlyTotalExpense,
+                yearly: overview().totalExpense,
+                sign: '−',
+                area: true,
+              }
+            "
+          />
         </section>
       }
     }
@@ -98,11 +111,6 @@
             <span class="handle-space"></span>
           }
           <span class="group-name">{{ group.subcategory }}</span>
-          <span class="amount-column total monthly">{{
-            group.monthlyTotal | currency: 'EUR'
-          }}</span>
-          <span class="amount-column total yearly">{{ group.total | currency: 'EUR' }}</span>
-          <span class="actions-space"></span>
         </div>
         <div
           class="items"
@@ -174,7 +182,52 @@
             </div>
           }
         </div>
+        <div class="summary group-summary">
+          <span class="summary-label">Summe {{ group.subcategory }}</span>
+          <span class="amount-column total monthly">{{
+            group.monthlyTotal | currency: 'EUR'
+          }}</span>
+          <span class="amount-column total yearly">{{ group.total | currency: 'EUR' }}</span>
+          <span class="actions">
+            <button
+              matIconButton
+              type="button"
+              matTooltip="Posten hinzufügen"
+              [attr.aria-label]="'Posten in ' + group.subcategory + ' hinzufügen'"
+              (click)="addTo(section, group)"
+            >
+              <mat-icon svgIcon="add" />
+            </button>
+          </span>
+        </div>
       </div>
     }
+  </div>
+</ng-template>
+
+<!-- The sum of a section or area below its entries (EG-5, EG-6), per month and per year (MJ-12) -->
+<ng-template
+  #summary
+  let-label="label"
+  let-monthly="monthly"
+  let-yearly="yearly"
+  let-sign="sign"
+  let-area="area"
+>
+  <div class="summary" [class.area-summary]="area">
+    <span class="summary-label">Summe {{ label }}</span>
+    <span
+      class="amount-column total monthly"
+      [class.income-amount]="sign === '+'"
+      [class.expense-amount]="sign === '−'"
+      >{{ sign }}{{ monthly | currency: 'EUR' }}</span
+    >
+    <span
+      class="amount-column total yearly"
+      [class.income-amount]="sign === '+'"
+      [class.expense-amount]="sign === '−'"
+      >{{ sign }}{{ yearly | currency: 'EUR' }}</span
+    >
+    <span class="actions-space"></span>
   </div>
 </ng-template>
