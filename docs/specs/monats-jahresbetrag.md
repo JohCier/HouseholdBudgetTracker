@@ -52,6 +52,7 @@ Plans, lässt sich aber als Monatsbetrag angeben und so anzeigen.
   unter den Posten nach [EG-5, EG-6](eintraege-gruppen.md)) zwei Spalten: „Monat" und „Jahr". Der vom Benutzer
   eingegebene Betrag ist hervorgehoben, der abgeleitete schwächer dargestellt.
 - **MJ-13**: Die Kacheln oben in der Übersicht zeigen Einnahmen, Ausgaben und Saldo jeweils je Monat und je Jahr.
+  Ersetzt durch den Kasten „Bilanz" ([BI-1](bilanz.md)).
 - **MJ-14**: Die Karte „50/30/20-Regel" zeigt in beiden Darstellungen, Balken und Torte (TD-1), nur Monatswerte und
   sagt das in ihrer Unterzeile („Beträge je Monat"): Die Summen der Kategorien und „davon nicht verplant" sind die
   Jahreswerte der Auswertung ÷ 12, kaufmännisch auf ganze Cent gerundet (MJ-9). Die Anteile am Einkommen, die
@@ -127,6 +128,6 @@ Plans, lässt sich aber als Monatsbetrag angeben und so anzeigen.
   E2E-Tests der Auswertung, der Torte und von „Posten bearbeiten", die Beträge der Karte prüfen, erfassen monatlich
 - E2E: `e2e/tests/monats-jahresbetrag.spec.ts` (MJ-1, MJ-4 bis MJ-9, MJ-11 bis MJ-14; MJ-3 und die 400-Fälle decken die
   Backend-Tests ab). Die Helfer `addIncome`/`addExpense` erfassen ohne Angabe jährlich, damit die übrigen E2E-Tests
-  ihre Jahresbeträge behalten; `tile` liest den Jahreswert
+  ihre Jahresbeträge behalten; `tile` (heute `balanceSheet`, [bilanz.md](bilanz.md)) liest den Jahreswert
 
 ## Offene Fragen

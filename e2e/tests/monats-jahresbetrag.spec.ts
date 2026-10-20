@@ -9,7 +9,7 @@ import {
   registerWithPlan,
   showBreakdownAs,
   sumRow,
-  tile,
+  balanceSheet,
 } from './support';
 
 /** The amount of an item per month or per year in the card "Einträge" (MJ-12). */
@@ -55,18 +55,18 @@ test.describe('Monats- und Jahresbetrag', () => {
     await expect(itemAmount(page, 'Versicherung', 'Jahr')).not.toHaveClass(/derived/);
   });
 
-  test('die Kacheln zeigen Einnahmen, Ausgaben und Saldo je Monat und je Jahr (MJ-9, MJ-13)', async ({
+  test('die Bilanz zeigt Einnahmen, Ausgaben und Saldo je Monat und je Jahr (MJ-9, BI-4)', async ({
     page,
   }) => {
     await addIncome(page, 'Gehalt', '3000', undefined, 'Monatlich');
     await addExpense(page, 'Miete', '850', 'Lebensunterhalt', undefined, 'Monatlich');
 
-    await expect(tile(page, 'Einnahmen', 'Monat')).toHaveText('3.000,00 €');
-    await expect(tile(page, 'Einnahmen', 'Jahr')).toHaveText('36.000,00 €');
-    await expect(tile(page, 'Ausgaben', 'Monat')).toHaveText('850,00 €');
-    await expect(tile(page, 'Ausgaben', 'Jahr')).toHaveText('10.200,00 €');
-    await expect(tile(page, 'Saldo', 'Monat')).toHaveText('2.150,00 €');
-    await expect(tile(page, 'Saldo', 'Jahr')).toHaveText('25.800,00 €');
+    await expect(balanceSheet(page, 'Gesamteinnahmen', 'Monat')).toHaveText('3.000,00 €');
+    await expect(balanceSheet(page, 'Gesamteinnahmen', 'Jahr')).toHaveText('36.000,00 €');
+    await expect(balanceSheet(page, 'Gesamtausgaben', 'Monat')).toHaveText('850,00 €');
+    await expect(balanceSheet(page, 'Gesamtausgaben', 'Jahr')).toHaveText('10.200,00 €');
+    await expect(balanceSheet(page, 'Saldo', 'Monat')).toHaveText('2.150,00 €');
+    await expect(balanceSheet(page, 'Saldo', 'Jahr')).toHaveText('25.800,00 €');
   });
 
   test('Summen je Monat sind die Jahressumme durch zwölf (MJ-9, MJ-12)', async ({ page }) => {
@@ -106,7 +106,7 @@ test.describe('Monats- und Jahresbetrag', () => {
 
     await expect(itemAmount(page, 'Miete', 'Jahr')).toHaveText('−850,00 €');
     await expect(itemAmount(page, 'Miete', 'Monat')).toHaveText('−70,83 €');
-    await expect(tile(page, 'Ausgaben', 'Jahr')).toHaveText('850,00 €');
+    await expect(balanceSheet(page, 'Gesamtausgaben', 'Jahr')).toHaveText('850,00 €');
 
     // Saved on the server, with its new period
     await page.reload();

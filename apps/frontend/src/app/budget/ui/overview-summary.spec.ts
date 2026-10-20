@@ -32,22 +32,22 @@ describe('OverviewSummary', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  // MJ-13
-  it('shows income, expenses and balance per month and per year', async () => {
+  // BI-1, BI-2, BI-4
+  it('shows income, expenses and balance in rows, per month and per year in columns', async () => {
     const element = await render(overview({}));
 
-    const amounts = [...element.querySelectorAll('.amount')].map((v) =>
-      v.textContent?.replace(/\s+/g, ' ').trim(),
+    const text = (cell: Element) => cell.textContent?.replace(/\s+/g, ' ').trim();
+    expect([...element.querySelectorAll('thead th')].map(text)).toEqual(['Monat', 'Jahr']);
+    const rows = [...element.querySelectorAll('tbody tr')].map((row) =>
+      [...row.querySelectorAll('th, td')].map(text),
     );
-    expect(amounts).toEqual([
-      '€250.00im Monat',
-      '€3,000.00im Jahr',
-      '€166.67im Monat',
-      '€2,000.00im Jahr',
-      '€83.33im Monat',
-      '€1,000.00im Jahr',
+    expect(rows).toEqual([
+      ['Gesamteinnahmen', '€250.00', '€3,000.00'],
+      ['Gesamtausgaben', '€166.67', '€2,000.00'],
+      ['Saldo', '€83.33', '€1,000.00'],
     ]);
-    expect(element.querySelectorAll('.value')[5].classList).not.toContain('expense');
+    expect(element.querySelector('mat-card-title')?.textContent).toBe('Bilanz');
+    expect(element.querySelector('.balance .value.yearly')?.classList).not.toContain('expense');
     expect(element.querySelector('[role="alert"]')).toBeNull();
   });
 
@@ -61,7 +61,9 @@ describe('OverviewSummary', () => {
       }),
     );
 
-    const [monthly, yearly] = [...element.querySelectorAll('.value')].slice(4);
+    // BI-3, BI-6
+    const monthly = element.querySelector('.balance .value.monthly')!;
+    const yearly = element.querySelector('.balance .value.yearly')!;
     expect(monthly.textContent?.trim()).toBe('-€41.67');
     expect(monthly.classList).toContain('expense');
     expect(yearly.textContent?.trim()).toBe('-€500.00');

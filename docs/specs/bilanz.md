@@ -1,6 +1,6 @@
 # Bilanz in der Übersicht
 
-Status: geplant
+Status: umgesetzt
 
 ## Zweck
 
@@ -47,8 +47,13 @@ AW-2, MJ-8, MJ-9), ändert sich nicht.
 
 ## Umsetzung
 
-## Offene Fragen
+- Frontend: `budget/ui/overview-summary.ts` zeigt statt der drei Kacheln eine Karte „Bilanz" mit einer Tabelle:
+  Zeilenköpfe „Gesamteinnahmen", „Gesamtausgaben", „Saldo" links, Spalten „Monat" und „Jahr" rechtsbündig (BI-1,
+  BI-2); die Zeile `balance` hat eine Linie darüber und größere Beträge, die Farben bleiben (BI-3). Die Werte kommen
+  unverändert aus `HouseholdPlanOverview` (BI-4). Unter 400 px Bildschirmbreite werden Abstände und Schrift kleiner,
+  die Spalten bleiben nebeneinander (BI-5); die Warnung steht weiter unter der Karte (BI-6)
+- Tests: `overview-summary.spec.ts`
+- E2E: `e2e/tests/bilanz.spec.ts` (BI-1 bis BI-6). Der Helfer `balanceSheet` (vorher `tile`) liest einen Wert über den
+  Zeilenkopf; die übrigen E2E-Tests nutzen ihn mit den neuen Bezeichnungen
 
-- Überschrift des Kastens: „Bilanz" (Vorschlag), „Übersicht" oder ganz ohne Überschrift?
-- Bezeichnungen nur einmal links (BI-2, Vorschlag) oder in jeder Spalte wiederholt, also „Gesamteinnahmen" sowohl
-  über dem Monats- als auch über dem Jahreswert?
+## Offene Fragen
