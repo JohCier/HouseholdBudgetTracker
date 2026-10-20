@@ -47,7 +47,7 @@ Geplante Änderungen, je eine Spec bzw. Regel mit Status „geplant".
 
 | Änderung | Spec |
 |---|---|
-| Einen Plan vollständig als Vorlage ins Folgejahr übernehmen, aus der Planansicht und der Jahresübersicht | [plan-uebernehmen.md](specs/plan-uebernehmen.md) |
+| Einen Plan vollständig als Vorlage in ein anderes Jahr übernehmen (vorgeschlagen: Folgejahr), aus Planansicht, Jahresübersicht oder einem Jahr ohne Plan; bestehenden Plan nach Rückfrage überschreiben | [plan-uebernehmen.md](specs/plan-uebernehmen.md) |
 
 ## Weiterführend
 
