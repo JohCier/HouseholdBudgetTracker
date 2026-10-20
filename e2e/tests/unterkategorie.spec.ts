@@ -16,7 +16,7 @@ import {
 
 /** Total shown in the header of a subcategory group. */
 function groupTotal(page: Page, section: Parameters<typeof itemGroup>[1], subcategory: string) {
-  return itemGroup(page, section, subcategory).locator('.group-header .total');
+  return itemGroup(page, section, subcategory).locator('.group-header .total.yearly');
 }
 
 /**

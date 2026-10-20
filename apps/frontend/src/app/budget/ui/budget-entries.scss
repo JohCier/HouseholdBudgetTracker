@@ -22,6 +22,7 @@ mat-card-content {
 
 h3,
 h4 {
+  flex: 1;
   margin: 0;
 }
 
@@ -40,6 +41,35 @@ h4 {
 .amount {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+// Monthly and yearly amounts line up in two columns on every row (MJ-12)
+.amount-column {
+  flex: 0 0 7.5rem;
+  text-align: right;
+}
+
+// Room for the buttons of an item, so sums line up with the amounts of the items
+.actions-space {
+  flex: 0 0 96px;
+}
+
+.columns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: -16px;
+  font: var(--mat-sys-label-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Worked out from the amount the user entered (MJ-12)
+.derived {
+  opacity: 0.6;
+}
+
+.amount:not(.derived) {
+  font-weight: 500;
 }
 
 // Each section is marked by the color of the incomes or of its category (UK-19)
@@ -132,6 +162,7 @@ h4 {
 }
 
 .actions {
+  flex: 0 0 96px;
   white-space: nowrap;
 }
 

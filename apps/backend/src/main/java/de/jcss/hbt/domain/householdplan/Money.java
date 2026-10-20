@@ -4,6 +4,7 @@ import de.jcss.hbt.domain.exception.DomainValidationException;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Objects;
 
 /**
@@ -17,6 +18,8 @@ import java.util.Objects;
 public record Money(BigDecimal value) implements Comparable<Money> {
 
     public static final Money ZERO = new Money(BigDecimal.ZERO);
+
+    private static final BigDecimal MONTHS_PER_YEAR = BigDecimal.valueOf(12);
 
     public Money {
         Objects.requireNonNull(value, "value must not be null");
@@ -36,6 +39,16 @@ public record Money(BigDecimal value) implements Comparable<Money> {
 
     public Money subtract(Money other) {
         return new Money(this.value.subtract(other.value));
+    }
+
+    /** This amount taken as a monthly amount, for the whole year (MJ-6). */
+    public Money timesMonthsPerYear() {
+        return new Money(value.multiply(MONTHS_PER_YEAR));
+    }
+
+    /** This amount taken as a yearly amount, per month, rounded half up to the cent (MJ-7, MJ-9). */
+    public Money perMonth() {
+        return new Money(value.divide(MONTHS_PER_YEAR, 2, RoundingMode.HALF_UP));
     }
 
     public boolean isPositive() {

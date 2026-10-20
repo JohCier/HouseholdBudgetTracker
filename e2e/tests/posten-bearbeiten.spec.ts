@@ -82,7 +82,8 @@ test.describe('Posten bearbeiten', () => {
     const dialog = await openEditDialog(page, 'Gehalt');
     await expect(dialog).toContainText('Einnahme bearbeiten');
     await expect(dialog.getByRole('combobox', { name: 'Kategorie', exact: true })).toHaveCount(0);
-    await expect(dialog.getByRole('radio')).toHaveCount(0);
+    // The only choice offered is monthly or yearly (MJ-11), not income or expense
+    await expect(dialog.getByRole('radio', { name: /^(Einnahme|Ausgabe)$/ })).toHaveCount(0);
     await dialog.getByLabel('Beschreibung').fill('Nettogehalt');
     await dialog.getByLabel('Betrag').fill('3200.50');
     await dialog.getByRole('button', { name: 'Speichern' }).click();

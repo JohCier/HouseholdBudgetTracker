@@ -6,6 +6,9 @@ const salary: BudgetItem = {
   id: 'salary',
   description: 'Gehalt',
   amount: '3000.00',
+  period: 'YEARLY',
+  monthlyAmount: '250.00',
+  annualAmount: '3000.00',
   type: 'INCOME',
   category: null,
   subcategory: 'Gehalt',
@@ -15,6 +18,9 @@ const fuel: BudgetItem = {
   id: 'fuel',
   description: 'Sprit',
   amount: '80.00',
+  period: 'YEARLY',
+  monthlyAmount: '6.67',
+  annualAmount: '80.00',
   type: 'EXPENSE',
   category: 'LEBENSUNTERHALT',
   subcategory: 'Auto',
@@ -26,6 +32,7 @@ const rent: BudgetItem = {
   id: 'rent',
   description: 'Miete',
   amount: '900.00',
+  period: 'YEARLY',
   subcategory: null,
 };
 const savings: BudgetItem = {
@@ -33,6 +40,7 @@ const savings: BudgetItem = {
   id: 'savings',
   description: 'ETF',
   amount: '500.00',
+  period: 'YEARLY',
   category: 'SPAREN_INVESTIEREN',
   subcategory: 'Depot',
 };
@@ -43,23 +51,33 @@ const overview: HouseholdPlanOverview = {
   totalIncome: '3000.00',
   totalExpense: '1500.00',
   balance: '1500.00',
+
+  monthlyTotalIncome: '250.00',
+
+  monthlyTotalExpense: '125.00',
+
+  monthlyBalance: '125.00',
   expensesExceedIncome: false,
   categoryBreakdowns: [],
   items: [salary, fuel, tax, rent, savings],
-  incomeGroups: [{ subcategory: 'Gehalt', total: '3000.00', items: [salary] }],
+  incomeGroups: [
+    { subcategory: 'Gehalt', total: '3000.00', monthlyTotal: '250.00', items: [salary] },
+  ],
   expenseCategories: [
     {
       category: 'LEBENSUNTERHALT',
       total: '1000.00',
+      monthlyTotal: '83.33',
       groups: [
-        { subcategory: 'Auto', total: '100.00', items: [fuel, tax] },
-        { subcategory: 'Sonstiges', total: '900.00', items: [rent] },
+        { subcategory: 'Auto', total: '100.00', monthlyTotal: '8.33', items: [fuel, tax] },
+        { subcategory: 'Sonstiges', total: '900.00', monthlyTotal: '75.00', items: [rent] },
       ],
     },
     {
       category: 'SPAREN_INVESTIEREN',
       total: '500.00',
-      groups: [{ subcategory: 'Depot', total: '500.00', items: [savings] }],
+      monthlyTotal: '41.67',
+      groups: [{ subcategory: 'Depot', total: '500.00', monthlyTotal: '41.67', items: [savings] }],
     },
   ],
 };
@@ -91,13 +109,64 @@ describe('BudgetEntries', () => {
     expect(text(living.querySelector('.section-header'))).toContain('€1,000.00');
     const groups = [...living.querySelectorAll('[role="group"]')];
     expect(groups.map((group) => group.getAttribute('aria-label'))).toEqual(['Auto', 'Sonstiges']);
-    expect(text(groups[0].querySelector('.group-header'))).toBe('Auto€100.00');
+    expect(text(groups[0].querySelector('.group-header'))).toBe('Auto€8.33€100.00');
     expect([...groups[0].querySelectorAll('.item .description')].map((d) => text(d))).toEqual([
       'Sprit Diesel',
       'Steuer',
     ]);
     expect(text(element.querySelector('section[aria-label="Ausgaben"] .area-header'))).toContain(
       '€1,500.00',
+    );
+  });
+
+  // MJ-12
+  it('shows each item and each sum per month and per year, the amount as entered standing out', async () => {
+    const monthlyRent: BudgetItem = {
+      ...rent,
+      amount: '850.00',
+      period: 'MONTHLY',
+      monthlyAmount: '850.00',
+      annualAmount: '10200.00',
+    };
+    const { element } = await render({
+      ...overview,
+      items: [salary, monthlyRent],
+      expenseCategories: [
+        {
+          category: 'LEBENSUNTERHALT',
+          monthlyTotal: '850.00',
+          total: '10200.00',
+          groups: [
+            {
+              subcategory: 'Sonstiges',
+              monthlyTotal: '850.00',
+              total: '10200.00',
+              items: [monthlyRent],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(text(element.querySelector('.columns'))).toBe('MonatJahr');
+    const [rentMonthly, rentYearly] = element.querySelectorAll(
+      'section[aria-label="Lebensunterhalt"] .item .amount',
+    );
+    expect(text(rentMonthly)).toBe('−€850.00');
+    expect(rentMonthly.classList).not.toContain('derived');
+    expect(text(rentYearly)).toBe('−€10,200.00');
+    expect(rentYearly.classList).toContain('derived');
+    const [salaryMonthly, salaryYearly] = element.querySelectorAll(
+      'section[aria-label="Einnahmen"] .item .amount',
+    );
+    expect(text(salaryMonthly)).toBe('+€250.00');
+    expect(salaryMonthly.classList).toContain('derived');
+    expect(salaryYearly.classList).not.toContain('derived');
+    expect(
+      text(element.querySelector('section[aria-label="Lebensunterhalt"] .section-header')),
+    ).toBe('Lebensunterhalt€850.00€10,200.00');
+    expect(text(element.querySelector('section[aria-label="Einnahmen"] .section-header'))).toBe(
+      'Einnahmen+€250.00+€3,000.00',
     );
   });
 

@@ -16,7 +16,7 @@ import java.util.Optional;
  * repositories via {@link #reconstitute}. All of them enforce the domain rules:
  * <ul>
  *     <li>description is required (its own rules are enforced by {@link BudgetItemDescription})</li>
- *     <li>amount must be positive</li>
+ *     <li>amount must be positive; it is a monthly or a yearly amount (MJ-1)</li>
  *     <li>an expense item requires a category; an income item never has one</li>
  *     <li>the subcategory is optional for both (its own rules are enforced by {@link BudgetItemSubcategory})</li>
  *     <li>the note is optional for both (its own rules are enforced by {@link BudgetItemNote})</li>
@@ -30,13 +30,13 @@ public final class BudgetItem {
     @Identity
     private final BudgetItemId id;
     private final BudgetItemDescription description;
-    private final Money amount;
+    private final ItemAmount amount;
     private final ItemType type;
     private final ExpenseCategory category;
     private final BudgetItemSubcategory subcategory;
     private final BudgetItemNote note;
 
-    private BudgetItem(BudgetItemId id, BudgetItemDescription description, Money amount, ItemType type,
+    private BudgetItem(BudgetItemId id, BudgetItemDescription description, ItemAmount amount, ItemType type,
                        ExpenseCategory category, BudgetItemSubcategory subcategory, BudgetItemNote note) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.description = requireDescription(description);
@@ -51,7 +51,7 @@ public final class BudgetItem {
      * @param subcategory {@code null} if the item has no subcategory
      * @param note        {@code null} if the item has no note
      */
-    static BudgetItem income(BudgetItemId id, BudgetItemDescription description, Money amount,
+    static BudgetItem income(BudgetItemId id, BudgetItemDescription description, ItemAmount amount,
                              BudgetItemSubcategory subcategory, BudgetItemNote note) {
         return new BudgetItem(id, description, amount, ItemType.INCOME, null, subcategory, note);
     }
@@ -60,7 +60,7 @@ public final class BudgetItem {
      * @param subcategory {@code null} if the item has no subcategory
      * @param note        {@code null} if the item has no note
      */
-    static BudgetItem expense(BudgetItemId id, BudgetItemDescription description, Money amount,
+    static BudgetItem expense(BudgetItemId id, BudgetItemDescription description, ItemAmount amount,
                               ExpenseCategory category, BudgetItemSubcategory subcategory, BudgetItemNote note) {
         if (category == null) {
             throw new DomainValidationException("category is required for expense items");
@@ -75,7 +75,7 @@ public final class BudgetItem {
      * @param subcategory {@code null} if the item has no subcategory
      * @param note        {@code null} if the item has no note
      */
-    public static BudgetItem reconstitute(BudgetItemId id, BudgetItemDescription description, Money amount,
+    public static BudgetItem reconstitute(BudgetItemId id, BudgetItemDescription description, ItemAmount amount,
                                           ItemType type, ExpenseCategory category,
                                           BudgetItemSubcategory subcategory, BudgetItemNote note) {
         return switch (Objects.requireNonNull(type, "type must not be null")) {
@@ -97,7 +97,7 @@ public final class BudgetItem {
      * @param subcategory the new subcategory; {@code null} to remove it
      * @param note        the new note; {@code null} to remove it
      */
-    BudgetItem changedTo(BudgetItemDescription description, Money amount, ExpenseCategory category,
+    BudgetItem changedTo(BudgetItemDescription description, ItemAmount amount, ExpenseCategory category,
                          BudgetItemSubcategory subcategory, BudgetItemNote note) {
         return reconstitute(id, description, amount, type, category, subcategory, note);
     }
@@ -136,7 +136,7 @@ public final class BudgetItem {
         return description;
     }
 
-    private static Money requirePositive(Money amount) {
+    private static ItemAmount requirePositive(ItemAmount amount) {
         if (amount == null || !amount.isPositive()) {
             throw new DomainValidationException("amount must be positive");
         }
@@ -147,11 +147,11 @@ public final class BudgetItem {
         return id.equals(itemId);
     }
 
-    /** Returns the given summary with this item's amount added as income or as expense of its category. */
+    /** Returns the given summary with this item's yearly amount (MJ-8) added as income or as expense of its category. */
     public BudgetSummary addTo(BudgetSummary summary) {
         return switch (type) {
-            case INCOME -> summary.withIncome(amount);
-            case EXPENSE -> summary.withExpense(category, amount);
+            case INCOME -> summary.withIncome(amount.annual());
+            case EXPENSE -> summary.withExpense(category, amount.annual());
         };
     }
 
@@ -163,7 +163,7 @@ public final class BudgetItem {
         return description;
     }
 
-    public Money amount() {
+    public ItemAmount amount() {
         return amount;
     }
 

@@ -9,7 +9,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { EXPENSE_CATEGORIES, ExpenseCategory, ItemType } from '../budget.model';
+import {
+  AMOUNT_PERIODS,
+  AmountPeriod,
+  EXPENSE_CATEGORIES,
+  ExpenseCategory,
+  ItemType,
+} from '../budget.model';
 import { BudgetStore } from '../data-access/budget-store';
 import {
   NOTE_MAX_LENGTH,
@@ -47,6 +53,18 @@ import { SubcategoryField } from './subcategory-field';
     mat-button-toggle {
       flex: 1;
     }
+    .amount {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      column-gap: 12px;
+    }
+    .amount mat-form-field {
+      flex: 1 1 140px;
+    }
+    .amount mat-button-toggle-group {
+      margin: 4px 0 16px;
+    }
   `,
 })
 export class AddItemForm {
@@ -54,6 +72,7 @@ export class AddItemForm {
   private readonly snackBar = inject(MatSnackBar);
 
   protected readonly categories = EXPENSE_CATEGORIES;
+  protected readonly periods = AMOUNT_PERIODS;
   protected readonly noteMaxLength = NOTE_MAX_LENGTH;
   protected readonly submitting = signal(false);
 
@@ -69,6 +88,8 @@ export class AddItemForm {
       Validators.min(0.01),
       maxTwoDecimals,
     ]),
+    /** Most items are monthly amounts, so the form starts with them (MJ-11). */
+    period: this.fb.control<AmountPeriod>('MONTHLY'),
     category: this.fb.control<ExpenseCategory | null>(null, Validators.required),
     subcategory: this.fb.control('', Validators.maxLength(SUBCATEGORY_MAX_LENGTH)),
     note: this.fb.control('', Validators.maxLength(NOTE_MAX_LENGTH)),
@@ -101,10 +122,12 @@ export class AddItemForm {
       this.form.markAllAsTouched();
       return;
     }
-    const { type, description, amount, category, subcategory, note } = this.form.getRawValue();
+    const { type, description, amount, period, category, subcategory, note } =
+      this.form.getRawValue();
     const request = {
       description: description.trim(),
       amount: String(amount),
+      period,
       ...subcategoryOf(subcategory),
       ...noteOf(note),
     };
@@ -116,10 +139,12 @@ export class AddItemForm {
       } else {
         await this.store.addExpense({ ...request, category: category! });
       }
+      // Type and period stay as chosen (PO-1, MJ-11)
       this.formDirective().resetForm({
         type,
         description: '',
         amount: null,
+        period,
         category: null,
         subcategory: '',
         note: '',

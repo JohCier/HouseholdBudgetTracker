@@ -1,5 +1,6 @@
 package de.jcss.hbt.infrastructure.persistence;
 
+import de.jcss.hbt.domain.householdplan.AmountPeriod;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.BudgetItemNote;
@@ -7,6 +8,7 @@ import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.BudgetSummary;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.ItemAmount;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
@@ -39,7 +41,7 @@ public class JdbcHouseholdPlanOverviewQueryHandler implements HouseholdPlanOverv
         return new OverviewItem(
                 BudgetItemId.of(rs.getObject("id", UUID.class)),
                 BudgetItemDescription.of(rs.getString("description")),
-                Money.of(rs.getBigDecimal("amount")),
+                new ItemAmount(Money.of(rs.getBigDecimal("amount")), AmountPeriod.valueOf(rs.getString("amount_period"))),
                 ItemType.valueOf(rs.getString("type")),
                 category == null ? null : ExpenseCategory.valueOf(category),
                 BudgetItemSubcategory.ofNullable(rs.getString("subcategory")),
@@ -68,11 +70,11 @@ public class JdbcHouseholdPlanOverviewQueryHandler implements HouseholdPlanOverv
         Map<HouseholdPlanId, Year> years = new LinkedHashMap<>();
         Map<HouseholdPlanId, BudgetSummary> summaries = new HashMap<>();
         jdbcClient.sql("""
-                        SELECT p.id, p.year, i.type, i.category, SUM(i.amount) AS amount
+                        SELECT p.id, p.year, i.type, i.category, i.amount_period, SUM(i.amount) AS amount
                         FROM household_plan p
                         LEFT JOIN budget_item i ON i.household_plan_id = p.id
                         WHERE p.owner_id = :owner AND p.year BETWEEN :firstYear AND :lastYear
-                        GROUP BY p.id, p.year, i.type, i.category
+                        GROUP BY p.id, p.year, i.type, i.category, i.amount_period
                         """)
                 .param("owner", owner.value())
                 .param("firstYear", firstYear.getValue())
@@ -83,7 +85,9 @@ public class JdbcHouseholdPlanOverviewQueryHandler implements HouseholdPlanOverv
                     BudgetSummary summary = summaries.getOrDefault(planId, BudgetSummary.EMPTY);
                     String type = rs.getString("type");
                     if (type != null) {
-                        Money amount = Money.of(rs.getBigDecimal("amount"));
+                        // Monthly amounts count twelve times a year (MJ-8)
+                        Money amount = new ItemAmount(Money.of(rs.getBigDecimal("amount")),
+                                AmountPeriod.valueOf(rs.getString("amount_period"))).annual();
                         summary = ItemType.valueOf(type) == ItemType.INCOME
                                 ? summary.withIncome(amount)
                                 : summary.withExpense(ExpenseCategory.valueOf(rs.getString("category")), amount);
@@ -97,7 +101,7 @@ public class JdbcHouseholdPlanOverviewQueryHandler implements HouseholdPlanOverv
 
     private List<OverviewItem> itemsOf(HouseholdPlanId planId) {
         return jdbcClient.sql("""
-                        SELECT id, description, amount, type, category, subcategory, note
+                        SELECT id, description, amount, amount_period, type, category, subcategory, note
                         FROM budget_item
                         WHERE household_plan_id = :planId
                         ORDER BY position DESC

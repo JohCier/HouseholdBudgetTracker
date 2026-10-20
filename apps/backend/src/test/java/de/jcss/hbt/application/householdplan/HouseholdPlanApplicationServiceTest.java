@@ -12,6 +12,7 @@ import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanRepository;
+import de.jcss.hbt.domain.householdplan.ItemAmount;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
 import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
@@ -161,7 +162,7 @@ class HouseholdPlanApplicationServiceTest {
     void nonPositiveAmountIsADomainErrorAndPublishesNothing() {
         publishedEvents.clear();
 
-        assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, Money.ZERO, null, null)))
+        assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("0"), null, null)))
                 .isInstanceOf(DomainValidationException.class);
         assertThat(storedItems()).isEmpty();
         assertThat(publishedEvents).isEmpty();
@@ -274,15 +275,15 @@ class HouseholdPlanApplicationServiceTest {
         return repository.plans.get(planId).items();
     }
 
-    private static Money money(String value) {
-        return Money.of(new BigDecimal(value));
+    private static ItemAmount money(String value) {
+        return ItemAmount.yearly(Money.of(new BigDecimal(value)));
     }
 
     /** Stores plans by rebuilding them, as a real repository would, so no state leaks between calls. */
     /** PU-8, PU-11 */
     @Test
     void copyPlanCreatesThePlanOfTheTargetYear() {
-        service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, Money.of(new BigDecimal("3000.00")), null, null));
+        service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("3000.00"), null, null));
         publishedEvents.clear();
 
         CopiedHouseholdPlan copied = service.copyPlan(new CopyHouseholdPlanCommand(OWNER, planId, Year.of(2027), false));
@@ -298,10 +299,10 @@ class HouseholdPlanApplicationServiceTest {
     /** PU-9 */
     @Test
     void copyPlanOverwritesThePlanOfTheTargetYearOnlyIfAllowed() {
-        service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, Money.of(new BigDecimal("3000.00")), null, null));
+        service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("3000.00"), null, null));
         HouseholdPlanId target = service.createPlan(new CreateHouseholdPlanCommand(OWNER, Year.of(2027))).id();
         service.addIncome(new AddIncomeCommand(OWNER, target, BudgetItemDescription.of("Bonus"),
-                Money.of(new BigDecimal("500.00")), null, null));
+                money("500.00"), null, null));
         publishedEvents.clear();
 
         assertThatThrownBy(() -> service.copyPlan(new CopyHouseholdPlanCommand(OWNER, planId, Year.of(2027), false)))
@@ -399,8 +400,8 @@ class HouseholdPlanApplicationServiceTest {
             BudgetSummary summary = BudgetSummary.EMPTY;
             for (BudgetItem item : plan.items()) {
                 summary = item.category().isEmpty()
-                        ? summary.withIncome(item.amount())
-                        : summary.withExpense(item.category().get(), item.amount());
+                        ? summary.withIncome(item.amount().annual())
+                        : summary.withExpense(item.category().get(), item.amount().annual());
             }
             return summary;
         }

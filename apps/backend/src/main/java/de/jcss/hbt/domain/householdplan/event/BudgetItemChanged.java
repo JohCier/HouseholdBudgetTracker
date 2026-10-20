@@ -6,7 +6,7 @@ import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import java.time.Instant;
 import java.util.Objects;
 
-/** The description, amount, category, subcategory or note of a position of a household plan was changed. */
+/** The description, amount or its period (MJ-4), category, subcategory or note of a position of a household plan was changed. */
 public record BudgetItemChanged(HouseholdPlanId planId, BudgetItemId itemId, Instant timestamp) implements HouseholdPlanEvent {
 
     public BudgetItemChanged {

@@ -13,6 +13,9 @@ const item: BudgetItem = {
   id: '1',
   description: 'Kino',
   amount: '12.50',
+  period: 'YEARLY',
+  monthlyAmount: '1.04',
+  annualAmount: '12.50',
   type: 'EXPENSE',
   category: 'FREIZEIT_SPASS',
   subcategory: null,
@@ -24,6 +27,12 @@ const overview: HouseholdPlanOverview = {
   totalIncome: '0.00',
   totalExpense: '12.50',
   balance: '-12.50',
+
+  monthlyTotalIncome: '0.00',
+
+  monthlyTotalExpense: '1.04',
+
+  monthlyBalance: '-1.04',
   expensesExceedIncome: true,
   categoryBreakdowns: [],
   items: [item],
@@ -32,7 +41,8 @@ const overview: HouseholdPlanOverview = {
     {
       category: 'FREIZEIT_SPASS',
       total: '12.50',
-      groups: [{ subcategory: 'Sonstiges', total: '12.50', items: [item] }],
+      monthlyTotal: '1.04',
+      groups: [{ subcategory: 'Sonstiges', total: '12.50', monthlyTotal: '1.04', items: [item] }],
     },
   ],
 };
@@ -124,6 +134,7 @@ describe('BudgetDashboard', () => {
     expect(store.changeItem).toHaveBeenCalledWith('1', {
       description: 'Kino',
       amount: '15',
+      period: 'YEARLY',
       category: 'FREIZEIT_SPASS',
     });
     // The dialog reports the saved change only once its closing animation has finished.
@@ -148,13 +159,15 @@ describe('BudgetDashboard', () => {
           {
             category: 'FREIZEIT_SPASS',
             total: '25.00',
+            monthlyTotal: '2.08',
             groups: [
               {
                 subcategory: 'Auto',
                 total: '12.50',
+                monthlyTotal: '1.04',
                 items: [{ ...item, id: '2', description: 'Tank', subcategory: 'Auto' }],
               },
-              { subcategory: 'Sonstiges', total: '12.50', items: [item] },
+              { subcategory: 'Sonstiges', total: '12.50', monthlyTotal: '1.04', items: [item] },
             ],
           },
         ],

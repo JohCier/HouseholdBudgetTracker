@@ -2,11 +2,18 @@ import { TextFieldModule } from '@angular/cdk/text-field';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { BudgetItem, EXPENSE_CATEGORIES, ExpenseCategory } from '../budget.model';
+import {
+  AMOUNT_PERIODS,
+  AmountPeriod,
+  BudgetItem,
+  EXPENSE_CATEGORIES,
+  ExpenseCategory,
+} from '../budget.model';
 import { BudgetStore } from '../data-access/budget-store';
 import {
   NOTE_MAX_LENGTH,
@@ -18,7 +25,9 @@ import {
 import { SubcategoryField } from './subcategory-field';
 
 /**
- * Changes description, amount, subcategory, note and, for an expense, the category of an item.
+ * Changes description, amount, period, subcategory, note and, for an expense, the category of an
+ * item. The amount is shown as entered with its period; switching the period does not convert it
+ * (MJ-5, MJ-11).
  * Emptying the note removes it (PN-4), emptying the subcategory moves the item to "Sonstiges" (UK-4). Whether it is
  * an income or an expense cannot be changed. Closes with `true` once the change is saved;
  * on an error it stays open and shows the message, so nothing typed is lost.
@@ -29,6 +38,7 @@ import { SubcategoryField } from './subcategory-field';
   imports: [
     ReactiveFormsModule,
     MatButtonModule,
+    MatButtonToggleModule,
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
@@ -48,23 +58,33 @@ import { SubcategoryField } from './subcategory-field';
           }
         </mat-form-field>
 
-        <mat-form-field>
-          <mat-label>Betrag</mat-label>
-          <input
-            matInput
-            type="number"
-            inputmode="decimal"
-            min="0.01"
-            step="0.01"
-            formControlName="amount"
-          />
-          <span matTextSuffix>€</span>
-          @if (form.controls.amount.hasError('decimals')) {
-            <mat-error>Höchstens zwei Nachkommastellen.</mat-error>
-          } @else if (form.controls.amount.invalid) {
-            <mat-error>Bitte einen positiven Betrag angeben.</mat-error>
-          }
-        </mat-form-field>
+        <div class="amount">
+          <mat-form-field>
+            <mat-label>Betrag</mat-label>
+            <input
+              matInput
+              type="number"
+              inputmode="decimal"
+              min="0.01"
+              step="0.01"
+              formControlName="amount"
+            />
+            <span matTextSuffix>€</span>
+            @if (form.controls.amount.hasError('decimals')) {
+              <mat-error>Höchstens zwei Nachkommastellen.</mat-error>
+            } @else if (form.controls.amount.invalid) {
+              <mat-error>Bitte einen positiven Betrag angeben.</mat-error>
+            }
+          </mat-form-field>
+          <mat-button-toggle-group
+            formControlName="period"
+            aria-label="Angabe monatlich oder jährlich"
+          >
+            @for (period of periods; track period.value) {
+              <mat-button-toggle [value]="period.value">{{ period.label }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        </div>
 
         @if (isExpense) {
           <mat-form-field>
@@ -116,6 +136,21 @@ import { SubcategoryField } from './subcategory-field';
     mat-form-field:first-child {
       margin-top: 8px;
     }
+    .amount {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      column-gap: 12px;
+    }
+    .amount mat-form-field {
+      flex: 1 1 140px;
+    }
+    .amount mat-button-toggle-group {
+      margin: 4px 0 16px;
+    }
+    mat-button-toggle {
+      flex: 1;
+    }
     .error {
       color: var(--mat-sys-error);
       margin: 0;
@@ -128,6 +163,7 @@ export class EditItemDialog {
   private readonly item = inject<BudgetItem>(MAT_DIALOG_DATA);
 
   protected readonly categories = EXPENSE_CATEGORIES;
+  protected readonly periods = AMOUNT_PERIODS;
   protected readonly noteMaxLength = NOTE_MAX_LENGTH;
   protected readonly isExpense = this.item.type === 'EXPENSE';
   protected readonly subcategories = this.store.subcategorySuggestions(this.item.type);
@@ -146,6 +182,7 @@ export class EditItemDialog {
       Validators.min(0.01),
       maxTwoDecimals,
     ]),
+    period: this.fb.control<AmountPeriod>(this.item.period),
     category: this.fb.control<ExpenseCategory | null>(
       { value: this.item.category, disabled: !this.isExpense },
       Validators.required,
@@ -162,13 +199,14 @@ export class EditItemDialog {
       this.form.markAllAsTouched();
       return;
     }
-    const { description, amount, category, subcategory, note } = this.form.getRawValue();
+    const { description, amount, period, category, subcategory, note } = this.form.getRawValue();
     this.saving.set(true);
     this.error.set(null);
     try {
       await this.store.changeItem(this.item.id, {
         description: description.trim(),
         amount: String(amount),
+        period,
         ...(this.isExpense ? { category: category! } : {}),
         ...subcategoryOf(subcategory),
         ...noteOf(note),

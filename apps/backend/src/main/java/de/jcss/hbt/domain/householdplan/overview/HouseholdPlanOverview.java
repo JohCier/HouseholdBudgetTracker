@@ -19,7 +19,9 @@ import java.util.Map;
 /**
  * Read model of the household plan of one year: its items, total income, total expenses,
  * the resulting balance, and a breakdown per {@link ExpenseCategory} comparing actual
- * spend against the 50/30/20 target share of that year's income. The items come once as a
+ * spend against the 50/30/20 target share of that year's income. All figures are yearly
+ * figures, worked out from the yearly amounts of the items (MJ-8); the sums the entries and
+ * tiles show come per month, too (MJ-9). The items come once as a
  * plain list and once grouped as the entries show them: the incomes by subcategory, the
  * expenses by category and subcategory, each with its sum (UK-9 to UK-13).
  * <p>
@@ -59,8 +61,8 @@ public record HouseholdPlanOverview(
         BudgetSummary summary = BudgetSummary.EMPTY;
         for (OverviewItem item : items) {
             summary = item.type() == ItemType.INCOME
-                    ? summary.withIncome(item.amount())
-                    : summary.withExpense(item.category(), item.amount());
+                    ? summary.withIncome(item.amount().annual())
+                    : summary.withExpense(item.category(), item.amount().annual());
         }
         BudgetSummary result = summary;
         List<CategoryBreakdown> breakdowns = Arrays.stream(ExpenseCategory.values())
@@ -78,6 +80,21 @@ public record HouseholdPlanOverview(
                 groupsOf(ItemSection.INCOME, items, subcategoryOrders), expenseCategories);
     }
 
+    /** Total income per month: the yearly total divided by 12 (MJ-9). */
+    public Money monthlyTotalIncome() {
+        return totalIncome.perMonth();
+    }
+
+    /** Total expenses per month: the yearly total divided by 12 (MJ-9). */
+    public Money monthlyTotalExpense() {
+        return totalExpense.perMonth();
+    }
+
+    /** The balance per month: the yearly balance divided by 12 (MJ-9). */
+    public Money monthlyBalance() {
+        return balance.perMonth();
+    }
+
     /** The groups of a section in display order, each with its items in display order (UK-11, UK-16). */
     private static List<OverviewItemGroup> groupsOf(ItemSection section, List<OverviewItem> items,
                                                     Map<ItemSection, SubcategoryOrder> subcategoryOrders) {
@@ -91,7 +108,7 @@ public record HouseholdPlanOverview(
         return subcategoryOrders.getOrDefault(section, SubcategoryOrder.NONE).arrange(groups).stream()
                 .map(group -> {
                     List<OverviewItem> inGroup = inSection.stream().filter(item -> item.group().isSameAs(group)).toList();
-                    Money total = inGroup.stream().map(OverviewItem::amount).reduce(Money.ZERO, Money::add);
+                    Money total = inGroup.stream().map(item -> item.amount().annual()).reduce(Money.ZERO, Money::add);
                     return new OverviewItemGroup(group, total, inGroup);
                 })
                 .toList();

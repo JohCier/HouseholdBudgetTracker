@@ -6,12 +6,23 @@
     @if (empty()) {
       <p class="empty">Noch keine Einträge in diesem Haushaltsplan.</p>
     } @else {
+      <div class="columns">
+        <span class="amount-column">Monat</span>
+        <span class="amount-column">Jahr</span>
+        <span class="actions-space"></span>
+      </div>
       @if (incomes(); as incomes) {
         <section class="area" aria-label="Einnahmen">
           <div class="section income" [class]="incomes.colorClass">
             <div class="section-header">
               <h3>Einnahmen</h3>
-              <span class="total income-amount">+{{ incomes.total | currency: 'EUR' }}</span>
+              <span class="amount-column total monthly income-amount"
+                >+{{ incomes.monthlyTotal | currency: 'EUR' }}</span
+              >
+              <span class="amount-column total yearly income-amount"
+                >+{{ incomes.total | currency: 'EUR' }}</span
+              >
+              <span class="actions-space"></span>
             </div>
             <ng-container *ngTemplateOutlet="groupList; context: { $implicit: incomes }" />
           </div>
@@ -21,9 +32,13 @@
         <section class="area" aria-label="Ausgaben">
           <div class="area-header">
             <h3>Ausgaben</h3>
-            <span class="total expense-amount"
+            <span class="amount-column total monthly expense-amount"
+              >−{{ overview().monthlyTotalExpense | currency: 'EUR' }}</span
+            >
+            <span class="amount-column total yearly expense-amount"
               >−{{ overview().totalExpense | currency: 'EUR' }}</span
             >
+            <span class="actions-space"></span>
           </div>
           @for (category of expenseCategories(); track category.colorClass) {
             <section
@@ -33,7 +48,13 @@
             >
               <div class="section-header">
                 <h4><span class="swatch"></span>{{ category.label }}</h4>
-                <span class="total">{{ category.total | currency: 'EUR' }}</span>
+                <span class="amount-column total monthly">{{
+                  category.monthlyTotal | currency: 'EUR'
+                }}</span>
+                <span class="amount-column total yearly">{{
+                  category.total | currency: 'EUR'
+                }}</span>
+                <span class="actions-space"></span>
               </div>
               <ng-container *ngTemplateOutlet="groupList; context: { $implicit: category }" />
             </section>
@@ -71,7 +92,11 @@
             <span class="handle-space"></span>
           }
           <span class="group-name">{{ group.subcategory }}</span>
-          <span class="total">{{ group.total | currency: 'EUR' }}</span>
+          <span class="amount-column total monthly">{{
+            group.monthlyTotal | currency: 'EUR'
+          }}</span>
+          <span class="amount-column total yearly">{{ group.total | currency: 'EUR' }}</span>
+          <span class="actions-space"></span>
         </div>
         <div
           class="items"
@@ -103,12 +128,22 @@
                   <div class="note">{{ item.note }}</div>
                 }
               </div>
+              <!-- The amount as entered stands out, the one worked out from it does not (MJ-12) -->
               <span
-                class="amount"
+                class="amount-column amount monthly"
                 [class.income-amount]="item.type === 'INCOME'"
                 [class.expense-amount]="item.type === 'EXPENSE'"
+                [class.derived]="item.period !== 'MONTHLY'"
               >
-                {{ item.type === 'EXPENSE' ? '−' : '+' }}{{ item.amount | currency: 'EUR' }}
+                {{ item.type === 'EXPENSE' ? '−' : '+' }}{{ item.monthlyAmount | currency: 'EUR' }}
+              </span>
+              <span
+                class="amount-column amount yearly"
+                [class.income-amount]="item.type === 'INCOME'"
+                [class.expense-amount]="item.type === 'EXPENSE'"
+                [class.derived]="item.period !== 'YEARLY'"
+              >
+                {{ item.type === 'EXPENSE' ? '−' : '+' }}{{ item.annualAmount | currency: 'EUR' }}
               </span>
               <span class="actions">
                 <button

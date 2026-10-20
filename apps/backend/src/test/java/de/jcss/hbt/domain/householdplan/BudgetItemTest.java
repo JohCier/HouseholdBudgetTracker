@@ -14,7 +14,7 @@ class BudgetItemTest {
     private static final BudgetItemDescription RENT = BudgetItemDescription.of("Miete");
 
     private final BudgetItemId id = BudgetItemId.generate();
-    private final Money amount = Money.of(new BigDecimal("100.00"));
+    private final ItemAmount amount = yearly("100.00");
 
     @Test
     void createsIncomeWithoutCategory() {
@@ -54,11 +54,11 @@ class BudgetItemTest {
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("amount");
 
-        assertThatThrownBy(() -> BudgetItem.income(id, SALARY, Money.ZERO, null, null))
+        assertThatThrownBy(() -> BudgetItem.income(id, SALARY, yearly("0"), null, null))
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("amount");
 
-        assertThatThrownBy(() -> BudgetItem.income(id, SALARY, Money.of(new BigDecimal("-1.00")), null, null))
+        assertThatThrownBy(() -> BudgetItem.income(id, SALARY, yearly("-1.00"), null, null))
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("amount");
     }
@@ -82,7 +82,7 @@ class BudgetItemTest {
         assertThatThrownBy(() -> BudgetItem.reconstitute(id, RENT, amount, ItemType.EXPENSE, null, null, null))
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("category");
-        assertThatThrownBy(() -> BudgetItem.reconstitute(id, SALARY, Money.ZERO, ItemType.INCOME, null, null, null))
+        assertThatThrownBy(() -> BudgetItem.reconstitute(id, SALARY, yearly("0"), ItemType.INCOME, null, null, null))
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessageContaining("amount");
     }
@@ -93,12 +93,13 @@ class BudgetItemTest {
         BudgetItem expense = BudgetItem.expense(id, RENT, amount, ExpenseCategory.LEBENSUNTERHALT, null, null);
         Money newAmount = Money.of(new BigDecimal("900.00"));
 
-        BudgetItem changed = expense.changedTo(SALARY, newAmount, ExpenseCategory.FREIZEIT_SPASS, null, null);
+        BudgetItem changed = expense.changedTo(SALARY, ItemAmount.yearly(newAmount), ExpenseCategory.FREIZEIT_SPASS,
+                null, null);
 
         assertThat(changed.id()).isEqualTo(id);
         assertThat(changed.type()).isEqualTo(ItemType.EXPENSE);
         assertThat(changed.description()).isEqualTo(SALARY);
-        assertThat(changed.amount()).isEqualTo(newAmount);
+        assertThat(changed.amount()).isEqualTo(ItemAmount.yearly(newAmount));
         assertThat(changed.category()).contains(ExpenseCategory.FREIZEIT_SPASS);
         assertThatThrownBy(() -> expense.changedTo(RENT, amount, null, null, null))
                 .isInstanceOf(DomainValidationException.class);
@@ -112,10 +113,30 @@ class BudgetItemTest {
         BudgetItem item = BudgetItem.expense(id, RENT, amount, ExpenseCategory.LEBENSUNTERHALT, null, null);
 
         assertThat(item.hasSameValuesAs(BudgetItem.expense(BudgetItemId.generate(), RENT,
-                Money.of(new BigDecimal("100")), ExpenseCategory.LEBENSUNTERHALT, null, null))).isTrue();
+                yearly("100"), ExpenseCategory.LEBENSUNTERHALT, null, null))).isTrue();
         assertThat(item.hasSameValuesAs(item.changedTo(RENT, amount, ExpenseCategory.FREIZEIT_SPASS, null, null))).isFalse();
         assertThat(item.hasSameValuesAs(item.changedTo(SALARY, amount, ExpenseCategory.LEBENSUNTERHALT, null, null))).isFalse();
         assertThat(item.hasSameValuesAs(BudgetItem.income(id, RENT, amount, null, null))).isFalse();
+    }
+
+    /** MJ-8 */
+    @Test
+    void addsTheYearlyAmountOfAMonthlyItemToTheSummary() {
+        ItemAmount monthly = ItemAmount.monthly(Money.of(new BigDecimal("850.00")));
+
+        BudgetSummary summary = BudgetItem.expense(id, RENT, monthly, ExpenseCategory.LEBENSUNTERHALT, null, null)
+                .addTo(BudgetSummary.EMPTY);
+
+        assertThat(summary.expensesIn(ExpenseCategory.LEBENSUNTERHALT)).isEqualTo(Money.of(new BigDecimal("10200.00")));
+    }
+
+    /** MJ-4 */
+    @Test
+    void aDifferentPeriodIsADifferentValue() {
+        BudgetItem item = BudgetItem.income(id, SALARY, amount, null, null);
+
+        assertThat(item.hasSameValuesAs(item.changedTo(SALARY, ItemAmount.monthly(amount.value()), null, null, null)))
+                .isFalse();
     }
 
     @Test
@@ -123,18 +144,22 @@ class BudgetItemTest {
         BudgetSummary summary = BudgetItem.expense(id, RENT, amount, ExpenseCategory.LEBENSUNTERHALT, null, null)
                 .addTo(BudgetItem.income(BudgetItemId.generate(), SALARY, amount, null, null).addTo(BudgetSummary.EMPTY));
 
-        assertThat(summary.totalIncome()).isEqualTo(amount);
-        assertThat(summary.expensesIn(ExpenseCategory.LEBENSUNTERHALT)).isEqualTo(amount);
-        assertThat(summary.totalExpense()).isEqualTo(amount);
+        assertThat(summary.totalIncome()).isEqualTo(amount.value());
+        assertThat(summary.expensesIn(ExpenseCategory.LEBENSUNTERHALT)).isEqualTo(amount.value());
+        assertThat(summary.totalExpense()).isEqualTo(amount.value());
     }
 
     @Test
     void equalityIsBasedOnIdOnly() {
         BudgetItem first = BudgetItem.income(id, SALARY, amount, null, null);
         BudgetItem second = BudgetItem.income(id, BudgetItemDescription.of("Andere Beschreibung"),
-                Money.of(new BigDecimal("1.00")), null, null);
+                yearly("1.00"), null, null);
 
         assertThat(first).isEqualTo(second);
         assertThat(first).hasSameHashCodeAs(second);
+    }
+
+    private static ItemAmount yearly(String value) {
+        return ItemAmount.yearly(Money.of(new BigDecimal(value)));
     }
 }

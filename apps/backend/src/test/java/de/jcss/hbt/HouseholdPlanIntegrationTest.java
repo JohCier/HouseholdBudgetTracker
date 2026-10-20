@@ -74,13 +74,13 @@ class HouseholdPlanIntegrationTest {
         String plan2026 = createPlan(2026);
         String plan2027 = createPlan(2027);
         post("/api/plans/" + plan2026 + "/incomes", """
-                {"description":"Gehalt","amount":"2000.00"}""");
+                {"description":"Gehalt","amount":"2000.00","period":"YEARLY"}""");
         post("/api/plans/" + plan2026 + "/expenses", """
-                {"description":"Miete","amount":"1000.00","category":"LEBENSUNTERHALT"}""");
+                {"description":"Miete","amount":"1000.00","period":"YEARLY","category":"LEBENSUNTERHALT"}""");
         post("/api/plans/" + plan2026 + "/expenses", """
-                {"description":"Konzert","amount":"300.00","category":"FREIZEIT_SPASS"}""");
+                {"description":"Konzert","amount":"300.00","period":"YEARLY","category":"FREIZEIT_SPASS"}""");
         post("/api/plans/" + plan2027 + "/expenses", """
-                {"description":"Urlaub","amount":"900.00","category":"FREIZEIT_SPASS"}""");
+                {"description":"Urlaub","amount":"900.00","period":"YEARLY","category":"FREIZEIT_SPASS"}""");
 
         mockMvc.perform(get("/api/plans").param("year", "2026").cookie(alice))
                 .andExpect(status().isOk())
@@ -110,7 +110,7 @@ class HouseholdPlanIntegrationTest {
     void plansAreOnlyVisibleToAndChangeableByTheirOwner() throws Exception {
         String alicesPlan = createPlan(2026);
         String alicesItem = JsonPath.read(post("/api/plans/" + alicesPlan + "/incomes", """
-                {"description":"Gehalt","amount":"1500.00"}"""), "$.id");
+                {"description":"Gehalt","amount":"1500.00","period":"YEARLY"}"""), "$.id");
 
         mockMvc.perform(get("/api/plans").param("year", "2026").cookie(bob))
                 .andExpect(status().isNotFound());
@@ -118,13 +118,13 @@ class HouseholdPlanIntegrationTest {
                         .cookie(bob)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"description":"Fremd","amount":"1.00"}"""))
+                                {"description":"Fremd","amount":"1.00","period":"YEARLY"}"""))
                 .andExpect(status().isNotFound());
         mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", alicesPlan, alicesItem)
                         .cookie(bob)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"description":"Fremd","amount":"1.00"}"""))
+                                {"description":"Fremd","amount":"1.00","period":"YEARLY"}"""))
                 .andExpect(status().isNotFound());
         mockMvc.perform(delete("/api/plans/{planId}/items/{itemId}", alicesPlan, alicesItem).cookie(bob))
                 .andExpect(status().isNotFound());
@@ -191,7 +191,7 @@ class HouseholdPlanIntegrationTest {
     void removingAnItemUpdatesTheItemsAndIsAudited() throws Exception {
         String planId = createPlan(2026);
         String itemId = JsonPath.read(post("/api/plans/" + planId + "/incomes", """
-                {"description":"Gehalt","amount":"1500.00"}"""), "$.id");
+                {"description":"Gehalt","amount":"1500.00","period":"YEARLY"}"""), "$.id");
 
         mockMvc.perform(delete("/api/plans/{planId}/items/{itemId}", planId, itemId).cookie(alice))
                 .andExpect(status().isOk());
@@ -216,9 +216,9 @@ class HouseholdPlanIntegrationTest {
     void everyChangeIsAuditedWithTheFullEvent() throws Exception {
         String planId = createPlan(2026);
         String incomeId = JsonPath.read(post("/api/plans/" + planId + "/incomes", """
-                {"description":"Gehalt","amount":"1500.00"}"""), "$.id");
+                {"description":"Gehalt","amount":"1500.00","period":"YEARLY"}"""), "$.id");
         String expenseId = JsonPath.read(post("/api/plans/" + planId + "/expenses", """
-                {"description":"Miete","amount":"700.00","category":"LEBENSUNTERHALT"}"""), "$.id");
+                {"description":"Miete","amount":"700.00","period":"YEARLY","category":"LEBENSUNTERHALT"}"""), "$.id");
 
         assertThat(jdbcClient.sql("""
                         SELECT event_type, household_plan_id, payload ->> 'planId' AS payload_plan_id,
@@ -242,17 +242,17 @@ class HouseholdPlanIntegrationTest {
     void changingAnItemKeepsItsPlaceUpdatesTheOverviewAndIsAudited() throws Exception {
         String planId = createPlan(2026);
         post("/api/plans/" + planId + "/incomes", """
-                {"description":"Gehalt","amount":"2000.00"}""");
+                {"description":"Gehalt","amount":"2000.00","period":"YEARLY"}""");
         String rentId = JsonPath.read(post("/api/plans/" + planId + "/expenses", """
-                {"description":"Miete","amount":"850.00","category":"LEBENSUNTERHALT"}"""), "$.id");
+                {"description":"Miete","amount":"850.00","period":"YEARLY","category":"LEBENSUNTERHALT"}"""), "$.id");
         post("/api/plans/" + planId + "/expenses", """
-                {"description":"Konzert","amount":"100.00","category":"FREIZEIT_SPASS"}""");
+                {"description":"Konzert","amount":"100.00","period":"YEARLY","category":"FREIZEIT_SPASS"}""");
 
         changeItem(planId, rentId, """
-                {"description":"Miete","amount":"900.00","category":"LEBENSUNTERHALT"}""")
+                {"description":"Miete","amount":"900.00","period":"YEARLY","category":"LEBENSUNTERHALT"}""")
                 .andExpect(status().isOk());
         changeItem(planId, rentId, """
-                {"description":"Miete","amount":"900","category":"LEBENSUNTERHALT"}""")
+                {"description":"Miete","amount":"900","period":"YEARLY","category":"LEBENSUNTERHALT"}""")
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/plans").param("year", "2026").cookie(alice))
@@ -274,21 +274,21 @@ class HouseholdPlanIntegrationTest {
     void invalidChangesAreRejectedAndLeaveTheItemAsItWas() throws Exception {
         String planId = createPlan(2026);
         String incomeId = JsonPath.read(post("/api/plans/" + planId + "/incomes", """
-                {"description":"Gehalt","amount":"2000.00"}"""), "$.id");
+                {"description":"Gehalt","amount":"2000.00","period":"YEARLY"}"""), "$.id");
         String expenseId = JsonPath.read(post("/api/plans/" + planId + "/expenses", """
-                {"description":"Miete","amount":"850.00","category":"LEBENSUNTERHALT"}"""), "$.id");
+                {"description":"Miete","amount":"850.00","period":"YEARLY","category":"LEBENSUNTERHALT"}"""), "$.id");
 
         changeItem(planId, incomeId, """
-                {"description":"Gehalt","amount":"2000.00","category":"LEBENSUNTERHALT"}""")
+                {"description":"Gehalt","amount":"2000.00","period":"YEARLY","category":"LEBENSUNTERHALT"}""")
                 .andExpect(status().isBadRequest());
         changeItem(planId, expenseId, """
-                {"description":"Miete","amount":"850.00"}""")
+                {"description":"Miete","amount":"850.00","period":"YEARLY"}""")
                 .andExpect(status().isBadRequest());
         changeItem(planId, expenseId, """
-                {"description":"Miete","amount":"0"}""")
+                {"description":"Miete","amount":"0","period":"YEARLY"}""")
                 .andExpect(status().isBadRequest());
         changeItem(planId, UUID.randomUUID().toString(), """
-                {"description":"Miete","amount":"850.00"}""")
+                {"description":"Miete","amount":"850.00","period":"YEARLY"}""")
                 .andExpect(status().isNotFound());
 
         mockMvc.perform(get("/api/plans").param("year", "2026").cookie(alice))
@@ -308,14 +308,14 @@ class HouseholdPlanIntegrationTest {
         assertThat(JsonPath.<List<?>>read(created, "$.overview.items")).isEmpty();
 
         String added = post("/api/plans/" + planId + "/expenses", """
-                {"description":"Miete","amount":"850.00","category":"LEBENSUNTERHALT"}""");
+                {"description":"Miete","amount":"850.00","period":"YEARLY","category":"LEBENSUNTERHALT"}""");
         String rentId = JsonPath.read(added, "$.id");
         assertThat(JsonPath.<String>read(added, "$.overview.items[0].id")).isEqualTo(rentId);
         assertThat(JsonPath.<String>read(added, "$.overview.totalExpense")).isEqualTo("850.00");
         assertThat(JsonPath.<Object>read(added, "$.overview")).isEqualTo(JsonPath.read(overview(2026), "$"));
 
         String changed = changeItem(planId, rentId, """
-                {"description":"Miete","amount":"900.00","category":"LEBENSUNTERHALT"}""")
+                {"description":"Miete","amount":"900.00","period":"YEARLY","category":"LEBENSUNTERHALT"}""")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalExpense").value("900.00"))
                 .andReturn().getResponse().getContentAsString();
@@ -347,21 +347,21 @@ class HouseholdPlanIntegrationTest {
                         .cookie(alice)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"description":"Gehalt","amount":"10.005"}"""))
+                                {"description":"Gehalt","amount":"10.005","period":"YEARLY"}"""))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.amount").exists());
     }
 
-    /** PU-3, PU-4, PU-5, PU-8, PU-11 */
+    /** PU-3, PU-4, PU-5, PU-8, PU-11, MJ-1 */
     @Test
     void copyingAPlanCreatesTheTargetYearWithAllItemsAndIsAudited() throws Exception {
         String source = createPlan(2026);
         post("/api/plans/" + source + "/incomes", """
-                {"description":"Gehalt","amount":"3000.00"}""");
+                {"description":"Gehalt","amount":"3000.00","period":"YEARLY"}""");
         post("/api/plans/" + source + "/expenses", """
-                {"description":"Wartung","amount":"400.00","category":"LEBENSUNTERHALT","subcategory":"Auto","note":"Inspektion im Mai"}""");
+                {"description":"Wartung","amount":"400.00","period":"YEARLY","category":"LEBENSUNTERHALT","subcategory":"Auto","note":"Inspektion im Mai"}""");
         post("/api/plans/" + source + "/expenses", """
-                {"description":"Miete","amount":"900.00","category":"LEBENSUNTERHALT","subcategory":"Wohnen"}""");
+                {"description":"Miete","amount":"900.00","period":"MONTHLY","category":"LEBENSUNTERHALT","subcategory":"Wohnen"}""");
         mockMvc.perform(put("/api/plans/{planId}/subcategory-order", source).cookie(alice)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -375,8 +375,9 @@ class HouseholdPlanIntegrationTest {
         String copied = overview(2027);
         String original = overview(2026);
         assertThat(JsonPath.<String>read(copied, "$.id")).isEqualTo(target).isNotEqualTo(source);
-        for (String path : List.of("$.items[*].description", "$.items[*].amount", "$.items[*].subcategory",
-                "$.items[*].note", "$.expenseCategories..subcategory", "$.categoryBreakdowns", "$.totalIncome", "$.balance")) {
+        for (String path : List.of("$.items[*].description", "$.items[*].amount", "$.items[*].period",
+                "$.items[*].subcategory", "$.items[*].note", "$.expenseCategories..subcategory",
+                "$.categoryBreakdowns", "$.totalIncome", "$.balance")) {
             assertThat(JsonPath.<Object>read(copied, path)).as(path).isEqualTo(JsonPath.read(original, path));
         }
         assertThat(JsonPath.<List<String>>read(copied, "$.items[*].id"))
@@ -398,10 +399,10 @@ class HouseholdPlanIntegrationTest {
     void copyingOverAnExistingPlanNeedsConsentAndReplacesItsItems() throws Exception {
         String source = createPlan(2026);
         post("/api/plans/" + source + "/incomes", """
-                {"description":"Gehalt","amount":"3000.00"}""");
+                {"description":"Gehalt","amount":"3000.00","period":"YEARLY"}""");
         String target = createPlan(2027);
         post("/api/plans/" + target + "/incomes", """
-                {"description":"Bonus","amount":"500.00"}""");
+                {"description":"Bonus","amount":"500.00","period":"YEARLY"}""");
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/plans/{planId}/copies", source).cookie(alice)
                         .contentType(MediaType.APPLICATION_JSON)

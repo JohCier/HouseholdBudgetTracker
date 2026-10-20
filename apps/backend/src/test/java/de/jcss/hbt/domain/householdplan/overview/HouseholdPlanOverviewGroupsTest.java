@@ -5,6 +5,7 @@ import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.ItemAmount;
 import de.jcss.hbt.domain.householdplan.ItemSection;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
@@ -114,6 +115,36 @@ class HouseholdPlanOverviewGroupsTest {
                         BudgetItemSubcategory.of("Urlaub"));
     }
 
+    /** MJ-9 */
+    @Test
+    void groupsAndCategoriesShowTheirYearlySumDividedByTwelvePerMonth() {
+        OverviewItem first = expense("Zeitung", ExpenseCategory.FREIZEIT_SPASS, "Abos", "100.00");
+        OverviewItem second = expense("Podcast", ExpenseCategory.FREIZEIT_SPASS, "Abos", "100.00");
+        OverviewItem third = expense("Magazin", ExpenseCategory.FREIZEIT_SPASS, "Abos", "100.00");
+
+        HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, YEAR, List.of(first, second, third),
+                Map.of());
+
+        OverviewCategoryItems leisure = overview.expenseCategories().getFirst();
+        assertThat(leisure.groups().getFirst().items())
+                .allSatisfy(item -> assertThat(item.amount().monthly()).isEqualTo(money("8.33")));
+        assertThat(leisure.groups().getFirst().total()).isEqualTo(money("300.00"));
+        assertThat(leisure.groups().getFirst().monthlyTotal()).isEqualTo(money("25.00"));
+        assertThat(leisure.monthlyTotal()).isEqualTo(money("25.00"));
+    }
+
+    /** MJ-6, MJ-8 */
+    @Test
+    void sumsUpTheYearlyAmountsOfMonthlyItems() {
+        OverviewItem rent = new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Miete"),
+                ItemAmount.monthly(money("850.00")), ItemType.EXPENSE, ExpenseCategory.LEBENSUNTERHALT, null, null);
+
+        HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, YEAR, List.of(rent), Map.of());
+
+        assertThat(overview.expenseCategories().getFirst().total()).isEqualTo(money("10200.00"));
+        assertThat(overview.expenseCategories().getFirst().monthlyTotal()).isEqualTo(money("850.00"));
+    }
+
     @Test
     void anEmptyPlanHasNoGroups() {
         HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, YEAR, List.of(), Map.of());
@@ -123,14 +154,16 @@ class HouseholdPlanOverviewGroupsTest {
     }
 
     private static OverviewItem income(String description, String subcategory, String amount) {
-        return new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of(description), money(amount),
-                ItemType.INCOME, null, BudgetItemSubcategory.ofNullable(subcategory), null);
+        return new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of(description),
+                ItemAmount.yearly(money(amount)), ItemType.INCOME, null, BudgetItemSubcategory.ofNullable(subcategory),
+                null);
     }
 
     private static OverviewItem expense(String description, ExpenseCategory category, String subcategory,
                                         String amount) {
-        return new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of(description), money(amount),
-                ItemType.EXPENSE, category, BudgetItemSubcategory.ofNullable(subcategory), null);
+        return new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of(description),
+                ItemAmount.yearly(money(amount)), ItemType.EXPENSE, category, BudgetItemSubcategory.ofNullable(subcategory),
+                null);
     }
 
     private static Money money(String amount) {

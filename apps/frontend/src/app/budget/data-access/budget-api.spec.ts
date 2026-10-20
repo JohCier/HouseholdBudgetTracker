@@ -83,7 +83,7 @@ describe('BudgetApi', () => {
   });
 
   it('posts an income to a plan', async () => {
-    const request = { description: 'Gehalt', amount: '2000' };
+    const request = { description: 'Gehalt', amount: '2000', period: 'YEARLY' as const };
     const result = firstValueFrom(api.addIncome(planId, request));
 
     const req = http.expectOne(`/api/plans/${planId}/incomes`);
@@ -95,7 +95,12 @@ describe('BudgetApi', () => {
   });
 
   it('posts an expense with category to a plan', () => {
-    const request = { description: 'Miete', amount: '1000', category: 'LEBENSUNTERHALT' as const };
+    const request = {
+      description: 'Miete',
+      amount: '1000',
+      period: 'YEARLY' as const,
+      category: 'LEBENSUNTERHALT' as const,
+    };
     api.addExpense(planId, request).subscribe();
 
     const req = http.expectOne(`/api/plans/${planId}/expenses`);
@@ -107,12 +112,12 @@ describe('BudgetApi', () => {
   // AU-1
   it('changes and deletes an item of a plan by id and returns the overview', async () => {
     const changed = firstValueFrom(
-      api.changeItem(planId, 'item-1', { description: 'Miete', amount: '900' }),
+      api.changeItem(planId, 'item-1', { description: 'Miete', amount: '900', period: 'YEARLY' }),
     );
 
     const change = http.expectOne(`/api/plans/${planId}/items/item-1`);
     expect(change.request.method).toBe('PUT');
-    expect(change.request.body).toEqual({ description: 'Miete', amount: '900' });
+    expect(change.request.body).toEqual({ description: 'Miete', amount: '900', period: 'YEARLY' });
     change.flush(emptyOverview);
     expect(await changed).toEqual(emptyOverview);
 

@@ -166,7 +166,7 @@ public final class HouseholdPlan {
      * @param subcategory {@code null} if the income has no subcategory
      * @param note        {@code null} if the income has no note
      */
-    public BudgetItemId addIncome(BudgetItemDescription description, Money amount,
+    public BudgetItemId addIncome(BudgetItemDescription description, ItemAmount amount,
                                   BudgetItemSubcategory subcategory, BudgetItemNote note) {
         BudgetItem item = BudgetItem.income(BudgetItemId.generate(), description, amount,
                 spellingOf(subcategory, null), note);
@@ -181,7 +181,7 @@ public final class HouseholdPlan {
      * @param subcategory {@code null} if the expense has no subcategory
      * @param note        {@code null} if the expense has no note
      */
-    public BudgetItemId addExpense(BudgetItemDescription description, Money amount, ExpenseCategory category,
+    public BudgetItemId addExpense(BudgetItemDescription description, ItemAmount amount, ExpenseCategory category,
                                    BudgetItemSubcategory subcategory, BudgetItemNote note) {
         BudgetItem item = BudgetItem.expense(BudgetItemId.generate(), description, amount, category,
                 spellingOf(subcategory, null), note);
@@ -200,7 +200,7 @@ public final class HouseholdPlan {
      * @param note        the new note; {@code null} to remove it
      * @throws BudgetItemNotFoundException if the item is not part of this plan
      */
-    public void changeItem(BudgetItemId itemId, BudgetItemDescription description, Money amount,
+    public void changeItem(BudgetItemId itemId, BudgetItemDescription description, ItemAmount amount,
                            ExpenseCategory category, BudgetItemSubcategory subcategory, BudgetItemNote note) {
         int index = indexOf(itemId);
         BudgetItem current = items.get(index);

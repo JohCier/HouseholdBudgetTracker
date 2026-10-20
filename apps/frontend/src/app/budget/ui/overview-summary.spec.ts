@@ -9,6 +9,12 @@ function overview(changes: Partial<HouseholdPlanOverview>): HouseholdPlanOvervie
     totalIncome: '3000.00',
     totalExpense: '2000.00',
     balance: '1000.00',
+
+    monthlyTotalIncome: '250.00',
+
+    monthlyTotalExpense: '166.67',
+
+    monthlyBalance: '83.33',
     expensesExceedIncome: false,
     items: [],
     incomeGroups: [],
@@ -26,23 +32,40 @@ describe('OverviewSummary', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('shows income, expenses and balance', async () => {
+  // MJ-13
+  it('shows income, expenses and balance per month and per year', async () => {
     const element = await render(overview({}));
 
-    const values = [...element.querySelectorAll('.value')].map((v) => v.textContent?.trim());
-    expect(values).toEqual(['€3,000.00', '€2,000.00', '€1,000.00']);
-    expect(element.querySelectorAll('.value')[2].classList).not.toContain('expense');
+    const amounts = [...element.querySelectorAll('.amount')].map((v) =>
+      v.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+    expect(amounts).toEqual([
+      '€250.00im Monat',
+      '€3,000.00im Jahr',
+      '€166.67im Monat',
+      '€2,000.00im Jahr',
+      '€83.33im Monat',
+      '€1,000.00im Jahr',
+    ]);
+    expect(element.querySelectorAll('.value')[5].classList).not.toContain('expense');
     expect(element.querySelector('[role="alert"]')).toBeNull();
   });
 
   it('warns when expenses exceed income', async () => {
     const element = await render(
-      overview({ totalExpense: '3500.00', balance: '-500.00', expensesExceedIncome: true }),
+      overview({
+        totalExpense: '3500.00',
+        balance: '-500.00',
+        monthlyBalance: '-41.67',
+        expensesExceedIncome: true,
+      }),
     );
 
-    const balance = element.querySelectorAll('.value')[2];
-    expect(balance.textContent?.trim()).toBe('-€500.00');
-    expect(balance.classList).toContain('expense');
+    const [monthly, yearly] = [...element.querySelectorAll('.value')].slice(4);
+    expect(monthly.textContent?.trim()).toBe('-€41.67');
+    expect(monthly.classList).toContain('expense');
+    expect(yearly.textContent?.trim()).toBe('-€500.00');
+    expect(yearly.classList).toContain('expense');
     expect(element.querySelector('[role="alert"]')?.textContent).toContain(
       'Deine Ausgaben übersteigen deine Einnahmen.',
     );

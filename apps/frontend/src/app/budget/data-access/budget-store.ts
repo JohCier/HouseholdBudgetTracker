@@ -141,14 +141,15 @@ export class BudgetStore {
   }
 
   /**
-   * Re-creates a previously removed item (with a new id), its subcategory and its note in the
-   * plan it was removed from, even if another year has been selected in the meantime (PO-9,
-   * PN-8, UK-4).
+   * Re-creates a previously removed item (with a new id), its amount as entered with its period,
+   * its subcategory and its note in the plan it was removed from, even if another year has been
+   * selected in the meantime (PO-9, PN-8, UK-4, MJ-4).
    */
   restoreItem(planId: string, item: BudgetItem): Promise<void> {
     const request = {
       description: item.description,
       amount: item.amount,
+      period: item.period,
       ...(item.subcategory ? { subcategory: item.subcategory } : {}),
       ...(item.note ? { note: item.note } : {}),
     };

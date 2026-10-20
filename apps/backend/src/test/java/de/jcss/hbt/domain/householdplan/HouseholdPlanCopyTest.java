@@ -23,12 +23,13 @@ class HouseholdPlanCopyTest {
     private static final BudgetItemSubcategory CAR = BudgetItemSubcategory.of("Auto");
     private static final BudgetItemSubcategory HOME = BudgetItemSubcategory.of("Wohnen");
 
-    private final Money amount = Money.of(new BigDecimal("100.00"));
+    private final ItemAmount amount = ItemAmount.monthly(Money.of(new BigDecimal("100.00")));
     private final HouseholdPlan source = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2026));
 
     @BeforeEach
     void fillSource() {
-        source.addIncome(BudgetItemDescription.of("Gehalt"), Money.of(new BigDecimal("3000.00")), null, null);
+        ItemAmount salary = ItemAmount.yearly(Money.of(new BigDecimal("36000.00")));
+        source.addIncome(BudgetItemDescription.of("Gehalt"), salary, null, null);
         source.addExpense(BudgetItemDescription.of("Wartung"), amount, ExpenseCategory.LEBENSUNTERHALT, CAR,
                 BudgetItemNote.ofNullable("Inspektion im Mai"));
         source.addExpense(BudgetItemDescription.of("Reifen"), amount, ExpenseCategory.LEBENSUNTERHALT, CAR, null);
@@ -50,6 +51,17 @@ class HouseholdPlanCopyTest {
         assertSameItems(copy, source);
         assertThat(copy.subcategoryOrders()).isEqualTo(source.subcategoryOrders());
         assertThat(copy.summary()).isEqualTo(source.summary());
+    }
+
+    /** PU-3, MJ-1: monthly items stay monthly, yearly items stay yearly */
+    @Test
+    void createFromKeepsTheAmountWithItsPeriod() {
+        HouseholdPlan copy = HouseholdPlan.createFrom(source, HouseholdPlanId.generate(), Year.of(2027));
+
+        assertThat(copy.items()).extracting(BudgetItem::amount)
+                .containsExactlyElementsOf(source.items().stream().map(BudgetItem::amount).toList())
+                .extracting(ItemAmount::period)
+                .contains(AmountPeriod.MONTHLY, AmountPeriod.YEARLY);
     }
 
     /** PU-5 */

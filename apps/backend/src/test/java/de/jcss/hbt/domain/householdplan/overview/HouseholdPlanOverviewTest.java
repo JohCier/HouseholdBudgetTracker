@@ -4,6 +4,7 @@ import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.ItemAmount;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.Percentage;
@@ -133,6 +134,21 @@ class HouseholdPlanOverviewTest {
         assertThat(breakdownFor(overview, ExpenseCategory.SPAREN_INVESTIEREN).total()).isEqualTo(money("1100.00"));
     }
 
+    /** MJ-6, MJ-8, MJ-9 */
+    @Test
+    void showsTheTotalsPerMonthAndPerYear() {
+        HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, YEAR, List.of(
+                income(ItemAmount.monthly(money("3000.00"))),
+                expense(ExpenseCategory.LEBENSUNTERHALT, ItemAmount.monthly(money("850.00")))), Map.of());
+
+        assertThat(overview.totalIncome()).isEqualTo(money("36000.00"));
+        assertThat(overview.monthlyTotalIncome()).isEqualTo(money("3000.00"));
+        assertThat(overview.totalExpense()).isEqualTo(money("10200.00"));
+        assertThat(overview.monthlyTotalExpense()).isEqualTo(money("850.00"));
+        assertThat(overview.balance()).isEqualTo(money("25800.00"));
+        assertThat(overview.monthlyBalance()).isEqualTo(money("2150.00"));
+    }
+
     /** AW-10 */
     @Test
     void savingsContainTheSurplusAndShowItAsUnplanned() {
@@ -161,12 +177,20 @@ class HouseholdPlanOverviewTest {
     }
 
     private static OverviewItem income(String amount) {
-        return new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Einnahme"), money(amount),
+        return income(ItemAmount.yearly(money(amount)));
+    }
+
+    private static OverviewItem income(ItemAmount amount) {
+        return new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Einnahme"), amount,
                 ItemType.INCOME, null, null, null);
     }
 
     private static OverviewItem expense(ExpenseCategory category, String amount) {
-        return new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Ausgabe"), money(amount),
+        return expense(category, ItemAmount.yearly(money(amount)));
+    }
+
+    private static OverviewItem expense(ExpenseCategory category, ItemAmount amount) {
+        return new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Ausgabe"), amount,
                 ItemType.EXPENSE, category, null, null);
     }
 

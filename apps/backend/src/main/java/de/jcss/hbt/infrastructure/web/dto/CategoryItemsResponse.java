@@ -12,6 +12,9 @@ public record CategoryItemsResponse(
         ExpenseCategoryDto category,
         @JsonFormat(shape = JsonFormat.Shape.STRING)
         @Schema(implementation = String.class, format = "decimal", example = "11350.00") BigDecimal total,
+        @JsonFormat(shape = JsonFormat.Shape.STRING)
+        @Schema(implementation = String.class, format = "decimal", example = "945.83", description = "The yearly total divided by 12")
+        BigDecimal monthlyTotal,
         List<ItemGroupResponse> groups
 ) {
 
@@ -19,6 +22,7 @@ public record CategoryItemsResponse(
         return new CategoryItemsResponse(
                 ExpenseCategoryDto.from(category.category()),
                 category.total().value(),
+                category.monthlyTotal().value(),
                 category.groups().stream().map(ItemGroupResponse::from).toList()
         );
     }

@@ -27,6 +27,7 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 | Posten bearbeiten | Beschreibung, Betrag und Kategorie eines Postens ändern | [posten-bearbeiten.md](specs/posten-bearbeiten.md) |
 | Notiz zum Posten | Optionaler Freitext je Posten, beim Erfassen und Bearbeiten | [posten-notiz.md](specs/posten-notiz.md) |
 | Unterkategorie | Posten frei benennbaren Unterkategorien zuordnen; Einträge gruppiert nach Art, Kategorie und Unterkategorie mit Summen ansehen und frei sortieren | [unterkategorie.md](specs/unterkategorie.md) |
+| Monats- und Jahresbetrag | Beträge monatlich oder jährlich angeben; Monats- und Jahresbetrag je Posten und für alle Summen ansehen | [monats-jahresbetrag.md](specs/monats-jahresbetrag.md) |
 | Fehlermeldungen | Alle Meldungen auf Deutsch, auch die der API | [fehlermeldungen.md](specs/fehlermeldungen.md) |
 | Auswertung | Summen, Saldo, Warnung bei Defizit, Anteil und Zielerreichung je 50/30/20-Kategorie | [auswertung-50-30-20.md](specs/auswertung-50-30-20.md) |
 | Tortendiagramm | Die 50/30/20-Auswertung wahlweise als Balken oder als Tortendiagramm ansehen | [tortendiagramm.md](specs/tortendiagramm.md) |
@@ -36,7 +37,8 @@ Alle Beträge sind in Euro. Die Oberfläche ist deutschsprachig.
 
 ## Nicht-Ziele
 
-- Keine einzelnen Buchungen mit Datum, keine Monatsansicht: Ein Posten ist ein Jahresbetrag ohne eigenes Datum.
+- Keine einzelnen Buchungen mit Datum, keine Ansicht je Kalendermonat: Ein Posten gilt ohne eigenes Datum für das
+  ganze Jahr, als Monats- oder Jahresbetrag.
 - Keine Anbindung an Bankkonten, kein Import von Kontoauszügen.
 - Keine gemeinsamen Pläne mehrerer Benutzer, keine Freigaben.
 - Keine anderen Budgetregeln als 50/30/20, keine eigenen Kategorien, keine anderen Währungen.

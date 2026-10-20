@@ -27,7 +27,7 @@ class HouseholdPlanSubcategoryTest {
     private final HouseholdPlanId planId = HouseholdPlanId.generate();
     private final HouseholdPlan plan = HouseholdPlan.reconstitute(planId, OwnerId.of(UUID.randomUUID()),
             Year.of(2026), List.of(), Map.of());
-    private final Money amount = Money.of(new BigDecimal("100.00"));
+    private final ItemAmount amount = ItemAmount.yearly(Money.of(new BigDecimal("100.00")));
 
     /** UK-1, UK-4 */
     @Test

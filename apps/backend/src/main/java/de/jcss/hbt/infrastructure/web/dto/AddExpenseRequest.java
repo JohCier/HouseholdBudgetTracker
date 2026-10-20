@@ -16,6 +16,7 @@ public record AddExpenseRequest(
         @NotBlank @Size(max = BudgetItemDescription.MAX_LENGTH) String description,
         @NotNull @Positive @Digits(integer = 10, fraction = 2)
         @Schema(implementation = String.class, format = "decimal", example = "850.00") BigDecimal amount,
+        @NotNull @Schema(description = "Whether the amount is a monthly or a yearly amount") AmountPeriodDto period,
         @NotNull ExpenseCategoryDto category,
         @Size(max = BudgetItemSubcategory.MAX_LENGTH)
         @Schema(nullable = true, description = "Optional; empty or blank means none, i.e. \"Sonstiges\"") String subcategory,

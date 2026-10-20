@@ -47,10 +47,16 @@ describe('AddItemForm', () => {
     await fixture.whenStable();
   }
 
-  async function chooseType(label: 'Ausgabe' | 'Einnahme') {
+  async function chooseType(label: 'Ausgabe' | 'Einnahme' | 'Monatlich' | 'Jährlich') {
     const toggle = [...element.querySelectorAll<HTMLButtonElement>('mat-button-toggle button')];
     toggle.find((button) => button.textContent?.trim() === label)!.click();
     await fixture.whenStable();
+  }
+
+  function chosenPeriod(): string | undefined {
+    return element
+      .querySelector('[aria-label="Angabe monatlich oder jährlich"] .mat-button-toggle-checked')
+      ?.textContent?.trim();
   }
 
   async function chooseCategory(label: string) {
@@ -78,6 +84,7 @@ describe('AddItemForm', () => {
     expect(store.addExpense).toHaveBeenCalledWith({
       description: 'Miete',
       amount: '850.5',
+      period: 'MONTHLY',
       category: 'LEBENSUNTERHALT',
     });
     expect(snackBar.open).toHaveBeenCalledWith('Ausgabe hinzugefügt', undefined, {
@@ -89,6 +96,25 @@ describe('AddItemForm', () => {
     expect(element.querySelectorAll('mat-error')).toHaveLength(0);
   });
 
+  // MJ-1, MJ-11
+  it('starts with monthly amounts and keeps the period chosen after adding an item', async () => {
+    expect(chosenPeriod()).toBe('Monatlich');
+
+    await chooseType('Jährlich');
+    await type('description', 'Versicherung');
+    await type('amount', '1000');
+    await chooseCategory('Lebensunterhalt');
+    await submit();
+
+    expect(store.addExpense).toHaveBeenCalledWith({
+      description: 'Versicherung',
+      amount: '1000',
+      period: 'YEARLY',
+      category: 'LEBENSUNTERHALT',
+    });
+    expect(chosenPeriod()).toBe('Jährlich');
+  });
+
   it('adds an income without a category and keeps the chosen type', async () => {
     await chooseType('Einnahme');
     expect(element.querySelector('mat-select')).toBeNull();
@@ -97,7 +123,11 @@ describe('AddItemForm', () => {
     await type('amount', '3000');
     await submit();
 
-    expect(store.addIncome).toHaveBeenCalledWith({ description: 'Gehalt', amount: '3000' });
+    expect(store.addIncome).toHaveBeenCalledWith({
+      description: 'Gehalt',
+      amount: '3000',
+      period: 'MONTHLY',
+    });
     expect(store.addExpense).not.toHaveBeenCalled();
     expect(snackBar.open).toHaveBeenCalledWith('Einnahme hinzugefügt', undefined, {
       duration: 3000,
@@ -116,6 +146,7 @@ describe('AddItemForm', () => {
     expect(store.addIncome).toHaveBeenCalledWith({
       description: 'Gehalt',
       amount: '3000',
+      period: 'MONTHLY',
       note: 'netto,\nnach Steuern',
     });
     expect(input('note').value).toBe('');
@@ -131,6 +162,7 @@ describe('AddItemForm', () => {
     expect(store.addExpense).toHaveBeenCalledWith({
       description: 'Sprit',
       amount: '80',
+      period: 'MONTHLY',
       category: 'LEBENSUNTERHALT',
       subcategory: 'Auto',
     });
@@ -144,7 +176,11 @@ describe('AddItemForm', () => {
     await type('subcategory', '   ');
     await submit();
 
-    expect(store.addIncome).toHaveBeenCalledWith({ description: 'Gehalt', amount: '3000' });
+    expect(store.addIncome).toHaveBeenCalledWith({
+      description: 'Gehalt',
+      amount: '3000',
+      period: 'MONTHLY',
+    });
   });
 
   it('suggests the subcategories of the chosen type, filtered by what has been typed (UK-6, UK-7)', async () => {
@@ -178,7 +214,11 @@ describe('AddItemForm', () => {
 
     await submit();
 
-    expect(store.addIncome).toHaveBeenCalledWith({ description: 'Gehalt', amount: '3000' });
+    expect(store.addIncome).toHaveBeenCalledWith({
+      description: 'Gehalt',
+      amount: '3000',
+      period: 'MONTHLY',
+    });
   });
 
   it('rejects a note longer than 1000 characters (PN-2)', async () => {

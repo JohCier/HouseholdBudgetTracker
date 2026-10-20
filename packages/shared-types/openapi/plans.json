@@ -379,7 +379,7 @@
   "components" : {
     "schemas" : {
       "AddExpenseRequest" : {
-        "required" : [ "amount", "category", "description" ],
+        "required" : [ "amount", "category", "description", "period" ],
         "type" : "object",
         "properties" : {
           "amount" : {
@@ -402,6 +402,9 @@
             "description" : "Optional; empty or blank means no note",
             "nullable" : true
           },
+          "period" : {
+            "$ref" : "#/components/schemas/AmountPeriod"
+          },
           "subcategory" : {
             "maxLength" : 50,
             "minLength" : 0,
@@ -412,7 +415,7 @@
         }
       },
       "AddIncomeRequest" : {
-        "required" : [ "amount", "description" ],
+        "required" : [ "amount", "description", "period" ],
         "type" : "object",
         "properties" : {
           "amount" : {
@@ -431,6 +434,9 @@
             "type" : "string",
             "description" : "Optional; empty or blank means no note",
             "nullable" : true
+          },
+          "period" : {
+            "$ref" : "#/components/schemas/AmountPeriod"
           },
           "subcategory" : {
             "maxLength" : 50,
@@ -454,14 +460,24 @@
           }
         }
       },
+      "AmountPeriod" : {
+        "type" : "string",
+        "enum" : [ "MONTHLY", "YEARLY" ]
+      },
       "BudgetItemResponse" : {
-        "required" : [ "amount", "category", "description", "id", "note", "subcategory", "type" ],
+        "required" : [ "amount", "annualAmount", "category", "description", "id", "monthlyAmount", "note", "period", "subcategory", "type" ],
         "type" : "object",
         "properties" : {
           "amount" : {
             "type" : "string",
+            "description" : "As entered, a monthly or a yearly amount depending on period",
             "format" : "decimal",
             "example" : "850.0"
+          },
+          "annualAmount" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "10200.0"
           },
           "category" : {
             "description" : "Only set for expenses",
@@ -477,10 +493,18 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "monthlyAmount" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "850.0"
+          },
           "note" : {
             "type" : "string",
             "description" : "Only set if the item has a note",
             "nullable" : true
+          },
+          "period" : {
+            "$ref" : "#/components/schemas/AmountPeriod"
           },
           "subcategory" : {
             "type" : "string",
@@ -527,7 +551,7 @@
         }
       },
       "CategoryItemsResponse" : {
-        "required" : [ "category", "groups", "total" ],
+        "required" : [ "category", "groups", "monthlyTotal", "total" ],
         "type" : "object",
         "properties" : {
           "category" : {
@@ -539,6 +563,12 @@
               "$ref" : "#/components/schemas/ItemGroupResponse"
             }
           },
+          "monthlyTotal" : {
+            "type" : "string",
+            "description" : "The yearly total divided by 12",
+            "format" : "decimal",
+            "example" : "945.83"
+          },
           "total" : {
             "type" : "string",
             "format" : "decimal",
@@ -548,7 +578,7 @@
         "description" : "The categories that have expenses, in the order of the 50/30/20 rule"
       },
       "ChangeBudgetItemRequest" : {
-        "required" : [ "amount", "description" ],
+        "required" : [ "amount", "description", "period" ],
         "type" : "object",
         "properties" : {
           "amount" : {
@@ -570,6 +600,9 @@
             "type" : "string",
             "description" : "Optional; empty or blank means no note",
             "nullable" : true
+          },
+          "period" : {
+            "$ref" : "#/components/schemas/AmountPeriod"
           },
           "subcategory" : {
             "maxLength" : 50,
@@ -641,7 +674,7 @@
         "enum" : [ "LEBENSUNTERHALT", "FREIZEIT_SPASS", "SPAREN_INVESTIEREN" ]
       },
       "HouseholdPlanOverviewResponse" : {
-        "required" : [ "balance", "categoryBreakdowns", "expenseCategories", "expensesExceedIncome", "id", "incomeGroups", "items", "totalExpense", "totalIncome", "year" ],
+        "required" : [ "balance", "categoryBreakdowns", "expenseCategories", "expensesExceedIncome", "id", "incomeGroups", "items", "monthlyBalance", "monthlyTotalExpense", "monthlyTotalIncome", "totalExpense", "totalIncome", "year" ],
         "type" : "object",
         "properties" : {
           "balance" : {
@@ -683,6 +716,24 @@
               "$ref" : "#/components/schemas/BudgetItemResponse"
             }
           },
+          "monthlyBalance" : {
+            "type" : "string",
+            "description" : "The yearly balance divided by 12",
+            "format" : "decimal",
+            "example" : "58.33"
+          },
+          "monthlyTotalExpense" : {
+            "type" : "string",
+            "description" : "The yearly total divided by 12",
+            "format" : "decimal",
+            "example" : "150.0"
+          },
+          "monthlyTotalIncome" : {
+            "type" : "string",
+            "description" : "The yearly total divided by 12",
+            "format" : "decimal",
+            "example" : "208.33"
+          },
           "totalExpense" : {
             "type" : "string",
             "format" : "decimal",
@@ -701,7 +752,7 @@
         }
       },
       "ItemGroupResponse" : {
-        "required" : [ "items", "subcategory", "total" ],
+        "required" : [ "items", "monthlyTotal", "subcategory", "total" ],
         "type" : "object",
         "properties" : {
           "items" : {
@@ -709,6 +760,12 @@
             "items" : {
               "$ref" : "#/components/schemas/BudgetItemResponse"
             }
+          },
+          "monthlyTotal" : {
+            "type" : "string",
+            "description" : "The yearly total divided by 12",
+            "format" : "decimal",
+            "example" : "145.83"
           },
           "subcategory" : {
             "type" : "string",
