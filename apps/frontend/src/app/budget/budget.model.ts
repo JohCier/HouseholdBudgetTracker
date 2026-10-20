@@ -8,6 +8,7 @@ import type { PlansSchemas as Schemas } from '@hbt/shared-types';
 
 export type ItemType = Schemas['ItemType'];
 export type ExpenseCategory = Schemas['ExpenseCategory'];
+export type AmountPeriod = Schemas['AmountPeriod'];
 export type TargetDirection = Schemas['TargetDirection'];
 export type BudgetItem = Schemas['BudgetItemResponse'];
 export type CategoryBreakdown = Schemas['CategoryBreakdownResponse'];
@@ -50,6 +51,12 @@ export const EXPENSE_CATEGORIES: readonly CategoryInfo[] = [
 export function categoryLabel(category: ExpenseCategory | null): string {
   return EXPENSE_CATEGORIES.find((c) => c.value === category)?.label ?? '–';
 }
+
+/** Whether an amount is entered per month or per year (MJ-1), in the order the toggle offers them (MJ-11). */
+export const AMOUNT_PERIODS: readonly { value: AmountPeriod; label: string }[] = [
+  { value: 'MONTHLY', label: 'Monatlich' },
+  { value: 'YEARLY', label: 'Jährlich' },
+];
 
 /** How the 50/30/20 card shows the breakdown: as one bar per category or as a pie chart. */
 export type BreakdownView = 'bars' | 'pie';

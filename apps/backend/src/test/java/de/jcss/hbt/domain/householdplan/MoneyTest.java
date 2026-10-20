@@ -30,6 +30,21 @@ class MoneyTest {
                 .hasMessageContaining("decimal places");
     }
 
+    /** MJ-6 */
+    @Test
+    void takenAsMonthlyAmountIsTwelveTimesAsMuchPerYear() {
+        assertThat(Money.of(new BigDecimal("850.50")).timesMonthsPerYear().value()).isEqualByComparingTo("10206.00");
+    }
+
+    /** MJ-7, MJ-9 */
+    @Test
+    void takenAsYearlyAmountIsDividedByTwelveAndRoundedHalfUpToTheCentPerMonth() {
+        assertThat(Money.of(new BigDecimal("100.00")).perMonth().value()).isEqualByComparingTo("8.33");
+        assertThat(Money.of(new BigDecimal("1000.00")).perMonth().value()).isEqualByComparingTo("83.33");
+        assertThat(Money.of(new BigDecimal("-100.00")).perMonth().value()).isEqualByComparingTo("-8.33");
+        assertThat(Money.of(new BigDecimal("0.06")).perMonth().value()).isEqualByComparingTo("0.01");
+    }
+
     @Test
     void addsTwoAmounts() {
         Money result = Money.of(new BigDecimal("10.00")).add(Money.of(new BigDecimal("5.50")));

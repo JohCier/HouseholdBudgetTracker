@@ -10,6 +10,9 @@ const item: BudgetItem = {
   id: '1',
   description: 'Gehalt',
   amount: '2000.00',
+  period: 'YEARLY',
+  monthlyAmount: '166.67',
+  annualAmount: '2000.00',
   type: 'INCOME',
   category: null,
   subcategory: null,
@@ -21,10 +24,19 @@ const overview = (year: number, items = [item]): HouseholdPlanOverview => ({
   totalIncome: '2000.00',
   totalExpense: '0.00',
   balance: '2000.00',
+
+  monthlyTotalIncome: '166.67',
+
+  monthlyTotalExpense: '0.00',
+
+  monthlyBalance: '166.67',
   expensesExceedIncome: false,
   categoryBreakdowns: [],
   items,
-  incomeGroups: items.length === 0 ? [] : [{ subcategory: 'Sonstiges', total: '2000.00', items }],
+  incomeGroups:
+    items.length === 0
+      ? []
+      : [{ subcategory: 'Sonstiges', total: '2000.00', monthlyTotal: '166.67', items }],
   expenseCategories: [],
 });
 const yearOf = (planId: string) => Number(planId.replace('plan-', ''));
@@ -121,11 +133,12 @@ describe('BudgetStore', () => {
     await store.selectYear(2026);
     api.getOverview.mockClear();
 
-    await store.addIncome({ description: 'Bonus', amount: '2000' });
+    await store.addIncome({ description: 'Bonus', amount: '2000', period: 'YEARLY' });
 
     expect(api.addIncome).toHaveBeenCalledWith('plan-2026', {
       description: 'Bonus',
       amount: '2000',
+      period: 'YEARLY',
     });
     expect(store.items()).toEqual([item, added]);
     expect(api.getOverview).not.toHaveBeenCalled();
@@ -136,11 +149,12 @@ describe('BudgetStore', () => {
     await store.selectYear(2026);
     api.getOverview.mockClear();
 
-    await store.changeItem('1', { description: 'Gehalt', amount: '2100' });
+    await store.changeItem('1', { description: 'Gehalt', amount: '2100', period: 'YEARLY' });
 
     expect(api.changeItem).toHaveBeenCalledWith('plan-2026', '1', {
       description: 'Gehalt',
       amount: '2100',
+      period: 'YEARLY',
     });
     expect(store.items()[0].amount).toBe('2100.00');
     expect(api.getOverview).not.toHaveBeenCalled();
@@ -187,9 +201,9 @@ describe('BudgetStore', () => {
   it('rejects adding an item while the year has no plan', async () => {
     await store.selectYear(2030);
 
-    await expect(store.addIncome({ description: 'Gehalt', amount: '2000' })).rejects.toThrow(
-      'Für 2030 gibt es noch keinen Haushaltsplan.',
-    );
+    await expect(
+      store.addIncome({ description: 'Gehalt', amount: '2000', period: 'YEARLY' }),
+    ).rejects.toThrow('Für 2030 gibt es noch keinen Haushaltsplan.');
     expect(api.addIncome).not.toHaveBeenCalled();
   });
 
@@ -220,9 +234,9 @@ describe('BudgetStore', () => {
     expect(store.planId()).toBeNull();
     expect(store.items()).toEqual([]);
     expect(store.planMissing()).toBe(false);
-    await expect(store.addIncome({ description: 'Bonus', amount: '1.00' })).rejects.toThrow(
-      'Für 2027 gibt es noch keinen Haushaltsplan.',
-    );
+    await expect(
+      store.addIncome({ description: 'Bonus', amount: '1.00', period: 'YEARLY' }),
+    ).rejects.toThrow('Für 2027 gibt es noch keinen Haushaltsplan.');
     expect(api.addIncome).not.toHaveBeenCalled();
 
     pending.next(overview(2027));
@@ -270,6 +284,7 @@ describe('BudgetStore', () => {
     expect(api.addExpense).toHaveBeenCalledWith('plan-2026', {
       description: 'Kino',
       amount: '2000.00',
+      period: 'YEARLY',
       category: 'FREIZEIT_SPASS',
     });
   });
@@ -280,6 +295,7 @@ describe('BudgetStore', () => {
     expect(api.addIncome).toHaveBeenCalledWith('plan-2026', {
       description: 'Gehalt',
       amount: '2000.00',
+      period: 'YEARLY',
       note: 'netto',
     });
   });
@@ -302,7 +318,12 @@ describe('BudgetStore', () => {
     );
 
     await expect(
-      store.addExpense({ description: 'Miete', amount: '-1', category: 'LEBENSUNTERHALT' }),
+      store.addExpense({
+        description: 'Miete',
+        amount: '-1',
+        period: 'YEARLY',
+        category: 'LEBENSUNTERHALT',
+      }),
     ).rejects.toThrow('Die Eingabe ist ungültig.');
     expect(api.getOverview).not.toHaveBeenCalled();
   });
@@ -359,8 +380,8 @@ describe('BudgetStore', () => {
     const groups = {
       ...overview(2026),
       incomeGroups: [
-        { subcategory: 'Gehalt', total: '2000.00', items: [item] },
-        { subcategory: 'Sonstiges', total: '2000.00', items: [added] },
+        { subcategory: 'Gehalt', total: '2000.00', monthlyTotal: '166.67', items: [item] },
+        { subcategory: 'Sonstiges', total: '2000.00', monthlyTotal: '166.67', items: [added] },
       ],
     };
     api.getOverview.mockReturnValue(of(groups));

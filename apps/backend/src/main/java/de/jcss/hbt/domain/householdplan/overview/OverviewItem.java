@@ -5,15 +5,16 @@ import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.BudgetItemNote;
 import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
+import de.jcss.hbt.domain.householdplan.ItemAmount;
 import de.jcss.hbt.domain.householdplan.ItemSection;
 import de.jcss.hbt.domain.householdplan.ItemType;
-import de.jcss.hbt.domain.householdplan.Money;
 import org.jmolecules.architecture.cqrs.QueryModel;
 
 /**
  * Part of the {@link HouseholdPlanOverview} read model: a single position of the plan, as
  * shown in the item list.
  *
+ * @param amount      as the user entered it, monthly or yearly (MJ-2)
  * @param category    only set for expenses, otherwise {@code null}
  * @param subcategory {@code null} if the item has no subcategory
  * @param note        {@code null} if the item has no note
@@ -22,7 +23,7 @@ import org.jmolecules.architecture.cqrs.QueryModel;
 public record OverviewItem(
         BudgetItemId id,
         BudgetItemDescription description,
-        Money amount,
+        ItemAmount amount,
         ItemType type,
         ExpenseCategory category,
         BudgetItemSubcategory subcategory,

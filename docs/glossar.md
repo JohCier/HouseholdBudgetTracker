@@ -11,7 +11,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Haushaltsplan, Plan | `HouseholdPlan` (Aggregate Root) | Alle Einnahmen und Ausgaben, die ein Benutzer für ein Kalenderjahr plant. Höchstens einer pro Benutzer und Jahr |
 | Besitzer | `OwnerId` | Der Benutzer, der den Plan angelegt hat. Nur er sieht und ändert ihn. Im Backend nur über seine ID bekannt |
 | Jahr | `java.time.Year` | Das Kalenderjahr, für das ein Plan gilt (1900 bis 2200) |
-| Posten, Eintrag | `BudgetItem` (Entity) | Eine Einnahme oder Ausgabe in einem Plan, als Jahresbetrag ohne eigenes Datum |
+| Posten, Eintrag | `BudgetItem` (Entity) | Eine Einnahme oder Ausgabe in einem Plan, ohne eigenes Datum, als Monats- oder Jahresbetrag |
 | Art des Postens | `ItemType` (`INCOME`, `EXPENSE`) | Einnahme oder Ausgabe |
 | Einnahme | `ItemType.INCOME` | Posten ohne Kategorie, erhöht das Einkommen |
 | Ausgabe | `ItemType.EXPENSE` | Posten mit genau einer Kategorie |
@@ -23,6 +23,11 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Gruppe | `OverviewItemGroup` | Die Posten eines Bereichs mit derselben Unterkategorie, mit ihrer Summe |
 | Reihenfolge der Gruppen | `SubcategoryOrder` | Wie der Benutzer die Gruppen eines Bereichs angeordnet hat; je Plan gespeichert |
 | Betrag | `Money` | Geldbetrag in Euro mit höchstens zwei Nachkommastellen; im Posten immer positiv |
+| Betrag eines Postens | `ItemAmount` | Der Betrag, wie der Benutzer ihn eingegeben hat, mit seiner Angabe |
+| Angabe (monatlich, jährlich) | `AmountPeriod` (`MONTHLY`, `YEARLY`) | Ob der eingegebene Betrag ein Monats- oder ein Jahresbetrag ist |
+| Jahresbetrag | `annual()`, `annualAmount` | Betrag eines Postens für das ganze Jahr: bei monatlicher Angabe der Betrag mal 12; Grundlage aller Summen und der Auswertung |
+| Monatsbetrag | `monthly()`, `monthlyAmount` | Betrag eines Postens je Monat: bei jährlicher Angabe der Betrag durch 12, auf den Cent gerundet; nur zur Anzeige |
+| Monatssumme | `monthlyTotal…`, `monthlyBalance` | Eine Jahressumme der Übersicht durch 12, auf den Cent gerundet |
 | Kategorie | `ExpenseCategory` | Einer der drei Töpfe der 50/30/20-Regel |
 | Lebensunterhalt | `LEBENSUNTERHALT` | Miete, Lebensmittel, Versicherungen; Ziel: höchstens 50 % des Einkommens |
 | Freizeit & Spaß | `FREIZEIT_SPASS` | Hobbys, Ausgehen, Urlaub; Ziel: höchstens 30 % |
@@ -63,7 +68,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | `IncomeAdded` | Eine Einnahme wurde erfasst |
 | `ExpenseAdded` | Eine Ausgabe wurde erfasst |
 | `BudgetItemRemoved` | Ein Posten wurde gelöscht |
-| `BudgetItemChanged` | Beschreibung, Betrag, Kategorie, Unterkategorie oder Notiz eines Postens wurden geändert |
+| `BudgetItemChanged` | Beschreibung, Betrag, Angabe, Kategorie, Unterkategorie oder Notiz eines Postens wurden geändert |
 | `BudgetItemsReordered` | Die Posten einer Unterkategorie-Gruppe wurden umsortiert |
 | `SubcategoriesReordered` | Die Unterkategorie-Gruppen der Einnahmen oder einer Kategorie wurden umsortiert |
 | `UserRegistered` | Ein Benutzer hat sich registriert |

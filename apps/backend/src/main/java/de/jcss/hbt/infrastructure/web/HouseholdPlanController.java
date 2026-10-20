@@ -8,6 +8,7 @@ import de.jcss.hbt.domain.householdplan.BudgetItemNote;
 import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.ItemAmount;
 import de.jcss.hbt.domain.householdplan.ItemSection;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
@@ -90,7 +91,7 @@ public class HouseholdPlanController {
     public AddedBudgetItemResponse addIncome(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId,
                                              @Valid @RequestBody AddIncomeRequest request) {
         AddedBudgetItem added = plans.addIncome(new AddIncomeCommand(owner(user), HouseholdPlanId.of(planId),
-                BudgetItemDescription.of(request.description()), Money.of(request.amount()),
+                BudgetItemDescription.of(request.description()), new ItemAmount(Money.of(request.amount()), request.period().toDomain()),
                 BudgetItemSubcategory.ofNullable(request.subcategory()), BudgetItemNote.ofNullable(request.note())));
         return AddedBudgetItemResponse.from(added);
     }
@@ -100,7 +101,7 @@ public class HouseholdPlanController {
     public AddedBudgetItemResponse addExpense(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId,
                                               @Valid @RequestBody AddExpenseRequest request) {
         AddedBudgetItem added = plans.addExpense(new AddExpenseCommand(owner(user), HouseholdPlanId.of(planId),
-                BudgetItemDescription.of(request.description()), Money.of(request.amount()),
+                BudgetItemDescription.of(request.description()), new ItemAmount(Money.of(request.amount()), request.period().toDomain()),
                 request.category().toDomain(), BudgetItemSubcategory.ofNullable(request.subcategory()),
                 BudgetItemNote.ofNullable(request.note())));
         return AddedBudgetItemResponse.from(added);
@@ -113,7 +114,7 @@ public class HouseholdPlanController {
                                                     @Valid @RequestBody ChangeBudgetItemRequest request) {
         ExpenseCategoryDto category = request.category();
         return HouseholdPlanOverviewResponse.from(plans.changeItem(new ChangeBudgetItemCommand(owner(user), HouseholdPlanId.of(planId), BudgetItemId.of(itemId),
-                BudgetItemDescription.of(request.description()), Money.of(request.amount()),
+                BudgetItemDescription.of(request.description()), new ItemAmount(Money.of(request.amount()), request.period().toDomain()),
                 category == null ? null : category.toDomain(), BudgetItemSubcategory.ofNullable(request.subcategory()),
                 BudgetItemNote.ofNullable(request.note()))));
     }

@@ -10,6 +10,9 @@ const rent: BudgetItem = {
   id: '2',
   description: 'Miete',
   amount: '850.00',
+  period: 'YEARLY',
+  monthlyAmount: '70.83',
+  annualAmount: '850.00',
   type: 'EXPENSE',
   category: 'LEBENSUNTERHALT',
   subcategory: null,
@@ -19,6 +22,9 @@ const salary: BudgetItem = {
   id: '1',
   description: 'Gehalt',
   amount: '3000.00',
+  period: 'YEARLY',
+  monthlyAmount: '250.00',
+  annualAmount: '3000.00',
   type: 'INCOME',
   category: null,
   subcategory: null,
@@ -88,9 +94,41 @@ describe('EditItemDialog', () => {
     expect(store.changeItem).toHaveBeenCalledWith('2', {
       description: 'Warmmiete',
       amount: '900.5',
+      period: 'YEARLY',
       category: 'SPAREN_INVESTIEREN',
     });
     expect(dialogRef.close).toHaveBeenCalledWith(true);
+  });
+
+  // MJ-5, MJ-11
+  it('shows the amount as entered with its period and switches the period without converting', async () => {
+    await open({
+      ...rent,
+      period: 'MONTHLY',
+      monthlyAmount: '850.00',
+      annualAmount: '10200.00',
+    });
+    const checked = () =>
+      element
+        .querySelector('[aria-label="Angabe monatlich oder jährlich"] .mat-button-toggle-checked')
+        ?.textContent?.trim();
+
+    expect(input('amount').value).toBe('850');
+    expect(checked()).toBe('Monatlich');
+
+    [...element.querySelectorAll<HTMLButtonElement>('mat-button-toggle button')]
+      .find((button) => button.textContent?.trim() === 'Jährlich')!
+      .click();
+    await fixture.whenStable();
+    await save();
+
+    expect(input('amount').value).toBe('850');
+    expect(store.changeItem).toHaveBeenCalledWith('2', {
+      description: 'Miete',
+      amount: '850',
+      period: 'YEARLY',
+      category: 'LEBENSUNTERHALT',
+    });
   });
 
   it('changes an income without offering a category', async () => {
@@ -102,7 +140,11 @@ describe('EditItemDialog', () => {
     await type('amount', '3100');
     await save();
 
-    expect(store.changeItem).toHaveBeenCalledWith('1', { description: 'Gehalt', amount: '3100' });
+    expect(store.changeItem).toHaveBeenCalledWith('1', {
+      description: 'Gehalt',
+      amount: '3100',
+      period: 'YEARLY',
+    });
   });
 
   it('does not send invalid values', async () => {
@@ -141,6 +183,7 @@ describe('EditItemDialog', () => {
     expect(store.changeItem).toHaveBeenCalledWith('1', {
       description: 'Gehalt',
       amount: '3000',
+      period: 'YEARLY',
       note: 'brutto',
     });
   });
@@ -155,6 +198,7 @@ describe('EditItemDialog', () => {
     expect(store.changeItem).toHaveBeenCalledWith('2', {
       description: 'Miete',
       amount: '850',
+      period: 'YEARLY',
       category: 'LEBENSUNTERHALT',
       subcategory: 'Auto',
     });
@@ -167,7 +211,11 @@ describe('EditItemDialog', () => {
     await type('subcategory', '');
     await save();
 
-    expect(store.changeItem).toHaveBeenCalledWith('1', { description: 'Gehalt', amount: '3000' });
+    expect(store.changeItem).toHaveBeenCalledWith('1', {
+      description: 'Gehalt',
+      amount: '3000',
+      period: 'YEARLY',
+    });
   });
 
   it('removes the note when it is emptied (PN-4)', async () => {
@@ -176,7 +224,11 @@ describe('EditItemDialog', () => {
     await type('note', '');
     await save();
 
-    expect(store.changeItem).toHaveBeenCalledWith('1', { description: 'Gehalt', amount: '3000' });
+    expect(store.changeItem).toHaveBeenCalledWith('1', {
+      description: 'Gehalt',
+      amount: '3000',
+      period: 'YEARLY',
+    });
   });
 
   it('does not save a note longer than 1000 characters (PN-2)', async () => {

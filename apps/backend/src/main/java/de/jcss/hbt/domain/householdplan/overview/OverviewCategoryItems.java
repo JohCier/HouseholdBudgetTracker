@@ -17,4 +17,9 @@ public record OverviewCategoryItems(ExpenseCategory category, Money total, List<
     public OverviewCategoryItems {
         groups = List.copyOf(groups);
     }
+
+    /** The sum per month: the yearly sum divided by 12 (MJ-9). */
+    public Money monthlyTotal() {
+        return total.perMonth();
+    }
 }

@@ -10,6 +10,7 @@ import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.ItemAmount;
 import de.jcss.hbt.domain.householdplan.ItemSection;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
@@ -124,6 +125,23 @@ class JdbcHouseholdPlanRepositoryTest {
             assertThat(item.category()).contains(ExpenseCategory.FREIZEIT_SPASS);
         });
         assertThat(createdAtOf(changed)).isEqualTo(createdAt);
+    }
+
+    /** MJ-2, MJ-4 */
+    @Test
+    void storesTheEnteredAmountWithItsPeriodAndUpdatesAChangedPeriod() {
+        HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
+        ItemAmount monthly = ItemAmount.monthly(Money.of(new BigDecimal("850.00")));
+        BudgetItemId rent = plan.addExpense(description("Miete"), monthly, ExpenseCategory.LEBENSUNTERHALT, null, null);
+        repository.add(plan);
+
+        HouseholdPlan loaded = repository.findById(plan.id()).orElseThrow();
+        assertThat(loaded.items().getFirst().amount()).isEqualTo(monthly);
+        loaded.changeItem(rent, description("Miete"), money("850.00"), ExpenseCategory.LEBENSUNTERHALT, null, null);
+        repository.save(loaded);
+
+        assertThat(repository.findById(plan.id()).orElseThrow().items().getFirst().amount())
+                .isEqualTo(money("850.00"));
     }
 
     /** PN-1, PN-4 */
@@ -354,7 +372,7 @@ class JdbcHouseholdPlanRepositoryTest {
         return BudgetItemDescription.of(value);
     }
 
-    private static Money money(String value) {
-        return Money.of(new BigDecimal(value));
+    private static ItemAmount money(String value) {
+        return ItemAmount.yearly(Money.of(new BigDecimal(value)));
     }
 }

@@ -11,6 +11,7 @@ import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanRepository;
+import de.jcss.hbt.domain.householdplan.ItemAmount;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
 import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
@@ -142,7 +143,7 @@ class HouseholdPlanApplicationServiceTest {
     void nonPositiveAmountIsADomainErrorAndPublishesNothing() {
         publishedEvents.clear();
 
-        assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, Money.ZERO, null, null)))
+        assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("0"), null, null)))
                 .isInstanceOf(DomainValidationException.class);
         assertThat(storedItems()).isEmpty();
         assertThat(publishedEvents).isEmpty();
@@ -255,8 +256,8 @@ class HouseholdPlanApplicationServiceTest {
         return repository.plans.get(planId).items();
     }
 
-    private static Money money(String value) {
-        return Money.of(new BigDecimal(value));
+    private static ItemAmount money(String value) {
+        return ItemAmount.yearly(Money.of(new BigDecimal(value)));
     }
 
     /** Stores plans by rebuilding them, as a real repository would, so no state leaks between calls. */

@@ -1,6 +1,6 @@
 # Monats- und Jahresbetrag
 
-Status: geplant
+Status: umgesetzt
 
 ## Zweck
 
@@ -88,14 +88,31 @@ Plans, lässt sich aber als Monatsbetrag angeben und so anzeigen.
 
 ## Umsetzung
 
-Wird nach der Umsetzung ergänzt.
+- Domäne: Value Object `ItemAmount` (eingegebener Betrag `value` und `AmountPeriod` `MONTHLY`/`YEARLY`, MJ-1, MJ-2)
+  mit `annual()` (MJ-6) und `monthly()` (MJ-7); `Money.timesMonthsPerYear` und `Money.perMonth` rechnen mal 12 bzw.
+  durch 12, kaufmännisch auf den Cent gerundet. `BudgetItem` hält statt `Money` ein `ItemAmount`; `addTo` gibt der
+  `BudgetSummary` den Jahresbetrag (MJ-8). `hasSameValuesAs` vergleicht auch die Angabe, sodass ein Wechsel als
+  `BudgetItemChanged` protokolliert wird (MJ-4); `changedTo` übernimmt den Betrag unverändert (MJ-5)
+- Commands: `AddIncomeCommand`, `AddExpenseCommand`, `ChangeBudgetItemCommand` mit `ItemAmount`
+- Persistenz: Migration `V8__budget_item_amount_period.sql` mit der Spalte `budget_item.amount_period`, Vorgabe
+  `YEARLY` für bestehende Posten (MJ-3); `amount` bleibt der eingegebene Betrag
+- Read Model: `OverviewItem` mit `ItemAmount`; `HouseholdPlanOverview` summiert Jahresbeträge und liefert
+  `monthlyTotalIncome`, `monthlyTotalExpense`, `monthlyBalance`, `OverviewItemGroup` und `OverviewCategoryItems`
+  `monthlyTotal`, jeweils die Jahressumme durch 12 (MJ-9, MJ-10). `CategoryBreakdown` bleibt bei Jahreswerten (MJ-14)
+- API: Pflichtfeld `period` (`MONTHLY`, `YEARLY`) in `AddIncomeRequest`, `AddExpenseRequest`,
+  `ChangeBudgetItemRequest`, sonst 400 (MJ-1); `BudgetItemResponse` mit `amount` (wie eingegeben), `period`,
+  `monthlyAmount`, `annualAmount`; Monatssummen in `HouseholdPlanOverviewResponse`, `ItemGroupResponse`,
+  `CategoryItemsResponse`
+- Frontend: Umschalter „Monatlich | Jährlich" (`AMOUNT_PERIODS` in `budget.model.ts`) neben dem Betrag in
+  `add-item-form` (Vorauswahl „Monatlich", bleibt nach dem Erfassen) und `edit-item-dialog` (MJ-11); Spalten „Monat"
+  und „Jahr" in `budget-entries`, der abgeleitete Betrag mit der Klasse `derived` schwächer (MJ-12); Kacheln in
+  `overview-summary` je Monat und Jahr (MJ-13); `BudgetStore.restoreItem` stellt die Angabe wieder her (MJ-4)
+- Tests: `ItemAmountTest`, `MoneyTest`, `BudgetItemTest`, `HouseholdPlanTest`, `HouseholdPlanOverviewTest`,
+  `HouseholdPlanOverviewGroupsTest`, `HouseholdPlanControllerTest`, `JdbcHouseholdPlanRepositoryTest`,
+  `JdbcHouseholdPlanOverviewQueryHandlerTest`, `add-item-form.spec.ts`, `edit-item-dialog.spec.ts`,
+  `budget-entries.spec.ts`, `overview-summary.spec.ts`
+- E2E: `e2e/tests/monats-jahresbetrag.spec.ts` (MJ-1, MJ-4 bis MJ-9, MJ-11 bis MJ-13; MJ-3 und die 400-Fälle decken die
+  Backend-Tests ab). Die Helfer `addIncome`/`addExpense` erfassen ohne Angabe jährlich, damit die übrigen E2E-Tests
+  ihre Jahresbeträge behalten; `tile` liest den Jahreswert
 
 ## Offene Fragen
-
-1. Kacheln oben (MJ-13): Beide Werte gleichzeitig in jeder Kachel (Vorschlag), oder ein Umschalter „Monat | Jahr",
-   der jeweils nur einen Wert zeigt?
-2. Vorauswahl im Formular (MJ-11): „Monatlich" (Vorschlag, weil die meisten Posten Monatsbeträge sind) oder
-   „Jährlich" wie bisher?
-3. Umstellen der Angabe beim Bearbeiten (MJ-5): Betrag bleibt stehen (Vorschlag), oder soll er umgerechnet werden
-   (850 monatlich wird zu 10.200 jährlich)?
-4. Gruppen- und Kategoriesummen (MJ-12): auch dort beide Spalten (Vorschlag), oder nur bei den einzelnen Posten?

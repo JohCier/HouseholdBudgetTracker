@@ -30,14 +30,16 @@ interface SectionView {
   /** Name of the incomes or of the category, also the class giving it its color (UK-19). */
   label: string;
   colorClass: string;
+  monthlyTotal: string;
   total: string;
   groups: ItemGroup[];
 }
 
 /**
  * The entries of a plan: first the incomes, then the expenses by category in the order of the
- * 50/30/20 rule, each grouped by subcategory with its sum (UK-9 to UK-12). All sums come from
- * the server (UK-13). Groups and the items within a group can be dragged to another position by
+ * 50/30/20 rule, each grouped by subcategory with its sum (UK-9 to UK-12). Every item and every
+ * sum is shown per month and per year (MJ-12). All amounts and sums come from the server (UK-13,
+ * MJ-10). Groups and the items within a group can be dragged to another position by
  * their handle, or moved with the arrow keys while the handle has the focus (UK-14); the new
  * order is emitted, saving it is up to the parent.
  */
@@ -74,6 +76,7 @@ export class BudgetEntries {
           section: { type: 'INCOME', category: null },
           label: 'Einnahmen',
           colorClass: 'INCOME',
+          monthlyTotal: overview.monthlyTotalIncome,
           total: overview.totalIncome,
           groups: overview.incomeGroups,
         };
@@ -84,6 +87,7 @@ export class BudgetEntries {
       section: { type: 'EXPENSE', category: category.category },
       label: categoryLabel(category.category),
       colorClass: category.category,
+      monthlyTotal: category.monthlyTotal,
       total: category.total,
       groups: category.groups,
     })),

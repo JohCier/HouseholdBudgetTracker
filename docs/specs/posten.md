@@ -10,7 +10,8 @@ ihnen ergibt sich die Auswertung nach der 50/30/20-Regel.
 ## Fachliche Regeln
 
 - **PO-1**: Ein Posten ist entweder eine Einnahme oder eine Ausgabe.
-- **PO-2**: Ein Posten ist ein Jahresbetrag und hat kein eigenes Datum. Er gilt für das Jahr seines Plans.
+- **PO-2**: Ein Posten hat kein eigenes Datum. Er gilt für das Jahr seines Plans. Sein Betrag wird monatlich oder
+  jährlich angegeben, siehe [monats-jahresbetrag.md](monats-jahresbetrag.md).
 - **PO-3**: Jeder Posten hat eine Beschreibung mit 1 bis 255 Zeichen, die nicht nur aus Leerzeichen besteht.
 - **PO-4**: Der Betrag ist positiv, in Euro, und hat höchstens zwei Nachkommastellen. Mehr Nachkommastellen werden
   abgelehnt, nicht gerundet.
@@ -44,7 +45,7 @@ ihnen ergibt sich die Auswertung nach der 50/30/20-Regel.
 ## Nicht im Umfang
 
 - Posten bearbeiten (eigene Spec: [posten-bearbeiten.md](posten-bearbeiten.md))
-- Posten mit Datum, wiederkehrende Posten, Monatsbeträge
+- Posten mit Datum, wiederkehrende Posten (Monatsbeträge: [monats-jahresbetrag.md](monats-jahresbetrag.md))
 - Eigene Kategorien der 50/30/20-Regel (Unterkategorien: [unterkategorie.md](unterkategorie.md))
 - Andere Währungen als Euro
 - Eine fachliche Obergrenze für Beträge. Technisch begrenzt bleibt der Betrag auf zehn Vorkommastellen (Spalte

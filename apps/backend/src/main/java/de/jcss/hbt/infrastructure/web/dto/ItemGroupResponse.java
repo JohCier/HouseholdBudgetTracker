@@ -12,6 +12,9 @@ public record ItemGroupResponse(
         @Schema(example = "Auto", description = "\"Sonstiges\" for the items without a subcategory") String subcategory,
         @JsonFormat(shape = JsonFormat.Shape.STRING)
         @Schema(implementation = String.class, format = "decimal", example = "1750.00") BigDecimal total,
+        @JsonFormat(shape = JsonFormat.Shape.STRING)
+        @Schema(implementation = String.class, format = "decimal", example = "145.83", description = "The yearly total divided by 12")
+        BigDecimal monthlyTotal,
         List<BudgetItemResponse> items
 ) {
 
@@ -19,6 +22,7 @@ public record ItemGroupResponse(
         return new ItemGroupResponse(
                 group.subcategory().value(),
                 group.total().value(),
+                group.monthlyTotal().value(),
                 group.items().stream().map(BudgetItemResponse::from).toList()
         );
     }

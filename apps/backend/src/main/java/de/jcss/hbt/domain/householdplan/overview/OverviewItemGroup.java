@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * Part of the {@link HouseholdPlanOverview} read model: the items of one subcategory group of a
- * section, in display order, and their sum (UK-11, UK-12).
+ * section, in display order, and their sum per year and per month (UK-11, UK-12, MJ-9).
  *
  * @param subcategory the name of the group; {@link BudgetItemSubcategory#OTHER} for the items without one
  */
@@ -17,5 +17,10 @@ public record OverviewItemGroup(BudgetItemSubcategory subcategory, Money total, 
 
     public OverviewItemGroup {
         items = List.copyOf(items);
+    }
+
+    /** The sum per month: the yearly sum divided by 12 (MJ-9). */
+    public Money monthlyTotal() {
+        return total.perMonth();
     }
 }

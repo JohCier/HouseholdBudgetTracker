@@ -9,6 +9,7 @@ import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanRepository;
+import de.jcss.hbt.domain.householdplan.ItemAmount;
 import de.jcss.hbt.domain.householdplan.ItemSection;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 /** The repository is only used to arrange test data; the query handler itself never touches it. */
 @IntegrationTest
@@ -52,13 +54,13 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
     @Test
     void loadsThePlanOfTheYearWithItsItemsMostRecentlyAddedFirst() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2026));
-        BudgetItemId income = plan.addIncome(description("Gehalt"), money("2000.00"), null, null);
-        BudgetItemId expense = plan.addExpense(description("Miete"), money("850.50"), ExpenseCategory.LEBENSUNTERHALT,
+        BudgetItemId income = plan.addIncome(description("Gehalt"), yearly("2000.00"), null, null);
+        BudgetItemId expense = plan.addExpense(description("Miete"), yearly("850.50"), ExpenseCategory.LEBENSUNTERHALT,
                 null,
                 new BudgetItemNote("Warmmiete"));
         repository.add(plan);
         HouseholdPlan otherPlan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2027));
-        otherPlan.addIncome(description("Anderes Jahr"), money("1.00"), null, null);
+        otherPlan.addIncome(description("Anderes Jahr"), yearly("1.00"), null, null);
         repository.add(otherPlan);
 
         HouseholdPlanOverview overview = queryHandler.findByOwnerAndYear(OWNER, Year.of(2026)).orElseThrow();
@@ -66,24 +68,48 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
         assertThat(overview.planId()).isEqualTo(plan.id());
         assertThat(overview.year()).isEqualTo(Year.of(2026));
         assertThat(overview.items()).containsExactly(
-                new OverviewItem(expense, description("Miete"), money("850.50"), ItemType.EXPENSE,
+                new OverviewItem(expense, description("Miete"), yearly("850.50"), ItemType.EXPENSE,
                         ExpenseCategory.LEBENSUNTERHALT, null, new BudgetItemNote("Warmmiete")),
-                new OverviewItem(income, description("Gehalt"), money("2000.00"), ItemType.INCOME, null, null, null));
+                new OverviewItem(income, description("Gehalt"), yearly("2000.00"), ItemType.INCOME, null, null, null));
         assertThat(overview.totalIncome()).isEqualTo(money("2000.00"));
         assertThat(overview.totalExpense()).isEqualTo(money("850.50"));
+    }
+
+    /** MJ-2, MJ-3, MJ-9 */
+    @Test
+    void readsThePeriodOfEachItemAndTakesItemsWithoutOneAsYearly() {
+        HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2026));
+        BudgetItemId salary = plan.addIncome(description("Gehalt"), ItemAmount.monthly(money("3000.00")), null, null);
+        repository.add(plan);
+        UUID older = UUID.randomUUID();
+        jdbcClient.sql("""
+                        INSERT INTO budget_item (id, household_plan_id, description, amount, type, category, position)
+                        VALUES (:id, :planId, 'Versicherung', 1000.00, 'EXPENSE', 'LEBENSUNTERHALT', -1)
+                        """)
+                .param("id", older)
+                .param("planId", plan.id().value())
+                .update();
+
+        HouseholdPlanOverview overview = queryHandler.findByOwnerAndYear(OWNER, Year.of(2026)).orElseThrow();
+
+        assertThat(overview.items()).extracting(OverviewItem::id, OverviewItem::amount).containsExactly(
+                tuple(salary, ItemAmount.monthly(money("3000.00"))),
+                tuple(BudgetItemId.of(older), yearly("1000.00")));
+        assertThat(overview.totalIncome()).isEqualTo(money("36000.00"));
+        assertThat(overview.monthlyTotalExpense()).isEqualTo(money("83.33"));
     }
 
     /** UK-11, UK-12, UK-14, UK-15 */
     @Test
     void loadsTheItemsGroupedInTheStoredOrder() {
         HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2026));
-        BudgetItemId maintenance = plan.addExpense(description("Wartung"), money("400.00"),
+        BudgetItemId maintenance = plan.addExpense(description("Wartung"), yearly("400.00"),
                 ExpenseCategory.LEBENSUNTERHALT, BudgetItemSubcategory.of("Auto"), null);
-        BudgetItemId fuel = plan.addExpense(description("Sprit"), money("1200.00"), ExpenseCategory.LEBENSUNTERHALT,
+        BudgetItemId fuel = plan.addExpense(description("Sprit"), yearly("1200.00"), ExpenseCategory.LEBENSUNTERHALT,
                 BudgetItemSubcategory.of("auto"), null);
-        plan.addExpense(description("Kaltmiete"), money("9600.00"), ExpenseCategory.LEBENSUNTERHALT,
+        plan.addExpense(description("Kaltmiete"), yearly("9600.00"), ExpenseCategory.LEBENSUNTERHALT,
                 BudgetItemSubcategory.of("Miete"), null);
-        plan.addIncome(description("Gehalt"), money("3000.00"), null, null);
+        plan.addIncome(description("Gehalt"), yearly("3000.00"), null, null);
         plan.reorderItems(List.of(maintenance, fuel));
         plan.reorderSubcategories(ItemSection.expenses(ExpenseCategory.LEBENSUNTERHALT),
                 List.of(BudgetItemSubcategory.of("Miete"), BudgetItemSubcategory.of("Auto")));
@@ -126,6 +152,10 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
 
     private static BudgetItemDescription description(String value) {
         return BudgetItemDescription.of(value);
+    }
+
+    private static ItemAmount yearly(String value) {
+        return ItemAmount.yearly(money(value));
     }
 
     private static Money money(String value) {

@@ -1,11 +1,13 @@
 package de.jcss.hbt.infrastructure.persistence;
 
+import de.jcss.hbt.domain.householdplan.AmountPeriod;
 import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.BudgetItemNote;
 import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.ItemAmount;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
@@ -34,7 +36,7 @@ public class JdbcHouseholdPlanOverviewQueryHandler implements HouseholdPlanOverv
         return new OverviewItem(
                 BudgetItemId.of(rs.getObject("id", UUID.class)),
                 BudgetItemDescription.of(rs.getString("description")),
-                Money.of(rs.getBigDecimal("amount")),
+                new ItemAmount(Money.of(rs.getBigDecimal("amount")), AmountPeriod.valueOf(rs.getString("amount_period"))),
                 ItemType.valueOf(rs.getString("type")),
                 category == null ? null : ExpenseCategory.valueOf(category),
                 BudgetItemSubcategory.ofNullable(rs.getString("subcategory")),
@@ -60,7 +62,7 @@ public class JdbcHouseholdPlanOverviewQueryHandler implements HouseholdPlanOverv
 
     private List<OverviewItem> itemsOf(HouseholdPlanId planId) {
         return jdbcClient.sql("""
-                        SELECT id, description, amount, type, category, subcategory, note
+                        SELECT id, description, amount, amount_period, type, category, subcategory, note
                         FROM budget_item
                         WHERE household_plan_id = :planId
                         ORDER BY position DESC

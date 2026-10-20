@@ -40,15 +40,28 @@ export async function registerWithPlan(page: Page): Promise<string> {
 
 export type Category = 'Lebensunterhalt' | 'Freizeit & Spaß' | 'Sparen & Investieren';
 
+/** Whether an amount is entered per month or per year (MJ-1). */
+export type Period = 'Monatlich' | 'Jährlich';
+
+/** Chooses the period of the amount; the tests take amounts as yearly unless they say otherwise. */
+async function choosePeriod(page: Page, period: Period): Promise<void> {
+  await page
+    .getByRole('radiogroup', { name: 'Angabe monatlich oder jährlich' })
+    .getByRole('radio', { name: period })
+    .click();
+}
+
 export async function addIncome(
   page: Page,
   description: string,
   amount: string,
   subcategory?: string,
+  period: Period = 'Jährlich',
 ): Promise<void> {
   await page.getByRole('radio', { name: 'Einnahme' }).click();
   await page.getByLabel('Beschreibung').fill(description);
   await page.getByLabel('Betrag').fill(amount);
+  await choosePeriod(page, period);
   await fillSubcategory(page, subcategory);
   await page.getByRole('button', { name: 'Hinzufügen' }).click();
   await expect(itemRow(page, description)).toBeVisible();
@@ -60,10 +73,12 @@ export async function addExpense(
   amount: string,
   category: Category,
   subcategory?: string,
+  period: Period = 'Jährlich',
 ): Promise<void> {
   await page.getByRole('radio', { name: 'Ausgabe' }).click();
   await page.getByLabel('Beschreibung').fill(description);
   await page.getByLabel('Betrag').fill(amount);
+  await choosePeriod(page, period);
   await page.getByRole('combobox', { name: 'Kategorie', exact: true }).click();
   await page.getByRole('option', { name: category }).click();
   await fillSubcategory(page, subcategory);
@@ -125,9 +140,16 @@ export function itemDescriptions(
   return itemGroup(page, section, subcategory).locator('.item .description');
 }
 
-/** Value of one of the tiles "Einnahmen", "Ausgaben", "Saldo". */
-export function tile(page: Page, label: 'Einnahmen' | 'Ausgaben' | 'Saldo') {
-  return page.locator('app-overview-summary .tile').filter({ hasText: label }).locator('.value');
+/** Yearly or monthly value of one of the tiles "Einnahmen", "Ausgaben", "Saldo" (MJ-13). */
+export function tile(
+  page: Page,
+  label: 'Einnahmen' | 'Ausgaben' | 'Saldo',
+  per: 'Jahr' | 'Monat' = 'Jahr',
+) {
+  return page
+    .locator('app-overview-summary .tile')
+    .filter({ hasText: label })
+    .locator(per === 'Jahr' ? '.value.yearly' : '.value.monthly');
 }
 
 /** Row of a category in the 50/30/20 card, with its total and ratio. */
