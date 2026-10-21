@@ -32,6 +32,10 @@ nicht, nur die Anordnung (insbesondere MJ-12 und EG-5 bis EG-7).
   nicht passt, scrollt die Tabelle in ihrer Karte waagerecht, nicht die Seite.
 - **MA-6**: In Dialogen (Neuer Eintrag in ‹Gruppe›, Eintrag bearbeiten, Plan übernehmen) behalten alle Felder ihre
   Höhe; reicht die Höhe des Bildschirms nicht, scrollt der Inhalt des Dialogs.
+- **MA-7**: Auch mit vergrößerter Schrift (bis 120 %, wie in den Bedienungshilfen des Handys einstellbar) gilt MA-1
+  auf einem 360 px breiten Bildschirm, und die Beträge stehen weiter unter „Monat" und „Jahr". Passen bei einem
+  Posten die Markierungen (PM-12) und die Beträge nicht nebeneinander, rücken die Beträge in eine eigene Zeile unter
+  die Markierungen.
 
 ## Akzeptanzkriterien
 
@@ -47,6 +51,9 @@ nicht, nur die Anordnung (insbesondere MJ-12 und EG-5 bis EG-7).
   Postens in einer Zeile (MA-2).
 - **Gegeben** die Jahresübersicht auf einem 390 px breiten Bildschirm, **dann** ist die Seite nicht breiter als der
   Bildschirm, und „Plan löschen" liegt auf dem Bildschirm (MA-1, MA-5).
+- **Gegeben** derselbe Plan mit weiteren Einnahmen von 12.345,67 € monatlich auf einem 360 px breiten Bildschirm
+  mit Schrift auf 120 %, **dann** ist die Seite nicht breiter als der Bildschirm, und Posten und „Summe Einnahmen"
+  stehen rechtsbündig unter „Monat" und „Jahr" (MA-7).
 - **Gegeben** der Dialog „Neuer Eintrag in Haus" auf einem 390 × 844 px großen Bildschirm, **dann** ist die Auswahl
   „Ausgabe/Einnahme" vollständig zu sehen (MA-6).
 
@@ -61,13 +68,15 @@ nicht, nur die Anordnung (insbesondere MJ-12 und EG-5 bis EG-7).
 - `budget/ui/budget-entries.scss`: Die Karte ist ein Container (`container-type: inline-size`); unter 600 px
   Kartenbreite ordnet ein Grid die Posten zweizeilig an (MA-2). In Summenzeilen bilden die Beträge eine Einheit
   (`.amounts`), die als Ganzes in die nächste Zeile umbricht, wenn sie nicht neben die Bezeichnung passt (MA-3). Die Beschreibung trennt mit
-  `hyphens: auto`, der Platzhalter für den Griff ist so breit wie der Griff (MA-4)
+  `hyphens: auto`, der Platzhalter für den Griff ist so breit wie der Griff (MA-4). Markierungen und Beträge eines
+  Postens bilden die zweite Zeile (`.details`, umbrechend), die Beträge darin eine Einheit (`.amounts`), die bei
+  Platzmangel unter die Markierungen rückt; Betragsspalten 6rem, Markierungen 32 px (MA-7)
 - `budget/budget-dashboard.ts`: Die Spalten des Rasters dürfen schmaler als ihr Inhalt werden (`minmax(0, 1fr)`,
   `min-width: 0`), sodass keine Karte die Seite verbreitert (MA-1)
 - `budget/yearly-overview-page.ts`: Unter 600 px Bildschirmbreite stehen die Knöpfe untereinander, die Karte scrollt
   im Notfall waagerecht (MA-1, MA-5)
 - `budget/ui/add-item-dialog.ts`, `edit-item-dialog.ts`, `copy-plan-dialog.ts`: Felder schrumpfen nicht (MA-6)
-- E2E: `e2e/tests/mobile-ansicht.spec.ts` (MA-1 bis MA-6) mit Viewports von 390 × 844 px, 900 px und 1280 px
+- E2E: `e2e/tests/mobile-ansicht.spec.ts` (MA-1 bis MA-7) mit Viewports von 390 × 844 px, 900 px und 1280 px
 
 ## Offene Fragen
 

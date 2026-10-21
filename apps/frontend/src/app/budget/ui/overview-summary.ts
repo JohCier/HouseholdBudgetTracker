@@ -1,63 +1,63 @@
-import { CurrencyPipe } from '@angular/common';
-import { Component, input } from '@angular/core';
+import { CurrencyPipe, NgTemplateOutlet } from '@angular/common';
+import { Component, computed, input } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { HouseholdPlanOverview } from '../budget.model';
 
 /**
  * Income, expenses and balance of the plan in one box, per month and per year side by side (BI-1);
- * below them, apart from the balance, the saving potential of all expenses (PM-14).
+ * below them, apart from the balance, the saving potential of all expenses (PM-14). In a narrow box
+ * the year stands below the month (BI-5).
  */
 @Component({
   selector: 'app-overview-summary',
-  imports: [CurrencyPipe, MatCardModule, MatIconModule],
+  imports: [CurrencyPipe, NgTemplateOutlet, MatCardModule, MatIconModule],
   template: `
     <mat-card appearance="outlined" class="balance-sheet">
       <mat-card-header>
         <mat-card-title id="balance-sheet-title">Bilanz</mat-card-title>
       </mat-card-header>
       <mat-card-content>
-        <table aria-labelledby="balance-sheet-title">
-          <thead>
-            <tr>
-              <td></td>
-              <th scope="col">Monat</th>
-              <th scope="col">Jahr</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th scope="row">Gesamteinnahmen</th>
-              <td class="value monthly income">
-                {{ overview().monthlyTotalIncome | currency: 'EUR' }}
-              </td>
-              <td class="value yearly income">{{ overview().totalIncome | currency: 'EUR' }}</td>
-            </tr>
-            <tr>
-              <th scope="row">Gesamtausgaben</th>
-              <td class="value monthly expense">
-                {{ overview().monthlyTotalExpense | currency: 'EUR' }}
-              </td>
-              <td class="value yearly expense">{{ overview().totalExpense | currency: 'EUR' }}</td>
-            </tr>
-            <tr class="balance">
-              <th scope="row">Saldo</th>
-              <td class="value monthly" [class.expense]="overview().monthlyBalance.startsWith('-')">
-                {{ overview().monthlyBalance | currency: 'EUR' }}
-              </td>
-              <td class="value yearly" [class.expense]="overview().balance.startsWith('-')">
-                {{ overview().balance | currency: 'EUR' }}
-              </td>
-            </tr>
-            <tr class="saving-potential">
-              <th scope="row">Sparpotential</th>
-              <td class="value monthly">
-                {{ overview().monthlySavingPotential | currency: 'EUR' }}
-              </td>
-              <td class="value yearly">{{ overview().savingPotential | currency: 'EUR' }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- Only one of both is displayed, depending on the width of the card (BI-5) -->
+        <div class="side-by-side">
+          <ng-container *ngTemplateOutlet="sheet; context: { $implicit: ['monthly', 'yearly'] }" />
+        </div>
+        <div class="stacked">
+          <ng-container *ngTemplateOutlet="sheet; context: { $implicit: ['monthly'] }" />
+          <ng-container *ngTemplateOutlet="sheet; context: { $implicit: ['yearly'] }" />
+        </div>
+        <ng-template #sheet let-periods>
+          <table aria-labelledby="balance-sheet-title">
+            <thead>
+              <tr>
+                <td></td>
+                @for (period of asPeriods(periods); track period) {
+                  <th scope="col">{{ periodLabels[period] }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track row.key) {
+                <tr [class]="row.key">
+                  <th scope="row">{{ row.label }}</th>
+                  @for (period of asPeriods(periods); track period) {
+                    <td
+                      class="value"
+                      [class]="period"
+                      [class.income]="row.key === 'total-income'"
+                      [class.expense]="
+                        row.key === 'total-expense' ||
+                        (row.key === 'balance' && row.amounts[period].startsWith('-'))
+                      "
+                    >
+                      {{ row.amounts[period] | currency: 'EUR' }}
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </ng-template>
       </mat-card-content>
     </mat-card>
     @if (overview().expensesExceedIncome) {
@@ -70,6 +70,22 @@ import { HouseholdPlanOverview } from '../budget.model';
   styles: `
     .balance-sheet {
       max-width: 560px;
+    }
+    mat-card-content {
+      container-type: inline-size;
+    }
+    .stacked {
+      display: none;
+    }
+    /* Too narrow for label, month and year in one row, even with larger fonts (BI-5) */
+    @container (max-width: 28em) {
+      .side-by-side {
+        display: none;
+      }
+      .stacked {
+        display: grid;
+        gap: 16px;
+      }
     }
     table {
       width: 100%;
@@ -124,17 +140,6 @@ import { HouseholdPlanOverview } from '../budget.model';
     .expense {
       color: var(--mat-sys-error);
     }
-    @media (max-width: 400px) {
-      th,
-      td {
-        padding-left: 8px;
-      }
-      .value,
-      .balance .value {
-        font: var(--mat-sys-title-small);
-        font-variant-numeric: tabular-nums;
-      }
-    }
     .warning {
       display: flex;
       align-items: center;
@@ -149,4 +154,45 @@ import { HouseholdPlanOverview } from '../budget.model';
 })
 export class OverviewSummary {
   readonly overview = input.required<HouseholdPlanOverview>();
+
+  protected readonly periodLabels: Record<Period, string> = { monthly: 'Monat', yearly: 'Jahr' };
+
+  protected readonly rows = computed<BalanceSheetRow[]>(() => {
+    const overview = this.overview();
+    return [
+      {
+        key: 'total-income',
+        label: 'Gesamteinnahmen',
+        amounts: { monthly: overview.monthlyTotalIncome, yearly: overview.totalIncome },
+      },
+      {
+        key: 'total-expense',
+        label: 'Gesamtausgaben',
+        amounts: { monthly: overview.monthlyTotalExpense, yearly: overview.totalExpense },
+      },
+      {
+        key: 'balance',
+        label: 'Saldo',
+        amounts: { monthly: overview.monthlyBalance, yearly: overview.balance },
+      },
+      {
+        key: 'saving-potential',
+        label: 'Sparpotential',
+        amounts: { monthly: overview.monthlySavingPotential, yearly: overview.savingPotential },
+      },
+    ];
+  });
+
+  /** Types the periods passed to the template of a table. */
+  protected asPeriods(periods: Period[]): Period[] {
+    return periods;
+  }
+}
+
+type Period = 'monthly' | 'yearly';
+
+interface BalanceSheetRow {
+  key: 'total-income' | 'total-expense' | 'balance' | 'saving-potential';
+  label: string;
+  amounts: Record<Period, string>;
 }

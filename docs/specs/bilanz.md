@@ -23,8 +23,10 @@ AW-2, MJ-8, MJ-9), ändert sich nicht.
   Gesamteinnahmen sind wie bisher in der Farbe der Einnahmen, die Gesamtausgaben und ein negativer Saldo in der
   Fehlerfarbe dargestellt.
 - **BI-4**: Die Beträge sind die bisherigen: Monatssummen nach MJ-9, Jahressummen nach AW-1 und AW-2.
-- **BI-5**: Der Kasten behält seine zwei Spalten auch auf schmalen Bildschirmen (ab 360 px Breite, MA-1 in
-  [mobile-ansicht.md](mobile-ansicht.md)) und ist nicht breiter als der Bildschirm.
+- **BI-5**: Ist der Kasten zu schmal für Bezeichnung, Monats- und Jahreswert nebeneinander (auf dem Handy, auch mit
+  vergrößerter Schrift), stehen die Spalten untereinander: oben „Monat" mit allen Zeilen, darunter „Jahr" mit
+  denselben Zeilen. Linien, Hervorhebung und Farben (BI-3) gelten in beiden Teilen. Der Kasten ist nie breiter als der
+  Bildschirm (ab 360 px Breite, MA-1 in [mobile-ansicht.md](mobile-ansicht.md)).
 - **BI-6**: Die Warnung „Deine Ausgaben übersteigen deine Einnahmen." (AW-6) steht unverändert unter dem Kasten.
 
 ## Akzeptanzkriterien
@@ -36,8 +38,9 @@ AW-2, MJ-8, MJ-9), ändert sich nicht.
   Gesamtausgaben stehen unter Gesamteinnahmen, Saldo unter Gesamtausgaben (BI-1, BI-2).
 - **Gegeben** Ausgaben, die die Einnahmen übersteigen, **dann** ist der Saldo in beiden Spalten negativ und in der
   Fehlerfarbe, und unter dem Kasten steht die Warnung (BI-3, BI-6).
-- **Gegeben** derselbe Plan auf einem 390 px breiten Bildschirm, **dann** stehen Monats- und Jahresspalte
-  nebeneinander, und die Seite ist nicht breiter als der Bildschirm (BI-5).
+- **Gegeben** Einnahmen von 123.456,78 € monatlich auf einem 390 px breiten Bildschirm, **dann** steht der Teil „Jahr"
+  unter dem Teil „Monat", die Beträge beider Teile rechtsbündig untereinander, und die Seite ist nicht breiter als der
+  Bildschirm (BI-5).
 
 ## Nicht im Umfang
 
@@ -51,9 +54,11 @@ AW-2, MJ-8, MJ-9), ändert sich nicht.
 - Frontend: `budget/ui/overview-summary.ts` zeigt statt der drei Kacheln eine Karte „Bilanz" mit einer Tabelle:
   Zeilenköpfe „Gesamteinnahmen", „Gesamtausgaben", „Saldo" links, Spalten „Monat" und „Jahr" rechtsbündig (BI-1,
   BI-2); die Zeile `balance` hat eine Linie darüber und größere Beträge, die Farben bleiben (BI-3). Die Werte kommen
-  unverändert aus `HouseholdPlanOverview` (BI-4). Unter 400 px Bildschirmbreite werden Abstände und Schrift kleiner,
-  die Spalten bleiben nebeneinander (BI-5); die Warnung steht weiter unter der Karte (BI-6)
-- Tests: `overview-summary.spec.ts`
+  unverändert aus `HouseholdPlanOverview` (BI-4). Die Tabelle entsteht aus einer Vorlage je Spaltenauswahl: einmal
+  mit beiden Spalten, einmal je eine Tabelle für Monat und Jahr. Eine Container-Abfrage auf den Karteninhalt
+  (`max-width: 28em`, wächst mit der Schrift) zeigt unter dieser Breite die beiden einzelnen Tabellen untereinander
+  statt der gemeinsamen (BI-5); die Warnung steht weiter unter der Karte (BI-6)
+- Tests: `overview-summary.spec.ts` (auch die Tabellen untereinander, BI-5)
 - E2E: `e2e/tests/bilanz.spec.ts` (BI-1 bis BI-6). Der Helfer `balanceSheet` (vorher `tile`) liest einen Wert über den
   Zeilenkopf; die übrigen E2E-Tests nutzen ihn mit den neuen Bezeichnungen
 

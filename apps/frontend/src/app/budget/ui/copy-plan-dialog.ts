@@ -41,7 +41,8 @@ import { FIRST_YEAR, LAST_YEAR } from '../year';
  * without plan takes over one of the user's plans and they choose which (PU-12).
  */
 export type CopyPlanDialogData =
-  { sourceYear: Year } | { targetYear: Year; sourceYears: readonly Year[] };
+  | { sourceYear: Year }
+  | { targetYear: Year; sourceYears: readonly Year[] };
 
 /** The years a plan was taken over from and to, once it is done. */
 export interface CopiedPlan {
@@ -76,13 +77,8 @@ type YearCheck =
     MatSelectModule,
   ],
   template: `
-    <h2 mat-dialog-title>
-      @if (choosesSource) {
-        Plan für {{ targetYear.value }} übernehmen
-      } @else {
-        Plan {{ sourceYear.value }} als Vorlage übernehmen
-      }
-    </h2>
+    <!-- Without white space around the text, which would indent its first line -->
+    <h2 mat-dialog-title>{{ title }}</h2>
     <form [formGroup]="form" (ngSubmit)="copy()">
       <mat-dialog-content>
         @if (choosesSource) {
@@ -183,6 +179,10 @@ export class CopyPlanDialog {
   protected readonly lastYear = LAST_YEAR;
   protected readonly choosesSource = 'targetYear' in this.data;
   protected readonly sourceYears = 'sourceYears' in this.data ? this.data.sourceYears : [];
+  protected readonly title =
+    'sourceYear' in this.data
+      ? `Plan ${this.data.sourceYear} als Vorlage übernehmen`
+      : `Plan für ${this.data.targetYear} übernehmen`;
   protected readonly copying = signal(false);
   protected readonly error = signal<string | null>(null);
 
@@ -278,11 +278,13 @@ export class CopyPlanDialog {
 
   private lookUp(year: Year): Observable<YearCheck> {
     return this.api.getOverview(year).pipe(
-      map((overview): YearCheck => ({
-        state: 'checked',
-        year,
-        plan: overview ? { id: overview.id, itemCount: overview.items.length } : null,
-      })),
+      map(
+        (overview): YearCheck => ({
+          state: 'checked',
+          year,
+          plan: overview ? { id: overview.id, itemCount: overview.items.length } : null,
+        }),
+      ),
       catchError((error: unknown) => {
         this.error.set(toMessage(error));
         return of<YearCheck>({ state: 'failed', message: toMessage(error) });

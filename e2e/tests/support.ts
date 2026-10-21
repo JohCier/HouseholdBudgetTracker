@@ -221,9 +221,12 @@ export async function showInPie(page: Page, category?: Category, subcategory?: s
     : subcategory
       ? `${category} › ${subcategory}`
       : category;
-  await page.getByRole('combobox', { name: 'Ausschnitt' }).click();
+  const selection = page.getByRole('combobox', { name: 'Ausschnitt' });
+  await selection.click();
   await page.getByRole('option', { name, exact: true }).click();
-  await expect(page.getByRole('combobox', { name: 'Ausschnitt' })).toContainText(name);
+  await expect(selection).toContainText(name);
+  // Until the list has closed, a click on the field does not open it again
+  await expect(page.getByRole('listbox')).toBeHidden();
 }
 
 /** Line of a group, an item or "nicht verplant" in the legend of a category or group (TK-8). */

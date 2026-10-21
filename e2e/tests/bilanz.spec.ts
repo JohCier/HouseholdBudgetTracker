@@ -75,7 +75,7 @@ test.describe('Bilanz in der Übersicht', () => {
     expect((await box(warning)).y).toBeGreaterThan(saldo.y + saldo.height);
   });
 
-  test('auf dem Handy stehen Monat und Jahr nebeneinander, der Kasten passt auf den Bildschirm (BI-5)', async ({
+  test('auf dem Handy steht das Jahr unter dem Monat, der Kasten passt auf den Bildschirm (BI-5)', async ({
     page,
   }) => {
     await addIncome(page, 'Gehalt', '123456.78', undefined, 'Monatlich');
@@ -83,8 +83,9 @@ test.describe('Bilanz in der Übersicht', () => {
 
     const monthly = await box(balanceSheet(page, 'Gesamteinnahmen', 'Monat'));
     const yearly = await box(balanceSheet(page, 'Gesamteinnahmen', 'Jahr'));
-    expect(Math.abs(monthly.y - yearly.y)).toBeLessThan(4);
-    expect(yearly.x).toBeGreaterThan(monthly.x + monthly.width - 1);
+    const lastMonthly = await box(balanceSheet(page, 'Sparpotential', 'Monat'));
+    expect(yearly.y).toBeGreaterThan(lastMonthly.y + lastMonthly.height - 1);
+    expect(Math.abs(yearly.x + yearly.width - (monthly.x + monthly.width))).toBeLessThan(2);
     const sheet = await box(page.locator('app-overview-summary mat-card'));
     expect(sheet.x).toBeGreaterThanOrEqual(0);
     expect(sheet.x + sheet.width).toBeLessThanOrEqual(390);
