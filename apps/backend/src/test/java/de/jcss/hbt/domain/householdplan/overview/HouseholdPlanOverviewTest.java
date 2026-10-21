@@ -89,7 +89,7 @@ class HouseholdPlanOverviewTest {
 
     @Test
     void savingsAreAFloorThatMayBeExceeded() {
-        // The rest of the income is spent on living costs, so no surplus adds to savings (AW-10)
+        // The rest of the income is spent on living costs, so no surplus adds to leisure (AW-10)
         HouseholdPlanOverview belowFloor = overview("1000.00",
                 expense(ExpenseCategory.SPAREN_INVESTIEREN, "100.00"),
                 expense(ExpenseCategory.LEBENSUNTERHALT, "900.00"));
@@ -130,8 +130,9 @@ class HouseholdPlanOverviewTest {
         assertThat(overview.totalIncome()).isEqualTo(money("2000.00"));
         assertThat(overview.totalExpense()).isEqualTo(money("1300.00"));
         assertThat(breakdownFor(overview, ExpenseCategory.LEBENSUNTERHALT).total()).isEqualTo(money("900.00"));
-        // Savings also contain the surplus of 700.00 (AW-10)
-        assertThat(breakdownFor(overview, ExpenseCategory.SPAREN_INVESTIEREN).total()).isEqualTo(money("1100.00"));
+        assertThat(breakdownFor(overview, ExpenseCategory.SPAREN_INVESTIEREN).total()).isEqualTo(money("400.00"));
+        // Leisure contains the surplus of 700.00 (AW-10)
+        assertThat(breakdownFor(overview, ExpenseCategory.FREIZEIT_SPASS).total()).isEqualTo(money("700.00"));
     }
 
     /** MJ-6, MJ-8, MJ-9 */
@@ -151,21 +152,21 @@ class HouseholdPlanOverviewTest {
 
     /** AW-10 */
     @Test
-    void savingsContainTheSurplusAndShowItAsUnplanned() {
+    void leisureContainsTheSurplusAndShowsItAsUnplanned() {
         HouseholdPlanOverview overview = overview("2000.00",
                 expense(ExpenseCategory.LEBENSUNTERHALT, "1000.00"),
-                expense(ExpenseCategory.FREIZEIT_SPASS, "600.00"),
-                expense(ExpenseCategory.SPAREN_INVESTIEREN, "100.00"));
+                expense(ExpenseCategory.FREIZEIT_SPASS, "300.00"),
+                expense(ExpenseCategory.SPAREN_INVESTIEREN, "400.00"));
 
-        CategoryBreakdown sparen = breakdownFor(overview, ExpenseCategory.SPAREN_INVESTIEREN);
-        assertThat(sparen.total()).isEqualTo(money("400.00"));
-        assertThat(sparen.unplanned()).isEqualTo(money("300.00"));
-        assertThat(sparen.actualPercentageOfIncome()).isEqualTo(Percentage.of(20));
-        assertThat(sparen.targetMet()).isTrue();
         CategoryBreakdown freizeit = breakdownFor(overview, ExpenseCategory.FREIZEIT_SPASS);
         assertThat(freizeit.total()).isEqualTo(money("600.00"));
-        assertThat(freizeit.unplanned()).isEqualTo(Money.ZERO);
+        assertThat(freizeit.unplanned()).isEqualTo(money("300.00"));
         assertThat(freizeit.actualPercentageOfIncome()).isEqualTo(Percentage.of(30));
+        assertThat(freizeit.targetMet()).isTrue();
+        CategoryBreakdown sparen = breakdownFor(overview, ExpenseCategory.SPAREN_INVESTIEREN);
+        assertThat(sparen.total()).isEqualTo(money("400.00"));
+        assertThat(sparen.unplanned()).isEqualTo(Money.ZERO);
+        assertThat(sparen.actualPercentageOfIncome()).isEqualTo(Percentage.of(20));
         assertThat(breakdownFor(overview, ExpenseCategory.LEBENSUNTERHALT).unplanned()).isEqualTo(Money.ZERO);
         assertThat(overview.totalExpense()).isEqualTo(money("1700.00"));
     }
@@ -175,11 +176,11 @@ class HouseholdPlanOverviewTest {
     void breakdownsShowTheirTotalsPerMonthRounded() {
         HouseholdPlanOverview overview = overview("2000.00",
                 expense(ExpenseCategory.LEBENSUNTERHALT, "1000.00"),
-                expense(ExpenseCategory.SPAREN_INVESTIEREN, "100.00"));
+                expense(ExpenseCategory.FREIZEIT_SPASS, "100.00"));
 
-        CategoryBreakdown sparen = breakdownFor(overview, ExpenseCategory.SPAREN_INVESTIEREN);
-        assertThat(sparen.monthlyTotal()).isEqualTo(money("83.33"));
-        assertThat(sparen.monthlyUnplanned()).isEqualTo(money("75.00"));
+        CategoryBreakdown freizeit = breakdownFor(overview, ExpenseCategory.FREIZEIT_SPASS);
+        assertThat(freizeit.monthlyTotal()).isEqualTo(money("83.33"));
+        assertThat(freizeit.monthlyUnplanned()).isEqualTo(money("75.00"));
         CategoryBreakdown leben = breakdownFor(overview, ExpenseCategory.LEBENSUNTERHALT);
         assertThat(leben.monthlyTotal()).isEqualTo(money("83.33"));
         assertThat(leben.monthlyUnplanned()).isEqualTo(Money.ZERO);

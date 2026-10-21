@@ -50,7 +50,7 @@ bleiben unverändert.
 - **TK-8**: Die Legende nennt je Stück Name (Unterkategorie bzw. Beschreibung des Postens), Betrag je Monat (MJ-14)
   und seinen Anteil an der Summe des Ausschnitts je Monat in Prozent, z. B. „Auto 145,83 € · 13 %". Die Anteile rechnet das Backend (wie AW-9,
   UK-13); die Oberfläche teilt den Kreis nur im Verhältnis der Beträge auf (wie TD-8).
-- **TK-9**: Bei Sparen & Investieren bekommt ein Überschuss (AW-10) ein eigenes Stück „nicht verplant", damit die
+- **TK-9**: Bei Freizeit & Spaß bekommt ein Überschuss (AW-10) ein eigenes Stück „nicht verplant", damit die
   Summe des Ausschnitts dieselbe ist wie in der 50/30/20-Regel. Es steht als letztes Stück in der Legende.
 - **TK-10**: Die Stücke eines Ausschnitts tragen Abstufungen der Farbe ihrer Kategorie (UK-19), vom kräftigsten
   Ton für das erste Stück bis zum hellsten; benachbarte Stücke sind durch eine helle Trennlinie unterschieden. Das
@@ -90,8 +90,8 @@ bleiben unverändert.
   **dann** ist „Lebensunterhalt" gewählt (TK-4).
 - **Gegeben** „Auto" in Lebensunterhalt und in Freizeit & Spaß, **dann** bietet die Auswahl „Auto" unter beiden
   Kategorien getrennt an, und jeder Ausschnitt zeigt nur die Posten seiner Kategorie (TK-2, TK-3).
-- **Gegeben** Einnahmen 3.000,00 € und Ausgaben Sparen & Investieren 500,00 € monatlich, sonst keine, **wenn** der
-  Benutzer „Sparen & Investieren" wählt, **dann** zeigt die Torte ein Stück für die Gruppe und ein graues Stück
+- **Gegeben** Einnahmen 3.000,00 € und Ausgaben Freizeit & Spaß 500,00 € monatlich, sonst keine, **wenn** der
+  Benutzer „Freizeit & Spaß" wählt, **dann** zeigt die Torte ein Stück für die Gruppe und ein graues Stück
   „nicht verplant 2.500,00 €" (TK-9, TK-10).
 - **Gegeben** „Lebensunterhalt › Auto" ist gewählt, **wenn** der Benutzer einen weiteren Posten in „Auto" erfasst,
   **dann** bleibt der Ausschnitt gewählt und zeigt ein Stück mehr (TK-5).
@@ -121,7 +121,7 @@ bleiben unverändert.
 ## Umsetzung
 
 - Backend: Das Read Model `HouseholdPlanOverview` gibt jeder Gruppe `percentageOfSection` mit, den Anteil ihrer Summe
-  je Monat an der Summe der Kategorie je Monat aus der Auswertung (bei Sparen & Investieren mit Überschuss, TK-9), bei
+  je Monat an der Summe der Kategorie je Monat aus der Auswertung (bei Freizeit & Spaß mit Überschuss, TK-9), bei
   den Einnahmen am Einkommen. `OverviewItemGroup.percentageOf` rechnet den Anteil eines Postens an seiner Gruppe aus
   den Monatsbeträgen, `CategoryBreakdown.monthlyUnplannedShare` den Anteil von „nicht verplant" (TK-6, TK-8)
 - API: `ItemGroupResponse.percentageOfSection`, `BudgetItemResponse.percentageOfGroup` (nur bei Posten einer Gruppe

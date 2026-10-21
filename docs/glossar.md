@@ -50,7 +50,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Saldo | `balance` | Einkommen minus Ausgaben; negativ bei Defizit |
 | Bilanz | `app-overview-summary`, nur im Frontend | Kasten oben in der Planansicht: Gesamteinnahmen, Gesamtausgaben, Saldo und Sparpotential je Monat und je Jahr |
 | Defizit | `expensesExceedIncome` | Die Ausgaben sind höher als das Einkommen |
-| Überschuss, nicht verplant | `surplus`, `unplanned` | Positiver Saldo; zählt in der Auswertung zu Sparen & Investieren |
+| Überschuss, nicht verplant | `surplus`, `unplanned` | Positiver Saldo; zählt in der Auswertung zu Freizeit & Spaß |
 | Finanzielle Lage | `BudgetSummary` (Value Object) | Einkommen, Ausgaben je Kategorie und alles, was daraus folgt (Saldo, Anteile, Zielerreichung) |
 | Übersicht | `HouseholdPlanOverview` (Read Model) | Was die Oberfläche für ein Jahr anzeigt: Posten, Summen, Aufteilung je Kategorie |
 | Jahresübersicht | `YearlyOverview` (Read Model), `YearlyOverviewEntry` | Alle Pläne eines Benutzers mit Einnahmen, Ausgaben, Überschuss und Veränderung zum Vorjahr; Startseite nach der Anmeldung |

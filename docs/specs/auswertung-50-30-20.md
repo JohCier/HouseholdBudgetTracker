@@ -30,12 +30,13 @@ der Anwendung.
   nichts ausgegeben wird; eine Untergrenze gilt immer als erreicht.
 - **AW-8**: Die Auswertung enthält immer alle drei Kategorien, auch solche ohne Ausgaben (mit 0,00 €).
 - **AW-10**: Ein Überschuss (positiver Saldo, also Einkommen, das keiner Ausgabe zugeordnet ist)
-  zählt in der Auswertung zu Sparen & Investieren: Anteil und Zielerreichung von Sparen & Investieren werden aus den
-  Ausgaben der Kategorie plus dem Überschuss berechnet. Zu Freizeit & Spaß zählt nur, was ausdrücklich so erfasst ist.
-  Einkommen, Ausgaben und Saldo (AW-1, AW-2) ändern sich dadurch nicht. Bei einem Defizit gibt es keinen Überschuss.
-  Die Oberfläche weist den Überschuss in der Aufteilung von Sparen & Investieren getrennt aus („davon nicht verplant").
-  Damit ist das Sparziel immer erreicht, wenn Lebensunterhalt und Freizeit & Spaß ihre Obergrenzen einhalten und kein
-  Defizit vorliegt; das ist so gewollt.
+  zählt in der Auswertung zu Freizeit & Spaß: Anteil und Zielerreichung von Freizeit & Spaß werden aus den
+  Ausgaben der Kategorie plus dem Überschuss berechnet. Zu Sparen & Investieren zählt nur, was ausdrücklich so erfasst
+  ist. Einkommen, Ausgaben und Saldo (AW-1, AW-2) ändern sich dadurch nicht. Bei einem Defizit gibt es keinen
+  Überschuss. Die Oberfläche weist den Überschuss in der Aufteilung von Freizeit & Spaß getrennt aus („davon nicht
+  verplant"). Geld, das nicht ausdrücklich als Sparen erfasst ist, gilt damit als ausgegeben: Ein großer Überschuss
+  kann die Obergrenze von Freizeit & Spaß überschreiten, und das Sparziel ist nur erreicht, wenn genug Sparen &
+  Investieren erfasst ist; das ist so gewollt.
 - **AW-9**: Alle Zahlen der Auswertung rechnet die Domäne (`BudgetSummary`). Read Model und Oberfläche rechnen nichts
   selbst nach.
 
@@ -45,12 +46,13 @@ der Anwendung.
   Investieren 900,00 €, **dann** zeigt die Auswertung Saldo 0,00 €, kein Defizit, Anteile 50 %, 20 %, 30 % und alle drei
   Ziele als erreicht.
 - **Gegeben** Einnahmen von 2.000,00 € und Ausgaben Lebensunterhalt 1.200,00 €, **dann** ist das Ziel für
-  Lebensunterhalt überschritten (60 % > 50 %). Die übrigen 800,00 € zählen zu Sparen & Investieren, deren Ziel damit
-  erreicht ist (40 % ≥ 20 %, AW-10); Freizeit & Spaß bleibt bei 0 % und gilt als erreicht.
-- **Gegeben** Einnahmen von 2.000,00 € und Ausgaben Lebensunterhalt 1.000,00 €, Freizeit & Spaß 600,00 €, Sparen &
-  Investieren 100,00 €, **dann** beträgt der Überschuss 300,00 €, Sparen & Investieren zeigt 400,00 € bzw. 20 % und
-  gilt als erreicht, Freizeit & Spaß bleibt bei 600,00 € bzw. 30 % (AW-10). Die Oberfläche zeigt bei Sparen &
-  Investieren „davon nicht verplant: 300,00 €" und bei Freizeit & Spaß keinen solchen Hinweis.
+  Lebensunterhalt überschritten (60 % > 50 %). Die übrigen 800,00 € zählen zu Freizeit & Spaß, deren Ziel damit
+  ebenfalls überschritten ist (40 % > 30 %, AW-10); Sparen & Investieren bleibt bei 0 % und zeigt „Ziel nicht
+  erreicht".
+- **Gegeben** Einnahmen von 2.000,00 € und Ausgaben Lebensunterhalt 1.000,00 €, Freizeit & Spaß 300,00 €, Sparen &
+  Investieren 400,00 €, **dann** beträgt der Überschuss 300,00 €, Freizeit & Spaß zeigt 600,00 € bzw. 30 % und
+  gilt als erreicht, Sparen & Investieren bleibt bei 400,00 € bzw. 20 % (AW-10). Die Oberfläche zeigt bei Freizeit &
+  Spaß „davon nicht verplant: 300,00 €" und bei Sparen & Investieren keinen solchen Hinweis.
 - **Gegeben** Ausgaben von 100,00 € und keine Einnahmen, **dann** zeigt die Oberfläche die Warnung „Deine Ausgaben
   übersteigen deine Einnahmen.", und der Saldo ist −100,00 €.
 - **Gegeben** ein leerer Plan, **dann** sind alle Summen 0,00 €, alle Anteile 0 %, und alle Ziele gelten als erreicht.
@@ -71,7 +73,7 @@ der Anwendung.
 - API: `GET /api/plans?year=` liefert `HouseholdPlanOverviewResponse`; Beträge als Dezimal-Strings (z. B. `"850.00"`).
   `CategoryBreakdownResponse.total` enthält den Überschuss, `unplanned` weist ihn getrennt aus (AW-10)
 - Frontend: `budget/ui/overview-summary.ts` (Summen, Saldo, Warnung), `budget/ui/category-breakdown.ts` (Balken je
-  Kategorie, „davon nicht verplant" bei Sparen & Investieren); als Tortendiagramm siehe
+  Kategorie, „davon nicht verplant" bei Freizeit & Spaß); als Tortendiagramm siehe
   [tortendiagramm.md](tortendiagramm.md)
 - Tests: `BudgetSummaryTest`, `ExpenseCategoryTest`, `PercentageTest`, `HouseholdPlanOverviewTest`,
   `JdbcHouseholdPlanOverviewQueryHandlerTest`, `overview-summary.spec.ts`, `category-breakdown.spec.ts`

@@ -108,6 +108,8 @@ test.describe('Unterkategorie', () => {
     await addIncome(page, 'Gehalt', '2000');
     await addExpense(page, 'Wartung', '400', 'Lebensunterhalt', 'Auto');
     await addExpense(page, 'Ausflug', '200', 'Freizeit & Spaß', 'Auto');
+    // Uses up the income, so no surplus counts towards leisure (AW-10)
+    await addExpense(page, 'ETF', '1400', 'Sparen & Investieren');
 
     await expect(itemDescriptions(page, 'Lebensunterhalt', 'Auto')).toHaveText(['Wartung']);
     await expect(itemDescriptions(page, 'Freizeit & Spaß', 'Auto')).toHaveText(['Ausflug']);

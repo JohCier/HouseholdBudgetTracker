@@ -126,23 +126,23 @@ describe('CategoryPieChart', () => {
   it('leaves out empty categories from the pie but keeps them in the legend', async () => {
     const element = await render([
       breakdown('LEBENSUNTERHALT', '1200.00', 60, false),
-      breakdown('FREIZEIT_SPASS', '0.00', 0),
       {
-        ...breakdown('SPAREN_INVESTIEREN', '800.00', 40),
+        ...breakdown('FREIZEIT_SPASS', '800.00', 40, false),
         unplanned: '9600.00',
         monthlyUnplanned: '800.00',
-        unplannedPercentageOfTotal: 0,
+        unplannedPercentageOfTotal: 100,
       },
+      breakdown('SPAREN_INVESTIEREN', '0.00', 0, false),
     ]);
 
     expect(element.querySelectorAll('.slice').length).toBe(2);
-    expect(element.querySelector('.slice.FREIZEIT_SPASS')).toBeNull();
+    expect(element.querySelector('.slice.SPAREN_INVESTIEREN')).toBeNull();
     const items = element.querySelectorAll('.legend-item');
     expect(items.length).toBe(3);
     expect(items[0].textContent).toMatch(/60 % von max\. 50 %\s+· Ziel überschritten/);
     expect(items[0].classList).toContain('missed');
-    expect(items[2].textContent).toMatch(/davon nicht verplant: \S*800/);
-    expect(items[1].textContent).toMatch(/Freizeit & Spaß\S*0.00/);
+    expect(items[1].textContent).toMatch(/davon nicht verplant: \S*800/);
+    expect(items[2].textContent).toMatch(/Sparen & Investieren\S*0.00/);
   });
 
   // TD-4
@@ -262,39 +262,39 @@ describe('CategoryPieChart', () => {
   });
 
   // TK-9, TK-10
-  it('adds the unplanned income of savings as a grey slice of its own', async () => {
-    const savings: CategoryBreakdown = {
-      ...breakdown('SPAREN_INVESTIEREN', '3000.00', 100),
+  it('adds the unplanned income of leisure as a grey slice of its own', async () => {
+    const leisure: CategoryBreakdown = {
+      ...breakdown('FREIZEIT_SPASS', '3000.00', 100),
       unplanned: '30000.00',
       monthlyUnplanned: '2500.00',
       unplannedPercentageOfTotal: 83.33,
     };
     const { element } = await renderPie(
-      [savings],
+      [leisure],
       [
         {
-          category: 'SPAREN_INVESTIEREN',
+          category: 'FREIZEIT_SPASS',
           total: '6000.00',
           monthlyTotal: '500.00',
           groups: [
             {
-              subcategory: 'Investieren',
+              subcategory: 'Urlaub',
               total: '6000.00',
               monthlyTotal: '500.00',
               percentageOfSection: 16.67,
-              items: [expense('etf', 'ETF', '500.00', 100)],
+              items: [expense('reise', 'Reise', '500.00', 100)],
             },
           ],
         },
       ],
-      { level: 'category', category: 'SPAREN_INVESTIEREN' },
+      { level: 'category', category: 'FREIZEIT_SPASS' },
     );
 
     const slices = [...element.querySelectorAll<SVGElement>('.slice')];
     expect(slices.length).toBe(2);
     expect(slices[1].style.fill).toContain('--mat-sys-outline');
     const legend = [...element.querySelectorAll('.legend-item')].map((i) => i.textContent);
-    expect(legend[0]).toMatch(/Investieren\s*\S*500.00\S* · 16.67 %/);
+    expect(legend[0]).toMatch(/Urlaub\s*\S*500.00\S* · 16.67 %/);
     expect(legend[1]).toMatch(/nicht verplant\s*\S*2.500.00\S* · 83.33 %/);
   });
 
