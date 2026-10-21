@@ -119,8 +119,22 @@ h4 {
 }
 
 .group {
+  padding: 4px 0;
   border-radius: 8px;
-  background: var(--mat-sys-surface);
+  background: var(--group-background);
+}
+
+// A subcategory sits on a faint tint of its category, so it stands apart from the category it
+// belongs to; the sum of the category gets a stronger tint of the same color (EF-1, EF-3)
+.section {
+  --group-background: light-dark(
+    color-mix(in srgb, var(--section-color) 8%, var(--mat-sys-surface)),
+    color-mix(in srgb, var(--section-color) 12%, var(--mat-sys-surface))
+  );
+  --total-background: light-dark(
+    color-mix(in srgb, var(--section-color) 20%, var(--mat-sys-surface)),
+    color-mix(in srgb, var(--section-color) 26%, var(--mat-sys-surface))
+  );
 }
 
 .group-header {
@@ -152,10 +166,24 @@ h4 {
 
 .group-summary {
   font: var(--mat-sys-label-large);
+  border-top-color: var(--mat-sys-outline-variant);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// The sum of a category or of the incomes stands out from the sums of its subcategories: bold, on a
+// stronger tint, with a line in the color of the category above it (EF-2, EF-3)
+.section > .summary {
+  padding-left: 8px;
+  border-top: 2px solid var(--section-color);
+  border-radius: 0 0 8px 8px;
+  background: var(--total-background);
+  font: var(--mat-sys-title-medium);
+  font-weight: 700;
 }
 
 .area-summary {
   font: var(--mat-sys-title-medium);
+  font-weight: 700;
   border-top-width: 2px;
 }
 
@@ -175,7 +203,6 @@ h4 {
   align-items: center;
   gap: 8px;
   border-top: 1px solid var(--mat-sys-outline-variant);
-  background: var(--mat-sys-surface);
 }
 
 .description {
@@ -268,6 +295,15 @@ h4 {
     margin-left: 8px;
   }
 
+  // The amounts keep a little distance from the edge of the tint; headers and the sum of the
+  // expenses move along, so all amounts stay in their columns (EF-4)
+  .group,
+  .section > .summary,
+  .area-summary,
+  .columns {
+    padding-right: 8px;
+  }
+
   .item {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
@@ -351,6 +387,7 @@ h4 {
 }
 
 .cdk-drag-preview {
+  background: var(--mat-sys-surface);
   box-shadow: var(--mat-sys-level3);
 }
 
