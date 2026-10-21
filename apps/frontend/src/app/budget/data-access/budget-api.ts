@@ -10,8 +10,10 @@ import {
   CopyHouseholdPlanRequest,
   CreatedHouseholdPlanResponse,
   HouseholdPlanOverview,
+  MarkImportantRequest,
   ReorderBudgetItemsRequest,
   ReorderSubcategoriesRequest,
+  SavingPotentialRequest,
   Year,
   YearlyOverview,
 } from '../budget.model';
@@ -89,6 +91,37 @@ export class BudgetApi {
     );
   }
 
+  /** Marks an item as important or no longer (PM-1, PM-4a). */
+  markImportant(
+    planId: string,
+    itemId: string,
+    request: MarkImportantRequest,
+  ): Observable<HouseholdPlanOverview> {
+    return this.http.put<HouseholdPlanOverview>(
+      `${this.itemUrl(planId, itemId)}/important`,
+      request,
+    );
+  }
+
+  /** Sets or changes the monthly saving potential of an expense (PM-2a, PM-4b). */
+  changeSavingPotential(
+    planId: string,
+    itemId: string,
+    request: SavingPotentialRequest,
+  ): Observable<HouseholdPlanOverview> {
+    return this.http.put<HouseholdPlanOverview>(
+      `${this.itemUrl(planId, itemId)}/saving-potential`,
+      request,
+    );
+  }
+
+  /** Removes the saving potential of an expense (PM-4b). */
+  removeSavingPotential(planId: string, itemId: string): Observable<HouseholdPlanOverview> {
+    return this.http.delete<HouseholdPlanOverview>(
+      `${this.itemUrl(planId, itemId)}/saving-potential`,
+    );
+  }
+
   /** Puts the items of one subcategory group in a new order (UK-14). */
   reorderItems(
     planId: string,
@@ -110,5 +143,9 @@ export class BudgetApi {
 
   private planUrl(planId: string): string {
     return `${this.baseUrl}/${encodeURIComponent(planId)}`;
+  }
+
+  private itemUrl(planId: string, itemId: string): string {
+    return `${this.planUrl(planId)}/items/${encodeURIComponent(itemId)}`;
   }
 }

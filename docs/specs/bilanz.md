@@ -41,7 +41,8 @@ AW-2, MJ-8, MJ-9), ändert sich nicht.
 
 ## Nicht im Umfang
 
-- Weitere Zeilen im Kasten, etwa die Summen der 50/30/20-Kategorien; sie stehen in der Karte „50/30/20-Regel"
+- Weitere Zeilen im Kasten, etwa die Summen der 50/30/20-Kategorien; sie stehen in der Karte „50/30/20-Regel".
+  Ausnahme: die Zeile „Sparpotential" unter dem Saldo, siehe PM-14 in [posten-markierungen.md](posten-markierungen.md)
 - Ein Umschalter, der nur Monat oder nur Jahr zeigt
 - Änderungen an den Summen selbst oder an der API
 

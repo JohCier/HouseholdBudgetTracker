@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { BudgetItem, HouseholdPlanOverview, NewItemPreset } from '../budget.model';
-import { BudgetEntries, GroupOrder } from './budget-entries';
+import { BudgetEntries, GroupOrder, ImportantMark } from './budget-entries';
 
 const salary: BudgetItem = {
   id: 'salary',
@@ -13,6 +13,8 @@ const salary: BudgetItem = {
   category: null,
   subcategory: 'Gehalt',
   note: null,
+  important: false,
+  savingPotential: null,
 };
 const fuel: BudgetItem = {
   id: 'fuel',
@@ -25,6 +27,8 @@ const fuel: BudgetItem = {
   category: 'LEBENSUNTERHALT',
   subcategory: 'Auto',
   note: 'Diesel',
+  important: false,
+  savingPotential: null,
 };
 const tax: BudgetItem = { ...fuel, id: 'tax', description: 'Steuer', amount: '20.00', note: null };
 const rent: BudgetItem = {
@@ -57,6 +61,10 @@ const overview: HouseholdPlanOverview = {
   monthlyTotalExpense: '125.00',
 
   monthlyBalance: '125.00',
+
+  monthlySavingPotential: '0.00',
+
+  savingPotential: '0.00',
   expensesExceedIncome: false,
   categoryBreakdowns: [],
   items: [salary, fuel, tax, rent, savings],
@@ -264,6 +272,72 @@ describe('BudgetEntries', () => {
       },
     ]);
     expect(itemOrders).toEqual([['tax', 'fuel']]);
+  });
+
+  // PM-1, PM-2, PM-4, PM-9 to PM-11
+  it('highlights important items and shows the saving potential of expenses', async () => {
+    const importantRent: BudgetItem = { ...rent, important: true, savingPotential: '25.50' };
+    const { element } = await render({
+      ...overview,
+      expenseCategories: [
+        {
+          ...overview.expenseCategories[0],
+          groups: [
+            overview.expenseCategories[0].groups[0],
+            { ...overview.expenseCategories[0].groups[1], items: [importantRent] },
+          ],
+        },
+      ],
+    });
+
+    const rows = [...element.querySelectorAll('.item')];
+    const rentRow = rows.find((row) => row.textContent?.includes('Miete'))!;
+    const fuelRow = rows.find((row) => row.textContent?.includes('Sprit'))!;
+    expect(rentRow.classList).toContain('important');
+    expect(fuelRow.classList).not.toContain('important');
+    expect(text(rentRow.querySelector('.saving-potential'))).toBe('Sparpotential: €25.50 im Monat');
+    expect(fuelRow.querySelector('.saving-potential')).toBeNull();
+    const star = rentRow.querySelector(
+      'button[aria-label="Markierung wichtig bei Miete entfernen"]',
+    );
+    expect(star?.getAttribute('aria-pressed')).toBe('true');
+    expect(
+      fuelRow
+        .querySelector('button[aria-label="Sprit als wichtig markieren"]')
+        ?.getAttribute('aria-pressed'),
+    ).toBe('false');
+    expect(rentRow.querySelector('.saving-mark')?.classList).toContain('marked');
+    expect(fuelRow.querySelector('.saving-mark')?.classList).not.toContain('marked');
+  });
+
+  // PM-2, PM-4
+  it('offers a saving potential only for expenses', async () => {
+    const { element } = await render(overview);
+
+    expect(
+      element.querySelector('button[aria-label="Gehalt als wichtig markieren"]'),
+    ).not.toBeNull();
+    expect(element.querySelector('button[aria-label="Sparpotential bei Gehalt"]')).toBeNull();
+    expect(element.querySelector('button[aria-label="Sparpotential bei Miete"]')).not.toBeNull();
+  });
+
+  // PM-4a, PM-4b
+  it('emits the item to mark as important or to give a saving potential', async () => {
+    const { component, element } = await render(overview);
+    const marks: ImportantMark[] = [];
+    const potentials: BudgetItem[] = [];
+    component.markImportant.subscribe((mark) => marks.push(mark));
+    component.savingPotential.subscribe((item) => potentials.push(item));
+
+    element
+      .querySelector<HTMLButtonElement>('button[aria-label="Gehalt als wichtig markieren"]')!
+      .click();
+    element
+      .querySelector<HTMLButtonElement>('button[aria-label="Sparpotential bei Miete"]')!
+      .click();
+
+    expect(marks).toEqual([{ item: salary, important: true }]);
+    expect(potentials).toEqual([rent]);
   });
 
   it('emits the item to edit or remove', async () => {

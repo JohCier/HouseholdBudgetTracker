@@ -17,6 +17,8 @@ const item: BudgetItem = {
   category: null,
   subcategory: null,
   note: null,
+  important: false,
+  savingPotential: null,
 };
 
 function overview(items: number): HouseholdPlanOverview {
@@ -29,6 +31,8 @@ function overview(items: number): HouseholdPlanOverview {
     monthlyTotalIncome: '0.00',
     monthlyTotalExpense: '0.00',
     monthlyBalance: '0.00',
+    monthlySavingPotential: '0.00',
+    savingPotential: '0.00',
     expensesExceedIncome: false,
     categoryBreakdowns: [],
     items: Array.from({ length: items }, (_, i) => ({ ...item, id: String(i) })),

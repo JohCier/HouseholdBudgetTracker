@@ -4,7 +4,10 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { HouseholdPlanOverview } from '../budget.model';
 
-/** Income, expenses and balance of the plan in one box, per month and per year side by side (BI-1). */
+/**
+ * Income, expenses and balance of the plan in one box, per month and per year side by side (BI-1);
+ * below them, apart from the balance, the saving potential of all expenses (PM-14).
+ */
 @Component({
   selector: 'app-overview-summary',
   imports: [CurrencyPipe, MatCardModule, MatIconModule],
@@ -45,6 +48,13 @@ import { HouseholdPlanOverview } from '../budget.model';
               <td class="value yearly" [class.expense]="overview().balance.startsWith('-')">
                 {{ overview().balance | currency: 'EUR' }}
               </td>
+            </tr>
+            <tr class="saving-potential">
+              <th scope="row">Sparpotential</th>
+              <td class="value monthly">
+                {{ overview().monthlySavingPotential | currency: 'EUR' }}
+              </td>
+              <td class="value yearly">{{ overview().savingPotential | currency: 'EUR' }}</td>
             </tr>
           </tbody>
         </table>
@@ -101,6 +111,12 @@ import { HouseholdPlanOverview } from '../budget.model';
     .balance .value {
       font: var(--mat-sys-title-large);
       font-variant-numeric: tabular-nums;
+    }
+    /* Not part of the balance, so set apart from it by a dashed line (PM-14) */
+    .saving-potential th,
+    .saving-potential td {
+      border-top: 1px dashed var(--mat-sys-outline-variant);
+      padding-top: 10px;
     }
     .income {
       color: var(--app-income-color);

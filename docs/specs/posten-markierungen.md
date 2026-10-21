@@ -1,6 +1,6 @@
 # Posten markieren: wichtig und Sparpotential
 
-Status: geplant
+Status: umgesetzt
 
 ## Zweck
 
@@ -33,8 +33,8 @@ Jahr.
   sofort.
 - **PM-4b**: „Sparpotential" öffnet den Dialog „Sparpotential bei ‹Beschreibung›" mit dem Feld „Betrag pro Monat".
   Ohne Sparpotential ist der Monatsbetrag der Ausgabe vorausgefüllt, sonst das bisherige Sparpotential. „Speichern"
-  prüft PM-2a (Meldung „Höchstens ‹Monatsbetrag der Ausgabe›." bzw. wie bei PO-4) und speichert; „Entfernen" (nur bei vorhandenem Sparpotential) entfernt es; „Abbrechen" und Escape
-  schließen den Dialog ohne Änderung.
+  prüft PM-2a (Meldung „Höchstens ‹Monatsbetrag der Ausgabe›." bzw. wie bei PO-4) und speichert; „Entfernen" (nur
+  bei vorhandenem Sparpotential) entfernt es; „Abbrechen" und Escape schließen den Dialog ohne Änderung.
 - **PM-5**: Bearbeiten (PB-1) lässt beide Markierungen unverändert. Ist das Sparpotential danach größer als der
   Monatsbetrag der Ausgabe, wird es auf diesen Monatsbetrag gesenkt.
 - **PM-6**: Wird das Löschen eines Postens rückgängig gemacht (PO-9), hat er wieder seine Markierungen. Beim Übernehmen
@@ -49,12 +49,14 @@ Jahr.
   Hintergrund und einen farbigen Streifen am linken Rand, in hellem und dunklem Farbschema gut lesbar. Der Umschalter
   „Wichtig" zeigt dann einen gefüllten Stern, sonst einen leeren.
 - **PM-10**: Der Knopf „Sparpotential" zeigt bei Ausgaben mit Sparpotential ein hervorgehobenes Sparschwein, sonst ein
-  blasses. Unter der Beschreibung steht dann klein „Sparpotential: ‹Betrag› im Monat" (wie die Notiz, PN-7). Die Zeile selbst wird dafür nicht eingefärbt.
+  blasses. Unter der Beschreibung steht dann klein „Sparpotential: ‹Betrag› im Monat" (wie die Notiz, PN-7). Die Zeile
+  selbst wird dafür nicht eingefärbt.
 - **PM-11**: Beide Knöpfe haben einen Tooltip und für Screenreader eine Bezeichnung: „‹Beschreibung› als wichtig
   markieren" bzw. „Markierung wichtig bei ‹Beschreibung› entfernen" (Zustand per `aria-pressed`) und „Sparpotential
   bei ‹Beschreibung›".
-- **PM-12**: Auf schmaler Karte (MA-2) stehen die Umschalter in der oberen Zeile des Postens neben „Bearbeiten" und
-  „Löschen". Die Beschreibung bricht weiterhin nur zwischen Wörtern um (MA-4), und die Seite ist ab 360 px nicht
+- **PM-12**: Auf breiter Karte stehen die beiden Knöpfe zwischen Beschreibung und Beträgen. Auf schmaler Karte (MA-2)
+  stehen sie in der unteren Zeile des Postens links neben Monats- und Jahresbetrag, sodass die Beschreibung oben ihre
+  Breite behält. Die Beschreibung bricht weiterhin nur zwischen Wörtern um (MA-4), und die Seite ist ab 360 px nicht
   breiter als der Bildschirm (MA-1).
 
 ### Sparpotential gesamt
@@ -105,7 +107,33 @@ Jahr.
 
 ## Umsetzung
 
-Wird nach der Umsetzung ergänzt.
+- Domäne: Value Objects `ItemMarks` (wichtig, Sparpotential) und `SavingPotential` (Monatsbetrag, positiv;
+  `exceeds`, `cappedTo`, `annual`) sowie `ItemMark` für das Protokoll. `BudgetItem` trägt die Markierungen und prüft
+  PM-2 und PM-2a; `changedTo` behält sie und senkt das Sparpotential (PM-5), `copy` übernimmt sie (PM-6).
+  `HouseholdPlan.markImportant` und `changeSavingPotential` ändern sie und zeichnen `BudgetItemMarked` auf, ohne die
+  Reihenfolge anzutasten (PM-4, PM-7); `addIncome`/`addExpense` nehmen Markierungen für „Rückgängig" entgegen (PM-6).
+  `BudgetSummary` kennt sie nicht (PM-8)
+- Commands: `MarkBudgetItemImportantCommand`, `ChangeSavingPotentialCommand`; `AddIncomeCommand` und
+  `AddExpenseCommand` mit optionalen `ItemMarks`
+- Persistenz: Spalten `budget_item.important` und `budget_item.saving_potential` (Migration
+  `V9__budget_item_marks.sql`, nur für Ausgaben), gelesen und geschrieben über `ItemMarksColumns`
+- Read Model: `OverviewItem.marks`, `HouseholdPlanOverview.monthlySavingPotential()` und `savingPotential()` (PM-13)
+- API: `PUT /api/plans/{planId}/items/{itemId}/important` (`{"important": true}`),
+  `PUT …/saving-potential` (`{"monthlyAmount": "5.00"}`, 400 bei Einnahmen oder zu großem Betrag) und
+  `DELETE …/saving-potential`, jeweils mit der Übersicht als Antwort. `BudgetItemResponse` liefert `important` und
+  `savingPotential`, `HouseholdPlanOverviewResponse` `monthlySavingPotential` und `savingPotential`; `AddIncomeRequest`
+  und `AddExpenseRequest` nehmen optional `important` bzw. `savingPotential` an, damit „Rückgängig" sie wiederherstellt
+- Frontend: `budget/ui/budget-entries` zeigt Stern und Sparschwein je Posten, hebt wichtige Zeilen hervor und zeigt
+  das Sparpotential unter der Beschreibung (PM-9 bis PM-12; auf schmaler Karte sind die Betragsspalten dafür 6,5 rem
+  statt 7 rem breit und die Knöpfe etwas kleiner; Farben `--app-important-color` und
+  `--app-important-background` in `styles.scss`); `budget/ui/saving-potential-dialog.ts` ist der Dialog (PM-4b);
+  `BudgetStore.markImportant`, `changeSavingPotential` und `restoreItem` (PM-6); `budget/ui/overview-summary.ts` zeigt
+  die Zeile „Sparpotential" (PM-14)
+- Tests: `SavingPotentialTest`, `HouseholdPlanMarksTest`, `HouseholdPlanControllerTest`,
+  `JdbcHouseholdPlanRepositoryTest`, `JdbcHouseholdPlanOverviewQueryHandlerTest`, `HouseholdPlanIntegrationTest`,
+  `budget-entries.spec.ts`, `saving-potential-dialog.spec.ts`, `budget-store.spec.ts`, `overview-summary.spec.ts`
+- E2E: `e2e/tests/posten-markierungen.spec.ts` (PM-1, PM-2, PM-2a, PM-4 bis PM-6, PM-8 bis PM-10, PM-12 bis PM-14;
+  PM-3, PM-7 und PM-11 decken die Backend- und Unit-Tests ab); `bilanz.spec.ts` erwartet die neue Zeile
 
 ## Offene Fragen
 

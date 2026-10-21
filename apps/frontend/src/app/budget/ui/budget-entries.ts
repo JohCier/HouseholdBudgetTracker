@@ -21,6 +21,12 @@ import {
   categoryLabel,
 } from '../budget.model';
 
+/** An item to mark as important or no longer (PM-4a). */
+export interface ImportantMark {
+  item: BudgetItem;
+  important: boolean;
+}
+
 /** A new order of the subcategory groups of one section (UK-14). */
 export interface GroupOrder {
   section: ItemSection;
@@ -45,7 +51,9 @@ interface SectionView {
  * MJ-10). Groups and the items within a group can be dragged to another position by
  * their handle, or moved with the arrow keys while the handle has the focus (UK-14); the new
  * order is emitted, saving it is up to the parent. The row of a group's sum offers to add an
- * item to the group; what to fill in is emitted (EG-9, EG-10).
+ * item to the group; what to fill in is emitted (EG-9, EG-10). Each item can be marked as
+ * important, which highlights it, and each expense can be given a saving potential, shown below its
+ * description; both are only asked for here, saving them is up to the parent (PM-4, PM-9, PM-10).
  */
 @Component({
   selector: 'app-budget-entries',
@@ -70,6 +78,9 @@ export class BudgetEntries {
   readonly reorderItems = output<string[]>();
   readonly reorderGroups = output<GroupOrder>();
   readonly add = output<NewItemPreset>();
+  readonly markImportant = output<ImportantMark>();
+  /** Asks to set, change or remove the saving potential of an expense (PM-4b). */
+  readonly savingPotential = output<BudgetItem>();
 
   protected readonly empty = computed(() => this.overview().items.length === 0);
 
