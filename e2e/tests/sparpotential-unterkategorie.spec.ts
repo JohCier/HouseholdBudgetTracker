@@ -39,8 +39,7 @@ test.describe('Sparpotential je Unterkategorie', () => {
     await setSavingPotential(page, 'Zeitung', '10');
     await setSavingPotential(page, 'Fitnessstudio');
 
-    const list = savingPotentials(page);
-    await expect(list.getByRole('heading')).toHaveText('Sparpotential je Unterkategorie');
+    const list = page.getByRole('table', { name: 'Sparpotential je Unterkategorie' });
     await expect(list.getByRole('columnheader')).toHaveText(['Monat', 'Jahr']);
     await expect(list.getByRole('rowheader')).toHaveText(['Hobbys', 'Abonnements']);
     await expect(savingPotentialOfSubcategory(page, 'Hobbys', 'Monat')).toHaveText('30,00 €');
