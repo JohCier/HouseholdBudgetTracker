@@ -173,6 +173,9 @@
 				<configuration>
 					<!-- Fast tests without Docker; tests marked @IntegrationTest run via Failsafe -->
 					<excludedGroups>integration</excludedGroups>
+					<!-- Spring logs go to target/surefire-reports/*-output.txt, the console only shows the results -->
+					<redirectTestOutputToFile>true</redirectTestOutputToFile>
+					<trimStackTrace>true</trimStackTrace>
 					<environmentVariables>
 						<JWT_SECRET>${dev.jwt-secret}</JWT_SECRET>
 					</environmentVariables>
@@ -184,6 +187,9 @@
 				<configuration>
 					<!-- Tests marked @IntegrationTest (Testcontainers, needs Docker), run by ./mvnw verify -->
 					<groups>integration</groups>
+					<!-- Spring and Testcontainers logs go to target/failsafe-reports/*-output.txt -->
+					<redirectTestOutputToFile>true</redirectTestOutputToFile>
+					<trimStackTrace>true</trimStackTrace>
 					<includes>
 						<include>**/*Test.java</include>
 						<include>**/*Tests.java</include>

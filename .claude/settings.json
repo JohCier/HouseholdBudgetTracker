@@ -1,4 +1,10 @@
 {
+  "permissions": {
+    "deny": [
+      "Read(**/package-lock.json)",
+      "Read(**/target/**)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {
