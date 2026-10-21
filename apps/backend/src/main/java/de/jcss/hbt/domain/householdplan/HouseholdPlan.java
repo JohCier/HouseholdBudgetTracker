@@ -3,6 +3,7 @@ package de.jcss.hbt.domain.householdplan;
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
 import de.jcss.hbt.domain.exception.DomainValidationException;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemChanged;
+import de.jcss.hbt.domain.householdplan.event.BudgetItemMarked;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemsReordered;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
@@ -170,37 +171,62 @@ public final class HouseholdPlan {
     }
 
     /**
-     * Adds an income at the bottom of its group (EG-1).
+     * Adds an income without marks at the bottom of its group (EG-1, PM-1).
      *
      * @param subcategory {@code null} if the income has no subcategory
      * @param note        {@code null} if the income has no note
      */
     public BudgetItemId addIncome(BudgetItemDescription description, ItemAmount amount,
                                   BudgetItemSubcategory subcategory, BudgetItemNote note) {
+        return addIncome(description, amount, subcategory, note, ItemMarks.NONE);
+    }
+
+    /**
+     * Adds an income with the given marks at the bottom of its group, e.g. one that is restored (EG-3, PM-6).
+     *
+     * @param subcategory {@code null} if the income has no subcategory
+     * @param note        {@code null} if the income has no note
+     * @throws DomainValidationException if the marks name a saving potential (PM-2)
+     */
+    public BudgetItemId addIncome(BudgetItemDescription description, ItemAmount amount,
+                                  BudgetItemSubcategory subcategory, BudgetItemNote note, ItemMarks marks) {
         BudgetItem item = BudgetItem.income(BudgetItemId.generate(), description, amount,
-                spellingOf(subcategory, null), note);
+                spellingOf(subcategory, null), note).withMarks(marks);
         items.addLast(item);
         record(new IncomeAdded(id, item.id(), Instant.now()));
         return item.id();
     }
 
     /**
-     * Adds an expense at the bottom of its group (EG-1).
+     * Adds an expense without marks at the bottom of its group (EG-1, PM-1, PM-2).
      *
      * @param subcategory {@code null} if the expense has no subcategory
      * @param note        {@code null} if the expense has no note
      */
     public BudgetItemId addExpense(BudgetItemDescription description, ItemAmount amount, ExpenseCategory category,
                                    BudgetItemSubcategory subcategory, BudgetItemNote note) {
+        return addExpense(description, amount, category, subcategory, note, ItemMarks.NONE);
+    }
+
+    /**
+     * Adds an expense with the given marks at the bottom of its group, e.g. one that is restored (EG-3, PM-6).
+     *
+     * @param subcategory {@code null} if the expense has no subcategory
+     * @param note        {@code null} if the expense has no note
+     * @throws DomainValidationException if the saving potential exceeds the monthly amount (PM-2a)
+     */
+    public BudgetItemId addExpense(BudgetItemDescription description, ItemAmount amount, ExpenseCategory category,
+                                   BudgetItemSubcategory subcategory, BudgetItemNote note, ItemMarks marks) {
         BudgetItem item = BudgetItem.expense(BudgetItemId.generate(), description, amount, category,
-                spellingOf(subcategory, null), note);
+                spellingOf(subcategory, null), note).withMarks(marks);
         items.addLast(item);
         record(new ExpenseAdded(id, item.id(), Instant.now()));
         return item.id();
     }
 
     /**
-     * Gives an item new values while it keeps its id. It keeps its position among the items as
+     * Gives an item new values while it keeps its id and its marks; a saving potential above the new
+     * monthly amount is lowered to it (PM-5). It keeps its position among the items as
      * long as it stays in its group; moved to another group, it goes to the bottom of it (PB-4, EG-2).
      * Records an event only if a value actually changed.
      *
@@ -225,6 +251,41 @@ public final class HouseholdPlan {
             forgetVanishedGroups();
         }
         record(new BudgetItemChanged(id, itemId, Instant.now()));
+    }
+
+    /**
+     * Marks an item as important or no longer (PM-1, PM-4a). Its position stays (PM-7). Records an
+     * event only if the mark actually changed.
+     *
+     * @throws BudgetItemNotFoundException if the item is not part of this plan
+     */
+    public void markImportant(BudgetItemId itemId, boolean important) {
+        int index = indexOf(itemId);
+        BudgetItem current = items.get(index);
+        if (current.marks().important() == important) {
+            return;
+        }
+        items.set(index, current.withMarks(current.marks().withImportant(important)));
+        record(new BudgetItemMarked(id, itemId, ItemMark.IMPORTANT, important, Instant.now()));
+    }
+
+    /**
+     * Sets, changes or removes the saving potential of an expense (PM-2, PM-4b). Its position stays
+     * (PM-7). Records an event only if the saving potential actually changed.
+     *
+     * @param savingPotential {@code null} to remove it
+     * @throws BudgetItemNotFoundException if the item is not part of this plan
+     * @throws DomainValidationException   if the item is an income, or the saving potential exceeds its monthly amount (PM-2a)
+     */
+    public void changeSavingPotential(BudgetItemId itemId, SavingPotential savingPotential) {
+        int index = indexOf(itemId);
+        BudgetItem current = items.get(index);
+        BudgetItem changed = current.withMarks(current.marks().withSavingPotential(savingPotential));
+        if (changed.hasSameValuesAs(current)) {
+            return;
+        }
+        items.set(index, changed);
+        record(new BudgetItemMarked(id, itemId, ItemMark.SAVING_POTENTIAL, savingPotential != null, Instant.now()));
     }
 
     private int indexOf(BudgetItemId itemId) {

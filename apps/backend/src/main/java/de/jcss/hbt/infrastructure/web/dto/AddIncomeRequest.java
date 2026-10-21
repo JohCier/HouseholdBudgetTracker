@@ -20,6 +20,8 @@ public record AddIncomeRequest(
         @Size(max = BudgetItemSubcategory.MAX_LENGTH)
         @Schema(nullable = true, description = "Optional; empty or blank means none, i.e. \"Sonstiges\"") String subcategory,
         @Size(max = BudgetItemNote.MAX_LENGTH)
-        @Schema(nullable = true, description = "Optional; empty or blank means no note") String note
+        @Schema(nullable = true, description = "Optional; empty or blank means no note") String note,
+        @Schema(nullable = true, description = "Optional, only to restore a removed item; a new income is not important")
+        Boolean important
 ) {
 }

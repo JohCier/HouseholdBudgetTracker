@@ -269,6 +269,49 @@ class HouseholdPlanIntegrationTest {
                 .containsExactly(rentId);
     }
 
+    /** PM-2, PM-2a, PM-4, PM-5, PM-7, PM-13 */
+    @Test
+    void marksAreStoredShownInTheOverviewAndAudited() throws Exception {
+        String planId = createPlan(2026);
+        String salaryId = JsonPath.read(post("/api/plans/" + planId + "/incomes", """
+                {"description":"Gehalt","amount":"3000.00","period":"MONTHLY"}"""), "$.id");
+        String streamingId = JsonPath.read(post("/api/plans/" + planId + "/expenses", """
+                {"description":"Streaming","amount":"15.00","period":"MONTHLY","category":"FREIZEIT_SPASS"}"""), "$.id");
+
+        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}/important", planId, streamingId).cookie(alice)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"important":true}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[1].important").value(true));
+        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}/saving-potential", planId, salaryId).cookie(alice)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"monthlyAmount":"5.00"}"""))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}/saving-potential", planId, streamingId).cookie(alice)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"monthlyAmount":"15.01"}"""))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}/saving-potential", planId, streamingId).cookie(alice)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"monthlyAmount":"5.00"}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[1].savingPotential").value("5.00"))
+                .andExpect(jsonPath("$.monthlySavingPotential").value("5.00"))
+                .andExpect(jsonPath("$.savingPotential").value("60.00"))
+                .andExpect(jsonPath("$.monthlyBalance").value("2985.00"));
+        changeItem(planId, streamingId, """
+                {"description":"Streaming","amount":"36.00","period":"YEARLY","category":"FREIZEIT_SPASS"}""")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[1].important").value(true))
+                .andExpect(jsonPath("$.items[1].savingPotential").value("3.00"));
+
+        assertThat(jdbcClient.sql("""
+                        SELECT payload ->> 'mark' || ':' || (payload ->> 'marked') FROM audit_log
+                        WHERE event_type = 'BudgetItemMarked' ORDER BY id""")
+                .query(String.class).list())
+                .containsExactly("IMPORTANT:true", "SAVING_POTENTIAL:true");
+    }
+
     /** PB-2, PB-3, PB-6 */
     @Test
     void invalidChangesAreRejectedAndLeaveTheItemAsItWas() throws Exception {

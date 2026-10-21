@@ -10,15 +10,19 @@ import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.ItemAmount;
+import de.jcss.hbt.domain.householdplan.ItemMarks;
 import de.jcss.hbt.domain.householdplan.ItemSection;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
+import de.jcss.hbt.domain.householdplan.SavingPotential;
 import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
 import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
 import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
+import de.jcss.hbt.domain.householdplan.command.ChangeSavingPotentialCommand;
 import de.jcss.hbt.domain.householdplan.command.CopyHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.DeleteHouseholdPlanCommand;
+import de.jcss.hbt.domain.householdplan.command.MarkBudgetItemImportantCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderBudgetItemsCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderSubcategoriesCommand;
@@ -32,8 +36,10 @@ import de.jcss.hbt.infrastructure.web.dto.CreateHouseholdPlanRequest;
 import de.jcss.hbt.infrastructure.web.dto.CreatedHouseholdPlanResponse;
 import de.jcss.hbt.infrastructure.web.dto.ExpenseCategoryDto;
 import de.jcss.hbt.infrastructure.web.dto.HouseholdPlanOverviewResponse;
+import de.jcss.hbt.infrastructure.web.dto.MarkImportantRequest;
 import de.jcss.hbt.infrastructure.web.dto.ReorderBudgetItemsRequest;
 import de.jcss.hbt.infrastructure.web.dto.ReorderSubcategoriesRequest;
+import de.jcss.hbt.infrastructure.web.dto.SavingPotentialRequest;
 import de.jcss.hbt.infrastructure.web.dto.YearlyOverviewResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -56,6 +62,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.time.Year;
 import java.util.UUID;
 
@@ -126,7 +133,8 @@ public class HouseholdPlanController {
                                              @Valid @RequestBody AddIncomeRequest request) {
         AddedBudgetItem added = plans.addIncome(new AddIncomeCommand(owner(user), HouseholdPlanId.of(planId),
                 BudgetItemDescription.of(request.description()), new ItemAmount(Money.of(request.amount()), request.period().toDomain()),
-                BudgetItemSubcategory.ofNullable(request.subcategory()), BudgetItemNote.ofNullable(request.note())));
+                BudgetItemSubcategory.ofNullable(request.subcategory()), BudgetItemNote.ofNullable(request.note()),
+                marks(request.important(), null)));
         return AddedBudgetItemResponse.from(added);
     }
 
@@ -137,7 +145,7 @@ public class HouseholdPlanController {
         AddedBudgetItem added = plans.addExpense(new AddExpenseCommand(owner(user), HouseholdPlanId.of(planId),
                 BudgetItemDescription.of(request.description()), new ItemAmount(Money.of(request.amount()), request.period().toDomain()),
                 request.category().toDomain(), BudgetItemSubcategory.ofNullable(request.subcategory()),
-                BudgetItemNote.ofNullable(request.note())));
+                BudgetItemNote.ofNullable(request.note()), marks(request.important(), request.savingPotential())));
         return AddedBudgetItemResponse.from(added);
     }
 
@@ -151,6 +159,33 @@ public class HouseholdPlanController {
                 BudgetItemDescription.of(request.description()), new ItemAmount(Money.of(request.amount()), request.period().toDomain()),
                 category == null ? null : category.toDomain(), BudgetItemSubcategory.ofNullable(request.subcategory()),
                 BudgetItemNote.ofNullable(request.note()))));
+    }
+
+    /** Marks an item as important or no longer (PM-1, PM-4a). */
+    @PutMapping("/{planId}/items/{itemId}/important")
+    public HouseholdPlanOverviewResponse markImportant(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId,
+                                                       @PathVariable UUID itemId,
+                                                       @Valid @RequestBody MarkImportantRequest request) {
+        return HouseholdPlanOverviewResponse.from(plans.markItemImportant(new MarkBudgetItemImportantCommand(
+                owner(user), HouseholdPlanId.of(planId), BudgetItemId.of(itemId), request.important())));
+    }
+
+    /** Sets or changes the monthly saving potential of an expense (PM-2, PM-2a, PM-4b); 400 for an income or a too large amount. */
+    @PutMapping("/{planId}/items/{itemId}/saving-potential")
+    public HouseholdPlanOverviewResponse changeSavingPotential(@AuthenticationPrincipal Jwt user,
+                                                               @PathVariable UUID planId, @PathVariable UUID itemId,
+                                                               @Valid @RequestBody SavingPotentialRequest request) {
+        return HouseholdPlanOverviewResponse.from(plans.changeSavingPotential(new ChangeSavingPotentialCommand(
+                owner(user), HouseholdPlanId.of(planId), BudgetItemId.of(itemId),
+                SavingPotential.monthly(Money.of(request.monthlyAmount())))));
+    }
+
+    /** Removes the saving potential of an expense (PM-4b). */
+    @DeleteMapping("/{planId}/items/{itemId}/saving-potential")
+    public HouseholdPlanOverviewResponse removeSavingPotential(@AuthenticationPrincipal Jwt user,
+                                                               @PathVariable UUID planId, @PathVariable UUID itemId) {
+        return HouseholdPlanOverviewResponse.from(plans.changeSavingPotential(new ChangeSavingPotentialCommand(
+                owner(user), HouseholdPlanId.of(planId), BudgetItemId.of(itemId), null)));
     }
 
     /** Puts the items of one subcategory group in a new order (UK-14). */
@@ -178,6 +213,12 @@ public class HouseholdPlanController {
                                                     @PathVariable UUID itemId) {
         return HouseholdPlanOverviewResponse.from(plans.removeItem(
                 new RemoveBudgetItemCommand(owner(user), HouseholdPlanId.of(planId), BudgetItemId.of(itemId))));
+    }
+
+    /** The marks of an item to restore (PM-6); absent values mean none. */
+    private static ItemMarks marks(Boolean important, BigDecimal savingPotential) {
+        return new ItemMarks(Boolean.TRUE.equals(important),
+                savingPotential == null ? null : SavingPotential.monthly(Money.of(savingPotential)));
     }
 
     /** The signed-in user; the subject of their session token is their user id. */

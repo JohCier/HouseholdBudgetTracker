@@ -11,9 +11,11 @@ import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.ItemAmount;
+import de.jcss.hbt.domain.householdplan.ItemMarks;
 import de.jcss.hbt.domain.householdplan.ItemSection;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
+import de.jcss.hbt.domain.householdplan.SavingPotential;
 import de.jcss.hbt.domain.householdplan.SubcategoryOrder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,6 +86,32 @@ class JdbcHouseholdPlanRepositoryTest {
         assertThat(restored.items())
                 .usingRecursiveFieldByFieldElementComparator()
                 .containsExactlyElementsOf(plan.items());
+    }
+
+    /** PM-1, PM-2, PM-4 */
+    @Test
+    void storesAndRestoresTheMarksOfTheItems() {
+        HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
+        BudgetItemId salary = plan.addIncome(description("Gehalt"), money("2500.00"), null, null);
+        BudgetItemId rent = plan.addExpense(description("Miete"), money("1200.00"), ExpenseCategory.LEBENSUNTERHALT,
+                null, null);
+        repository.add(plan);
+
+        HouseholdPlan loaded = repository.findById(plan.id()).orElseThrow();
+        loaded.markImportant(salary, true);
+        loaded.changeSavingPotential(rent, SavingPotential.monthly(Money.of(new BigDecimal("25.50"))));
+        repository.save(loaded);
+
+        HouseholdPlan restored = repository.findById(plan.id()).orElseThrow();
+        assertThat(restored.items()).extracting(BudgetItem::marks).containsExactly(
+                new ItemMarks(true, null),
+                new ItemMarks(false, SavingPotential.monthly(Money.of(new BigDecimal("25.50")))));
+
+        restored.changeSavingPotential(rent, null);
+        repository.save(restored);
+
+        assertThat(repository.findById(plan.id()).orElseThrow().items())
+                .extracting(BudgetItem::marks).containsExactly(new ItemMarks(true, null), ItemMarks.NONE);
     }
 
     @Test

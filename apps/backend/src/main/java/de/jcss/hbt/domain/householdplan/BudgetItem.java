@@ -20,7 +20,11 @@ import java.util.Optional;
  *     <li>an expense item requires a category; an income item never has one</li>
  *     <li>the subcategory is optional for both (its own rules are enforced by {@link BudgetItemSubcategory})</li>
  *     <li>the note is optional for both (its own rules are enforced by {@link BudgetItemNote})</li>
+ *     <li>both may be marked as important; only an expense may have a {@link SavingPotential}, and at
+ *     most its monthly amount (PM-1, PM-2, PM-2a)</li>
  * </ul>
+ * Changing the values of an item keeps its marks; a saving potential above the new monthly amount is
+ * lowered to it (PM-5).
  * Identity (equals/hashCode) is based solely on the item id, as is appropriate for
  * a DDD entity.
  */
@@ -35,9 +39,11 @@ public final class BudgetItem {
     private final ExpenseCategory category;
     private final BudgetItemSubcategory subcategory;
     private final BudgetItemNote note;
+    private final ItemMarks marks;
 
     private BudgetItem(BudgetItemId id, BudgetItemDescription description, ItemAmount amount, ItemType type,
-                       ExpenseCategory category, BudgetItemSubcategory subcategory, BudgetItemNote note) {
+                       ExpenseCategory category, BudgetItemSubcategory subcategory, BudgetItemNote note,
+                       ItemMarks marks) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.description = requireDescription(description);
         this.amount = requirePositive(amount);
@@ -45,6 +51,7 @@ public final class BudgetItem {
         this.category = category;
         this.subcategory = subcategory;
         this.note = note;
+        this.marks = requireFitting(marks, type, this.amount);
     }
 
     /**
@@ -53,7 +60,7 @@ public final class BudgetItem {
      */
     static BudgetItem income(BudgetItemId id, BudgetItemDescription description, ItemAmount amount,
                              BudgetItemSubcategory subcategory, BudgetItemNote note) {
-        return new BudgetItem(id, description, amount, ItemType.INCOME, null, subcategory, note);
+        return new BudgetItem(id, description, amount, ItemType.INCOME, null, subcategory, note, ItemMarks.NONE);
     }
 
     /**
@@ -65,7 +72,7 @@ public final class BudgetItem {
         if (category == null) {
             throw new DomainValidationException("category is required for expense items");
         }
-        return new BudgetItem(id, description, amount, ItemType.EXPENSE, category, subcategory, note);
+        return new BudgetItem(id, description, amount, ItemType.EXPENSE, category, subcategory, note, ItemMarks.NONE);
     }
 
     /**
@@ -77,8 +84,8 @@ public final class BudgetItem {
      */
     public static BudgetItem reconstitute(BudgetItemId id, BudgetItemDescription description, ItemAmount amount,
                                           ItemType type, ExpenseCategory category,
-                                          BudgetItemSubcategory subcategory, BudgetItemNote note) {
-        return switch (Objects.requireNonNull(type, "type must not be null")) {
+                                          BudgetItemSubcategory subcategory, BudgetItemNote note, ItemMarks marks) {
+        BudgetItem item = switch (Objects.requireNonNull(type, "type must not be null")) {
             case INCOME -> {
                 if (category != null) {
                     throw new DomainValidationException("income items must not have a category");
@@ -87,10 +94,19 @@ public final class BudgetItem {
             }
             case EXPENSE -> expense(id, description, amount, category, subcategory, note);
         };
+        return item.withMarks(marks);
+    }
+
+    /** Rebuilds a stored item without marks, see {@link #reconstitute(BudgetItemId, BudgetItemDescription, ItemAmount, ItemType, ExpenseCategory, BudgetItemSubcategory, BudgetItemNote, ItemMarks)}. */
+    public static BudgetItem reconstitute(BudgetItemId id, BudgetItemDescription description, ItemAmount amount,
+                                          ItemType type, ExpenseCategory category,
+                                          BudgetItemSubcategory subcategory, BudgetItemNote note) {
+        return reconstitute(id, description, amount, type, category, subcategory, note, ItemMarks.NONE);
     }
 
     /**
-     * Returns a copy of this item with the same id and type but the given values. The type
+     * Returns a copy of this item with the same id, type and marks but the given values; a saving
+     * potential above the new monthly amount is lowered to it (PM-5). The type
      * itself cannot be changed: an income must not get a category, an expense needs one.
      *
      * @param category    the new category of an expense; {@code null} for an income
@@ -99,19 +115,30 @@ public final class BudgetItem {
      */
     BudgetItem changedTo(BudgetItemDescription description, ItemAmount amount, ExpenseCategory category,
                          BudgetItemSubcategory subcategory, BudgetItemNote note) {
-        return reconstitute(id, description, amount, type, category, subcategory, note);
+        SavingPotential savingPotential = marks.savingPotential();
+        return reconstitute(id, description, amount, type, category, subcategory, note,
+                savingPotential == null ? marks : marks.withSavingPotential(savingPotential.cappedTo(amount)));
     }
 
-    /** Returns a copy of this item with a new id and the same values, for another plan (PU-3). */
+    /** Returns a copy of this item with a new id and the same values and marks, for another plan (PU-3, PM-6). */
     BudgetItem copy() {
-        return reconstitute(BudgetItemId.generate(), description, amount, type, category, subcategory, note);
+        return reconstitute(BudgetItemId.generate(), description, amount, type, category, subcategory, note, marks);
     }
 
-    /** Whether the other item has the same description, amount, type, category, subcategory and note as this one. */
+    /**
+     * Returns a copy of this item with the given marks.
+     *
+     * @throws DomainValidationException if an income gets a saving potential, or an expense one above its monthly amount
+     */
+    BudgetItem withMarks(ItemMarks marks) {
+        return new BudgetItem(id, description, amount, type, category, subcategory, note, marks);
+    }
+
+    /** Whether the other item has the same description, amount, type, category, subcategory, note and marks as this one. */
     boolean hasSameValuesAs(BudgetItem other) {
         return description.equals(other.description) && amount.equals(other.amount) && type == other.type
                 && Objects.equals(category, other.category) && Objects.equals(subcategory, other.subcategory)
-                && Objects.equals(note, other.note);
+                && Objects.equals(note, other.note) && marks.equals(other.marks);
     }
 
     /** The section the item is listed in: the incomes or the expenses of its category (UK-9, UK-10). */
@@ -134,6 +161,20 @@ public final class BudgetItem {
             throw new DomainValidationException("description is required");
         }
         return description;
+    }
+
+    private static ItemMarks requireFitting(ItemMarks marks, ItemType type, ItemAmount amount) {
+        Objects.requireNonNull(marks, "marks must not be null");
+        SavingPotential savingPotential = marks.savingPotential();
+        if (savingPotential != null && type == ItemType.INCOME) {
+            throw new DomainValidationException("income items must not have a saving potential");
+        }
+        if (savingPotential != null && savingPotential.exceeds(amount)) {
+            throw new DomainValidationException(
+                    "saving potential must not exceed the monthly amount of the expense, %s"
+                            .formatted(amount.monthly().value().toPlainString()));
+        }
+        return marks;
     }
 
     private static ItemAmount requirePositive(ItemAmount amount) {
@@ -183,6 +224,10 @@ public final class BudgetItem {
         return Optional.ofNullable(note);
     }
 
+    public ItemMarks marks() {
+        return marks;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -201,7 +246,7 @@ public final class BudgetItem {
 
     @Override
     public String toString() {
-        return "BudgetItem{id=%s, description='%s', amount=%s, type=%s, category=%s, subcategory=%s}"
-                .formatted(id, description, amount, type, category, subcategory);
+        return "BudgetItem{id=%s, description='%s', amount=%s, type=%s, category=%s, subcategory=%s, marks=%s}"
+                .formatted(id, description, amount, type, category, subcategory, marks);
     }
 }
