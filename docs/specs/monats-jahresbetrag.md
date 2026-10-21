@@ -119,7 +119,7 @@ Plans, lässt sich aber als Monatsbetrag angeben und so anzeigen.
   und „Jahr" in `budget-entries`, der abgeleitete Betrag mit der Klasse `derived` schwächer (MJ-12); Kacheln in
   `overview-summary` je Monat und Jahr (MJ-13); `BudgetStore.restoreItem` stellt die Angabe wieder her (MJ-4)
 - Tests: `ItemAmountTest`, `MoneyTest`, `BudgetItemTest`, `HouseholdPlanTest`, `HouseholdPlanCopyTest`, `HouseholdPlanOverviewTest`,
-  `HouseholdPlanOverviewGroupsTest`, `HouseholdPlanControllerTest`, `JdbcHouseholdPlanRepositoryTest`,
+  `HouseholdPlanOverviewGroupsTest`, `BudgetItemControllerTest`, `HouseholdPlanOverviewControllerTest`, `JdbcHouseholdPlanRepositoryTest`,
   `JdbcHouseholdPlanOverviewQueryHandlerTest`, `add-item-form.spec.ts`, `edit-item-dialog.spec.ts`,
   `budget-entries.spec.ts`, `overview-summary.spec.ts`
 - Monatswerte der 50/30/20-Karte (MJ-14): `CategoryBreakdown.monthlyTotal`/`monthlyUnplanned`, in

@@ -118,7 +118,7 @@ bleiben unverändert.
   (Rolle `button`) und Abstufungen der Kategoriefarbe per `color-mix` (TK-10). Den Ausschnitt hält
   `budget/budget-dashboard.ts` (`pieSelection`) wie die Darstellung; eine Gruppe ohne Posten zeigt die Torte als ihre
   Kategorie (TK-5)
-- Tests: `HouseholdPlanOverviewSharesTest`, `HouseholdPlanControllerTest`, `category-pie.spec.ts`
+- Tests: `HouseholdPlanOverviewSharesTest`, `HouseholdPlanOverviewControllerTest`, `category-pie.spec.ts`
 - E2E: `e2e/tests/torte-ausschnitt.spec.ts`
 
 ## Offene Fragen

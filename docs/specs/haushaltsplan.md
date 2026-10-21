@@ -63,7 +63,7 @@ Einheit, die ausgewertet wird, und gehört genau einem Benutzer.
 - HP-7: `AuditLogListener` (`@TransactionalEventListener(AFTER_COMMIT)`)
 - API: `POST /api/plans`, `GET /api/plans?year=`
 - Frontend: `budget/budget-dashboard.ts`, `budget/data-access/budget-store.ts`, `budget/year.ts`
-- Tests: `HouseholdPlanTest`, `HouseholdPlanApplicationServiceTest`, `HouseholdPlanControllerTest`,
+- Tests: `HouseholdPlanTest`, `HouseholdPlanApplicationServiceTest`, `HouseholdPlanControllerTest`, `HouseholdPlanOverviewControllerTest`,
   `HouseholdPlanIntegrationTest`, `JdbcHouseholdPlanRepositoryTest`, `budget-dashboard.spec.ts`,
   `budget-store.spec.ts`, `year.spec.ts`
 - E2E: `e2e/tests/haushaltsplan.spec.ts`

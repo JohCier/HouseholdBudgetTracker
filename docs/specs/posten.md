@@ -62,7 +62,7 @@ ihnen ergibt sich die Auswertung nach der 50/30/20-Regel.
 - Frontend: `budget/ui/add-item-form.ts`, `budget/ui/budget-item-table.ts`, Rückgängig in `budget-dashboard.ts`
   und `BudgetStore.restoreItem`
 - Tests: `BudgetItemTest`, `BudgetItemDescriptionTest`, `MoneyTest`, `HouseholdPlanTest`,
-  `HouseholdPlanControllerTest`, `add-item-form.spec.ts`, `budget-item-table.spec.ts`, `budget-store.spec.ts`
+  `BudgetItemControllerTest`, `add-item-form.spec.ts`, `budget-item-table.spec.ts`, `budget-store.spec.ts`
 - E2E: `e2e/tests/posten.spec.ts`
 
 ## Offene Fragen

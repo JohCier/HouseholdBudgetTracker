@@ -68,8 +68,8 @@ das frühere Nicht-Ziel „Keine Bearbeitung eines Postens" in [produkt.md](../p
 - Frontend: Schaltfläche „Bearbeiten" in `budget/ui/budget-item-table.ts`, Dialog `budget/ui/edit-item-dialog.ts` mit
   den Prüfungen aus `budget/ui/item-validators.ts`, `BudgetStore.changeItem`, `BudgetApi.changeItem`; geöffnet aus
   `budget-dashboard.ts`
-- Tests: `BudgetItemTest`, `HouseholdPlanTest`, `HouseholdPlanApplicationServiceTest`, `HouseholdPlanControllerTest`,
-  `JdbcHouseholdPlanRepositoryTest`, `HouseholdPlanIntegrationTest`, `edit-item-dialog.spec.ts`,
+- Tests: `BudgetItemTest`, `HouseholdPlanTest`, `HouseholdPlanApplicationServiceTest`, `BudgetItemControllerTest`,
+  `JdbcHouseholdPlanRepositoryTest`, `BudgetItemIntegrationTest`, `edit-item-dialog.spec.ts`,
   `budget-item-table.spec.ts`, `budget-store.spec.ts`, `budget-api.spec.ts`, `budget-dashboard.spec.ts`
 - E2E: `e2e/tests/posten-bearbeiten.spec.ts` (PB-1 bis PB-4, PB-7, PB-8; PB-5, PB-6 und die 404-Fälle decken
   die Backend-Tests ab)

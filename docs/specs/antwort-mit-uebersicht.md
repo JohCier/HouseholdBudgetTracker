@@ -63,7 +63,7 @@ sie ohne weitere Anfrage an. Für den Benutzer ändert sich nur, dass die Anzeig
   Jahr, bleibt die Anzeige unverändert (AU-5); eine laufende Ladeanfrage wird verworfen (AU-6)
 - Angepasste Akzeptanzkriterien: [haushaltsplan.md](haushaltsplan.md) (HP-5), [posten.md](posten.md) (PO-1, PO-6),
   [posten-bearbeiten.md](posten-bearbeiten.md) (PB-1)
-- Tests: `HouseholdPlanApplicationServiceTest`, `HouseholdPlanControllerTest`, `HouseholdPlanIntegrationTest`,
+- Tests: `HouseholdPlanApplicationServiceTest`, `HouseholdPlanControllerTest`, `BudgetItemControllerTest`, `BudgetItemIntegrationTest`,
   `budget-api.spec.ts`, `budget-store.spec.ts`
 - E2E: `e2e/tests/antwort-mit-uebersicht.spec.ts` (AU-5 mit PO-9; AU-1 bis AU-4 decken die Backend-Tests ab)
 

@@ -61,7 +61,7 @@ Diese Spec ändert JU-2 und das Nicht-Ziel „Monatsbeträge in der Jahresübers
 - Frontend: Umschalter mit `AMOUNT_PERIODS` in `budget/yearly-overview-page.ts`, nur bei mindestens einem Plan (JM-1);
   die Seite zeigt je nach Wahl die Monats- oder Jahreswerte aus der API (JM-2, JM-3). `YearlyOverviewStore.period`
   beginnt mit „Monatlich" und merkt sich die Wahl unter `hbt.yearlyOverview.period` im `localStorage` (JM-7)
-- Tests: `YearlyOverviewTest`, `HouseholdPlanControllerTest`, `yearly-overview-page.spec.ts`
+- Tests: `YearlyOverviewTest`, `HouseholdPlanOverviewControllerTest`, `yearly-overview-page.spec.ts`
 - E2E: `e2e/tests/jahresuebersicht-monatsbetraege.spec.ts` (JM-1 bis JM-5, JM-7). Die übrigen E2E-Tests, die
   Beträge der Jahresübersicht prüfen, wählen vorher mit `showAmounts` „Jährlich"
 

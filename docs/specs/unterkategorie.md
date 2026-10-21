@@ -194,7 +194,7 @@ legt die Farben der Kategorien neu fest (UK-19), auch für die Torte (TD-2).
   die Übersicht neu, wenn das Speichern scheitert. Farbvariablen `--app-income-color` und `--app-<kategorie>-color` in
   `styles.scss`, auch für die Torte (UK-19)
 - Tests: `BudgetItemSubcategoryTest`, `SubcategoryOrderTest`, `HouseholdPlanSubcategoryTest`, `HouseholdPlanTest`,
-  `HouseholdPlanOverviewGroupsTest`, `HouseholdPlanControllerTest`, `JdbcHouseholdPlanRepositoryTest`,
+  `HouseholdPlanOverviewGroupsTest`, `BudgetItemControllerTest`, `BudgetItemOrderControllerTest`, `JdbcHouseholdPlanRepositoryTest`,
   `JdbcHouseholdPlanOverviewQueryHandlerTest`, `budget-entries.spec.ts`, `add-item-form.spec.ts`,
   `edit-item-dialog.spec.ts`, `budget-store.spec.ts`, `budget-api.spec.ts`, `budget-dashboard.spec.ts`
 - E2E: `e2e/tests/unterkategorie.spec.ts` (UK-1 bis UK-7, UK-9 bis UK-12, UK-14 bis UK-17, UK-19; UK-13, UK-18, der
