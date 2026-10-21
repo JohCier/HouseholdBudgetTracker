@@ -41,11 +41,14 @@
 .selectable {
   cursor: pointer;
 
-  &:hover,
   &:focus-visible {
-    opacity: 0.8;
     outline: none;
   }
+}
+
+// The slice under the mouse or with the focus, and its line in the legend (TK-14)
+.slice.highlighted {
+  opacity: 0.8;
 }
 
 .empty {
@@ -94,6 +97,16 @@
   display: flex;
   gap: 12px;
   align-items: flex-start;
+  // Room for the highlight without moving the text (TK-14)
+  margin: -4px -8px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background-color 150ms;
+
+  &.highlighted {
+    background-color: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+  }
 }
 
 .swatch {

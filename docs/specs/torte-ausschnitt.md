@@ -63,6 +63,14 @@ bleiben unverändert.
 - **TK-13**: Auf schmalen Bildschirmen (ab 360 px, MA-1) passen Auswahl, „Zurück", Torte und Legende untereinander auf
   den Bildschirm; lange Namen in der Legende brechen zwischen Wörtern um (MA-4).
 
+- **TK-14**: Fährt der Benutzer mit der Maus über ein Stück, leuchtet seine Zeile in der Legende auf, damit er sieht,
+  um welche Kategorie, Unterkategorie oder welchen Posten es sich handelt; das Stück selbst wird etwas heller. Das gilt in
+  allen Ausschnitten, für Stücke, die einen Ausschnitt wählen (TK-4), wie für Posten und „nicht verplant", und ebenso
+  für das per Tastatur fokussierte Stück. Verlässt die Maus das Stück, erlischt die Hervorhebung. Auf Touch-Geräten
+  bleibt es bei TK-4: Ein Tippen auf ein Stück, das einen Ausschnitt wählt, springt hinein, ohne dass im neuen
+  Ausschnitt etwas hervorgehoben ist; ein Tippen auf ein Stück ohne Ziel hebt seine Zeile hervor, bis der Benutzer
+  woanders hin tippt. Die Hervorhebung nutzt die Farben des Farbschemas und ist hell wie dunkel gut lesbar.
+
 ## Akzeptanzkriterien
 
 - **Gegeben** ein Plan mit Ausgaben, **wenn** der Benutzer auf „Torte" umschaltet, **dann** ist im Ausschnitt
@@ -93,6 +101,11 @@ bleiben unverändert.
   oder das Jahr wechselt, **dann** ist weiterhin „Lebensunterhalt" gewählt (TK-5).
 - **Gegeben** ein Plan ohne Ausgaben in Freizeit & Spaß, **wenn** der Benutzer „Freizeit & Spaß" wählt, **dann**
   zeigt die Torte einen leeren Kreis mit „Keine Ausgaben in Freizeit & Spaß" (TK-11).
+- **Gegeben** die Torte im Ausschnitt „50/30/20-Regel", **wenn** der Benutzer mit der Maus über das Stück
+  Lebensunterhalt fährt, **dann** ist in der Legende nur die Zeile „Lebensunterhalt" hervorgehoben; **wenn** er die
+  Maus wegbewegt, **dann** ist keine Zeile mehr hervorgehoben (TK-14).
+- **Gegeben** „Lebensunterhalt › Auto" ist gewählt, **wenn** der Benutzer mit der Maus über das Stück „Versicherung" fährt,
+  **dann** ist in der Legende die Zeile „Versicherung" hervorgehoben (TK-14).
 - **Gegeben** ein Bildschirm mit 360 px Breite, **wenn** der Benutzer einen Ausschnitt wählt, **dann** ist die Seite
   nicht breiter als der Bildschirm (TK-13, MA-1).
 
@@ -115,7 +128,9 @@ bleiben unverändert.
   gesetzt), `CategoryBreakdownResponse.unplannedPercentageOfTotal`
 - Frontend: `PieSelection` und `isSameSubcategory` in `budget/budget.model.ts`; `budget/ui/category-pie.ts` mit der
   Auswahl „Ausschnitt" (`mat-select`, Gruppen eingerückt unter ihrer Kategorie), „Zurück", anklickbaren Stücken
-  (Rolle `button`) und Abstufungen der Kategoriefarbe per `color-mix` (TK-10). Den Ausschnitt hält
+  (Rolle `button`) und Abstufungen der Kategoriefarbe per `color-mix` (TK-10). Das Stück unter der Maus bzw. mit dem
+  Fokus hält `highlighted` (ein `linkedSignal`, das beim Wechsel des Ausschnitts zurückgesetzt wird); seine
+  Legendenzeile bekommt die Klasse `highlighted` mit `--mat-sys-secondary-container` (TK-14). Den Ausschnitt hält
   `budget/budget-dashboard.ts` (`pieSelection`) wie die Darstellung; eine Gruppe ohne Posten zeigt die Torte als ihre
   Kategorie (TK-5)
 - Tests: `HouseholdPlanOverviewSharesTest`, `HouseholdPlanOverviewControllerTest`, `category-pie.spec.ts`

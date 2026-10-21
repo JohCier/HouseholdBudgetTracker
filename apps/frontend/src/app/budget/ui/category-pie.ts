@@ -1,5 +1,5 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
-import { Component, computed, input, model } from '@angular/core';
+import { Component, computed, input, linkedSignal, model } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -67,7 +67,7 @@ const UNPLANNED_FILL = 'var(--mat-sys-outline)';
 const LIGHTEST_SHADE = 40;
 
 /**
- * Pie chart of the plan (TD-2 to TD-9, TK-1 to TK-13). By default it shows the 50/30/20 breakdown;
+ * Pie chart of the plan (TD-2 to TD-9, TK-1 to TK-14). By default it shows the 50/30/20 breakdown;
  * slice sizes follow the category totals, savings including the surplus (TD-3). A selection
  * narrows it to the subcategory groups of one category or the items of one group, sized by their
  * amounts per month (TK-6). All amounts and shares come from the overview (TD-8, TK-8); the pie
@@ -130,8 +130,13 @@ const LIGHTEST_SHADE = 40;
             [attr.role]="e.target ? 'button' : 'img'"
             [attr.tabindex]="e.target ? 0 : null"
             [attr.aria-label]="ariaLabel"
+            [class.highlighted]="highlighted() === e.key"
             (click)="open(e)"
             (keydown.enter)="open(e)"
+            (mouseenter)="highlight(e)"
+            (mouseleave)="unhighlight(e)"
+            (focus)="highlight(e)"
+            (blur)="unhighlight(e)"
           >
             <title>{{ description }}</title>
           </path>
@@ -145,8 +150,13 @@ const LIGHTEST_SHADE = 40;
             [attr.role]="e.target ? 'button' : 'img'"
             [attr.tabindex]="e.target ? 0 : null"
             [attr.aria-label]="ariaLabel"
+            [class.highlighted]="highlighted() === e.key"
             (click)="open(e)"
             (keydown.enter)="open(e)"
+            (mouseenter)="highlight(e)"
+            (mouseleave)="unhighlight(e)"
+            (focus)="highlight(e)"
+            (blur)="unhighlight(e)"
           >
             <title>{{ description }}</title>
           </circle>
@@ -162,7 +172,11 @@ const LIGHTEST_SHADE = 40;
     @if (s.level === 'rule') {
       <ul class="legend">
         @for (breakdown of breakdowns(); track breakdown.category) {
-          <li class="legend-item" [class.missed]="!breakdown.targetMet">
+          <li
+            class="legend-item"
+            [class.missed]="!breakdown.targetMet"
+            [class.highlighted]="highlighted() === breakdown.category"
+          >
             <span class="swatch" [class]="breakdown.category"></span>
             <div class="legend-text">
               <div class="legend-header">
@@ -207,7 +221,7 @@ const LIGHTEST_SHADE = 40;
       </div>
       <ul class="legend">
         @for (entry of entries(); track entry.key) {
-          <li class="legend-item">
+          <li class="legend-item" [class.highlighted]="highlighted() === entry.key">
             <span class="swatch" [style.background-color]="entry.fill"></span>
             <div class="legend-text">
               <div class="legend-header">
@@ -302,6 +316,15 @@ export class CategoryPieChart {
     });
   });
 
+  /**
+   * Key of the slice under the mouse or with the focus; its line in the legend lights up (TK-14).
+   * Choosing another selection clears it, so a tapped slice does not stay lit on touch screens.
+   */
+  protected readonly highlighted = linkedSignal<string, string | null>({
+    source: this.shownKey,
+    computation: () => null,
+  });
+
   protected readonly emptyHint = computed(() => {
     const shown = this.shown();
     return shown.level === 'rule'
@@ -328,6 +351,16 @@ export class CategoryPieChart {
   protected open(entry: PieEntry): void {
     if (entry.target) {
       this.selection.set(entry.target);
+    }
+  }
+
+  protected highlight(entry: PieEntry): void {
+    this.highlighted.set(entry.key);
+  }
+
+  protected unhighlight(entry: PieEntry): void {
+    if (this.highlighted() === entry.key) {
+      this.highlighted.set(null);
     }
   }
 
