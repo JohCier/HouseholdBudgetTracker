@@ -18,9 +18,9 @@ if [ ! -x "$JDK/bin/java" ]; then
   apt-get install -y -qq openjdk-25-jdk-headless >/dev/null \
     || { apt-get update -qq && apt-get install -y -qq openjdk-25-jdk-headless >/dev/null; }
 fi
-export JAVA_HOME="$JDK"
-echo "export JAVA_HOME=$JDK" >> "$ENV_FILE"
-echo "export PATH=$JDK/bin:\$PATH" >> "$ENV_FILE"
+# java and javac on the default PATH point to JDK 25 even if JAVA_HOME and PATH below do not reach the Bash tool
+update-alternatives --set java "$JDK/bin/java" >/dev/null 2>&1 || true
+update-alternatives --set javac "$JDK/bin/javac" >/dev/null 2>&1 || true
 
 # Docker daemon for the @IntegrationTest tests (Testcontainers)
 if ! docker info >/dev/null 2>&1; then
@@ -43,8 +43,16 @@ if [ ! -x "$NODE_DIR/node" ]; then
   npm install --prefix /opt/node-current --no-save --no-package-lock --no-audit --no-fund \
     --no-update-notifier --loglevel=error "node-linux-x64@$(cat apps/frontend/.nvmrc)" >/dev/null
 fi
-export PATH="$NODE_DIR:$PATH"
-echo "export PATH=$NODE_DIR:\$PATH" >> "$ENV_FILE"
+# The image's node comes first on the default PATH; replace it so that node, npm and npx use the
+# current Node even if the PATH below does not reach the Bash tool
+IMAGE_NODE="$(command -v node || true)"
+if [ -n "$IMAGE_NODE" ] && [ "$IMAGE_NODE" != "$NODE_DIR/node" ]; then
+  ln -sf "$NODE_DIR/node" "$IMAGE_NODE"
+fi
+
+# JAVA_HOME and PATH for this hook and, via CLAUDE_ENV_FILE, for the Bash tool
+. "$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-env.sh"
+echo ". \"$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-env.sh\"" >> "$ENV_FILE"
 
 # npm workspace (frontend, shared-types); ci instead of install leaves package-lock.json untouched
 npm ci --no-audit --no-fund --no-update-notifier --loglevel=error

@@ -40,12 +40,20 @@ Architektur, Sitzungs-Cookie, Docker und CI beschreibt das `README.md` ausführl
 
 ## Befehle
 
-- Schnelle Tests ohne Docker: `./mvnw test` in `apps/backend` bzw. `apps/users`
-- Alle Tests inkl. Testcontainers: `./mvnw verify` (braucht Docker); neue Tests mit Datenbank bekommen `@IntegrationTest`
-- Frontend: `npm test --workspace=frontend`, `npm run build --workspace=frontend` (erzeugen vorher die API-Typen)
+- Schnelle Tests ohne Docker: `./mvnw -q test` in `apps/backend` bzw. `apps/users` (grün: keine Ausgabe)
+- Alle Tests inkl. Testcontainers: `./mvnw -q verify` (braucht Docker); neue Tests mit Datenbank bekommen `@IntegrationTest`
+- Frontend: `npm test -s --workspace=frontend`, `npm run build -s --workspace=frontend` (erzeugen vorher die API-Typen)
 - E2E-Tests: Stack mit `docker compose --profile app up --build --wait` starten, dann `npx playwright test` in `e2e`
+- Während der Arbeit nur betroffene Tests: `./mvnw -q test -Dtest=HouseholdPlanTest`,
+  `npm test -s --workspace=frontend -- --include=src/app/budget/data-access/budget-store.spec.ts`,
+  `npx playwright test tests/<spec>.spec.ts`; die ganzen Suiten erst vor dem Commit
+- Logs der Java-Tests stehen nicht in der Konsole, sondern in `target/surefire-reports/` bzw. `target/failsafe-reports/`
+  (`<Testklasse>-output.txt`); nur bei Fehlschlägen gezielt lesen
 - API-Vertrag nach Änderung an Controller oder DTO neu schreiben:
-  `./mvnw verify -Dit.test=OpenApiContractTest -Dopenapi.update=true`; JSON, Java und Frontend gemeinsam committen
+  `./mvnw -q verify -Dit.test=OpenApiContractTest -Dopenapi.update=true`; JSON, Java und Frontend gemeinsam committen.
+  `packages/shared-types/openapi/*.json` nicht lesen, sondern mit `git diff --stat` prüfen; Typen stehen in
+  `@hbt/shared-types`
+- Cloud-Sitzung: Zeigt `echo $JAVA_HOME` nicht JDK 25, Maven-Befehle mit `. .claude/hooks/cloud-env.sh &&` beginnen
 
 ## Konventionen
 
