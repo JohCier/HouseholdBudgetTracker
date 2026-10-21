@@ -6,8 +6,8 @@ paths:
 
 # DDD-Regeln für die Java-Apps
 
-Der Abschnitt „Konventionen in diesem Projekt“ beschreibt, wie die Bausteine hier konkret gebaut werden; die Abschnitte
-danach die allgemeinen DDD-Regeln dahinter. Die mit „(ArchUnit)“ markierten Regeln prüft `ArchitectureTest` (ArchUnit,
+Der Abschnitt „Konventionen in diesem Projekt“ beschreibt, wie die Bausteine hier konkret gebaut werden; der Abschnitt
+„Regeln je Baustein“ ergänzt nur, was darüber hinaus gilt. Die mit „(ArchUnit)“ markierten Regeln prüft `ArchitectureTest` (ArchUnit,
 jMolecules) in beiden Apps maschinell. Schlägt `ArchitectureTest` fehl, wird der Code angepasst, nicht der Test; eine
 Änderung am Test nur nach Rückfrage.
 
@@ -89,135 +89,56 @@ jMolecules) in beiden Apps maschinell. Schlägt `ArchitectureTest` fehl, wird de
   Schreibseite kennt keine Read Models (ArchUnit). Query-Handler-Interfaces werden nur vom Application Layer benutzt und
   in `infrastructure.persistence` implementiert (ArchUnit)
 
-## Aggregates, Entities, Value Objects
+## Regeln je Baustein
 
-### Regeln für Aggregates
+### Aggregates und Entities
 
-- Eindeutige Identität: Jede Entity und somit auch jede Aggregate Root muss über eine unveränderliche, typisierte ID verfügen. Der Objektvergleich (equals/hashCode) erfolgt ausschließlich über diese ID
+- Invarianten per Guard Clauses im Konstruktor und in jeder fachlichen Methode; keine „leeren“ Objekte; interne
+  Listen nur als Kopie herausgeben; keine öffentlichen Setter (ArchUnit)
+- Keine Repository-Aufrufe oder Infrastruktur im Aggregate; Domain-Ports als Methodenparameter sind erlaubt
+- Klein halten: nur, was atomar konsistent sein muss. Andere Aggregates nur über ihre typisierte ID referenzieren
+  (ArchUnit)
+- Tell, Don’t Ask: Entscheidungen trifft das Aggregate (`plan.isOwnedBy(owner)` statt `plan.owner().equals(owner)`)
+- Interne Entities ändert nur die Root: Die Klasse darf public sein, ihre verändernden Methoden sind package-private;
+  sie leben und sterben mit der Root und schützen ihre eigenen Invarianten
 
-- Konsistenz: Aggregates schützen Invarianten zwingend durch Guard Clauses
+### Value Objects
 
-- Kapselung: Keine öffentlichen Setter (ArchUnit); keine direkte Herausgabe veränderbarer interner Listen (nur defensive Kopien/Unmodifiable)
+- Unveränderlich, Gleichheit über alle Werte (equals/hashCode nie von Hand), Methoden geben neue Instanzen zurück
+  (z. B. `BudgetSummary.withExpense(...)`)
+- Gegen Primitive Obsession (`Money`, `Percentage`, `BudgetItemDescription`), aber nur wo fachliche Regeln dranhängen
 
-- Validität: Keine „leeren“ Objekte; Konstruktoren müssen die initiale Gültigkeit erzwingen
+### Repositorys
 
-- Reinheit: Keine Infrastrukturabhängigkeiten oder Repository-Aufrufe innerhalb des Aggregates; Domain-Ports als Methodenparameter sind erlaubt (siehe oben)
+- Interface in der Domäne, Implementierung in der Infrastruktur, ohne SQL- oder JDBC-Typen in der Schnittstelle
+- Nur für Aggregate Roots, immer das ganze Aggregate; `add` für neue, `findById` zum Laden, `save` nach jeder Änderung
+- Fachliche Filter zum Laden oder Steuern sind erlaubt (`findByEmail`, `existsFor(owner, year)`); Abfragen für
+  Anzeigen über mehrere Aggregates gehören in Read Models
 
-- _Keep Aggregates_ Small: Ein Aggregate ist keine fachliche Sammelmappe, sondern eine minimale Konsistenzgrenze, es umfasst nur die Entities und Value Objects, die zwingend atomar und synchron konsistent sein müssen
+### Domain Commands
 
-- Referenzierung: Andere Aggregates werden niemals als Objektreferenz eingebettet, sondern ausschließlich über ihre typisierte ID referenziert (ArchUnit); das erzwingt die Entkopplung und verhindert riesige Objektgraphen
+- Records in der Domäne (ArchUnit), nach der fachlichen Absicht benannt (`AddExpenseCommand`, nicht
+  `UpdatePlanRequest`); eine Absicht, eine Transaktion, ein Aggregate
+- Nur formale Prüfung (meist `Objects.requireNonNull`, die Felder sind schon Value Objects); keine Prüfung gegen den
+  Systemzustand. Der Application Service reicht die Daten an die Fachmethode des Aggregates weiter, nicht das Command
 
-- Tell, Don’t Ask-Prinzip: Trage nach Möglichkeit keine Daten aus dem Aggregate heraus, um extern Entscheidungen zu treffen; sende stattdessen einen Befehl (Command/Methode) an das Aggregate, damit es die Entscheidung intern, basierend auf seinem eigenen Zustand trifft (z. B. `plan.isOwnedBy(owner)` statt `plan.owner().equals(owner)` im Service)
+### Application Services und Domain Services
 
-### Regeln für Value Objects
+- Application Service: koordiniert (laden, Fachmethode, speichern, Events veröffentlichen), enthält keine Fachlogik,
+  ist die Transaktionsgrenze (`@Transactional`). Ausnahme: Ein Fall, der höchstens eine Zeile schreibt und etwas
+  Langsames ohne Datenbank tut (BCrypt in `apps/users`), läuft ohne Transaktion; der Javadoc begründet das
+- Nimmt Commands oder einfache Typen, gibt Read Models, IDs oder Bestätigungen zurück, nie Aggregates; Web-DTOs bleiben
+  in `infrastructure/web/dto`
+- Domain Service nur, wenn Logik weder in ein Aggregate noch in ein Value Object passt; zustandslos, ohne Infrastruktur,
+  Methodennamen aus `docs/glossar.md`
 
-- Unveränderlichkeit: Value Objects sind nach der Erzeugung nicht mehr veränderbar, jede Änderung erzeugt eine neue Instanz des Objekts
+### Domain Events
 
-- Gleichheit durch Wert: Zwei Value Objects sind gleich, wenn alle ihre Attribute übereinstimmen; als Records bekommen sie equals und hashCode automatisch, beides wird nicht von Hand geschrieben
+- Fakten in der Vergangenheitsform (`ExpenseAdded`, `UserRegistered`); nur IDs, Zeitpunkt und die nötigsten Daten
 
-- Selbstvalidierung: Ein Value Object darf niemals in einem ungültigen Zustand existieren; prüfe alle fachlichen Regeln direkt im Konstruktor
+### Read Models und Query Handler
 
-- Keine Primitive Obsession: Nutze keine einfachen Datentypen (String, Integer) für fachliche Konzepte; erstelle stattdessen Value Objects, die ihre eigene Logik mitbringen (z. B. `Money`, `Percentage`, `BudgetItemDescription`). Nicht jedes Datenfeld in einem Aggregate muss ein Value Object sein, nur dort wo sich auch fachliche Regeln mit verbinden lassen, unnötigen Overhead gilt es hier zu vermeiden
-
-- Nebenwirkungsfreie Methoden: Methoden in Value Objects dürfen niemals den Zustand verändern, sondern geben immer ein neues Value Object zurück (z. B. `BudgetSummary.withExpense(...)`)
-
-### Regeln für Entities
-
-- Identität: Jede Entity besitzt eine eigene typisierte ID, der Vergleich von Entities erfolgt ausschließlich über diese ID
-
-- Kapselung durch die Root: Interne Entities dürfen ausschließlich über die Aggregate Root verändert werden; kein externer Dienst darf eine interne Entity direkt manipulieren. Die Entity-Klasse selbst darf public sein (z. B. damit Repositorys sie lesen und rekonstituieren können), ihre verändernden fachlichen Methoden sind aber in der Sichtbarkeit zu reduzieren (package-private), sodass nur die Aggregate Root sie aufrufen kann
-
-- Lebenszyklusabhängigkeit: Die Existenz einer internen Entity ist an die Aggregate Root gebunden; wird die Root gelöscht, verschwinden auch ihre Entities
-
-- Fachliche Methoden: Entities sind keine reinen Datenhüllen; sie enthalten Logik, die ihren eigenen Zustand betrifft, werden aber von der Root orchestriert
-
-- Validierung bei Zustandsübergängen: Auch interne Entities müssen ihre eigenen Invarianten schützen; eine Entity darf durch einen Methodenaufruf niemals in einen fachlich ungültigen Zustand geraten
-
-## Repositorys
-
-### Regeln für Repositorys
-
-- Schnittstellenprinzip: Repositorys werden im Domänen-Layer als Interfaces definiert; die technische Implementierung erfolgt strikt getrennt im Infrastruktur-Layer
-
-- Sammlungsmetapher: Ein Repository verhält sich wie eine fachliche Sammlung: `add` nimmt ein neues Aggregate auf, `findById` holt eines heraus, `save` übernimmt die Änderungen an einem geholten Aggregate. `save` wird nach jeder Änderung explizit aufgerufen
-
-- Aggregate-Fokus: Repositorys verwalten ausschließlich Aggregate Roots; erstelle niemals Repositorys für interne Entities oder Value Objects.
-
-- Ganzheitlichkeit (Integrität): Ein Repository gibt immer das vollständige Aggregate zurück; gib niemals Fragmente oder Teildaten (Projektionen) heraus
-
-- Keine Infrastrukturlecks: Die Schnittstelle darf keine technischen Details wie SQL-Fragmente oder JDBC-Typen enthalten
-
-### Selektion vs. Präsentation
-
-- Erlaubt: Fachliche Filter und Prüfungen, um Aggregates für Operationen zu laden oder einen Ablauf zu steuern (z. B. `findByEmail(email)`, `existsFor(owner, year)`).
-
-- Vermeiden: Abfragen für Dashboards oder komplexe UI-Tabellen, die Informationen aus mehreren Aggregates umfassen; nutze hierfür Read Models.
-
-## Domain Commands
-
-### Regeln für Domain Commands
-
-- Strikte Logiktrennung: Ein Domain Command darf keinerlei Businesslogik enthalten. Seine Verantwortung beschränkt sich ausschließlich auf die formale (syntaktische) Validierung.
-
-- Erlaubt (Validierung): Prüfung auf null, leere Strings, korrekte Formate (Regex), Wertebereiche. Meist genügen `Objects.requireNonNull`, weil die Felder schon Value Objects sind, die sich selbst validieren.
-
-- Verboten (Businesslogik): fachliche Entscheidungen, Berechnungen oder Prüfungen gegen den Systemzustand (z. B. „Hat der Benutzer für das Jahr schon einen Plan?“ oder „Gehört der Plan diesem Benutzer?“). Diese Logik gehört zwingend in Aggregates, Domain Services oder den Ablauf des Application Service.
-
-- Fachliche Absicht (Intent): Domain Commands sind nach der fachlichen Handlung benannt (`AddExpenseCommand`, `RegisterUserCommand`), nicht nach technischen Datenänderungen (`UpdatePlanRequest`).
-
-- Unveränderlichkeit: Domain Commands sind Records (ArchUnit).
-
-- Eindeutigkeit: Ein Domain Command repräsentiert genau eine fachliche Absicht und führt zu genau einer Transaktion, die genau ein Aggregate ändert.
-
-- Teil der Domäne: Domain Commands sind Teil der Domäne (ArchUnit), sie können außerhalb bspw. aus einem Application Service erstellt werden. Die Commands werden nicht direkt auf Aggregates angewandt, sondern die fachlichen Daten aus dem Command entnommen und auf die Fachmethode im Aggregate angewandt.
-
-## Application Services und Domain Services
-
-### Regeln für Application Services
-
-- Koordination statt Logik: Ein Application Service delegiert die Fachlogik an Aggregates oder Domain Services; er enthält nur „Wenn-Dann“-Abläufe für den Prozess (z. B. „Lade Plan, füge Ausgabe hinzu, speichere Plan, veröffentliche Events“)
-
-- Transaktionsgrenze: Hier beginnt und endet die Datenbanktransaktion (`@Transactional`); der Application Service stellt sicher, dass eine Operation atomar ist. Ausnahme: Ein Anwendungsfall, der höchstens eine Zeile schreibt und dabei etwas Langsames ohne Datenbank tut (z. B. BCrypt in `apps/users`), läuft ohne Transaktion, damit er keine Datenbankverbindung blockiert; der Javadoc des Service begründet das
-
-- Infrastruktur-Brücke: Koordiniert technische Belange; Versand von Bestätigungs-E-Mails, Aufruf externer APIs oder Veröffentlichen von Events
-
-- Eingabe/Ausgabe: Nimmt Commands oder einfache Datentypen entgegen und gibt Read Models, IDs oder einfache Bestätigungen zurück, niemals Aggregates; er schirmt die Domäne vor der Außenwelt ab. Web-DTOs bleiben in `infrastructure/web/dto` und werden im Controller in Commands übersetzt
-
-- Sicherheit und Zugriff: Authentifizierung geschieht vorgeschaltet (Spring Security); die Autorisierung („Darf dieser Benutzer diesen Plan ändern?“) im Application Service, wie unter „Autorisierung über Besitz“ beschrieben
-
-### Regeln für Domain Services
-
-- Zustandslosigkeit: Domain Services sind zustandslos, sie halten keine Daten, sondern führen Berechnungen oder Operationen auf übergebenen Aggregates aus
-
-- Fachliche Sprache: Die Methodennamen spiegeln die Ubiquitous Language wider (siehe `docs/glossar.md`), auf Englisch wie aller Code
-
-- Keine Infrastruktur: Ein Domain Service darf keine technischen Details (E-Mail-Versand, Datenbanktransaktionen) kennen; er bleibt im Domain Layer
-
-- Logikfokus: Nutze Domain Services nur, wenn die Logik wirklich nicht in ein Aggregate oder Value Object passt. Das Ziel bleibt ein Rich Domain Model, kein prozeduraler Code.
-
-## Domain Events
-
-### Regeln für Domain Events
-
-- Benennung: Domain Events dokumentieren fachlich relevante Fakten der Vergangenheit und werden konsequent in der Vergangenheitsform benannt (z. B. `ExpenseAdded`, `UserRegistered`).
-
-- Inhalt: Ein Domain Event sollte nur die Identitäten (IDs), den Zeitpunkt und die minimal notwendigen Daten enthalten, um den Empfängern die Arbeit zu ermöglichen
-
-- Unveränderlichkeit: Domain Events sind Records (ArchUnit)
-
-## Read Model und Query Handler
-### Regeln für Read Model und Query Handler
-
-- Immutability: Read Models sind Records (ArchUnit); enthaltene Listen werden mit `List.copyOf` kopiert
-
-- Clientzentrierung: Die Struktur eines Read Models richtet sich ausschließlich nach den Bedürfnissen des Konsumenten (z. B. UI oder API-Client); sie darf flach sein, kann aber auch hierarchisch oder verschachtelt aufgebaut sein, wenn das die Verarbeitung im Client vereinfacht
-
-- Grenzüberschreitung: Im Gegensatz zu Aggregates dürfen Read Models Daten aus verschiedenen Aggregates kombinieren (Denormalisierung), um Joins auf Client-Seite zu vermeiden
-
-- Bereitstellung via Query-Handler: Read Models werden niemals über Repositorys bezogen, sondern über dedizierte Query-Handler (ArchUnit)
-
-- Wiederverwendung von Value Objects oder typisierten IDs: Es ist ausdrücklich erlaubt und erwünscht, Value Objects oder typisierte IDs aus der Domäne im Read Model wiederzuverwenden; das stellt sicher, dass fachliche Formatierungen und Berechnungen konsistent bleiben (z. B. rechnet `HouseholdPlanOverview` über `BudgetSummary` statt selbst)
-
-- Keine neue Domänenlogik: Ein Read Model darf existierende Logik von Value Objects nutzen, aber keine eigene neue Geschäftslogik oder Validierungen einführen; es bleibt ein reiner Informationsträger.
-
-- Performancefokus: Query-Handler dürfen den „schweren“ Weg über das Domänenmodell umgehen und optimierte Abfragen (z. B. natives SQL oder spezialisierte Views) nutzen
+- Aufbau nach den Bedürfnissen des Konsumenten, darf Daten mehrerer Aggregates kombinieren; Listen mit `List.copyOf`
+- Value Objects und IDs der Domäne wiederverwenden (z. B. rechnet `HouseholdPlanOverview` über `BudgetSummary`), aber
+  keine neue Fachlogik oder Validierung
+- Query Handler dürfen optimiertes SQL nutzen und das Domänenmodell umgehen
