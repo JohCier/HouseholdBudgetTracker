@@ -20,6 +20,7 @@ const item: BudgetItem = {
   category: 'FREIZEIT_SPASS',
   subcategory: null,
   note: null,
+  percentageOfGroup: null,
 };
 const overview: HouseholdPlanOverview = {
   id: 'plan-2026',
@@ -42,7 +43,15 @@ const overview: HouseholdPlanOverview = {
       category: 'FREIZEIT_SPASS',
       total: '12.50',
       monthlyTotal: '1.04',
-      groups: [{ subcategory: 'Sonstiges', total: '12.50', monthlyTotal: '1.04', items: [item] }],
+      groups: [
+        {
+          subcategory: 'Sonstiges',
+          total: '12.50',
+          monthlyTotal: '1.04',
+          percentageOfSection: 0,
+          items: [item],
+        },
+      ],
     },
   ],
 };
@@ -163,11 +172,18 @@ describe('BudgetDashboard', () => {
             groups: [
               {
                 subcategory: 'Auto',
+                percentageOfSection: 0,
                 total: '12.50',
                 monthlyTotal: '1.04',
                 items: [{ ...item, id: '2', description: 'Tank', subcategory: 'Auto' }],
               },
-              { subcategory: 'Sonstiges', total: '12.50', monthlyTotal: '1.04', items: [item] },
+              {
+                subcategory: 'Sonstiges',
+                total: '12.50',
+                monthlyTotal: '1.04',
+                percentageOfSection: 0,
+                items: [item],
+              },
             ],
           },
         ],
@@ -320,9 +336,7 @@ describe('BudgetDashboard', () => {
     TestBed.overrideComponent(BudgetDashboard, {
       set: { providers: [{ provide: BudgetStore, useValue: store }] },
     });
-    const navigateByUrl = vi
-      .spyOn(TestBed.inject(Router), 'navigateByUrl')
-      .mockResolvedValue(true);
+    const navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     const fixture = TestBed.createComponent(BudgetDashboard);
     fixture.componentRef.setInput('year', '2026');
     await fixture.whenStable();

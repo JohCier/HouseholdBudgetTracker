@@ -6,6 +6,9 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import {
   BreakdownView,
   CategoryBreakdown,
+  CategoryItems,
+  PieSelection,
+  RULE_SELECTION,
   categoryLabel,
   missedTargetLabel,
   targetLabel,
@@ -16,7 +19,8 @@ import { CategoryPieChart } from './category-pie';
  * Visualizes actual spend per category against its 50/30/20 target share of income.
  * Living costs and leisure have a ceiling, savings a floor. Income that no expense uses up
  * counts towards savings and is shown there as unplanned (AW-10). A toggle switches between
- * the bars and a pie chart (TD-1). Both show the amounts per month (MJ-14).
+ * the bars and a pie chart (TD-1), which can also show one category or subcategory (TK-1). Both
+ * show the amounts per month (MJ-14).
  */
 @Component({
   selector: 'app-category-breakdown',
@@ -46,7 +50,11 @@ import { CategoryPieChart } from './category-pie';
           <mat-button-toggle value="pie">Torte</mat-button-toggle>
         </mat-button-toggle-group>
         @if (view() === 'pie') {
-          <app-category-pie [breakdowns]="breakdowns()" />
+          <app-category-pie
+            [breakdowns]="breakdowns()"
+            [expenseCategories]="expenseCategories()"
+            [(selection)]="pieSelection"
+          />
         } @else {
           @for (breakdown of breakdowns(); track breakdown.category) {
             <div class="row" [class.missed]="!breakdown.targetMet">
@@ -81,8 +89,12 @@ import { CategoryPieChart } from './category-pie';
 })
 export class CategoryBreakdownCard {
   readonly breakdowns = input.required<CategoryBreakdown[]>();
+  /** The expenses grouped as the entries show them, for the pie of a category or group (TK-1). */
+  readonly expenseCategories = input<CategoryItems[]>([]);
   /** Selected view; the parent keeps it, so it survives switching the year (TD-1). */
   readonly view = model<BreakdownView>('bars');
+  /** Selected part of the plan in the pie; kept by the parent like the view (TK-5). */
+  readonly pieSelection = model<PieSelection>(RULE_SELECTION);
 
   protected label(breakdown: CategoryBreakdown): string {
     return categoryLabel(breakdown.category);

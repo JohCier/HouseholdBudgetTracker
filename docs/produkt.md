@@ -36,6 +36,7 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 | Fehlermeldungen | Alle Meldungen auf Deutsch, auch die der API | [fehlermeldungen.md](specs/fehlermeldungen.md) |
 | Auswertung | Summen, Saldo, Warnung bei Defizit, Anteil und Zielerreichung je 50/30/20-Kategorie | [auswertung-50-30-20.md](specs/auswertung-50-30-20.md) |
 | Tortendiagramm | Die 50/30/20-Auswertung wahlweise als Balken oder als Tortendiagramm ansehen | [tortendiagramm.md](specs/tortendiagramm.md) |
+| Ausschnitt der Torte | Die Torte auf eine Kategorie (nach Unterkategorien) oder eine Unterkategorie (nach Posten) eingrenzen | [torte-ausschnitt.md](specs/torte-ausschnitt.md) |
 | Übersicht als Antwort | Nach jeder Änderung liefert die API die neue Übersicht mit, die Oberfläche lädt nicht erneut | [antwort-mit-uebersicht.md](specs/antwort-mit-uebersicht.md) |
 
 Alle Beträge sind in Euro. Die Oberfläche ist deutschsprachig.

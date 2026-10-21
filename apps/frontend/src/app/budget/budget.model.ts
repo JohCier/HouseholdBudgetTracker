@@ -65,6 +65,22 @@ export const AMOUNT_PERIODS: readonly { value: AmountPeriod; label: string }[] =
 /** How the 50/30/20 card shows the breakdown: as one bar per category or as a pie chart. */
 export type BreakdownView = 'bars' | 'pie';
 
+/**
+ * Which part of the plan the pie shows (TK-1): the 50/30/20 rule, the subcategory groups of one
+ * category, or the items of one group. A group always belongs to its category (TK-3).
+ */
+export type PieSelection =
+  | { level: 'rule' }
+  | { level: 'category'; category: ExpenseCategory }
+  | { level: 'group'; category: ExpenseCategory; subcategory: string };
+
+export const RULE_SELECTION: PieSelection = { level: 'rule' };
+
+/** Whether two subcategory names denote the same group, ignoring case (UK-5). */
+export function isSameSubcategory(a: string, b: string): boolean {
+  return a.toLocaleLowerCase('de') === b.toLocaleLowerCase('de');
+}
+
 /** Target wording shared by the bar and pie views, e.g. "max. 50" or "mind. 20". */
 export function targetLabel(breakdown: CategoryBreakdown): string {
   const direction = breakdown.targetDirection === 'AT_LEAST' ? 'mind.' : 'max.';

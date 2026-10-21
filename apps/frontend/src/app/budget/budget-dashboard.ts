@@ -7,7 +7,14 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
 import { Router, RouterLink } from '@angular/router';
-import { BreakdownView, BudgetItem, NewItemPreset, Year } from './budget.model';
+import {
+  BreakdownView,
+  BudgetItem,
+  NewItemPreset,
+  PieSelection,
+  RULE_SELECTION,
+  Year,
+} from './budget.model';
 import { BudgetApi } from './data-access/budget-api';
 import { BudgetStore } from './data-access/budget-store';
 import { AddItemDialog } from './ui/add-item-dialog';
@@ -103,7 +110,9 @@ import { parseYear } from './year';
           @if (store.overview(); as overview) {
             <app-category-breakdown
               [breakdowns]="overview.categoryBreakdowns"
+              [expenseCategories]="overview.expenseCategories"
               [(view)]="breakdownView"
+              [(pieSelection)]="pieSelection"
             />
           }
         </div>
@@ -234,6 +243,8 @@ export class BudgetDashboard {
   protected readonly creating = signal(false);
   /** View of the 50/30/20 card, kept while the page is open (TD-1). */
   protected readonly breakdownView = signal<BreakdownView>('bars');
+  /** Part of the plan the pie shows, kept like the view (TK-5). */
+  protected readonly pieSelection = signal<PieSelection>(RULE_SELECTION);
   /** The years the user has plans for, other than the one shown; looked up for a year without plan (PU-12). */
   protected readonly otherPlanYears = signal<Year[]>([]);
 

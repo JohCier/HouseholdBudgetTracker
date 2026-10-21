@@ -15,6 +15,9 @@ public record ItemGroupResponse(
         @JsonFormat(shape = JsonFormat.Shape.STRING)
         @Schema(implementation = String.class, format = "decimal", example = "145.83", description = "The yearly total divided by 12")
         BigDecimal monthlyTotal,
+        @Schema(example = "13.00",
+                description = "How much of the income or of the category total the group makes up per month, in percent (TK-8)")
+        BigDecimal percentageOfSection,
         List<BudgetItemResponse> items
 ) {
 
@@ -23,7 +26,8 @@ public record ItemGroupResponse(
                 group.subcategory().value(),
                 group.total().value(),
                 group.monthlyTotal().value(),
-                group.items().stream().map(BudgetItemResponse::from).toList()
+                group.percentageOfSection().value(),
+                group.items().stream().map(item -> BudgetItemResponse.from(item, group.percentageOf(item))).toList()
         );
     }
 }

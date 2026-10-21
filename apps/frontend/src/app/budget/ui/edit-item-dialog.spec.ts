@@ -17,6 +17,7 @@ const rent: BudgetItem = {
   category: 'LEBENSUNTERHALT',
   subcategory: null,
   note: null,
+  percentageOfGroup: null,
 };
 const salary: BudgetItem = {
   id: '1',
@@ -29,6 +30,7 @@ const salary: BudgetItem = {
   category: null,
   subcategory: null,
   note: null,
+  percentageOfGroup: null,
 };
 
 // PB-1, PB-2, PB-3

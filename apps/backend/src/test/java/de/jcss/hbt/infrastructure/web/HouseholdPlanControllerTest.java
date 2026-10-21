@@ -515,7 +515,10 @@ class HouseholdPlanControllerTest {
                 .andExpect(jsonPath("$.expenseCategories[0].category").value("LEBENSUNTERHALT"))
                 .andExpect(jsonPath("$.expenseCategories[0].total").value("400.00"))
                 .andExpect(jsonPath("$.expenseCategories[0].groups[0].subcategory").value("Auto"))
-                .andExpect(jsonPath("$.expenseCategories[0].groups[0].total").value("400.00"));
+                .andExpect(jsonPath("$.expenseCategories[0].groups[0].total").value("400.00"))
+                .andExpect(jsonPath("$.expenseCategories[0].groups[0].percentageOfSection").value(100.0))
+                .andExpect(jsonPath("$.expenseCategories[0].groups[0].items[0].percentageOfGroup").value(100.0))
+                .andExpect(jsonPath("$.items[0].percentageOfGroup").isEmpty());
     }
 
     /** PN-2 */
@@ -842,6 +845,7 @@ class HouseholdPlanControllerTest {
                 .andExpect(jsonPath("$.categoryBreakdowns[2].monthlyTotal").value("83.33"))
                 .andExpect(jsonPath("$.categoryBreakdowns[2].unplanned").value("500.00"))
                 .andExpect(jsonPath("$.categoryBreakdowns[2].monthlyUnplanned").value("41.67"))
+                .andExpect(jsonPath("$.categoryBreakdowns[2].unplannedPercentageOfTotal").value(50.01))
                 .andExpect(jsonPath("$.items[0].id").value(itemId.value().toString()))
                 .andExpect(jsonPath("$.items[0].amount").value("500.00"))
                 .andExpect(jsonPath("$.items[0].category").value("SPAREN_INVESTIEREN"))

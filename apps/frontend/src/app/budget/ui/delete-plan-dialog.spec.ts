@@ -17,6 +17,7 @@ const item: BudgetItem = {
   category: null,
   subcategory: null,
   note: null,
+  percentageOfGroup: null,
 };
 
 function overview(items: number): HouseholdPlanOverview {

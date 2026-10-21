@@ -7,6 +7,25 @@
   // The colors of the categories are defined globally in styles.scss (TD-2, UK-19)
 }
 
+.selection {
+  align-self: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.selection-field {
+  flex: 1 1 200px;
+  min-width: 0;
+  max-width: 320px;
+}
+
+// The groups of a category, indented below it (TK-2)
+.nested-option {
+  padding-left: 32px;
+}
+
 .pie {
   width: 100%;
   max-width: 200px;
@@ -17,6 +36,16 @@
   stroke: var(--mat-sys-surface);
   stroke-width: 2;
   stroke-linejoin: round;
+}
+
+.selectable {
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    opacity: 0.8;
+    outline: none;
+  }
 }
 
 .empty {
@@ -42,6 +71,13 @@
 .SPAREN_INVESTIEREN {
   fill: var(--app-sparen-investieren-color);
   background-color: var(--app-sparen-investieren-color);
+}
+
+.selection-summary {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .legend {
@@ -78,10 +114,18 @@
 .legend-header {
   display: flex;
   justify-content: space-between;
+  gap: 8px;
   font: var(--mat-sys-title-small);
 }
 
+.name {
+  min-width: 0;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
 .total {
+  flex: none;
   font-variant-numeric: tabular-nums;
 }
 
@@ -91,6 +135,7 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
-.missed .ratio {
+.missed > .ratio,
+.missed .legend-text > .ratio {
   color: var(--mat-sys-error);
 }

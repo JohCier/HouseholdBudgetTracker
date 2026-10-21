@@ -1,6 +1,7 @@
 package de.jcss.hbt.infrastructure.web.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import de.jcss.hbt.domain.householdplan.Percentage;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -24,10 +25,18 @@ public record BudgetItemResponse(
         @Schema(nullable = true, description = "Only set if the item has a subcategory; otherwise it is listed under \"Sonstiges\"")
         String subcategory,
         @Schema(nullable = true, description = "Only set if the item has a note")
-        String note
+        String note,
+        @Schema(nullable = true, example = "80.00",
+                description = "Only set for the items of a group: how much of the group the item makes up per month, in percent (TK-8)")
+        BigDecimal percentageOfGroup
 ) {
 
     public static BudgetItemResponse from(OverviewItem item) {
+        return from(item, null);
+    }
+
+    /** An item of a group with its share of the group per month (TK-8). */
+    public static BudgetItemResponse from(OverviewItem item, Percentage percentageOfGroup) {
         return new BudgetItemResponse(
                 item.id().value(),
                 item.description().value(),
@@ -38,7 +47,8 @@ public record BudgetItemResponse(
                 ItemTypeDto.from(item.type()),
                 item.category() == null ? null : ExpenseCategoryDto.from(item.category()),
                 item.subcategory() == null ? null : item.subcategory().value(),
-                item.note() == null ? null : item.note().value()
+                item.note() == null ? null : item.note().value(),
+                percentageOfGroup == null ? null : percentageOfGroup.value()
         );
     }
 }

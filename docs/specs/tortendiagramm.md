@@ -55,7 +55,8 @@ und jederzeit zwischen beiden Darstellungen wechseln.
 
 - Andere Diagrammarten (Säulen, Ringe über mehrere Jahre, Verlauf über die Zeit)
 - Eine zweite Torte mit der Soll-Aufteilung 50/30/20 zum Vergleich
-- Aufteilung einer Kategorie nach einzelnen Posten
+- Aufteilung einer Kategorie nach einzelnen Posten; seit [torte-ausschnitt.md](torte-ausschnitt.md) nach
+  Unterkategorien und Posten möglich (TK-1)
 - Speichern der gewählten Darstellung über das Neuladen der Seite oder die Abmeldung hinaus; beim Wechsel des Jahres
   bleibt sie erhalten
 - Ein eigenes Stück „Defizit"; bei einem Defizit zeigt die Torte die Aufteilung der Ausgaben (TD-4)

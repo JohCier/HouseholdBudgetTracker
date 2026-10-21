@@ -17,6 +17,7 @@ const item: BudgetItem = {
   category: null,
   subcategory: null,
   note: null,
+  percentageOfGroup: null,
 };
 const overview = (year: number, items = [item]): HouseholdPlanOverview => ({
   id: `plan-${year}`,
@@ -36,7 +37,15 @@ const overview = (year: number, items = [item]): HouseholdPlanOverview => ({
   incomeGroups:
     items.length === 0
       ? []
-      : [{ subcategory: 'Sonstiges', total: '2000.00', monthlyTotal: '166.67', items }],
+      : [
+          {
+            subcategory: 'Sonstiges',
+            total: '2000.00',
+            monthlyTotal: '166.67',
+            percentageOfSection: 100,
+            items,
+          },
+        ],
   expenseCategories: [],
 });
 const yearOf = (planId: string) => Number(planId.replace('plan-', ''));
@@ -373,8 +382,20 @@ describe('BudgetStore', () => {
     const groups = {
       ...overview(2026),
       incomeGroups: [
-        { subcategory: 'Gehalt', total: '2000.00', monthlyTotal: '166.67', items: [item] },
-        { subcategory: 'Sonstiges', total: '2000.00', monthlyTotal: '166.67', items: [added] },
+        {
+          subcategory: 'Gehalt',
+          total: '2000.00',
+          monthlyTotal: '166.67',
+          percentageOfSection: 0,
+          items: [item],
+        },
+        {
+          subcategory: 'Sonstiges',
+          total: '2000.00',
+          monthlyTotal: '166.67',
+          percentageOfSection: 0,
+          items: [added],
+        },
       ],
     };
     api.getOverview.mockReturnValue(of(groups));

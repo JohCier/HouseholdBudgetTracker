@@ -1,6 +1,6 @@
 # Ausschnitt der Torte: Kategorie und Unterkategorie
 
-Status: geplant
+Status: umgesetzt
 
 ## Zweck
 
@@ -107,17 +107,18 @@ bleiben unverändert.
 
 ## Umsetzung
 
-Noch nicht umgesetzt.
+- Backend: Das Read Model `HouseholdPlanOverview` gibt jeder Gruppe `percentageOfSection` mit, den Anteil ihrer Summe
+  je Monat an der Summe der Kategorie je Monat aus der Auswertung (bei Sparen & Investieren mit Überschuss, TK-9), bei
+  den Einnahmen am Einkommen. `OverviewItemGroup.percentageOf` rechnet den Anteil eines Postens an seiner Gruppe aus
+  den Monatsbeträgen, `CategoryBreakdown.monthlyUnplannedShare` den Anteil von „nicht verplant" (TK-6, TK-8)
+- API: `ItemGroupResponse.percentageOfSection`, `BudgetItemResponse.percentageOfGroup` (nur bei Posten einer Gruppe
+  gesetzt), `CategoryBreakdownResponse.unplannedPercentageOfTotal`
+- Frontend: `PieSelection` und `isSameSubcategory` in `budget/budget.model.ts`; `budget/ui/category-pie.ts` mit der
+  Auswahl „Ausschnitt" (`mat-select`, Gruppen eingerückt unter ihrer Kategorie), „Zurück", anklickbaren Stücken
+  (Rolle `button`) und Abstufungen der Kategoriefarbe per `color-mix` (TK-10). Den Ausschnitt hält
+  `budget/budget-dashboard.ts` (`pieSelection`) wie die Darstellung; eine Gruppe ohne Posten zeigt die Torte als ihre
+  Kategorie (TK-5)
+- Tests: `HouseholdPlanOverviewSharesTest`, `HouseholdPlanControllerTest`, `category-pie.spec.ts`
+- E2E: `e2e/tests/torte-ausschnitt.spec.ts`
 
 ## Offene Fragen
-
-1. **Ebenen**: Habe ich den Wunsch richtig verstanden: 50/30/20-Regel → eine Kategorie nach Unterkategorien → eine
-   Unterkategorie nach Posten (TK-1)?
-2. **„Auto" über Kategorien**: Gehört eine Unterkategorie immer zu einer Kategorie (Vorschlag, TK-3), oder soll
-   „Auto" alle Auto-Posten aus allen Kategorien zusammenfassen?
-3. **Bedienung**: Auswahlliste plus Klick auf ein Stück und „Zurück" (Vorschlag, TK-4), oder nur die Auswahlliste?
-4. **Prozente in der Legende**: Anteil am Ausschnitt, vom Backend gerechnet (Vorschlag, TK-8; kleine API-Erweiterung
-   der Übersicht), oder nur Beträge ohne Prozente (dann reine Frontend-Änderung)?
-5. **Überschuss bei Sparen & Investieren**: als eigenes graues Stück „nicht verplant" (Vorschlag, TK-9) oder
-   weglassen, sodass die Torte nur die erfassten Ausgaben zeigt?
-6. **Einnahmen**: Soll es auch einen Ausschnitt „Einnahmen" nach Unterkategorien geben? Vorschlag: vorerst nicht.

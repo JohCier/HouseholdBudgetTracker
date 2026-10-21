@@ -55,6 +55,8 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Veränderung zum Vorjahr | `Percentage.changeFrom`, `incomeChange`, `expenseChange`, `balanceChange` | (Wert − Wert des Vorjahres) ÷ \|Wert des Vorjahres\| × 100, in Prozent mit zwei Nachkommastellen; fehlt ohne Vorjahr oder bei 0,00 € im Vorjahr |
 | Aufteilung je Kategorie | `CategoryBreakdown` | Teil der Übersicht: Summe, Anteil, Zielanteil und Zielerreichung einer Kategorie |
 | Darstellung (Balken, Torte) | `BreakdownView` (`bars`, `pie`), nur im Frontend | Wie die Karte „50/30/20-Regel" die Aufteilung zeigt: als Balken je Kategorie oder als Tortendiagramm |
+| Ausschnitt der Torte | `PieSelection` (`rule`, `category`, `group`), nur im Frontend | Was die Torte zeigt: die 50/30/20-Regel, eine Kategorie aufgeteilt nach Unterkategorien oder eine Unterkategorie einer Kategorie aufgeteilt nach Posten |
+| Anteil am Ausschnitt | `percentageOfSection`, `percentageOfGroup`, `unplannedPercentageOfTotal` | Anteil einer Gruppe an ihrer Kategorie bzw. eines Postens an seiner Gruppe, aus den Monatsbeträgen; bei Sparen & Investieren einschließlich des Überschusses |
 | Protokoll | `audit_log`, `AuditLogListener` | Jedes Domain Event wird nach erfolgreichem Speichern protokolliert |
 
 ## Benutzer (`apps/users`)
