@@ -147,54 +147,60 @@
                   </div>
                 }
               </div>
-              <!-- Marked only here, never when the item is entered (PM-4) -->
-              <span class="marks">
-                <button
-                  matIconButton
-                  type="button"
-                  class="mark important-mark"
-                  [class.marked]="item.important"
-                  [matTooltip]="item.important ? 'Nicht mehr wichtig' : 'Als wichtig markieren'"
-                  [attr.aria-label]="
-                    item.important
-                      ? 'Markierung wichtig bei ' + item.description + ' entfernen'
-                      : item.description + ' als wichtig markieren'
-                  "
-                  [attr.aria-pressed]="item.important"
-                  (click)="markImportant.emit({ item, important: !item.important })"
-                >
-                  <mat-icon [svgIcon]="item.important ? 'star' : 'star_border'" />
-                </button>
-                @if (item.type === 'EXPENSE') {
+              <span class="details">
+                <!-- Marked only here, never when the item is entered (PM-4) -->
+                <span class="marks">
                   <button
                     matIconButton
                     type="button"
-                    class="mark saving-mark"
-                    [class.marked]="!!item.savingPotential"
-                    matTooltip="Sparpotential"
-                    [attr.aria-label]="'Sparpotential bei ' + item.description"
-                    (click)="savingPotential.emit(item)"
+                    class="mark important-mark"
+                    [class.marked]="item.important"
+                    [matTooltip]="item.important ? 'Nicht mehr wichtig' : 'Als wichtig markieren'"
+                    [attr.aria-label]="
+                      item.important
+                        ? 'Markierung wichtig bei ' + item.description + ' entfernen'
+                        : item.description + ' als wichtig markieren'
+                    "
+                    [attr.aria-pressed]="item.important"
+                    (click)="markImportant.emit({ item, important: !item.important })"
                   >
-                    <mat-icon [svgIcon]="item.savingPotential ? 'savings' : 'savings_outline'" />
+                    <mat-icon [svgIcon]="item.important ? 'star' : 'star_border'" />
                   </button>
-                }
-              </span>
-              <!-- The amount as entered stands out, the one worked out from it does not (MJ-12) -->
-              <span
-                class="amount-column amount monthly"
-                [class.income-amount]="item.type === 'INCOME'"
-                [class.expense-amount]="item.type === 'EXPENSE'"
-                [class.derived]="item.period !== 'MONTHLY'"
-              >
-                {{ item.type === 'EXPENSE' ? '−' : '+' }}{{ item.monthlyAmount | currency: 'EUR' }}
-              </span>
-              <span
-                class="amount-column amount yearly"
-                [class.income-amount]="item.type === 'INCOME'"
-                [class.expense-amount]="item.type === 'EXPENSE'"
-                [class.derived]="item.period !== 'YEARLY'"
-              >
-                {{ item.type === 'EXPENSE' ? '−' : '+' }}{{ item.annualAmount | currency: 'EUR' }}
+                  @if (item.type === 'EXPENSE') {
+                    <button
+                      matIconButton
+                      type="button"
+                      class="mark saving-mark"
+                      [class.marked]="!!item.savingPotential"
+                      matTooltip="Sparpotential"
+                      [attr.aria-label]="'Sparpotential bei ' + item.description"
+                      (click)="savingPotential.emit(item)"
+                    >
+                      <mat-icon [svgIcon]="item.savingPotential ? 'savings' : 'savings_outline'" />
+                    </button>
+                  }
+                </span>
+                <!-- The amount as entered stands out, the one worked out from it does not (MJ-12) -->
+                <span class="amounts">
+                  <span
+                    class="amount-column amount monthly"
+                    [class.income-amount]="item.type === 'INCOME'"
+                    [class.expense-amount]="item.type === 'EXPENSE'"
+                    [class.derived]="item.period !== 'MONTHLY'"
+                  >
+                    {{ item.type === 'EXPENSE' ? '−' : '+'
+                    }}{{ item.monthlyAmount | currency: 'EUR' }}
+                  </span>
+                  <span
+                    class="amount-column amount yearly"
+                    [class.income-amount]="item.type === 'INCOME'"
+                    [class.expense-amount]="item.type === 'EXPENSE'"
+                    [class.derived]="item.period !== 'YEARLY'"
+                  >
+                    {{ item.type === 'EXPENSE' ? '−' : '+'
+                    }}{{ item.annualAmount | currency: 'EUR' }}
+                  </span>
+                </span>
               </span>
               <span class="actions">
                 <button

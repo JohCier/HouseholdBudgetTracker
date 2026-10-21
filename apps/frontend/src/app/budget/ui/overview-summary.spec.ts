@@ -28,6 +28,13 @@ function overview(changes: Partial<HouseholdPlanOverview>): HouseholdPlanOvervie
   };
 }
 
+const text = (cell: Element) => cell.textContent?.replace(/\s+/g, ' ').trim();
+const headers = (table: Element) => [...table.querySelectorAll('thead th')].map(text);
+const rows = (table: Element) =>
+  [...table.querySelectorAll('tbody tr')].map((row) =>
+    [...row.querySelectorAll('th, td')].map(text),
+  );
+
 describe('OverviewSummary', () => {
   async function render(value: HouseholdPlanOverview) {
     const fixture = TestBed.createComponent(OverviewSummary);
@@ -42,12 +49,9 @@ describe('OverviewSummary', () => {
       overview({ monthlySavingPotential: '35.00', savingPotential: '420.00' }),
     );
 
-    const text = (cell: Element) => cell.textContent?.replace(/\s+/g, ' ').trim();
-    expect([...element.querySelectorAll('thead th')].map(text)).toEqual(['Monat', 'Jahr']);
-    const rows = [...element.querySelectorAll('tbody tr')].map((row) =>
-      [...row.querySelectorAll('th, td')].map(text),
-    );
-    expect(rows).toEqual([
+    const sheet = element.querySelector('.side-by-side')!;
+    expect(headers(sheet.querySelector('table')!)).toEqual(['Monat', 'Jahr']);
+    expect(rows(sheet.querySelector('table')!)).toEqual([
       ['Gesamteinnahmen', '€250.00', '€3,000.00'],
       ['Gesamtausgaben', '€166.67', '€2,000.00'],
       ['Saldo', '€83.33', '€1,000.00'],
@@ -55,7 +59,34 @@ describe('OverviewSummary', () => {
     ]);
     expect(element.querySelector('mat-card-title')?.textContent).toBe('Bilanz');
     expect(element.querySelector('.balance .value.yearly')?.classList).not.toContain('expense');
+    expect(element.querySelector('tr.total-income th')?.classList).not.toContain('income');
     expect(element.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  // BI-5
+  it('also provides the month above the year, for a narrow box', async () => {
+    const element = await render(
+      overview({ monthlySavingPotential: '35.00', savingPotential: '420.00' }),
+    );
+
+    const tables = [...element.querySelectorAll('.stacked table')];
+    expect(tables.map(headers)).toEqual([['Monat'], ['Jahr']]);
+    expect(tables.map(rows)).toEqual([
+      [
+        ['Gesamteinnahmen', '€250.00'],
+        ['Gesamtausgaben', '€166.67'],
+        ['Saldo', '€83.33'],
+        ['Sparpotential', '€35.00'],
+      ],
+      [
+        ['Gesamteinnahmen', '€3,000.00'],
+        ['Gesamtausgaben', '€2,000.00'],
+        ['Saldo', '€1,000.00'],
+        ['Sparpotential', '€420.00'],
+      ],
+    ]);
+    expect(tables[1].querySelector('.value.income')?.textContent?.trim()).toBe('€3,000.00');
+    expect(tables[1].querySelector('.value.expense')?.textContent?.trim()).toBe('€2,000.00');
   });
 
   it('warns when expenses exceed income', async () => {

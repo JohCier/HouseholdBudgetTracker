@@ -164,8 +164,9 @@ h4 {
   min-width: 0;
 }
 
-// Both amounts of a sum move together, so they never land on different lines (MA-3)
-.amounts {
+// Both amounts of a sum or an item move together, so they never land on different lines (MA-3)
+.amounts,
+.details {
   display: contents;
 }
 
@@ -254,7 +255,7 @@ h4 {
 // description keeps its width (MA-2, MA-3)
 @container (max-width: 599px) {
   .amount-column {
-    flex-basis: 6.5rem;
+    flex-basis: 6rem;
   }
 
   .columns .actions-space,
@@ -264,17 +265,26 @@ h4 {
 
   .items,
   .group-summary {
-    margin-left: 16px;
+    margin-left: 8px;
   }
 
   .item {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) 6.5rem 6.5rem;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas:
-      'handle description description actions'
-      'marks marks monthly yearly';
+      'handle description actions'
+      'details details details';
     column-gap: 8px;
     align-items: center;
+  }
+
+  // Marks and amounts share the second line, the amounts move below the marks if needed (MA-7)
+  .item .details {
+    grid-area: details;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 4px;
   }
 
   // A sum stays on one line if its label fits next to the amounts, otherwise the amounts move to a
@@ -320,14 +330,6 @@ h4 {
     hyphens: auto;
   }
 
-  .monthly {
-    grid-area: monthly;
-  }
-
-  .yearly {
-    grid-area: yearly;
-  }
-
   .item .amount {
     padding-bottom: 8px;
   }
@@ -339,13 +341,12 @@ h4 {
 
   // The marks take the room below the handle and the description, left of the amounts (PM-12)
   .item .marks {
-    grid-area: marks;
-    justify-content: flex-start;
+    flex: 0 0 auto;
   }
 
   .mark {
-    --mat-icon-button-state-layer-size: 36px;
-    padding: 6px;
+    --mat-icon-button-state-layer-size: 32px;
+    padding: 4px;
   }
 }
 

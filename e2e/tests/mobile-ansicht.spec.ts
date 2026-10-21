@@ -132,6 +132,26 @@ test.describe('Ansicht auf schmalen Bildschirmen', () => {
     expect(monthly.x).toBeGreaterThan(description.x + description.width - 1);
   });
 
+  test('auch mit größerer Schrift ist der Plan auf einem 360 px breiten Handy nicht breiter als der Bildschirm (MA-7)', async ({
+    page,
+  }) => {
+    await addIncome(page, 'Prämie', '12345.67', undefined, 'Monatlich');
+    await page.setViewportSize({ width: 360, height: 800 });
+    // As with the font size of the phone set to 120 %
+    await page.addStyleTag({ content: 'html { font-size: 120% }' });
+    await expect.poll(() => scrollsSideways(page)).toBe(false);
+    const sum = sumRow(page, 'Einnahmen');
+    const monthColumn = page.locator('app-budget-entries .columns').getByText('Monat');
+    const yearColumn = page.locator('app-budget-entries .columns').getByText('Jahr');
+    expect(
+      Math.abs((await rightEdge(sum.locator('.total.yearly'))) - (await rightEdge(yearColumn))),
+    ).toBeLessThan(2);
+    const item = itemRow(page, 'Gehalt');
+    expect(
+      Math.abs((await rightEdge(item.locator('.amount.monthly'))) - (await rightEdge(monthColumn))),
+    ).toBeLessThan(2);
+  });
+
   test('die Jahresübersicht passt auf den Bildschirm des Handys (MA-1, MA-5)', async ({ page }) => {
     await page.setViewportSize(PHONE);
     await page.goto('/');

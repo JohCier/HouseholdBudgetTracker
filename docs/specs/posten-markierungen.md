@@ -124,8 +124,8 @@ Jahr.
   `savingPotential`, `HouseholdPlanOverviewResponse` `monthlySavingPotential` und `savingPotential`; `AddIncomeRequest`
   und `AddExpenseRequest` nehmen optional `important` bzw. `savingPotential` an, damit „Rückgängig" sie wiederherstellt
 - Frontend: `budget/ui/budget-entries` zeigt Stern und Sparschwein je Posten, hebt wichtige Zeilen hervor und zeigt
-  das Sparpotential unter der Beschreibung (PM-9 bis PM-12; auf schmaler Karte sind die Betragsspalten dafür 6,5 rem
-  statt 7 rem breit und die Knöpfe etwas kleiner; Farben `--app-important-color` und
+  das Sparpotential unter der Beschreibung (PM-9 bis PM-12; auf schmaler Karte sind die Betragsspalten dafür 6 rem
+  statt 7,5 rem breit und die Knöpfe etwas kleiner, siehe MA-7; Farben `--app-important-color` und
   `--app-important-background` in `styles.scss`); `budget/ui/saving-potential-dialog.ts` ist der Dialog (PM-4b);
   `BudgetStore.markImportant`, `changeSavingPotential` und `restoreItem` (PM-6); `budget/ui/overview-summary.ts` zeigt
   die Zeile „Sparpotential" (PM-14)
