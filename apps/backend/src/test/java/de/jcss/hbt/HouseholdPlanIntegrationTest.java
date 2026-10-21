@@ -1,29 +1,14 @@
 package de.jcss.hbt;
 
 import com.jayway.jsonpath.JsonPath;
-import de.jcss.hbt.infrastructure.security.AuthProperties;
 import jakarta.servlet.http.Cookie;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.JwsHeader;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
-import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,39 +20,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Exercises the full stack end to end: HTTP request in through the web layer, the write
- * side (application service, aggregate, repository) and the read side (query handler),
- * persisted in PostgreSQL, including the event listener running after the commit.
- * <p>
- * Requests carry a session cookie like the one the users app sets at login, signed here
- * with the same secret.
+ * Plans end to end: overview, sessions, ownership, one plan per year, copying and deleting.
  */
 @IntegrationTest
-class HouseholdPlanIntegrationTest {
-
-    @Autowired
-    private WebApplicationContext webApplicationContext;
-
-    @Autowired
-    private JdbcClient jdbcClient;
-
-    @Autowired
-    private AuthProperties auth;
-
-    private MockMvc mockMvc;
-    private Cookie alice;
-    private Cookie bob;
-
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
-                .apply(SecurityMockMvcConfigurers.springSecurity())
-                .build();
-        alice = session(UUID.randomUUID(), auth.issuer(), Instant.now().plus(Duration.ofHours(1)));
-        bob = session(UUID.randomUUID(), auth.issuer(), Instant.now().plus(Duration.ofHours(1)));
-        jdbcClient.sql("DELETE FROM household_plan").update();
-        jdbcClient.sql("DELETE FROM audit_log").update();
-    }
+class HouseholdPlanIntegrationTest extends HouseholdPlanIntegrationTestSupport {
 
     @Test
     void tracksIncomeAndExpensesPerPlanAndComputesOverview() throws Exception {
@@ -185,214 +141,6 @@ class HouseholdPlanIntegrationTest {
                         .content("""
                                 {"year":2026}"""))
                 .andExpect(status().isConflict());
-    }
-
-    @Test
-    void removingAnItemUpdatesTheItemsAndIsAudited() throws Exception {
-        String planId = createPlan(2026);
-        String itemId = JsonPath.read(post("/api/plans/" + planId + "/incomes", """
-                {"description":"Gehalt","amount":"1500.00","period":"YEARLY"}"""), "$.id");
-
-        mockMvc.perform(delete("/api/plans/{planId}/items/{itemId}", planId, itemId).cookie(alice))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(get("/api/plans").param("year", "2026").cookie(alice))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items.length()").value(0));
-        assertThat(jdbcClient.sql("""
-                        SELECT event_type, household_plan_id, payload ->> 'itemId' AS item_id
-                        FROM audit_log WHERE event_type = 'BudgetItemRemoved'""")
-                .query().listOfRows())
-                .containsExactly(Map.of(
-                        "event_type", "BudgetItemRemoved",
-                        "household_plan_id", UUID.fromString(planId),
-                        "item_id", itemId));
-        assertThat(jdbcClient.sql("SELECT bool_and(occurred_at <= recorded_at) FROM audit_log").query(Boolean.class).single())
-                .as("changes happened before they were logged")
-                .isTrue();
-    }
-
-    @Test
-    void everyChangeIsAuditedWithTheFullEvent() throws Exception {
-        String planId = createPlan(2026);
-        String incomeId = JsonPath.read(post("/api/plans/" + planId + "/incomes", """
-                {"description":"Gehalt","amount":"1500.00","period":"YEARLY"}"""), "$.id");
-        String expenseId = JsonPath.read(post("/api/plans/" + planId + "/expenses", """
-                {"description":"Miete","amount":"700.00","period":"YEARLY","category":"LEBENSUNTERHALT"}"""), "$.id");
-
-        assertThat(jdbcClient.sql("""
-                        SELECT event_type, household_plan_id, payload ->> 'planId' AS payload_plan_id,
-                               payload ->> 'itemId' AS item_id
-                        FROM audit_log ORDER BY id""")
-                .query().listOfRows())
-                .extracting(row -> row.get("event_type"), row -> row.get("household_plan_id"),
-                        row -> row.get("payload_plan_id"), row -> row.get("item_id"))
-                .containsExactly(
-                        tuple("HouseholdPlanCreated", UUID.fromString(planId), planId, null),
-                        tuple("IncomeAdded", UUID.fromString(planId), planId, incomeId),
-                        tuple("ExpenseAdded", UUID.fromString(planId), planId, expenseId));
-        assertThat(jdbcClient.sql("""
-                        SELECT (payload ->> 'year')::int FROM audit_log WHERE event_type = 'HouseholdPlanCreated'""")
-                .query(Integer.class).single())
-                .isEqualTo(2026);
-    }
-
-    /** PB-1, PB-4, PB-5, PB-7 */
-    @Test
-    void changingAnItemKeepsItsPlaceUpdatesTheOverviewAndIsAudited() throws Exception {
-        String planId = createPlan(2026);
-        post("/api/plans/" + planId + "/incomes", """
-                {"description":"Gehalt","amount":"2000.00","period":"YEARLY"}""");
-        String rentId = JsonPath.read(post("/api/plans/" + planId + "/expenses", """
-                {"description":"Miete","amount":"850.00","period":"YEARLY","category":"LEBENSUNTERHALT"}"""), "$.id");
-        post("/api/plans/" + planId + "/expenses", """
-                {"description":"Konzert","amount":"100.00","period":"YEARLY","category":"FREIZEIT_SPASS"}""");
-
-        changeItem(planId, rentId, """
-                {"description":"Miete","amount":"900.00","period":"YEARLY","category":"LEBENSUNTERHALT"}""")
-                .andExpect(status().isOk());
-        changeItem(planId, rentId, """
-                {"description":"Miete","amount":"900","period":"YEARLY","category":"LEBENSUNTERHALT"}""")
-                .andExpect(status().isOk());
-
-        mockMvc.perform(get("/api/plans").param("year", "2026").cookie(alice))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items.length()").value(3))
-                .andExpect(jsonPath("$.items[1].id").value(rentId))
-                .andExpect(jsonPath("$.items[1].amount").value("900.00"))
-                .andExpect(jsonPath("$.totalExpense").value("1000.00"))
-                .andExpect(jsonPath("$.balance").value("1000.00"));
-        assertThat(jdbcClient.sql("""
-                        SELECT payload ->> 'itemId' FROM audit_log WHERE event_type = 'BudgetItemChanged'""")
-                .query(String.class).list())
-                .as("only the change that changed something is audited")
-                .containsExactly(rentId);
-    }
-
-    /** PM-2, PM-2a, PM-4, PM-5, PM-7, PM-13 */
-    @Test
-    void marksAreStoredShownInTheOverviewAndAudited() throws Exception {
-        String planId = createPlan(2026);
-        String salaryId = JsonPath.read(post("/api/plans/" + planId + "/incomes", """
-                {"description":"Gehalt","amount":"3000.00","period":"MONTHLY"}"""), "$.id");
-        String streamingId = JsonPath.read(post("/api/plans/" + planId + "/expenses", """
-                {"description":"Streaming","amount":"15.00","period":"MONTHLY","category":"FREIZEIT_SPASS"}"""), "$.id");
-
-        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}/important", planId, streamingId).cookie(alice)
-                        .contentType(MediaType.APPLICATION_JSON).content("""
-                                {"important":true}"""))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[1].important").value(true));
-        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}/saving-potential", planId, salaryId).cookie(alice)
-                        .contentType(MediaType.APPLICATION_JSON).content("""
-                                {"monthlyAmount":"5.00"}"""))
-                .andExpect(status().isBadRequest());
-        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}/saving-potential", planId, streamingId).cookie(alice)
-                        .contentType(MediaType.APPLICATION_JSON).content("""
-                                {"monthlyAmount":"15.01"}"""))
-                .andExpect(status().isBadRequest());
-        mockMvc.perform(put("/api/plans/{planId}/items/{itemId}/saving-potential", planId, streamingId).cookie(alice)
-                        .contentType(MediaType.APPLICATION_JSON).content("""
-                                {"monthlyAmount":"5.00"}"""))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[1].savingPotential").value("5.00"))
-                .andExpect(jsonPath("$.monthlySavingPotential").value("5.00"))
-                .andExpect(jsonPath("$.savingPotential").value("60.00"))
-                .andExpect(jsonPath("$.monthlyBalance").value("2985.00"));
-        changeItem(planId, streamingId, """
-                {"description":"Streaming","amount":"36.00","period":"YEARLY","category":"FREIZEIT_SPASS"}""")
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[1].important").value(true))
-                .andExpect(jsonPath("$.items[1].savingPotential").value("3.00"));
-
-        assertThat(jdbcClient.sql("""
-                        SELECT payload ->> 'mark' || ':' || (payload ->> 'marked') FROM audit_log
-                        WHERE event_type = 'BudgetItemMarked' ORDER BY id""")
-                .query(String.class).list())
-                .containsExactly("IMPORTANT:true", "SAVING_POTENTIAL:true");
-    }
-
-    /** PB-2, PB-3, PB-6 */
-    @Test
-    void invalidChangesAreRejectedAndLeaveTheItemAsItWas() throws Exception {
-        String planId = createPlan(2026);
-        String incomeId = JsonPath.read(post("/api/plans/" + planId + "/incomes", """
-                {"description":"Gehalt","amount":"2000.00","period":"YEARLY"}"""), "$.id");
-        String expenseId = JsonPath.read(post("/api/plans/" + planId + "/expenses", """
-                {"description":"Miete","amount":"850.00","period":"YEARLY","category":"LEBENSUNTERHALT"}"""), "$.id");
-
-        changeItem(planId, incomeId, """
-                {"description":"Gehalt","amount":"2000.00","period":"YEARLY","category":"LEBENSUNTERHALT"}""")
-                .andExpect(status().isBadRequest());
-        changeItem(planId, expenseId, """
-                {"description":"Miete","amount":"850.00","period":"YEARLY"}""")
-                .andExpect(status().isBadRequest());
-        changeItem(planId, expenseId, """
-                {"description":"Miete","amount":"0","period":"YEARLY"}""")
-                .andExpect(status().isBadRequest());
-        changeItem(planId, UUID.randomUUID().toString(), """
-                {"description":"Miete","amount":"850.00","period":"YEARLY"}""")
-                .andExpect(status().isNotFound());
-
-        mockMvc.perform(get("/api/plans").param("year", "2026").cookie(alice))
-                .andExpect(jsonPath("$.totalIncome").value("2000.00"))
-                .andExpect(jsonPath("$.totalExpense").value("850.00"));
-        assertThat(jdbcClient.sql("SELECT COUNT(*) FROM audit_log WHERE event_type = 'BudgetItemChanged'")
-                .query(Long.class).single()).isZero();
-    }
-
-    /** AU-1, AU-2, AU-3, AU-4 */
-    @Test
-    void everyChangeAnswersWithTheOverviewAfterIt() throws Exception {
-        String created = post("/api/plans", """
-                {"year":2026}""");
-        String planId = JsonPath.read(created, "$.id");
-        assertThat(JsonPath.<String>read(created, "$.overview.id")).isEqualTo(planId);
-        assertThat(JsonPath.<List<?>>read(created, "$.overview.items")).isEmpty();
-
-        String added = post("/api/plans/" + planId + "/expenses", """
-                {"description":"Miete","amount":"850.00","period":"YEARLY","category":"LEBENSUNTERHALT"}""");
-        String rentId = JsonPath.read(added, "$.id");
-        assertThat(JsonPath.<String>read(added, "$.overview.items[0].id")).isEqualTo(rentId);
-        assertThat(JsonPath.<String>read(added, "$.overview.totalExpense")).isEqualTo("850.00");
-        assertThat(JsonPath.<Object>read(added, "$.overview")).isEqualTo(JsonPath.read(overview(2026), "$"));
-
-        String changed = changeItem(planId, rentId, """
-                {"description":"Miete","amount":"900.00","period":"YEARLY","category":"LEBENSUNTERHALT"}""")
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalExpense").value("900.00"))
-                .andReturn().getResponse().getContentAsString();
-        assertThat(changed).isEqualTo(overview(2026));
-
-        String removed = mockMvc.perform(delete("/api/plans/{planId}/items/{itemId}", planId, rentId).cookie(alice))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items.length()").value(0))
-                .andReturn().getResponse().getContentAsString();
-        assertThat(removed).isEqualTo(overview(2026));
-    }
-
-    @Test
-    void failedRemovalIsNotAudited() throws Exception {
-        String planId = createPlan(2026);
-
-        mockMvc.perform(delete("/api/plans/{planId}/items/{itemId}", planId, UUID.randomUUID()).cookie(alice))
-                .andExpect(status().isNotFound());
-
-        assertThat(jdbcClient.sql("SELECT COUNT(*) FROM audit_log WHERE event_type = 'BudgetItemRemoved'")
-                .query(Long.class).single()).isZero();
-    }
-
-    @Test
-    void rejectsFractionsOfCents() throws Exception {
-        String planId = createPlan(2026);
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/plans/{planId}/incomes", planId)
-                        .cookie(alice)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"description":"Gehalt","amount":"10.005","period":"YEARLY"}"""))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors.amount").exists());
     }
 
     /** PU-3, PU-4, PU-5, PU-8, PU-11, MJ-1 */
@@ -531,47 +279,5 @@ class HouseholdPlanIntegrationTest {
                 .andExpect(status().isNotFound());
 
         assertThat(JsonPath.<String>read(overview(2026), "$.id")).isEqualTo(plan);
-    }
-
-    private ResultActions changeItem(String planId, String itemId, String json)
-            throws Exception {
-        return mockMvc.perform(put("/api/plans/{planId}/items/{itemId}", planId, itemId)
-                .cookie(alice)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json));
-    }
-
-    private String overview(int year) throws Exception {
-        return mockMvc.perform(get("/api/plans").param("year", String.valueOf(year)).cookie(alice))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-    }
-
-    private String createPlan(int year) throws Exception {
-        return JsonPath.read(post("/api/plans", """
-                {"year":%d}""".formatted(year)), "$.id");
-    }
-
-    private String post(String url, String json) throws Exception {
-        return mockMvc.perform(MockMvcRequestBuilders.post(url)
-                        .cookie(alice)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-    }
-
-    /** A session cookie as set by the users app, signed with the shared secret. */
-    private Cookie session(UUID user, String issuer, Instant expiresAt) {
-        JwtClaimsSet claims = JwtClaimsSet.builder()
-                .subject(user.toString())
-                .issuer(issuer)
-                .issuedAt(expiresAt.minus(Duration.ofHours(2)))
-                .expiresAt(expiresAt)
-                .build();
-        String token = NimbusJwtEncoder.withSecretKey(auth.signingKey()).build()
-                .encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims))
-                .getTokenValue();
-        return new Cookie(auth.cookieName(), token);
     }
 }

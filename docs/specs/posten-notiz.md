@@ -61,7 +61,7 @@ Plans zu jedem Posten eine optionale Notiz festhalten und später wiederfinden.
   `budget/ui/edit-item-dialog.ts`, Prüfung und Aufbereitung in `budget/ui/item-validators.ts` (`NOTE_MAX_LENGTH`,
   `noteOf`); `budget/ui/budget-item-table.ts` zeigt die Notiz vollständig in kleiner grauer Schrift unter der
   Beschreibung (PN-7); `BudgetStore.restoreItem` stellt sie wieder her (PN-8)
-- Tests: `BudgetItemNoteTest`, `HouseholdPlanTest`, `HouseholdPlanControllerTest`, `JdbcHouseholdPlanRepositoryTest`,
+- Tests: `BudgetItemNoteTest`, `HouseholdPlanTest`, `BudgetItemControllerTest`, `JdbcHouseholdPlanRepositoryTest`,
   `JdbcHouseholdPlanOverviewQueryHandlerTest`, `add-item-form.spec.ts`, `edit-item-dialog.spec.ts`,
   `budget-item-table.spec.ts`, `budget-store.spec.ts`
 - E2E: `e2e/tests/posten-notiz.spec.ts` (PN-1 bis PN-4, PN-7, PN-8; PN-5 und PN-6 decken die Backend-Tests ab)

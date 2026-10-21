@@ -129,8 +129,8 @@ Jahr.
   `--app-important-background` in `styles.scss`); `budget/ui/saving-potential-dialog.ts` ist der Dialog (PM-4b);
   `BudgetStore.markImportant`, `changeSavingPotential` und `restoreItem` (PM-6); `budget/ui/overview-summary.ts` zeigt
   die Zeile „Sparpotential" (PM-14)
-- Tests: `SavingPotentialTest`, `HouseholdPlanMarksTest`, `HouseholdPlanControllerTest`,
-  `JdbcHouseholdPlanRepositoryTest`, `JdbcHouseholdPlanOverviewQueryHandlerTest`, `HouseholdPlanIntegrationTest`,
+- Tests: `SavingPotentialTest`, `HouseholdPlanMarksTest`, `BudgetItemMarksControllerTest`,
+  `JdbcHouseholdPlanRepositoryTest`, `JdbcHouseholdPlanOverviewQueryHandlerTest`, `BudgetItemIntegrationTest`,
   `budget-entries.spec.ts`, `saving-potential-dialog.spec.ts`, `budget-store.spec.ts`, `overview-summary.spec.ts`
 - E2E: `e2e/tests/posten-markierungen.spec.ts` (PM-1, PM-2, PM-2a, PM-4 bis PM-6, PM-8 bis PM-10, PM-12 bis PM-14;
   PM-3, PM-7 und PM-11 decken die Backend- und Unit-Tests ab); `bilanz.spec.ts` erwartet die neue Zeile

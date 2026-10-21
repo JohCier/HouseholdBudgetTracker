@@ -55,7 +55,7 @@ Benutzer sollen jede Meldung auf Deutsch lesen.
   (FM-3). Die Kennungen stehen nicht im API-Vertrag, weil Springdoc die Fehlerantworten nicht beschreibt; eine neue
   Kennung braucht deshalb einen Eintrag in dieser Tabelle und in `shared/http-error.ts`.
 - Frontend: `shared/http-error.ts` (`toMessage`) übersetzt für alle Stores; `AuthStore` hat keine eigenen Meldungen mehr
-- Tests: `HouseholdPlanControllerTest`, `AuthControllerTest`, `http-error.spec.ts`, `auth-store.spec.ts`,
+- Tests: `HouseholdPlanControllerTest`, `BudgetItemControllerTest`, `AuthControllerTest`, `http-error.spec.ts`, `auth-store.spec.ts`,
   `budget-store.spec.ts`
 - E2E: `e2e/tests/fehlermeldungen.spec.ts` (FM-1, FM-2); `anmeldung.spec.ts` deckt die Meldungen bei Registrierung und
   Anmeldung ab, FM-3 decken die Unit-Tests ab

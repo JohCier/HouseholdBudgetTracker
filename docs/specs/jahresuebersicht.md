@@ -98,7 +98,7 @@ Benutzer den Plan eines Jahres.
   JU-12, JU-13), Anzeige der Veränderung in `budget/ui/year-change.ts` und `budget/year-change.ts` (JU-7, JU-8);
   `budget/budget-dashboard.ts` unter `/jahre/:year`, das Jahr kommt aus der Adresse (`parseYear` in `budget/year.ts`),
   die Pfeile ändern die Adresse, „Alle Jahre" führt zurück (JU-11)
-- Tests: `PercentageTest`, `YearlyOverviewTest`, `HouseholdPlanApplicationServiceTest`, `HouseholdPlanControllerTest`,
+- Tests: `PercentageTest`, `YearlyOverviewTest`, `HouseholdPlanApplicationServiceTest`, `HouseholdPlanOverviewControllerTest`,
   `JdbcHouseholdPlanOverviewQueryHandlerTest`, `year-change.spec.ts`, `yearly-overview-page.spec.ts`,
   `budget-dashboard.spec.ts`, `year.spec.ts`, `budget-api.spec.ts`
 - E2E: `e2e/tests/jahresuebersicht.spec.ts`
