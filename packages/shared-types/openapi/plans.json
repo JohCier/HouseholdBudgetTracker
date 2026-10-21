@@ -637,7 +637,7 @@
         "enum" : [ "MONTHLY", "YEARLY" ]
       },
       "BudgetItemResponse" : {
-        "required" : [ "amount", "annualAmount", "category", "description", "id", "important", "monthlyAmount", "note", "period", "savingPotential", "subcategory", "type" ],
+        "required" : [ "amount", "annualAmount", "category", "description", "id", "important", "monthlyAmount", "note", "percentageOfGroup", "period", "savingPotential", "subcategory", "type" ],
         "type" : "object",
         "properties" : {
           "amount" : {
@@ -678,6 +678,12 @@
             "description" : "Only set if the item has a note",
             "nullable" : true
           },
+          "percentageOfGroup" : {
+            "type" : "number",
+            "description" : "Only set for the items of a group: how much of the group the item makes up per month, in percent (TK-8)",
+            "nullable" : true,
+            "example" : 80.0
+          },
           "period" : {
             "$ref" : "#/components/schemas/AmountPeriod"
           },
@@ -699,7 +705,7 @@
         }
       },
       "CategoryBreakdownResponse" : {
-        "required" : [ "actualPercentageOfIncome", "category", "monthlyTotal", "monthlyUnplanned", "targetDirection", "targetMet", "targetPercentageOfIncome", "total", "unplanned" ],
+        "required" : [ "actualPercentageOfIncome", "category", "monthlyTotal", "monthlyUnplanned", "targetDirection", "targetMet", "targetPercentageOfIncome", "total", "unplanned", "unplannedPercentageOfTotal" ],
         "type" : "object",
         "properties" : {
           "actualPercentageOfIncome" : {
@@ -741,6 +747,11 @@
             "description" : "Part of total that is income not used up by any expense",
             "format" : "decimal",
             "example" : "0.0"
+          },
+          "unplannedPercentageOfTotal" : {
+            "type" : "number",
+            "description" : "How much of monthlyTotal is monthlyUnplanned, in percent (TK-8, TK-9)",
+            "example" : 0.0
           }
         }
       },
@@ -958,7 +969,7 @@
         }
       },
       "ItemGroupResponse" : {
-        "required" : [ "items", "monthlyTotal", "subcategory", "total" ],
+        "required" : [ "items", "monthlyTotal", "percentageOfSection", "subcategory", "total" ],
         "type" : "object",
         "properties" : {
           "items" : {
@@ -972,6 +983,11 @@
             "description" : "The yearly total divided by 12",
             "format" : "decimal",
             "example" : "145.83"
+          },
+          "percentageOfSection" : {
+            "type" : "number",
+            "description" : "How much of the income or of the category total the group makes up per month, in percent (TK-8)",
+            "example" : 13.0
           },
           "subcategory" : {
             "type" : "string",

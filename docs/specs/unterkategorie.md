@@ -154,7 +154,8 @@ legt die Farben der Kategorien neu fest (UK-19), auch für die Torte (TD-2).
   ein Posten sie trägt
 - Eine Summe je Unterkategorie über alle Kategorien hinweg (z. B. „Auto" in Lebensunterhalt und Freizeit & Spaß
   zusammen)
-- Unterkategorien in der Torte oder in den Balken der Auswertung
+- Unterkategorien in der Torte oder in den Balken der Auswertung; in der Torte seit
+  [torte-ausschnitt.md](torte-ausschnitt.md) (TK-1)
 - Auf- und Zuklappen von Gruppen, Filter
 - Sortieren nach Betrag oder Name per Knopfdruck; die Reihenfolge legt der Benutzer von Hand fest (UK-14)
 - Umsortieren der Bereiche und der Kategorien der 50/30/20-Regel

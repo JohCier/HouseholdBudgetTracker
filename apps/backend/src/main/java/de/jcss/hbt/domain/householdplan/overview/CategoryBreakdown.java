@@ -40,4 +40,9 @@ public record CategoryBreakdown(
     public Money monthlyUnplanned() {
         return unplanned.perMonth();
     }
+
+    /** How much of the monthly total the unplanned part makes up, the slice "nicht verplant" in the pie (TK-8, TK-9). */
+    public Percentage monthlyUnplannedShare() {
+        return Percentage.shareOf(monthlyUnplanned(), monthlyTotal());
+    }
 }

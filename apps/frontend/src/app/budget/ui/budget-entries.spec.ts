@@ -15,6 +15,7 @@ const salary: BudgetItem = {
   note: null,
   important: false,
   savingPotential: null,
+  percentageOfGroup: null,
 };
 const fuel: BudgetItem = {
   id: 'fuel',
@@ -29,6 +30,7 @@ const fuel: BudgetItem = {
   note: 'Diesel',
   important: false,
   savingPotential: null,
+  percentageOfGroup: null,
 };
 const tax: BudgetItem = { ...fuel, id: 'tax', description: 'Steuer', amount: '20.00', note: null };
 const rent: BudgetItem = {
@@ -69,7 +71,13 @@ const overview: HouseholdPlanOverview = {
   categoryBreakdowns: [],
   items: [salary, fuel, tax, rent, savings],
   incomeGroups: [
-    { subcategory: 'Gehalt', total: '3000.00', monthlyTotal: '250.00', items: [salary] },
+    {
+      subcategory: 'Gehalt',
+      total: '3000.00',
+      monthlyTotal: '250.00',
+      percentageOfSection: 0,
+      items: [salary],
+    },
   ],
   expenseCategories: [
     {
@@ -77,15 +85,35 @@ const overview: HouseholdPlanOverview = {
       total: '1000.00',
       monthlyTotal: '83.33',
       groups: [
-        { subcategory: 'Auto', total: '100.00', monthlyTotal: '8.33', items: [fuel, tax] },
-        { subcategory: 'Sonstiges', total: '900.00', monthlyTotal: '75.00', items: [rent] },
+        {
+          subcategory: 'Auto',
+          total: '100.00',
+          monthlyTotal: '8.33',
+          percentageOfSection: 0,
+          items: [fuel, tax],
+        },
+        {
+          subcategory: 'Sonstiges',
+          total: '900.00',
+          monthlyTotal: '75.00',
+          percentageOfSection: 0,
+          items: [rent],
+        },
       ],
     },
     {
       category: 'SPAREN_INVESTIEREN',
       total: '500.00',
       monthlyTotal: '41.67',
-      groups: [{ subcategory: 'Depot', total: '500.00', monthlyTotal: '41.67', items: [savings] }],
+      groups: [
+        {
+          subcategory: 'Depot',
+          total: '500.00',
+          monthlyTotal: '41.67',
+          percentageOfSection: 0,
+          items: [savings],
+        },
+      ],
     },
   ],
 };
@@ -175,6 +203,7 @@ describe('BudgetEntries', () => {
           groups: [
             {
               subcategory: 'Sonstiges',
+              percentageOfSection: 0,
               monthlyTotal: '850.00',
               total: '10200.00',
               items: [monthlyRent],

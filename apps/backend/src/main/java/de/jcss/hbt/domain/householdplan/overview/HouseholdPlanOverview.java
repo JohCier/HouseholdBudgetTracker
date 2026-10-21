@@ -7,6 +7,7 @@ import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.ItemSection;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
+import de.jcss.hbt.domain.householdplan.Percentage;
 import de.jcss.hbt.domain.householdplan.SavingPotential;
 import de.jcss.hbt.domain.householdplan.SubcategoryOrder;
 import org.jmolecules.architecture.cqrs.QueryModel;
@@ -25,7 +26,8 @@ import java.util.Objects;
  * figures, worked out from the yearly amounts of the items (MJ-8); the sums the entries and
  * tiles show come per month, too (MJ-9). The items come once as a
  * plain list and once grouped as the entries show them: the incomes by subcategory, the
- * expenses by category and subcategory, each with its sum (UK-9 to UK-13). The saving potential of
+ * expenses by category and subcategory, each with its sum (UK-9 to UK-13) and its share per month
+ * of the section, as the pie of a category or subcategory shows it (TK-6, TK-8). The saving potential of
  * the plan is the one exception to yearly figures: it is the sum of the monthly saving potentials of
  * its expenses, and twelve times that for the year (PM-13).
  * <p>
@@ -72,16 +74,19 @@ public record HouseholdPlanOverview(
         List<CategoryBreakdown> breakdowns = Arrays.stream(ExpenseCategory.values())
                 .map(category -> CategoryBreakdown.of(category, result))
                 .toList();
-        List<OverviewCategoryItems> expenseCategories = Arrays.stream(ExpenseCategory.values())
-                .map(category -> {
-                    List<OverviewItemGroup> groups = groupsOf(ItemSection.expenses(category), items, subcategoryOrders);
+        List<OverviewCategoryItems> expenseCategories = breakdowns.stream()
+                .map(breakdown -> {
+                    ExpenseCategory category = breakdown.category();
+                    List<OverviewItemGroup> groups = groupsOf(ItemSection.expenses(category), items, subcategoryOrders,
+                            breakdown.monthlyTotal());
                     return new OverviewCategoryItems(category, totalOf(groups), groups);
                 })
                 .filter(category -> !category.groups().isEmpty())
                 .toList();
         return new HouseholdPlanOverview(planId, year, summary.totalIncome(), summary.totalExpense(),
                 summary.balance(), summary.expensesExceedIncome(), breakdowns, items,
-                groupsOf(ItemSection.INCOME, items, subcategoryOrders), expenseCategories);
+                groupsOf(ItemSection.INCOME, items, subcategoryOrders, summary.totalIncome().perMonth()),
+                expenseCategories);
     }
 
     /** Total income per month: the yearly total divided by 12 (MJ-9). */
@@ -113,9 +118,15 @@ public record HouseholdPlanOverview(
         return monthlySavingPotential().timesMonthsPerYear();
     }
 
-    /** The groups of a section in display order, each with its items in display order (UK-11, UK-16). */
+    /**
+     * The groups of a section in display order, each with its items in display order (UK-11, UK-16).
+     *
+     * @param sectionMonthlyTotal what the share of a group refers to: the income, or the total of the
+     *                            category including its unplanned part (TK-9)
+     */
     private static List<OverviewItemGroup> groupsOf(ItemSection section, List<OverviewItem> items,
-                                                    Map<ItemSection, SubcategoryOrder> subcategoryOrders) {
+                                                    Map<ItemSection, SubcategoryOrder> subcategoryOrders,
+                                                    Money sectionMonthlyTotal) {
         List<OverviewItem> inSection = items.stream().filter(item -> item.section().equals(section)).toList();
         List<BudgetItemSubcategory> groups = new ArrayList<>();
         for (OverviewItem item : inSection) {
@@ -127,7 +138,8 @@ public record HouseholdPlanOverview(
                 .map(group -> {
                     List<OverviewItem> inGroup = inSection.stream().filter(item -> item.group().isSameAs(group)).toList();
                     Money total = inGroup.stream().map(item -> item.amount().annual()).reduce(Money.ZERO, Money::add);
-                    return new OverviewItemGroup(group, total, inGroup);
+                    Percentage share = Percentage.shareOf(total.perMonth(), sectionMonthlyTotal);
+                    return new OverviewItemGroup(group, total, share, inGroup);
                 })
                 .toList();
     }

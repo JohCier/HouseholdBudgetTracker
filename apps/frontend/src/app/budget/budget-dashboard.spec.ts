@@ -22,6 +22,7 @@ const item: BudgetItem = {
   note: null,
   important: false,
   savingPotential: null,
+  percentageOfGroup: null,
 };
 const overview: HouseholdPlanOverview = {
   id: 'plan-2026',
@@ -48,7 +49,15 @@ const overview: HouseholdPlanOverview = {
       category: 'FREIZEIT_SPASS',
       total: '12.50',
       monthlyTotal: '1.04',
-      groups: [{ subcategory: 'Sonstiges', total: '12.50', monthlyTotal: '1.04', items: [item] }],
+      groups: [
+        {
+          subcategory: 'Sonstiges',
+          total: '12.50',
+          monthlyTotal: '1.04',
+          percentageOfSection: 0,
+          items: [item],
+        },
+      ],
     },
   ],
 };
@@ -169,11 +178,18 @@ describe('BudgetDashboard', () => {
             groups: [
               {
                 subcategory: 'Auto',
+                percentageOfSection: 0,
                 total: '12.50',
                 monthlyTotal: '1.04',
                 items: [{ ...item, id: '2', description: 'Tank', subcategory: 'Auto' }],
               },
-              { subcategory: 'Sonstiges', total: '12.50', monthlyTotal: '1.04', items: [item] },
+              {
+                subcategory: 'Sonstiges',
+                total: '12.50',
+                monthlyTotal: '1.04',
+                percentageOfSection: 0,
+                items: [item],
+              },
             ],
           },
         ],

@@ -146,7 +146,10 @@ export function itemIn(page: Page, section: 'Einnahmen' | Category, description:
 
 /** Subcategory group within the incomes or a category, with its sum and its items (UK-11). */
 export function itemGroup(page: Page, section: 'Einnahmen' | Category, subcategory: string) {
-  return entrySection(page, section).getByRole('group', { name: subcategory, exact: true });
+  return entrySection(page, section).getByRole('group', {
+    name: subcategory,
+    exact: true,
+  });
 }
 
 /**
@@ -172,11 +175,7 @@ export function groupNames(page: Page, section: 'Einnahmen' | Category) {
 }
 
 /** Descriptions of the items of a group, top first (UK-14). */
-export function itemDescriptions(
-  page: Page,
-  section: 'Einnahmen' | Category,
-  subcategory: string,
-) {
+export function itemDescriptions(page: Page, section: 'Einnahmen' | Category, subcategory: string) {
   return itemGroup(page, section, subcategory).locator('.item .description');
 }
 
@@ -210,7 +209,31 @@ export function pieLegendItem(page: Page, category: Category) {
   return page.locator('app-category-pie .legend-item').filter({ hasText: category });
 }
 
-/** Slices of the pie chart, each labelled with category, total and share of income. */
+/** Slices of the pie chart, each labelled with name, amount and share (TD-9, TK-12). */
 export function pieSlices(page: Page) {
-  return page.locator('app-category-pie').getByRole('img');
+  return page.locator('app-category-pie .slice');
+}
+
+/** Selects the part of the plan the pie shows: the rule, a category or one of its groups (TK-1). */
+export async function showInPie(page: Page, category?: Category, subcategory?: string) {
+  const name = !category
+    ? '50/30/20-Regel'
+    : subcategory
+      ? `${category} › ${subcategory}`
+      : category;
+  await page.getByRole('combobox', { name: 'Ausschnitt' }).click();
+  await page.getByRole('option', { name, exact: true }).click();
+  await expect(page.getByRole('combobox', { name: 'Ausschnitt' })).toContainText(name);
+}
+
+/** Line of a group, an item or "nicht verplant" in the legend of a category or group (TK-8). */
+export function pieEntry(page: Page, name: string) {
+  return page.locator('app-category-pie .legend-item').filter({
+    has: page.locator('.name', { hasText: new RegExp(`^\\s*${name}\\s*$`) }),
+  });
+}
+
+/** The selected category or group with its total above the legend (TK-7). */
+export function pieSummary(page: Page) {
+  return page.locator('app-category-pie .selection-summary');
 }

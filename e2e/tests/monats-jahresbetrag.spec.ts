@@ -145,8 +145,8 @@ test.describe('Monats- und Jahresbetrag', () => {
       'davon nicht verplant: 1.500,00 €',
     );
     await expect(
-      page.getByRole('img', {
-        name: 'Lebensunterhalt: 1.500,00 € im Monat, 50 % des Einkommens',
+      page.getByRole('button', {
+        name: 'Lebensunterhalt: 1.500,00 € im Monat, 50 % des Einkommens; Lebensunterhalt anzeigen',
       }),
     ).toBeVisible();
   });

@@ -1,6 +1,7 @@
 package de.jcss.hbt.infrastructure.web.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import de.jcss.hbt.domain.householdplan.Percentage;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -29,10 +30,18 @@ public record BudgetItemResponse(
         @JsonFormat(shape = JsonFormat.Shape.STRING)
         @Schema(implementation = String.class, format = "decimal", example = "5.00", nullable = true,
                 description = "The monthly saving potential; only set for expenses that have one")
-        BigDecimal savingPotential
+        BigDecimal savingPotential,
+        @Schema(nullable = true, example = "80.00",
+                description = "Only set for the items of a group: how much of the group the item makes up per month, in percent (TK-8)")
+        BigDecimal percentageOfGroup
 ) {
 
     public static BudgetItemResponse from(OverviewItem item) {
+        return from(item, null);
+    }
+
+    /** An item of a group with its share of the group per month (TK-8). */
+    public static BudgetItemResponse from(OverviewItem item, Percentage percentageOfGroup) {
         return new BudgetItemResponse(
                 item.id().value(),
                 item.description().value(),
@@ -45,7 +54,8 @@ public record BudgetItemResponse(
                 item.subcategory() == null ? null : item.subcategory().value(),
                 item.note() == null ? null : item.note().value(),
                 item.marks().important(),
-                item.marks().savingPotential() == null ? null : item.marks().savingPotential().monthly().value()
+                item.marks().savingPotential() == null ? null : item.marks().savingPotential().monthly().value(),
+                percentageOfGroup == null ? null : percentageOfGroup.value()
         );
     }
 }

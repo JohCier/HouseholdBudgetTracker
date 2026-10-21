@@ -47,8 +47,8 @@ test.describe('Tortendiagramm der 50/30/20-Regel', () => {
 
     await expect(pieSlices(page)).toHaveCount(3);
     await expect(
-      page.getByRole('img', {
-        name: 'Lebensunterhalt: 1.500,00 € im Monat, 50 % des Einkommens',
+      page.getByRole('button', {
+        name: 'Lebensunterhalt: 1.500,00 € im Monat, 50 % des Einkommens; Lebensunterhalt anzeigen',
       }),
     ).toBeVisible();
     await expect(pieLegendItem(page, 'Lebensunterhalt')).toContainText('50 % von max. 50 %');
@@ -73,7 +73,7 @@ test.describe('Tortendiagramm der 50/30/20-Regel', () => {
     await expect(sparen).toContainText('40 % von mind. 20 %');
     await expect(pieLegendItem(page, 'Freizeit & Spaß')).toContainText('0,00 €');
     await expect(pieSlices(page)).toHaveCount(2);
-    await expect(page.getByRole('img', { name: /^Freizeit & Spaß/ })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Freizeit & Spaß:/ })).toHaveCount(0);
   });
 
   test('die Torte bleibt gewählt, wenn ein Eintrag hinzukommt (TD-1, TD-3)', async ({ page }) => {
@@ -96,8 +96,8 @@ test.describe('Tortendiagramm der 50/30/20-Regel', () => {
 
     await expect(pieSlices(page)).toHaveCount(1);
     await expect(
-      page.getByRole('img', {
-        name: 'Lebensunterhalt: 100,00 € im Monat, 0 % des Einkommens',
+      page.getByRole('button', {
+        name: 'Lebensunterhalt: 100,00 € im Monat, 0 % des Einkommens; Lebensunterhalt anzeigen',
       }),
     ).toBeVisible();
   });

@@ -19,6 +19,7 @@ const rent: BudgetItem = {
   note: null,
   important: false,
   savingPotential: null,
+  percentageOfGroup: null,
 };
 const salary: BudgetItem = {
   id: '1',
@@ -33,6 +34,7 @@ const salary: BudgetItem = {
   note: null,
   important: false,
   savingPotential: null,
+  percentageOfGroup: null,
 };
 
 // PB-1, PB-2, PB-3

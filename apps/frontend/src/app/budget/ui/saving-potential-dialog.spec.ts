@@ -17,6 +17,7 @@ const gym: BudgetItem = {
   note: null,
   important: false,
   savingPotential: null,
+  percentageOfGroup: null,
 };
 
 // PM-2a, PM-4b

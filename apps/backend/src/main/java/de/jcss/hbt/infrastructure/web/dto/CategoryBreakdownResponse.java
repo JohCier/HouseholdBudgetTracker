@@ -22,6 +22,9 @@ public record CategoryBreakdownResponse(
         @Schema(implementation = String.class, format = "decimal", example = "0.00",
                 description = "Unplanned per month: unplanned divided by 12 (MJ-14)")
         BigDecimal monthlyUnplanned,
+        @Schema(example = "0.00",
+                description = "How much of monthlyTotal is monthlyUnplanned, in percent (TK-8, TK-9)")
+        BigDecimal unplannedPercentageOfTotal,
         @Schema(example = "34.00") BigDecimal actualPercentageOfIncome,
         int targetPercentageOfIncome,
         TargetDirectionDto targetDirection,
@@ -35,6 +38,7 @@ public record CategoryBreakdownResponse(
                 breakdown.unplanned().value(),
                 breakdown.monthlyTotal().value(),
                 breakdown.monthlyUnplanned().value(),
+                breakdown.monthlyUnplannedShare().value(),
                 breakdown.actualPercentageOfIncome().value(),
                 breakdown.targetPercentageOfIncome().value().intValueExact(),
                 TargetDirectionDto.from(breakdown.targetDirection()),
