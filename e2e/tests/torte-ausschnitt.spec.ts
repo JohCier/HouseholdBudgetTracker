@@ -199,4 +199,25 @@ test.describe('Ausschnitt der Torte', () => {
     );
     expect(scrollsSideways).toBe(false);
   });
+
+  test('die Maus über einem Stück hebt seine Zeile in der Legende hervor (TK-14)', async ({
+    page,
+  }) => {
+    await addExpense(page, 'Miete', '1000', 'Lebensunterhalt', 'Miete', 'Monatlich');
+    await addExpense(page, 'Sprit', '200', 'Lebensunterhalt', 'Auto', 'Monatlich');
+    await addExpense(page, 'Versicherung', '50', 'Lebensunterhalt', 'Auto', 'Monatlich');
+    await showBreakdownAs(page, 'Torte');
+    const highlighted = page.locator('app-category-pie .legend-item.highlighted');
+
+    await page.getByRole('button', { name: /Lebensunterhalt anzeigen$/ }).hover();
+    await expect(highlighted).toHaveCount(1);
+    await expect(highlighted).toContainText('Lebensunterhalt');
+    await page.getByRole('combobox', { name: 'Ausschnitt' }).hover();
+    await expect(highlighted).toHaveCount(0);
+
+    await showInPie(page, 'Lebensunterhalt', 'Auto');
+    await page.getByRole('img', { name: /^Versicherung:/ }).hover();
+    await expect(highlighted).toHaveCount(1);
+    await expect(pieEntry(page, 'Versicherung')).toHaveClass(/highlighted/);
+  });
 });

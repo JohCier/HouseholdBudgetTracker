@@ -308,4 +308,49 @@ describe('CategoryPieChart', () => {
     expect(element.querySelectorAll('.slice').length).toBe(0);
     expect(element.textContent).toContain('Keine Ausgaben in Freizeit & Spaß');
   });
+  // TK-14
+  it('lights up the line in the legend of the slice under the mouse', async () => {
+    const { fixture, element } = await renderPie(breakdownsWithLiving(), [living]);
+    const highlighted = () =>
+      [...element.querySelectorAll('.legend-item.highlighted')].map((i) =>
+        i.querySelector('.name')?.textContent?.trim(),
+      );
+
+    const slice = element.querySelector<SVGElement>('.slice.SPAREN_INVESTIEREN')!;
+    slice.dispatchEvent(new MouseEvent('mouseenter'));
+    await fixture.whenStable();
+    expect(highlighted()).toEqual(['Sparen & Investieren']);
+    expect(slice.classList).toContain('highlighted');
+
+    slice.dispatchEvent(new MouseEvent('mouseleave'));
+    await fixture.whenStable();
+    expect(highlighted()).toEqual([]);
+  });
+
+  // TK-14
+  it('lights up groups and items too and forgets the highlight when the selection changes', async () => {
+    const { fixture, element } = await renderPie(breakdownsWithLiving(), [living], {
+      level: 'category',
+      category: 'LEBENSUNTERHALT',
+    });
+    const highlighted = () =>
+      [...element.querySelectorAll('.legend-item.highlighted')].map((i) =>
+        i.querySelector('.name')?.textContent?.trim(),
+      );
+
+    element.querySelectorAll<SVGElement>('.slice')[1].dispatchEvent(new FocusEvent('focus'));
+    await fixture.whenStable();
+    expect(highlighted()).toEqual(['Miete']);
+
+    // A tap on a touch screen enters the slice and opens it at once
+    const auto = element.querySelectorAll<SVGElement>('.slice')[0];
+    auto.dispatchEvent(new MouseEvent('mouseenter'));
+    auto.dispatchEvent(new MouseEvent('click'));
+    await fixture.whenStable();
+    expect(highlighted()).toEqual([]);
+
+    element.querySelectorAll<SVGElement>('.slice')[1].dispatchEvent(new MouseEvent('mouseenter'));
+    await fixture.whenStable();
+    expect(highlighted()).toEqual(['Versicherung']);
+  });
 });
