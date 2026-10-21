@@ -1,6 +1,6 @@
 # Einträge: Unterkategorien farblich absetzen, Kategoriesummen hervorheben
 
-Status: geplant
+Status: umgesetzt
 
 ## Zweck
 
@@ -57,17 +57,18 @@ Diese Spec setzt die Gruppen farblich ab und hebt die Summen der Kategorien und 
 
 ## Umsetzung
 
-- Entwurf: `budget/ui/budget-entries.scss`. Jeder Bereich setzt `--group-background` und `--total-background` als
-  `color-mix` aus `--section-color` und `--mat-sys-surface` (hell 8 % bzw. 20 %, dunkel 12 % bzw. 26 %). `.group`
-  nutzt die schwache, `.section > .summary` die kräftige Tönung mit Linie in `--section-color`, fett in
-  `title-medium`; `.group-summary` in `on-surface-variant` mit Linie in `outline-variant` (EF-1 bis EF-3). Unter
-  600 px Kartenbreite bekommen Gruppen, Kategoriesummen, „Summe Ausgaben" und die Spaltenköpfe 8 px Abstand rechts
-  (EF-4). Posten haben keinen eigenen Hintergrund mehr, `.cdk-drag-preview` bekommt `--mat-sys-surface` (EF-6)
-- Noch offen: E2E `e2e/tests/eintraege-farben.spec.ts` (EF-1 bis EF-4) und Unit-Tests
+- `budget/ui/budget-entries.scss`: Jeder Bereich setzt `--group-background` und `--total-background` als `color-mix`
+  aus `--section-color` und `--mat-sys-surface` (hell 8 % bzw. 20 %, dunkel 12 % bzw. 26 %). `.group` nutzt die
+  schwache Tönung (EF-1), `.section > .summary` die kräftige mit Linie in `--section-color`, fett in `title-medium`;
+  `.group-summary` steht in `on-surface-variant` mit Linie in `outline-variant` (EF-2). `.area-summary` ist fett
+  (EF-3). Unter 600 px Kartenbreite bekommen Gruppen, Kategoriesummen, „Summe Ausgaben" und die Spaltenköpfe 8 px
+  Abstand rechts (EF-4). Posten haben keinen eigenen Hintergrund mehr, `.cdk-drag-preview` bekommt
+  `--mat-sys-surface` (EF-6)
+- E2E: `e2e/tests/eintraege-farben.spec.ts` (EF-1 bis EF-5, hell, dunkel und 412 px mit Schrift auf 120 %); die
+  übrigen Darstellungsregeln sichern weiter `mobile-ansicht.spec.ts` (MA-1 bis MA-7) und `unterkategorie.spec.ts`
+  (UK-19). EF-6 ist reine Darstellung beim Ziehen und ohne eigenen Test
 
 ## Offene Fragen
 
-1. Tönung in der Kategoriefarbe (Entwurf) oder neutral grau für alle Gruppen?
-2. Soll „Summe Ausgaben" ebenfalls eine Tönung bekommen (z. B. grau), oder genügt die fette Schrift (EF-3)?
-3. Sollen die Beträge der Kategoriesumme in Grün/Rot erscheinen wie bei „Summe Einnahmen"/„Summe Ausgaben", oder
-   bleiben sie wie im Entwurf neutral (bei Ausgabenkategorien ohne Vorzeichen)?
+Keine. Entschieden bei der Freigabe: Tönung in der Farbe der Kategorie, „Summe Ausgaben" nur fett ohne Tönung (EF-3),
+Beträge der Kategoriesummen neutral wie bisher.

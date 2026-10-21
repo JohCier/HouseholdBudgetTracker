@@ -31,6 +31,7 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 | Unterkategorie | Posten frei benennbaren Unterkategorien zuordnen; Einträge gruppiert nach Art, Kategorie und Unterkategorie mit Summen ansehen und frei sortieren | [unterkategorie.md](specs/unterkategorie.md) | UK-… |
 | Monats- und Jahresbetrag | Beträge monatlich oder jährlich angeben; Monats- und Jahresbetrag je Posten und für alle Summen ansehen | [monats-jahresbetrag.md](specs/monats-jahresbetrag.md) | MJ-… |
 | Einträge in Gruppen | Neue Posten unten in ihrer Gruppe, Summen als Zeilen unter Gruppe, Kategorie und Bereich, Posten direkt in einer Gruppe erfassen | [eintraege-gruppen.md](specs/eintraege-gruppen.md) | EG-… |
+| Farben der Einträge | Unterkategorien als getönte Blöcke in der Farbe ihrer Kategorie, Summen der Kategorien deutlich hervorgehoben, hell und dunkel | [eintraege-farben.md](specs/eintraege-farben.md) | EF-… |
 | Ansicht auf schmalen Bildschirmen | Planansicht, Jahresübersicht und Dialoge auf dem Handy ohne waagerechtes Scrollen; Posten und Summen zweizeilig | [mobile-ansicht.md](specs/mobile-ansicht.md) | MA-… |
 | Bilanz | Gesamteinnahmen, Gesamtausgaben und Saldo in einem Kasten, je Monat und je Jahr nebeneinander | [bilanz.md](specs/bilanz.md) | BI-… |
 | Posten markieren | Posten in den Einträgen als wichtig hervorheben; bei Ausgaben ein monatliches Sparpotential festhalten, in der Bilanz summiert | [posten-markierungen.md](specs/posten-markierungen.md) | PM-… |
