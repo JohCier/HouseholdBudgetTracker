@@ -15,6 +15,7 @@ import org.jmolecules.architecture.cqrs.QueryModel;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -29,7 +30,7 @@ import java.util.Objects;
  * expenses by category and subcategory, each with its sum (UK-9 to UK-13) and its share per month
  * of the section, as the pie of a category or subcategory shows it (TK-6, TK-8). The saving potential of
  * the plan is the one exception to yearly figures: it is the sum of the monthly saving potentials of
- * its expenses, and twelve times that for the year (PM-13).
+ * its expenses, and twelve times that for the year (PM-13), also per subcategory (SU-1).
  * <p>
  * Contains no business logic of its own: all figures are worked out by the value object
  * {@link BudgetSummary}, which the read model only fills with the items; the order of the groups
@@ -116,6 +117,47 @@ public record HouseholdPlanOverview(
     /** The saving potential for the whole year: twelve times the monthly one (PM-13). */
     public Money savingPotential() {
         return monthlySavingPotential().timesMonthsPerYear();
+    }
+
+    /**
+     * The saving potential per subcategory, across all categories (SU-2): only subcategories with a saving
+     * potential (SU-3), the largest first, equal ones alphabetically (SU-4). A subcategory takes the spelling
+     * of its first group in the entries.
+     */
+    public List<SubcategorySavingPotential> savingPotentialsBySubcategory() {
+        List<SubcategorySavingPotential> sums = new ArrayList<>();
+        for (OverviewCategoryItems category : expenseCategories) {
+            for (OverviewItemGroup group : category.groups()) {
+                Money monthly = group.items().stream()
+                        .map(item -> item.marks().savingPotential())
+                        .filter(Objects::nonNull)
+                        .map(SavingPotential::monthly)
+                        .reduce(Money.ZERO, Money::add);
+                if (monthly.isZero()) {
+                    continue;
+                }
+                int known = indexOf(sums, group.subcategory());
+                if (known < 0) {
+                    sums.add(new SubcategorySavingPotential(group.subcategory(), monthly));
+                } else {
+                    SubcategorySavingPotential sum = sums.get(known);
+                    sums.set(known, new SubcategorySavingPotential(sum.subcategory(), sum.monthly().add(monthly)));
+                }
+            }
+        }
+        return sums.stream()
+                .sorted(Comparator.comparing(SubcategorySavingPotential::monthly).reversed()
+                        .thenComparing(sum -> sum.subcategory().value(), String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
+
+    private static int indexOf(List<SubcategorySavingPotential> sums, BudgetItemSubcategory subcategory) {
+        for (int i = 0; i < sums.size(); i++) {
+            if (sums.get(i).subcategory().isSameAs(subcategory)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /**

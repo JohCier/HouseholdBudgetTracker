@@ -1,5 +1,14 @@
 import { expect, Page, test } from '@playwright/test';
-import { addExpense, addIncome, balanceSheet, itemRow, openEditDialog, registerWithPlan } from './support';
+import {
+  addExpense,
+  addIncome,
+  balanceSheet,
+  itemRow,
+  openEditDialog,
+  openSavingPotential,
+  registerWithPlan,
+  setSavingPotential,
+} from './support';
 
 /** Marks an item as important or no longer with the star on its row (PM-4a). */
 async function toggleImportant(page: Page, description: string, important: boolean) {
@@ -12,23 +21,6 @@ async function toggleImportant(page: Page, description: string, important: boole
   } else {
     await expect(itemRow(page, description)).not.toHaveClass(/important/);
   }
-}
-
-/** Opens the dialog of the saving potential of an expense (PM-4b). */
-async function openSavingPotential(page: Page, description: string) {
-  await page.getByRole('button', { name: `Sparpotential bei ${description}`, exact: true }).click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog.getByRole('heading')).toHaveText(`Sparpotential bei ${description}`);
-  return dialog;
-}
-
-async function setSavingPotential(page: Page, description: string, monthly?: string) {
-  const dialog = await openSavingPotential(page, description);
-  if (monthly !== undefined) {
-    await dialog.getByLabel('Betrag pro Monat').fill(monthly);
-  }
-  await dialog.getByRole('button', { name: 'Speichern' }).click();
-  await expect(dialog).toBeHidden();
 }
 
 const savingPotentialOf = (page: Page, description: string) =>

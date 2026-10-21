@@ -19,6 +19,7 @@ function overview(changes: Partial<HouseholdPlanOverview>): HouseholdPlanOvervie
     monthlySavingPotential: '0.00',
 
     savingPotential: '0.00',
+    savingPotentialsBySubcategory: [],
     expensesExceedIncome: false,
     items: [],
     incomeGroups: [],
@@ -109,5 +110,28 @@ describe('OverviewSummary', () => {
     expect(element.querySelector('[role="alert"]')?.textContent).toContain(
       'Deine Ausgaben übersteigen deine Einnahmen.',
     );
+  });
+
+  // SU-6, SU-7
+  it('shows the saving potential per subcategory beside the box only if there is any', async () => {
+    const without = await render(overview({}));
+    expect(without.querySelector('app-saving-potential-summary')).toBeNull();
+
+    const element = await render(
+      overview({
+        monthlySavingPotential: '45.00',
+        savingPotential: '540.00',
+        savingPotentialsBySubcategory: [
+          { subcategory: 'Hobbys', monthlyAmount: '30.00', amount: '360.00' },
+          { subcategory: 'Abonnements', monthlyAmount: '15.00', amount: '180.00' },
+        ],
+      }),
+    );
+
+    const sums = element.querySelector('app-saving-potential-summary table')!;
+    expect(rows(sums)).toEqual([
+      ['Hobbys', '€30.00', '€360.00'],
+      ['Abonnements', '€15.00', '€180.00'],
+    ]);
   });
 });

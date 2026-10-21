@@ -879,7 +879,7 @@
         "enum" : [ "LEBENSUNTERHALT", "FREIZEIT_SPASS", "SPAREN_INVESTIEREN" ]
       },
       "HouseholdPlanOverviewResponse" : {
-        "required" : [ "balance", "categoryBreakdowns", "expenseCategories", "expensesExceedIncome", "id", "incomeGroups", "items", "monthlyBalance", "monthlySavingPotential", "monthlyTotalExpense", "monthlyTotalIncome", "savingPotential", "totalExpense", "totalIncome", "year" ],
+        "required" : [ "balance", "categoryBreakdowns", "expenseCategories", "expensesExceedIncome", "id", "incomeGroups", "items", "monthlyBalance", "monthlySavingPotential", "monthlyTotalExpense", "monthlyTotalIncome", "savingPotential", "savingPotentialsBySubcategory", "totalExpense", "totalIncome", "year" ],
         "type" : "object",
         "properties" : {
           "balance" : {
@@ -950,6 +950,13 @@
             "description" : "Twelve times the monthly saving potential",
             "format" : "decimal",
             "example" : "420.0"
+          },
+          "savingPotentialsBySubcategory" : {
+            "type" : "array",
+            "description" : "The subcategories with a saving potential, the largest first (SU-3, SU-4)",
+            "items" : {
+              "$ref" : "#/components/schemas/SubcategorySavingPotentialResponse"
+            }
           },
           "totalExpense" : {
             "type" : "string",
@@ -1062,6 +1069,30 @@
             "example" : "5.0"
           }
         }
+      },
+      "SubcategorySavingPotentialResponse" : {
+        "required" : [ "amount", "monthlyAmount", "subcategory" ],
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "string",
+            "description" : "Twelve times the monthly amount",
+            "format" : "decimal",
+            "example" : "180.0"
+          },
+          "monthlyAmount" : {
+            "type" : "string",
+            "description" : "The sum of the monthly saving potentials of its expenses",
+            "format" : "decimal",
+            "example" : "15.0"
+          },
+          "subcategory" : {
+            "type" : "string",
+            "description" : "\"Sonstiges\" for the expenses without a subcategory",
+            "example" : "Abonnements"
+          }
+        },
+        "description" : "The subcategories with a saving potential, the largest first (SU-3, SU-4)"
       },
       "TargetDirection" : {
         "type" : "string",

@@ -41,6 +41,7 @@ function overview(year: number, items: number): HouseholdPlanOverview {
     monthlyBalance: '0.00',
     monthlySavingPotential: '0.00',
     savingPotential: '0.00',
+    savingPotentialsBySubcategory: [],
     expensesExceedIncome: false,
     categoryBreakdowns: [],
     items: Array.from({ length: items }, (_, i) => ({ ...item, id: String(i) })),
