@@ -68,7 +68,7 @@ const LIGHTEST_SHADE = 40;
 
 /**
  * Pie chart of the plan (TD-2 to TD-9, TK-1 to TK-14). By default it shows the 50/30/20 breakdown;
- * slice sizes follow the category totals, savings including the surplus (TD-3). A selection
+ * slice sizes follow the category totals, leisure including the surplus (TD-3). A selection
  * narrows it to the subcategory groups of one category or the items of one group, sized by their
  * amounts per month (TK-6). All amounts and shares come from the overview (TD-8, TK-8); the pie
  * only divides the circle in proportion to them.
@@ -403,7 +403,7 @@ export class CategoryPieChart {
     }));
   }
 
-  /** One slice per group, and one for the unplanned income of savings (TK-6, TK-9). */
+  /** One slice per group, and one for the unplanned income of leisure (TK-6, TK-9). */
   private categoryEntries(category: ExpenseCategory): PieEntry[] {
     const groups = this.categoryItemsOf(category)?.groups ?? [];
     const fills = shades(CATEGORY_COLORS[category], groups.length);

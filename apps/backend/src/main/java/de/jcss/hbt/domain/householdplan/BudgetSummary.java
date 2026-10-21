@@ -24,7 +24,7 @@ public record BudgetSummary(Money totalIncome, Map<ExpenseCategory, Money> expen
     public static final BudgetSummary EMPTY = new BudgetSummary(Money.ZERO, Map.of());
 
     /** The category the surplus counts towards. */
-    public static final ExpenseCategory SURPLUS_CATEGORY = ExpenseCategory.SPAREN_INVESTIEREN;
+    public static final ExpenseCategory SURPLUS_CATEGORY = ExpenseCategory.FREIZEIT_SPASS;
 
     public BudgetSummary {
         Objects.requireNonNull(totalIncome, "totalIncome must not be null");

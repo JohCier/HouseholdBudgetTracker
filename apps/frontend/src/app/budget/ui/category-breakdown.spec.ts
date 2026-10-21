@@ -104,14 +104,14 @@ describe('CategoryBreakdownCard', () => {
     });
     const fixture = TestBed.createComponent(CategoryBreakdownCard);
     fixture.componentRef.setInput('breakdowns', [
-      breakdown('FREIZEIT_SPASS', '0.00'),
-      breakdown('SPAREN_INVESTIEREN', '400.00'),
+      breakdown('FREIZEIT_SPASS', '400.00'),
+      breakdown('SPAREN_INVESTIEREN', '0.00'),
     ]);
     await fixture.whenStable();
 
     const rows = (fixture.nativeElement as HTMLElement).querySelectorAll('.row');
-    expect(rows[0].textContent).not.toContain('nicht verplant');
-    expect(rows[1].textContent).toMatch(/davon nicht verplant: \S*400/);
+    expect(rows[0].textContent).toMatch(/davon nicht verplant: \S*400/);
+    expect(rows[1].textContent).not.toContain('nicht verplant');
   });
 
   // TD-1

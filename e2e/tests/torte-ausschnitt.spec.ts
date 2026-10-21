@@ -113,17 +113,17 @@ test.describe('Ausschnitt der Torte', () => {
     await expect(pieEntry(page, 'Sprit')).toHaveCount(0);
   });
 
-  test('bei Sparen & Investieren ist der Überschuss ein graues Stück (TK-9, TK-10)', async ({
+  test('bei Freizeit & Spaß ist der Überschuss ein graues Stück (TK-9, TK-10)', async ({
     page,
   }) => {
     await addIncome(page, 'Gehalt', '3000', undefined, 'Monatlich');
-    await addExpense(page, 'ETF', '500', 'Sparen & Investieren', 'Investieren', 'Monatlich');
+    await addExpense(page, 'Reise', '500', 'Freizeit & Spaß', 'Urlaub', 'Monatlich');
     await showBreakdownAs(page, 'Torte');
 
-    await showInPie(page, 'Sparen & Investieren');
+    await showInPie(page, 'Freizeit & Spaß');
 
     await expect(pieSlices(page)).toHaveCount(2);
-    await expect(pieEntry(page, 'Investieren')).toContainText('500,00 € · 16,67 %');
+    await expect(pieEntry(page, 'Urlaub')).toContainText('500,00 € · 16,67 %');
     await expect(pieEntry(page, 'nicht verplant')).toContainText('2.500,00 € · 83,33 %');
     await expect(pieSummary(page)).toContainText('3.000,00 €');
   });

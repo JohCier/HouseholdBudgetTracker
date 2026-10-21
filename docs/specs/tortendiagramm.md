@@ -15,7 +15,7 @@ und jederzeit zwischen beiden Darstellungen wechseln.
   „Torte". Ein Umschalter in der Karte wechselt zwischen beiden. Beim Öffnen der Übersicht ist „Balken" gewählt.
 - **TD-2**: Die Torte hat je Kategorie ein Stück: Lebensunterhalt, Freizeit & Spaß, Sparen & Investieren. Jede Kategorie
   hat eine feste Farbe, die in Torte und Legende gleich ist.
-- **TD-3**: Die Größe eines Stücks entspricht der Summe der Kategorie aus der Auswertung, bei Sparen & Investieren
+- **TD-3**: Die Größe eines Stücks entspricht der Summe der Kategorie aus der Auswertung, bei Freizeit & Spaß
   einschließlich des Überschusses (AW-10). Ohne Defizit ergeben die drei Stücke damit genau das Einkommen, und jedes
   Stück entspricht dem Anteil der Kategorie am Einkommen.
 - **TD-4**: Bei einem Defizit (AW-3) zeigt die Torte die Aufteilung der Ausgaben; die Stücke ergeben dann zusammen mehr
@@ -23,7 +23,7 @@ und jederzeit zwischen beiden Darstellungen wechseln.
   100 % liegen können.
 - **TD-5**: Neben der Torte steht eine Legende mit je Kategorie: Name, Summe in Euro je Monat ([MJ-14](monats-jahresbetrag.md)), Anteil am Einkommen, Zielanteil
   mit Zielrichtung („von max. 50 %", „von mind. 20 %") und bei verfehltem Ziel der Hinweis „Ziel überschritten" bzw.
-  „Ziel nicht erreicht" – mit denselben Texten wie in der Balkenansicht. Bei Sparen & Investieren weist die Legende
+  „Ziel nicht erreicht" – mit denselben Texten wie in der Balkenansicht. Bei Freizeit & Spaß weist die Legende
   wie die Balkenansicht den Überschuss getrennt aus („davon nicht verplant", AW-10).
 - **TD-6**: Kategorien mit 0,00 € bekommen kein Stück, stehen aber in der Legende (AW-8).
 - **TD-7**: Sind alle drei Summen 0,00 €, zeigt die Torte statt der Stücke einen leeren grauen Kreis mit dem Hinweis
@@ -40,8 +40,9 @@ und jederzeit zwischen beiden Darstellungen wechseln.
   Investieren 900,00 €, **wenn** der Benutzer auf „Torte" umschaltet, **dann** zeigt die Karte eine Torte mit drei
   Stücken und eine Legende mit 50 %, 20 % und 30 % und ohne Zielhinweis (TD-2, TD-3, TD-5).
 - **Gegeben** Einnahmen von 2.000,00 € und Ausgaben Lebensunterhalt 1.200,00 €, **wenn** der Benutzer auf „Torte"
-  umschaltet, **dann** zeigt die Legende bei Lebensunterhalt 60 % und „Ziel überschritten", bei Sparen & Investieren
-  „davon nicht verplant: 800,00 €" und 40 %; Freizeit & Spaß steht mit 0,00 € in der Legende, hat aber kein Stück (TD-3, TD-5, TD-6).
+  umschaltet, **dann** zeigt die Legende bei Lebensunterhalt 60 % und „Ziel überschritten", bei Freizeit & Spaß
+  „davon nicht verplant: 800,00 €", 40 % und „Ziel überschritten"; Sparen & Investieren steht mit 0,00 € in der Legende,
+  hat aber kein Stück (TD-3, TD-5, TD-6).
 - **Gegeben** die Tortenansicht ist gewählt, **wenn** der Benutzer auf „Balken" umschaltet, **dann** sieht er wieder
   die bisherige Ansicht mit den Balken (TD-1).
 - **Gegeben** die Tortenansicht ist gewählt, **wenn** der Benutzer einen Posten erfasst, **dann** bleibt die

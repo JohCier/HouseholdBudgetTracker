@@ -64,7 +64,7 @@ class HouseholdPlanOverviewGroupsTest {
         });
         assertThat(overview.expenseCategories()).extracting(OverviewCategoryItems::category)
                 .containsExactly(ExpenseCategory.LEBENSUNTERHALT, ExpenseCategory.SPAREN_INVESTIEREN);
-        // Only the recorded expenses, not the surplus of 1700.00 the breakdown adds (AW-10, UK-12)
+        // Only the recorded expenses, never the surplus of 1700.00 the breakdowns add (AW-10, UK-12)
         assertThat(overview.expenseCategories().getLast().total()).isEqualTo(money("300.00"));
     }
 

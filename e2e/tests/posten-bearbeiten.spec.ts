@@ -57,7 +57,7 @@ test.describe('Posten bearbeiten', () => {
     page,
   }) => {
     await addIncome(page, 'Gehalt', '2000', undefined, 'Monatlich');
-    // Uses up the income, so no surplus counts towards savings (AW-10)
+    // Uses up the income, so no surplus counts towards leisure (AW-10)
     await addExpense(page, 'Miete', '1600', 'Lebensunterhalt', undefined, 'Monatlich');
     await addExpense(page, 'Fondssparen', '400', 'Freizeit & Spaß', undefined, 'Monatlich');
     await expect(categoryRow(page, 'Freizeit & Spaß')).toContainText('20 % von max. 30 %');

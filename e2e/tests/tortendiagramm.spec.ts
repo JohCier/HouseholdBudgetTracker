@@ -68,12 +68,12 @@ test.describe('Tortendiagramm der 50/30/20-Regel', () => {
     await expect(pieLegendItem(page, 'Lebensunterhalt')).toContainText(
       '60 % von max. 50 % · Ziel überschritten',
     );
-    const sparen = pieLegendItem(page, 'Sparen & Investieren');
-    await expect(sparen).toContainText('davon nicht verplant: 800,00 €');
-    await expect(sparen).toContainText('40 % von mind. 20 %');
-    await expect(pieLegendItem(page, 'Freizeit & Spaß')).toContainText('0,00 €');
+    const freizeit = pieLegendItem(page, 'Freizeit & Spaß');
+    await expect(freizeit).toContainText('davon nicht verplant: 800,00 €');
+    await expect(freizeit).toContainText('40 % von max. 30 % · Ziel überschritten');
+    await expect(pieLegendItem(page, 'Sparen & Investieren')).toContainText('0,00 €');
     await expect(pieSlices(page)).toHaveCount(2);
-    await expect(page.getByRole('button', { name: /^Freizeit & Spaß:/ })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Sparen & Investieren:/ })).toHaveCount(0);
   });
 
   test('die Torte bleibt gewählt, wenn ein Eintrag hinzukommt (TD-1, TD-3)', async ({ page }) => {

@@ -18,7 +18,7 @@ import { CategoryPieChart } from './category-pie';
 /**
  * Visualizes actual spend per category against its 50/30/20 target share of income.
  * Living costs and leisure have a ceiling, savings a floor. Income that no expense uses up
- * counts towards savings and is shown there as unplanned (AW-10). A toggle switches between
+ * counts towards leisure and is shown there as unplanned (AW-10). A toggle switches between
  * the bars and a pie chart (TD-1), which can also show one category or subcategory (TK-1). Both
  * show the amounts per month (MJ-14).
  */

@@ -78,7 +78,7 @@ Plans, lässt sich aber als Monatsbetrag angeben und so anzeigen.
   `BudgetItemChanged` wird protokolliert (MJ-4, MJ-5, MJ-11).
 - **Gegeben** Einnahmen 3.000,00 € monatlich und Ausgaben Lebensunterhalt 1.500,00 € monatlich, **dann** zeigt die
   Karte „50/30/20-Regel" für Lebensunterhalt 1.500,00 € und 50 %, in den Balken wie in der Legende der Torte, und für
-  Sparen & Investieren „davon nicht verplant: 1.500,00 €" (MJ-14).
+  Freizeit & Spaß „davon nicht verplant: 1.500,00 €" (MJ-14).
 - **Gegeben** ein gelöschter Posten mit Angabe „monatlich", **wenn** der Benutzer „Rückgängig" wählt, **dann** hat der
   Posten wieder dieselbe Angabe und denselben Betrag (MJ-4).
 - **Gegeben** das Formular „Neuer Eintrag", **wenn** es geöffnet wird, **dann** ist „Monatlich" gewählt; nach dem

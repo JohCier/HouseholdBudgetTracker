@@ -135,13 +135,13 @@ test.describe('Monats- und Jahresbetrag', () => {
     ).toBeVisible();
     await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('1.500,00 €');
     await expect(categoryRow(page, 'Lebensunterhalt')).toContainText('50 % von max. 50 %');
-    await expect(categoryRow(page, 'Sparen & Investieren')).toContainText(
+    await expect(categoryRow(page, 'Freizeit & Spaß')).toContainText(
       'davon nicht verplant: 1.500,00 €',
     );
 
     await showBreakdownAs(page, 'Torte');
     await expect(pieLegendItem(page, 'Lebensunterhalt')).toContainText('1.500,00 €');
-    await expect(pieLegendItem(page, 'Sparen & Investieren')).toContainText(
+    await expect(pieLegendItem(page, 'Freizeit & Spaß')).toContainText(
       'davon nicht verplant: 1.500,00 €',
     );
     await expect(

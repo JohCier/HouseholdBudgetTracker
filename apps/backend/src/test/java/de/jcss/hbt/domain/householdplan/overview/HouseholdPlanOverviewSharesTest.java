@@ -58,20 +58,21 @@ class HouseholdPlanOverviewSharesTest {
         assertThat(car.percentageOf(fuel)).isEqualTo(Percentage.of(75));
     }
 
-    /** TK-9: the share of a savings group refers to the total including the unplanned income */
+    /** TK-9: the share of a leisure group refers to the total including the unplanned income */
     @Test
-    void savingsSharesIncludeTheUnplannedIncome() {
+    void leisureSharesIncludeTheUnplannedIncome() {
         OverviewItem salary = new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Gehalt"),
                 ItemAmount.monthly(money("3000.00")), ItemType.INCOME, null, null, null);
-        OverviewItem etf = monthly("ETF", ExpenseCategory.SPAREN_INVESTIEREN, "Investieren", "500.00");
+        OverviewItem trip = monthly("Reise", ExpenseCategory.FREIZEIT_SPASS, "Urlaub", "500.00");
 
-        HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, YEAR, List.of(salary, etf), Map.of());
+        HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, YEAR, List.of(salary, trip), Map.of());
 
         assertThat(overview.expenseCategories().getFirst().groups().getFirst().percentageOfSection())
                 .isEqualTo(new Percentage(new BigDecimal("16.67")));
-        CategoryBreakdown savings = overview.categoryBreakdowns().getLast();
-        assertThat(savings.monthlyUnplanned()).isEqualTo(money("2500.00"));
-        assertThat(savings.monthlyUnplannedShare()).isEqualTo(new Percentage(new BigDecimal("83.33")));
+        CategoryBreakdown leisure = overview.categoryBreakdowns().get(1);
+        assertThat(leisure.category()).isEqualTo(ExpenseCategory.FREIZEIT_SPASS);
+        assertThat(leisure.monthlyUnplanned()).isEqualTo(money("2500.00"));
+        assertThat(leisure.monthlyUnplannedShare()).isEqualTo(new Percentage(new BigDecimal("83.33")));
         assertThat(overview.incomeGroups().getFirst().percentageOfSection()).isEqualTo(Percentage.of(100));
     }
 
