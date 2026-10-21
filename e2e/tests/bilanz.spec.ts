@@ -32,6 +32,7 @@ test.describe('Bilanz in der Übersicht', () => {
       'Gesamteinnahmen',
       'Gesamtausgaben',
       'Saldo',
+      'Sparpotential',
     ]);
     await expect(balanceSheet(page, 'Gesamteinnahmen', 'Monat')).toHaveText('3.000,00 €');
     await expect(balanceSheet(page, 'Gesamtausgaben', 'Monat')).toHaveText('850,00 €');

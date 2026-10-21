@@ -58,7 +58,8 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                 ItemType.valueOf(rs.getString("type")),
                 category == null ? null : ExpenseCategory.valueOf(category),
                 BudgetItemSubcategory.ofNullable(rs.getString("subcategory")),
-                BudgetItemNote.ofNullable(rs.getString("note")));
+                BudgetItemNote.ofNullable(rs.getString("note")),
+                ItemMarksColumns.of(rs));
     };
 
     private final JdbcClient jdbcClient;
@@ -97,7 +98,8 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
 
     private List<StoredItem> findStoredItems(HouseholdPlanId planId) {
         return jdbcClient.sql("""
-                        SELECT id, description, amount, amount_period, type, category, subcategory, note, position
+                        SELECT id, description, amount, amount_period, type, category, subcategory, note, important,
+                               saving_potential, position
                         FROM budget_item
                         WHERE household_plan_id = :planId
                         ORDER BY position DESC
@@ -199,15 +201,15 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
     private static boolean sameValues(BudgetItem item, BudgetItem other) {
         return item.description().equals(other.description()) && item.amount().equals(other.amount())
                 && item.category().equals(other.category()) && item.subcategory().equals(other.subcategory())
-                && item.note().equals(other.note());
+                && item.note().equals(other.note()) && item.marks().equals(other.marks());
     }
 
     private void insertItem(HouseholdPlanId planId, BudgetItem item, int position) {
         jdbcClient.sql("""
                         INSERT INTO budget_item (id, household_plan_id, description, amount, amount_period, type,
-                                                 category, subcategory, note, position)
+                                                 category, subcategory, note, important, saving_potential, position)
                         VALUES (:id, :planId, :description, :amount, :amountPeriod, :type, :category, :subcategory,
-                                :note, :position)
+                                :note, :important, :savingPotential, :position)
                         """)
                 .param("id", item.id().value())
                 .param("planId", planId.value())
@@ -218,6 +220,8 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                 .param("category", categoryOf(item))
                 .param("subcategory", subcategoryOf(item))
                 .param("note", noteOf(item))
+                .param("important", item.marks().important())
+                .param("savingPotential", ItemMarksColumns.savingPotentialOf(item.marks()))
                 .param("position", position)
                 .update();
     }
@@ -227,7 +231,8 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
         jdbcClient.sql("""
                         UPDATE budget_item
                         SET description = :description, amount = :amount, amount_period = :amountPeriod, category = :category,
-                            subcategory = :subcategory, note = :note, position = :position
+                            subcategory = :subcategory, note = :note, important = :important,
+                            saving_potential = :savingPotential, position = :position
                         WHERE id = :id
                         """)
                 .param("id", item.id().value())
@@ -237,6 +242,8 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                 .param("category", categoryOf(item))
                 .param("subcategory", subcategoryOf(item))
                 .param("note", noteOf(item))
+                .param("important", item.marks().important())
+                .param("savingPotential", ItemMarksColumns.savingPotentialOf(item.marks()))
                 .param("position", position)
                 .update();
     }

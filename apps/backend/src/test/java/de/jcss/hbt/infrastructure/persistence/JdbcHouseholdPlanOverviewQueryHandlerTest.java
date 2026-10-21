@@ -10,10 +10,12 @@ import de.jcss.hbt.domain.householdplan.HouseholdPlan;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanRepository;
 import de.jcss.hbt.domain.householdplan.ItemAmount;
+import de.jcss.hbt.domain.householdplan.ItemMarks;
 import de.jcss.hbt.domain.householdplan.ItemSection;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
 import de.jcss.hbt.domain.householdplan.OwnerId;
+import de.jcss.hbt.domain.householdplan.SavingPotential;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
 import de.jcss.hbt.domain.householdplan.overview.OverviewCategoryItems;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
@@ -75,6 +77,40 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
                         ExpenseCategory.LEBENSUNTERHALT, null, new BudgetItemNote("Warmmiete")));
         assertThat(overview.totalIncome()).isEqualTo(money("2000.00"));
         assertThat(overview.totalExpense()).isEqualTo(money("850.50"));
+    }
+
+    /** PM-1, PM-2, PM-13; items from before the marks have none */
+    @Test
+    void readsTheMarksOfTheItemsAndSumsTheSavingPotential() {
+        HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2026));
+        BudgetItemId streaming = plan.addExpense(description("Streaming"), ItemAmount.monthly(money("15.00")),
+                ExpenseCategory.FREIZEIT_SPASS, null, null);
+        BudgetItemId gym = plan.addExpense(description("Fitnessstudio"), yearly("360.00"),
+                ExpenseCategory.FREIZEIT_SPASS, null, null);
+        BudgetItemId salary = plan.addIncome(description("Gehalt"), ItemAmount.monthly(money("3000.00")), null, null);
+        plan.markImportant(salary, true);
+        plan.changeSavingPotential(streaming, SavingPotential.monthly(money("5.00")));
+        plan.changeSavingPotential(gym, SavingPotential.monthly(money("30.00")));
+        repository.add(plan);
+        UUID older = UUID.randomUUID();
+        jdbcClient.sql("""
+                        INSERT INTO budget_item (id, household_plan_id, description, amount, type, category, position)
+                        VALUES (:id, :planId, 'Versicherung', 1000.00, 'EXPENSE', 'LEBENSUNTERHALT', -1)
+                        """)
+                .param("id", older)
+                .param("planId", plan.id().value())
+                .update();
+
+        HouseholdPlanOverview overview = queryHandler.findByOwnerAndYear(OWNER, Year.of(2026)).orElseThrow();
+
+        assertThat(overview.items()).extracting(OverviewItem::id, OverviewItem::marks).containsExactly(
+                tuple(streaming, new ItemMarks(false, SavingPotential.monthly(money("5.00")))),
+                tuple(gym, new ItemMarks(false, SavingPotential.monthly(money("30.00")))),
+                tuple(salary, new ItemMarks(true, null)),
+                tuple(BudgetItemId.of(older), ItemMarks.NONE));
+        assertThat(overview.monthlySavingPotential()).isEqualTo(money("35.00"));
+        assertThat(overview.savingPotential()).isEqualTo(money("420.00"));
+        assertThat(overview.balance()).isEqualTo(money("34460.00"));
     }
 
     /** MJ-2, MJ-3, MJ-9 */

@@ -26,6 +26,14 @@ public record HouseholdPlanOverviewResponse(
         @JsonFormat(shape = JsonFormat.Shape.STRING)
         @Schema(implementation = String.class, format = "decimal", example = "58.33", description = "The yearly balance divided by 12")
         BigDecimal monthlyBalance,
+        @JsonFormat(shape = JsonFormat.Shape.STRING)
+        @Schema(implementation = String.class, format = "decimal", example = "35.00",
+                description = "The sum of the monthly saving potentials of all expenses")
+        BigDecimal monthlySavingPotential,
+        @JsonFormat(shape = JsonFormat.Shape.STRING)
+        @Schema(implementation = String.class, format = "decimal", example = "420.00",
+                description = "Twelve times the monthly saving potential")
+        BigDecimal savingPotential,
         boolean expensesExceedIncome,
         List<CategoryBreakdownResponse> categoryBreakdowns,
         @Schema(description = "In display order, the topmost first") List<BudgetItemResponse> items,
@@ -44,6 +52,8 @@ public record HouseholdPlanOverviewResponse(
                 overview.monthlyTotalIncome().value(),
                 overview.monthlyTotalExpense().value(),
                 overview.monthlyBalance().value(),
+                overview.monthlySavingPotential().value(),
+                overview.savingPotential().value(),
                 overview.expensesExceedIncome(),
                 overview.categoryBreakdowns().stream().map(CategoryBreakdownResponse::from).toList(),
                 overview.items().stream().map(BudgetItemResponse::from).toList(),

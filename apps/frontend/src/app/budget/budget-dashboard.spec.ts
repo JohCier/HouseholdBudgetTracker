@@ -20,6 +20,8 @@ const item: BudgetItem = {
   category: 'FREIZEIT_SPASS',
   subcategory: null,
   note: null,
+  important: false,
+  savingPotential: null,
   percentageOfGroup: null,
 };
 const overview: HouseholdPlanOverview = {
@@ -34,6 +36,10 @@ const overview: HouseholdPlanOverview = {
   monthlyTotalExpense: '1.04',
 
   monthlyBalance: '-1.04',
+
+  monthlySavingPotential: '0.00',
+
+  savingPotential: '0.00',
   expensesExceedIncome: true,
   categoryBreakdowns: [],
   items: [item],

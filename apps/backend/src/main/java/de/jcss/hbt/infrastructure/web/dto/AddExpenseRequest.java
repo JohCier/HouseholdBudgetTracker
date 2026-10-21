@@ -21,6 +21,12 @@ public record AddExpenseRequest(
         @Size(max = BudgetItemSubcategory.MAX_LENGTH)
         @Schema(nullable = true, description = "Optional; empty or blank means none, i.e. \"Sonstiges\"") String subcategory,
         @Size(max = BudgetItemNote.MAX_LENGTH)
-        @Schema(nullable = true, description = "Optional; empty or blank means no note") String note
+        @Schema(nullable = true, description = "Optional; empty or blank means no note") String note,
+        @Schema(nullable = true, description = "Optional, only to restore a removed item; a new expense is not important")
+        Boolean important,
+        @Positive @Digits(integer = 10, fraction = 2)
+        @Schema(implementation = String.class, format = "decimal", example = "5.00", nullable = true,
+                description = "Optional, only to restore a removed item: the monthly saving potential, at most the monthly amount")
+        BigDecimal savingPotential
 ) {
 }

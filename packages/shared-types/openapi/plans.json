@@ -358,6 +358,138 @@
         "tags" : [ "household-plans" ]
       }
     },
+    "/api/plans/{planId}/items/{itemId}/important" : {
+      "put" : {
+        "operationId" : "markImportant",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "planId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "itemId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MarkImportantRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HouseholdPlanOverviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "household-plans" ]
+      }
+    },
+    "/api/plans/{planId}/items/{itemId}/saving-potential" : {
+      "delete" : {
+        "operationId" : "removeSavingPotential",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "planId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "itemId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HouseholdPlanOverviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "household-plans" ]
+      },
+      "put" : {
+        "operationId" : "changeSavingPotential",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "planId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "itemId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SavingPotentialRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HouseholdPlanOverviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "household-plans" ]
+      }
+    },
     "/api/plans/{planId}/subcategory-order" : {
       "put" : {
         "operationId" : "reorderSubcategories",
@@ -418,6 +550,11 @@
             "minLength" : 0,
             "type" : "string"
           },
+          "important" : {
+            "type" : "boolean",
+            "description" : "Optional, only to restore a removed item; a new expense is not important",
+            "nullable" : true
+          },
           "note" : {
             "maxLength" : 1000,
             "minLength" : 0,
@@ -427,6 +564,13 @@
           },
           "period" : {
             "$ref" : "#/components/schemas/AmountPeriod"
+          },
+          "savingPotential" : {
+            "type" : "string",
+            "description" : "Optional, only to restore a removed item: the monthly saving potential, at most the monthly amount",
+            "format" : "decimal",
+            "nullable" : true,
+            "example" : "5.0"
           },
           "subcategory" : {
             "maxLength" : 50,
@@ -450,6 +594,11 @@
             "maxLength" : 255,
             "minLength" : 0,
             "type" : "string"
+          },
+          "important" : {
+            "type" : "boolean",
+            "description" : "Optional, only to restore a removed item; a new income is not important",
+            "nullable" : true
           },
           "note" : {
             "maxLength" : 1000,
@@ -488,7 +637,7 @@
         "enum" : [ "MONTHLY", "YEARLY" ]
       },
       "BudgetItemResponse" : {
-        "required" : [ "amount", "annualAmount", "category", "description", "id", "monthlyAmount", "note", "percentageOfGroup", "period", "subcategory", "type" ],
+        "required" : [ "amount", "annualAmount", "category", "description", "id", "important", "monthlyAmount", "note", "percentageOfGroup", "period", "savingPotential", "subcategory", "type" ],
         "type" : "object",
         "properties" : {
           "amount" : {
@@ -516,6 +665,9 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "important" : {
+            "type" : "boolean"
+          },
           "monthlyAmount" : {
             "type" : "string",
             "format" : "decimal",
@@ -534,6 +686,13 @@
           },
           "period" : {
             "$ref" : "#/components/schemas/AmountPeriod"
+          },
+          "savingPotential" : {
+            "type" : "string",
+            "description" : "The monthly saving potential; only set for expenses that have one",
+            "format" : "decimal",
+            "nullable" : true,
+            "example" : "5.0"
           },
           "subcategory" : {
             "type" : "string",
@@ -720,7 +879,7 @@
         "enum" : [ "LEBENSUNTERHALT", "FREIZEIT_SPASS", "SPAREN_INVESTIEREN" ]
       },
       "HouseholdPlanOverviewResponse" : {
-        "required" : [ "balance", "categoryBreakdowns", "expenseCategories", "expensesExceedIncome", "id", "incomeGroups", "items", "monthlyBalance", "monthlyTotalExpense", "monthlyTotalIncome", "totalExpense", "totalIncome", "year" ],
+        "required" : [ "balance", "categoryBreakdowns", "expenseCategories", "expensesExceedIncome", "id", "incomeGroups", "items", "monthlyBalance", "monthlySavingPotential", "monthlyTotalExpense", "monthlyTotalIncome", "savingPotential", "totalExpense", "totalIncome", "year" ],
         "type" : "object",
         "properties" : {
           "balance" : {
@@ -768,6 +927,12 @@
             "format" : "decimal",
             "example" : "58.33"
           },
+          "monthlySavingPotential" : {
+            "type" : "string",
+            "description" : "The sum of the monthly saving potentials of all expenses",
+            "format" : "decimal",
+            "example" : "35.0"
+          },
           "monthlyTotalExpense" : {
             "type" : "string",
             "description" : "The yearly total divided by 12",
@@ -779,6 +944,12 @@
             "description" : "The yearly total divided by 12",
             "format" : "decimal",
             "example" : "208.33"
+          },
+          "savingPotential" : {
+            "type" : "string",
+            "description" : "Twelve times the monthly saving potential",
+            "format" : "decimal",
+            "example" : "420.0"
           },
           "totalExpense" : {
             "type" : "string",
@@ -834,6 +1005,15 @@
         "type" : "string",
         "enum" : [ "INCOME", "EXPENSE" ]
       },
+      "MarkImportantRequest" : {
+        "required" : [ "important" ],
+        "type" : "object",
+        "properties" : {
+          "important" : {
+            "type" : "boolean"
+          }
+        }
+      },
       "ReorderBudgetItemsRequest" : {
         "required" : [ "itemIds" ],
         "type" : "object",
@@ -869,6 +1049,17 @@
           },
           "type" : {
             "$ref" : "#/components/schemas/ItemType"
+          }
+        }
+      },
+      "SavingPotentialRequest" : {
+        "required" : [ "monthlyAmount" ],
+        "type" : "object",
+        "properties" : {
+          "monthlyAmount" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "5.0"
           }
         }
       },

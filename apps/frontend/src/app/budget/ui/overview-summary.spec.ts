@@ -15,6 +15,10 @@ function overview(changes: Partial<HouseholdPlanOverview>): HouseholdPlanOvervie
     monthlyTotalExpense: '166.67',
 
     monthlyBalance: '83.33',
+
+    monthlySavingPotential: '0.00',
+
+    savingPotential: '0.00',
     expensesExceedIncome: false,
     items: [],
     incomeGroups: [],
@@ -32,9 +36,11 @@ describe('OverviewSummary', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  // BI-1, BI-2, BI-4
-  it('shows income, expenses and balance in rows, per month and per year in columns', async () => {
-    const element = await render(overview({}));
+  // BI-1, BI-2, BI-4, PM-14
+  it('shows income, expenses, balance and saving potential in rows, per month and per year in columns', async () => {
+    const element = await render(
+      overview({ monthlySavingPotential: '35.00', savingPotential: '420.00' }),
+    );
 
     const text = (cell: Element) => cell.textContent?.replace(/\s+/g, ' ').trim();
     expect([...element.querySelectorAll('thead th')].map(text)).toEqual(['Monat', 'Jahr']);
@@ -45,6 +51,7 @@ describe('OverviewSummary', () => {
       ['Gesamteinnahmen', '€250.00', '€3,000.00'],
       ['Gesamtausgaben', '€166.67', '€2,000.00'],
       ['Saldo', '€83.33', '€1,000.00'],
+      ['Sparpotential', '€35.00', '€420.00'],
     ]);
     expect(element.querySelector('mat-card-title')?.textContent).toBe('Bilanz');
     expect(element.querySelector('.balance .value.yearly')?.classList).not.toContain('expense');

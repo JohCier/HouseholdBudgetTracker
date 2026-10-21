@@ -26,6 +26,11 @@ public record BudgetItemResponse(
         String subcategory,
         @Schema(nullable = true, description = "Only set if the item has a note")
         String note,
+        boolean important,
+        @JsonFormat(shape = JsonFormat.Shape.STRING)
+        @Schema(implementation = String.class, format = "decimal", example = "5.00", nullable = true,
+                description = "The monthly saving potential; only set for expenses that have one")
+        BigDecimal savingPotential,
         @Schema(nullable = true, example = "80.00",
                 description = "Only set for the items of a group: how much of the group the item makes up per month, in percent (TK-8)")
         BigDecimal percentageOfGroup
@@ -48,6 +53,8 @@ public record BudgetItemResponse(
                 item.category() == null ? null : ExpenseCategoryDto.from(item.category()),
                 item.subcategory() == null ? null : item.subcategory().value(),
                 item.note() == null ? null : item.note().value(),
+                item.marks().important(),
+                item.marks().savingPotential() == null ? null : item.marks().savingPotential().monthly().value(),
                 percentageOfGroup == null ? null : percentageOfGroup.value()
         );
     }

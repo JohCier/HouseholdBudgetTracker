@@ -21,6 +21,9 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Ausgabe | `ItemType.EXPENSE` | Posten mit genau einer Kategorie |
 | Beschreibung | `BudgetItemDescription` | Wofür der Posten steht, z. B. „Miete". 1 bis 255 Zeichen, nicht nur Leerzeichen |
 | Notiz | `BudgetItemNote` | Optionaler Freitext zum Posten, höchstens 1000 Zeichen; ohne Einfluss auf die Auswertung |
+| Markierungen | `ItemMarks` | Wie der Benutzer einen Posten in den Einträgen markiert hat: wichtig und, bei Ausgaben, Sparpotential; ohne Einfluss auf die Auswertung |
+| Wichtig | `ItemMarks.important`, `ItemMark.IMPORTANT` | Markierung eines Postens, den der Benutzer hervorgehoben sehen will; die Zeile ist farblich abgesetzt |
+| Sparpotential | `SavingPotential`, `ItemMark.SAVING_POTENTIAL` | Der Teil einer Ausgabe, den der Benutzer für einsparbar hält; immer ein Monatsbetrag, höchstens der Monatsbetrag der Ausgabe. In der Bilanz als Summe je Monat und Jahr (`monthlySavingPotential`, `savingPotential`) |
 | Unterkategorie | `BudgetItemSubcategory` | Optionaler, frei wählbarer Name zur weiteren Gruppierung von Posten, z. B. „Auto"; 1 bis 50 Zeichen, unabhängig von der Kategorie und ohne Einfluss auf die Auswertung |
 | Sonstiges | `BudgetItemSubcategory.OTHER` | Gruppe der Posten ohne Unterkategorie oder mit der Unterkategorie „Sonstiges"; steht am Ende, solange der Benutzer sie nicht verschiebt |
 | Bereich | `ItemSection` | Die Einnahmen oder eine Kategorie der Ausgaben; darin werden die Posten nach Unterkategorie gruppiert |
@@ -45,7 +48,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Einkommen | `totalIncome` | Summe aller Einnahmen eines Plans |
 | Ausgaben | `totalExpense` | Summe aller Ausgaben eines Plans |
 | Saldo | `balance` | Einkommen minus Ausgaben; negativ bei Defizit |
-| Bilanz | `app-overview-summary`, nur im Frontend | Kasten oben in der Planansicht: Gesamteinnahmen, Gesamtausgaben und Saldo je Monat und je Jahr |
+| Bilanz | `app-overview-summary`, nur im Frontend | Kasten oben in der Planansicht: Gesamteinnahmen, Gesamtausgaben, Saldo und Sparpotential je Monat und je Jahr |
 | Defizit | `expensesExceedIncome` | Die Ausgaben sind höher als das Einkommen |
 | Überschuss, nicht verplant | `surplus`, `unplanned` | Positiver Saldo; zählt in der Auswertung zu Sparen & Investieren |
 | Finanzielle Lage | `BudgetSummary` (Value Object) | Einkommen, Ausgaben je Kategorie und alles, was daraus folgt (Saldo, Anteile, Zielerreichung) |
@@ -83,6 +86,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | `ExpenseAdded` | Eine Ausgabe wurde erfasst |
 | `BudgetItemRemoved` | Ein Posten wurde gelöscht |
 | `BudgetItemChanged` | Beschreibung, Betrag, Angabe, Kategorie, Unterkategorie oder Notiz eines Postens wurden geändert |
+| `BudgetItemMarked` | Ein Posten wurde als wichtig markiert oder bekam ein Sparpotential, oder die Markierung wurde entfernt |
 | `BudgetItemsReordered` | Die Posten einer Unterkategorie-Gruppe wurden umsortiert |
 | `SubcategoriesReordered` | Die Unterkategorie-Gruppen der Einnahmen oder einer Kategorie wurden umsortiert |
 | `UserRegistered` | Ein Benutzer hat sich registriert |

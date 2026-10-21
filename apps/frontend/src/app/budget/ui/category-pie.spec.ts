@@ -63,6 +63,8 @@ const expense = (
   category: 'LEBENSUNTERHALT',
   subcategory: null,
   note: null,
+  important: false,
+  savingPotential: null,
   percentageOfGroup,
 });
 

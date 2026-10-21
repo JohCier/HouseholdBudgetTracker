@@ -17,6 +17,8 @@ const item: BudgetItem = {
   category: null,
   subcategory: null,
   note: null,
+  important: false,
+  savingPotential: null,
   percentageOfGroup: null,
 };
 const overview = (year: number, items = [item]): HouseholdPlanOverview => ({
@@ -31,6 +33,10 @@ const overview = (year: number, items = [item]): HouseholdPlanOverview => ({
   monthlyTotalExpense: '0.00',
 
   monthlyBalance: '166.67',
+
+  monthlySavingPotential: '0.00',
+
+  savingPotential: '0.00',
   expensesExceedIncome: false,
   categoryBreakdowns: [],
   items,
@@ -76,6 +82,11 @@ describe('BudgetStore', () => {
       removeItem: vi.fn((planId: string) => of(overview(yearOf(planId), []))),
       reorderItems: vi.fn((planId: string) => of(overview(yearOf(planId)))),
       reorderSubcategories: vi.fn((planId: string) => of(overview(yearOf(planId)))),
+      markImportant: vi.fn((planId: string) =>
+        of(overview(yearOf(planId), [{ ...item, important: true }])),
+      ),
+      changeSavingPotential: vi.fn((planId: string) => of(overview(yearOf(planId)))),
+      removeSavingPotential: vi.fn((planId: string) => of(overview(yearOf(planId)))),
     };
     TestBed.configureTestingModule({
       providers: [BudgetStore, { provide: BudgetApi, useValue: api }],
@@ -288,6 +299,47 @@ describe('BudgetStore', () => {
       amount: '2000.00',
       period: 'YEARLY',
       category: 'FREIZEIT_SPASS',
+    });
+  });
+
+  it('marks an item as important and shows the returned overview (PM-4a)', async () => {
+    await store.selectYear(2026);
+
+    await store.markImportant('1', true);
+
+    expect(api.markImportant).toHaveBeenCalledWith('plan-2026', '1', { important: true });
+    expect(store.items()[0].important).toBe(true);
+  });
+
+  it('sets the monthly saving potential of an expense and removes it (PM-2a, PM-4b)', async () => {
+    await store.selectYear(2026);
+
+    await store.changeSavingPotential('1', '5.00');
+    await store.changeSavingPotential('1', null);
+
+    expect(api.changeSavingPotential).toHaveBeenCalledWith('plan-2026', '1', {
+      monthlyAmount: '5.00',
+    });
+    expect(api.removeSavingPotential).toHaveBeenCalledWith('plan-2026', '1');
+  });
+
+  it('restores a removed expense with its marks (PM-6)', async () => {
+    await store.restoreItem('plan-2026', {
+      ...item,
+      type: 'EXPENSE',
+      category: 'FREIZEIT_SPASS',
+      description: 'Streaming',
+      important: true,
+      savingPotential: '5.00',
+    });
+
+    expect(api.addExpense).toHaveBeenCalledWith('plan-2026', {
+      description: 'Streaming',
+      amount: '2000.00',
+      period: 'YEARLY',
+      category: 'FREIZEIT_SPASS',
+      important: true,
+      savingPotential: '5.00',
     });
   });
 

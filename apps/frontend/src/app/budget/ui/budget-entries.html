@@ -119,7 +119,7 @@
           (cdkDropListDropped)="dropItem(group, $event)"
         >
           @for (item of group.items; track item.id; let itemIndex = $index) {
-            <div class="item" cdkDrag>
+            <div class="item" cdkDrag [class.important]="item.important">
               @if (group.items.length > 1) {
                 <button
                   matIconButton
@@ -141,7 +141,44 @@
                 @if (item.note) {
                   <div class="note">{{ item.note }}</div>
                 }
+                @if (item.savingPotential) {
+                  <div class="saving-potential">
+                    Sparpotential: {{ item.savingPotential | currency: 'EUR' }} im Monat
+                  </div>
+                }
               </div>
+              <!-- Marked only here, never when the item is entered (PM-4) -->
+              <span class="marks">
+                <button
+                  matIconButton
+                  type="button"
+                  class="mark important-mark"
+                  [class.marked]="item.important"
+                  [matTooltip]="item.important ? 'Nicht mehr wichtig' : 'Als wichtig markieren'"
+                  [attr.aria-label]="
+                    item.important
+                      ? 'Markierung wichtig bei ' + item.description + ' entfernen'
+                      : item.description + ' als wichtig markieren'
+                  "
+                  [attr.aria-pressed]="item.important"
+                  (click)="markImportant.emit({ item, important: !item.important })"
+                >
+                  <mat-icon [svgIcon]="item.important ? 'star' : 'star_border'" />
+                </button>
+                @if (item.type === 'EXPENSE') {
+                  <button
+                    matIconButton
+                    type="button"
+                    class="mark saving-mark"
+                    [class.marked]="!!item.savingPotential"
+                    matTooltip="Sparpotential"
+                    [attr.aria-label]="'Sparpotential bei ' + item.description"
+                    (click)="savingPotential.emit(item)"
+                  >
+                    <mat-icon [svgIcon]="item.savingPotential ? 'savings' : 'savings_outline'" />
+                  </button>
+                }
+              </span>
               <!-- The amount as entered stands out, the one worked out from it does not (MJ-12) -->
               <span
                 class="amount-column amount monthly"
