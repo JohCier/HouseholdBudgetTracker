@@ -24,6 +24,9 @@ Anteil am Einkommen einhalten. Jeder Benutzer sieht nur seine eigenen Pläne.
    Backend-Tests ab.
 4. Nach der Umsetzung den Status auf „umgesetzt" setzen und den Abschnitt „Umsetzung" ergänzen.
 
+Die Schritte der Umsetzung je Schicht beschreibt der Skill `spec-umsetzen`, die Aktualisierung des API-Vertrags der
+Skill `api-vertrag`. Welche Spec zu einem Regel-Präfix (z. B. `PM-`) gehört, zeigt die Tabelle in `docs/produkt.md`.
+
 „Setze alle geplanten Specs um" heißt: alle Specs mit Status „geplant" nacheinander, je Spec ein eigener PR.
 
 ## Landkarte
