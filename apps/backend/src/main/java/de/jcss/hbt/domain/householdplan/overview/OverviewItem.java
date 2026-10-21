@@ -6,6 +6,7 @@ import de.jcss.hbt.domain.householdplan.BudgetItemNote;
 import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.ItemAmount;
+import de.jcss.hbt.domain.householdplan.ItemMarks;
 import de.jcss.hbt.domain.householdplan.ItemSection;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import org.jmolecules.architecture.cqrs.QueryModel;
@@ -18,6 +19,7 @@ import org.jmolecules.architecture.cqrs.QueryModel;
  * @param category    only set for expenses, otherwise {@code null}
  * @param subcategory {@code null} if the item has no subcategory
  * @param note        {@code null} if the item has no note
+ * @param marks       whether it is important and its saving potential, if any (PM-1, PM-2)
  */
 @QueryModel
 public record OverviewItem(
@@ -27,8 +29,15 @@ public record OverviewItem(
         ItemType type,
         ExpenseCategory category,
         BudgetItemSubcategory subcategory,
-        BudgetItemNote note
+        BudgetItemNote note,
+        ItemMarks marks
 ) {
+
+    /** An item without marks. */
+    public OverviewItem(BudgetItemId id, BudgetItemDescription description, ItemAmount amount, ItemType type,
+                        ExpenseCategory category, BudgetItemSubcategory subcategory, BudgetItemNote note) {
+        this(id, description, amount, type, category, subcategory, note, ItemMarks.NONE);
+    }
 
     /** The section the item is listed in (UK-9, UK-10). */
     public ItemSection section() {

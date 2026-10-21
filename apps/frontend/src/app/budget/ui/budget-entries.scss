@@ -207,11 +207,41 @@ h4 {
   white-space: nowrap;
 }
 
-.note {
+.note,
+.saving-potential {
   color: var(--mat-sys-on-surface-variant);
   font: var(--mat-sys-body-small);
   white-space: pre-line;
   overflow-wrap: anywhere;
+}
+
+.saving-potential {
+  white-space: normal;
+}
+
+// An important item stands out by a tint and a stripe at its left edge (PM-9)
+.item.important {
+  background: var(--app-important-background);
+  box-shadow: inset 4px 0 0 var(--app-important-color);
+}
+
+// Set marks are colored, unset ones faint, so the marks read at a glance (PM-9, PM-10)
+.marks {
+  display: flex;
+  flex: 0 0 96px;
+  justify-content: flex-end;
+}
+
+.mark:not(.marked) {
+  opacity: 0.55;
+}
+
+.important-mark.marked {
+  color: var(--app-important-color);
+}
+
+.saving-mark.marked {
+  color: var(--app-income-color);
 }
 
 .empty {
@@ -224,7 +254,7 @@ h4 {
 // description keeps its width (MA-2, MA-3)
 @container (max-width: 599px) {
   .amount-column {
-    flex-basis: 7rem;
+    flex-basis: 6.5rem;
   }
 
   .columns .actions-space,
@@ -239,10 +269,10 @@ h4 {
 
   .item {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) 7rem 7rem;
+    grid-template-columns: auto minmax(0, 1fr) 6.5rem 6.5rem;
     grid-template-areas:
       'handle description description actions'
-      'handle . monthly yearly';
+      'marks marks monthly yearly';
     column-gap: 8px;
     align-items: center;
   }
@@ -305,6 +335,17 @@ h4 {
   .item .actions {
     grid-area: actions;
     justify-self: end;
+  }
+
+  // The marks take the room below the handle and the description, left of the amounts (PM-12)
+  .item .marks {
+    grid-area: marks;
+    justify-content: flex-start;
+  }
+
+  .mark {
+    --mat-icon-button-state-layer-size: 36px;
+    padding: 6px;
   }
 }
 

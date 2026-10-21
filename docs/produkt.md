@@ -33,12 +33,16 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 | Einträge in Gruppen | Neue Posten unten in ihrer Gruppe, Summen als Zeilen unter Gruppe, Kategorie und Bereich, Posten direkt in einer Gruppe erfassen | [eintraege-gruppen.md](specs/eintraege-gruppen.md) |
 | Ansicht auf schmalen Bildschirmen | Planansicht, Jahresübersicht und Dialoge auf dem Handy ohne waagerechtes Scrollen; Posten und Summen zweizeilig | [mobile-ansicht.md](specs/mobile-ansicht.md) |
 | Bilanz | Gesamteinnahmen, Gesamtausgaben und Saldo in einem Kasten, je Monat und je Jahr nebeneinander | [bilanz.md](specs/bilanz.md) |
+| Posten markieren | Posten in den Einträgen als wichtig hervorheben; bei Ausgaben ein monatliches Sparpotential festhalten, in der Bilanz summiert | [posten-markierungen.md](specs/posten-markierungen.md) |
 | Fehlermeldungen | Alle Meldungen auf Deutsch, auch die der API | [fehlermeldungen.md](specs/fehlermeldungen.md) |
 | Auswertung | Summen, Saldo, Warnung bei Defizit, Anteil und Zielerreichung je 50/30/20-Kategorie | [auswertung-50-30-20.md](specs/auswertung-50-30-20.md) |
 | Tortendiagramm | Die 50/30/20-Auswertung wahlweise als Balken oder als Tortendiagramm ansehen | [tortendiagramm.md](specs/tortendiagramm.md) |
 | Übersicht als Antwort | Nach jeder Änderung liefert die API die neue Übersicht mit, die Oberfläche lädt nicht erneut | [antwort-mit-uebersicht.md](specs/antwort-mit-uebersicht.md) |
 
 Alle Beträge sind in Euro. Die Oberfläche ist deutschsprachig.
+
+Maßgebliche Kenngröße ist der Monat: Entscheidend ist, was man im Monat mehr oder weniger zur Verfügung hat. Neue
+Werte und Berechnungen gehen deshalb vom Monatsbetrag aus, Jahreswerte sind daraus abgeleitet.
 
 ## Nicht-Ziele
 

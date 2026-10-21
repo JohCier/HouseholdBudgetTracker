@@ -20,6 +20,8 @@ const item: BudgetItem = {
   category: 'FREIZEIT_SPASS',
   subcategory: null,
   note: null,
+  important: false,
+  savingPotential: null,
 };
 const overview: HouseholdPlanOverview = {
   id: 'plan-2026',
@@ -33,6 +35,10 @@ const overview: HouseholdPlanOverview = {
   monthlyTotalExpense: '1.04',
 
   monthlyBalance: '-1.04',
+
+  monthlySavingPotential: '0.00',
+
+  savingPotential: '0.00',
   expensesExceedIncome: true,
   categoryBreakdowns: [],
   items: [item],
@@ -320,9 +326,7 @@ describe('BudgetDashboard', () => {
     TestBed.overrideComponent(BudgetDashboard, {
       set: { providers: [{ provide: BudgetStore, useValue: store }] },
     });
-    const navigateByUrl = vi
-      .spyOn(TestBed.inject(Router), 'navigateByUrl')
-      .mockResolvedValue(true);
+    const navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     const fixture = TestBed.createComponent(BudgetDashboard);
     fixture.componentRef.setInput('year', '2026');
     await fixture.whenStable();

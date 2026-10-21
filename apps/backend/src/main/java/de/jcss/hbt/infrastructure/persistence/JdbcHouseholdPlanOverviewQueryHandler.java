@@ -45,7 +45,8 @@ public class JdbcHouseholdPlanOverviewQueryHandler implements HouseholdPlanOverv
                 ItemType.valueOf(rs.getString("type")),
                 category == null ? null : ExpenseCategory.valueOf(category),
                 BudgetItemSubcategory.ofNullable(rs.getString("subcategory")),
-                BudgetItemNote.ofNullable(rs.getString("note")));
+                BudgetItemNote.ofNullable(rs.getString("note")),
+                ItemMarksColumns.of(rs));
     };
 
     private final JdbcClient jdbcClient;
@@ -101,7 +102,8 @@ public class JdbcHouseholdPlanOverviewQueryHandler implements HouseholdPlanOverv
 
     private List<OverviewItem> itemsOf(HouseholdPlanId planId) {
         return jdbcClient.sql("""
-                        SELECT id, description, amount, amount_period, type, category, subcategory, note
+                        SELECT id, description, amount, amount_period, type, category, subcategory, note, important,
+                               saving_potential
                         FROM budget_item
                         WHERE household_plan_id = :planId
                         ORDER BY position DESC

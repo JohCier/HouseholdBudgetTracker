@@ -7,6 +7,7 @@ import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.ItemSection;
 import de.jcss.hbt.domain.householdplan.ItemType;
 import de.jcss.hbt.domain.householdplan.Money;
+import de.jcss.hbt.domain.householdplan.SavingPotential;
 import de.jcss.hbt.domain.householdplan.SubcategoryOrder;
 import org.jmolecules.architecture.cqrs.QueryModel;
 
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Read model of the household plan of one year: its items, total income, total expenses,
@@ -23,7 +25,9 @@ import java.util.Map;
  * figures, worked out from the yearly amounts of the items (MJ-8); the sums the entries and
  * tiles show come per month, too (MJ-9). The items come once as a
  * plain list and once grouped as the entries show them: the incomes by subcategory, the
- * expenses by category and subcategory, each with its sum (UK-9 to UK-13).
+ * expenses by category and subcategory, each with its sum (UK-9 to UK-13). The saving potential of
+ * the plan is the one exception to yearly figures: it is the sum of the monthly saving potentials of
+ * its expenses, and twelve times that for the year (PM-13).
  * <p>
  * Contains no business logic of its own: all figures are worked out by the value object
  * {@link BudgetSummary}, which the read model only fills with the items; the order of the groups
@@ -93,6 +97,20 @@ public record HouseholdPlanOverview(
     /** The balance per month: the yearly balance divided by 12 (MJ-9). */
     public Money monthlyBalance() {
         return balance.perMonth();
+    }
+
+    /** The saving potential per month: the sum of the saving potentials of all expenses that have one (PM-13). */
+    public Money monthlySavingPotential() {
+        return items.stream()
+                .map(item -> item.marks().savingPotential())
+                .filter(Objects::nonNull)
+                .map(SavingPotential::monthly)
+                .reduce(Money.ZERO, Money::add);
+    }
+
+    /** The saving potential for the whole year: twelve times the monthly one (PM-13). */
+    public Money savingPotential() {
+        return monthlySavingPotential().timesMonthsPerYear();
     }
 
     /** The groups of a section in display order, each with its items in display order (UK-11, UK-16). */

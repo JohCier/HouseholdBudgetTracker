@@ -51,6 +51,8 @@ Architektur, Sitzungs-Cookie, Docker und CI beschreibt das `README.md` ausführl
 
 - Code, Kommentare und Javadoc auf Englisch; Dokumentation, Oberfläche, Commit-Nachrichten und PRs auf Deutsch.
 - Die Kategorien der 50/30/20-Regel heißen auch im Code deutsch (`LEBENSUNTERHALT` …).
+- Maßgebliche Kenngröße ist der Monat: was man im Monat mehr oder weniger zur Verfügung hat. Neue Werte, Eingaben und
+  Berechnungen gehen vom Monatsbetrag aus; Jahreswerte sind daraus abgeleitet (Zwölffaches).
 - Fertig heißt: schnelle Tests grün, bei Java-Änderungen zusätzlich `./mvnw verify`, bei API-Änderungen Vertrag und
   Frontend im selben Commit.
 

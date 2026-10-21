@@ -183,7 +183,7 @@ export function itemDescriptions(
 /** Yearly or monthly value of the row "Gesamteinnahmen", "Gesamtausgaben" or "Saldo" in the box "Bilanz" (BI-1). */
 export function balanceSheet(
   page: Page,
-  label: 'Gesamteinnahmen' | 'Gesamtausgaben' | 'Saldo',
+  label: 'Gesamteinnahmen' | 'Gesamtausgaben' | 'Saldo' | 'Sparpotential',
   per: 'Jahr' | 'Monat' = 'Jahr',
 ) {
   return page

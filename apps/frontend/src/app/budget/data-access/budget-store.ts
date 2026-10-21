@@ -109,6 +109,24 @@ export class BudgetStore {
     return this.mutate(this.api.changeItem(this.requirePlanId(), itemId, request));
   }
 
+  /** Marks an item as important or no longer (PM-1, PM-4a). */
+  markImportant(itemId: string, important: boolean): Promise<void> {
+    return this.mutate(this.api.markImportant(this.requirePlanId(), itemId, { important }));
+  }
+
+  /**
+   * Sets or changes the saving potential of an expense, always per month, or removes it with
+   * `null` (PM-2a, PM-4b).
+   */
+  changeSavingPotential(itemId: string, monthlyAmount: string | null): Promise<void> {
+    const planId = this.requirePlanId();
+    return this.mutate(
+      monthlyAmount === null
+        ? this.api.removeSavingPotential(planId, itemId)
+        : this.api.changeSavingPotential(planId, itemId, { monthlyAmount }),
+    );
+  }
+
   async removeItem(itemId: string): Promise<void> {
     return this.mutate(this.api.removeItem(this.requirePlanId(), itemId));
   }
@@ -142,8 +160,8 @@ export class BudgetStore {
 
   /**
    * Re-creates a previously removed item (with a new id), its amount as entered with its period,
-   * its subcategory and its note in the plan it was removed from, even if another year has been
-   * selected in the meantime (PO-9, PN-8, UK-4, MJ-4).
+   * its subcategory, its note and its marks in the plan it was removed from, even if another year
+   * has been selected in the meantime (PO-9, PN-8, UK-4, MJ-4, PM-6).
    */
   restoreItem(planId: string, item: BudgetItem): Promise<void> {
     const request = {
@@ -152,11 +170,16 @@ export class BudgetStore {
       period: item.period,
       ...(item.subcategory ? { subcategory: item.subcategory } : {}),
       ...(item.note ? { note: item.note } : {}),
+      ...(item.important ? { important: true } : {}),
     };
     const added =
       item.category === null
         ? this.api.addIncome(planId, request)
-        : this.api.addExpense(planId, { ...request, category: item.category });
+        : this.api.addExpense(planId, {
+            ...request,
+            category: item.category,
+            ...(item.savingPotential ? { savingPotential: item.savingPotential } : {}),
+          });
     return this.mutate(added.pipe(map((response) => response.overview)));
   }
 

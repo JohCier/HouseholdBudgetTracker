@@ -29,6 +29,10 @@ body {
   --app-lebensunterhalt-color: light-dark(#a07a5a, #c49a78);
   --app-freizeit-spass-color: light-dark(#e0a020, #f0b840);
   --app-sparen-investieren-color: light-dark(#2a78d6, #4a90e2);
+  // Important items (PM-9): a violet that differs from all category colors, as stripe and star,
+  // and a faint tint of it behind the row; readable in light and dark mode.
+  --app-important-color: light-dark(#7b3fa8, #d3a8f0);
+  --app-important-background: light-dark(#f5edfb, #33283d);
 
   // Set a default background, font and text colors for the application using
   // Angular Material's system-level CSS variables. Learn more about these

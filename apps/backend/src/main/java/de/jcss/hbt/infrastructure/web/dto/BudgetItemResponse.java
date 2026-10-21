@@ -24,7 +24,12 @@ public record BudgetItemResponse(
         @Schema(nullable = true, description = "Only set if the item has a subcategory; otherwise it is listed under \"Sonstiges\"")
         String subcategory,
         @Schema(nullable = true, description = "Only set if the item has a note")
-        String note
+        String note,
+        boolean important,
+        @JsonFormat(shape = JsonFormat.Shape.STRING)
+        @Schema(implementation = String.class, format = "decimal", example = "5.00", nullable = true,
+                description = "The monthly saving potential; only set for expenses that have one")
+        BigDecimal savingPotential
 ) {
 
     public static BudgetItemResponse from(OverviewItem item) {
@@ -38,7 +43,9 @@ public record BudgetItemResponse(
                 ItemTypeDto.from(item.type()),
                 item.category() == null ? null : ExpenseCategoryDto.from(item.category()),
                 item.subcategory() == null ? null : item.subcategory().value(),
-                item.note() == null ? null : item.note().value()
+                item.note() == null ? null : item.note().value(),
+                item.marks().important(),
+                item.marks().savingPotential() == null ? null : item.marks().savingPotential().monthly().value()
         );
     }
 }

@@ -12,7 +12,7 @@ import { BudgetApi } from './data-access/budget-api';
 import { BudgetStore } from './data-access/budget-store';
 import { AddItemDialog } from './ui/add-item-dialog';
 import { AddItemForm } from './ui/add-item-form';
-import { BudgetEntries, GroupOrder } from './ui/budget-entries';
+import { BudgetEntries, GroupOrder, ImportantMark } from './ui/budget-entries';
 import {
   CopiedPlan,
   CopyPlanDialogData,
@@ -22,6 +22,7 @@ import {
 import { CategoryBreakdownCard } from './ui/category-breakdown';
 import { deletedMessage, openDeletePlanDialog } from './ui/delete-plan-dialog';
 import { EditItemDialog } from './ui/edit-item-dialog';
+import { SavingPotentialDialog } from './ui/saving-potential-dialog';
 import { OverviewSummary } from './ui/overview-summary';
 import { parseYear } from './year';
 
@@ -115,6 +116,8 @@ import { parseYear } from './year';
             (reorderItems)="reorderItems($event)"
             (reorderGroups)="reorderGroups($event)"
             (add)="addTo($event)"
+            (markImportant)="markImportant($event)"
+            (savingPotential)="editSavingPotential($event)"
           />
         }
       </div>
@@ -354,6 +357,23 @@ export class BudgetDashboard {
           this.snackBar.open('Eintrag hinzugefügt', undefined, { duration: 3000 });
         }
       });
+  }
+
+  /** Marks an item as important or no longer, right away and without asking (PM-4a). */
+  protected async markImportant({ item, important }: ImportantMark): Promise<void> {
+    try {
+      await this.store.markImportant(item.id, important);
+    } catch (error) {
+      this.snackBar.open((error as Error).message, 'OK', { duration: 6000 });
+    }
+  }
+
+  /** Sets, changes or removes the saving potential of an expense in a dialog (PM-4b). */
+  protected editSavingPotential(item: BudgetItem): void {
+    this.dialog.open<SavingPotentialDialog, BudgetItem, boolean>(SavingPotentialDialog, {
+      data: item,
+      injector: this.injector,
+    });
   }
 
   /** Saves a new order of the items of a group; on failure the stored order shows again (UK-14). */
