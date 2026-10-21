@@ -40,14 +40,15 @@ bleiben unverändert.
 
 ### Torte und Legende eines Ausschnitts
 
-- **TK-6**: In einer Kategorie entspricht die Größe eines Stücks der Summe der Gruppe (UK-12), in einer Unterkategorie
-  dem Jahresbetrag des Postens (MJ-8). Die Stücke stehen in der Reihenfolge der Karte „Einträge". Stücke mit 0,00 €
+- **TK-6**: Maßgeblich sind in allen Ausschnitten die Monatsbeträge: In einer Kategorie entspricht die Größe eines
+  Stücks der Summe der Gruppe je Monat (UK-12), in einer Unterkategorie dem Betrag des Postens je Monat (MJ-7), auch
+  wenn er jährlich erfasst wurde. Die Stücke stehen in der Reihenfolge der Karte „Einträge". Stücke mit 0,00 €
   entfallen, stehen aber in der Legende (wie TD-6).
 - **TK-7**: Über der Legende steht der Ausschnitt mit seiner Summe je Monat, bei einer Kategorie zusätzlich ihr
   Anteil am Einkommen mit Zielanteil und gegebenenfalls Zielhinweis, mit denselben Texten wie in der 50/30/20-Regel
   (TD-5).
 - **TK-8**: Die Legende nennt je Stück Name (Unterkategorie bzw. Beschreibung des Postens), Betrag je Monat (MJ-14)
-  und Anteil am Ausschnitt in Prozent, z. B. „Auto 145,83 € · 13 %". Die Anteile rechnet das Backend (wie AW-9,
+  und seinen Anteil an der Summe des Ausschnitts je Monat in Prozent, z. B. „Auto 145,83 € · 13 %". Die Anteile rechnet das Backend (wie AW-9,
   UK-13); die Oberfläche teilt den Kreis nur im Verhältnis der Beträge auf (wie TD-8).
 - **TK-9**: Bei Sparen & Investieren bekommt ein Überschuss (AW-10) ein eigenes Stück „nicht verplant", damit die
   Summe des Ausschnitts dieselbe ist wie in der 50/30/20-Regel. Es steht als letztes Stück in der Legende.
@@ -71,6 +72,8 @@ bleiben unverändert.
   „Lebensunterhalt" wählt, **dann** zeigt die Torte zwei Stücke und die Legende „Auto 250,00 € · 20 %" und
   „Miete 1.000,00 € · 80 %" in der Reihenfolge der Einträge, darüber „Lebensunterhalt 1.250,00 €" mit dem Anteil am
   Einkommen (TK-1, TK-2, TK-6 bis TK-8).
+- **Gegeben** in „Auto" zusätzlich „Kfz-Steuer" 120,00 € jährlich, **wenn** der Benutzer „Lebensunterhalt › Auto"
+  wählt, **dann** zeigt die Legende „Kfz-Steuer 10,00 €", und das Stück ist so groß wie 10,00 € im Monat (TK-6, TK-8).
 - **Gegeben** derselbe Plan, **wenn** der Benutzer „Lebensunterhalt › Auto" wählt, **dann** zeigt die Torte zwei
   Stücke, und die Legende zeigt „Sprit 200,00 € · 80 %" und „Versicherung 50,00 € · 20 %" (TK-1, TK-6, TK-8).
 - **Gegeben** die Torte im Ausschnitt „50/30/20-Regel", **wenn** der Benutzer auf das Stück Lebensunterhalt klickt
