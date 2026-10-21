@@ -72,10 +72,11 @@ bleiben unverändert.
   „Lebensunterhalt" wählt, **dann** zeigt die Torte zwei Stücke und die Legende „Auto 250,00 € · 20 %" und
   „Miete 1.000,00 € · 80 %" in der Reihenfolge der Einträge, darüber „Lebensunterhalt 1.250,00 €" mit dem Anteil am
   Einkommen (TK-1, TK-2, TK-6 bis TK-8).
-- **Gegeben** in „Auto" zusätzlich „Kfz-Steuer" 120,00 € jährlich, **wenn** der Benutzer „Lebensunterhalt › Auto"
-  wählt, **dann** zeigt die Legende „Kfz-Steuer 10,00 €", und das Stück ist so groß wie 10,00 € im Monat (TK-6, TK-8).
 - **Gegeben** derselbe Plan, **wenn** der Benutzer „Lebensunterhalt › Auto" wählt, **dann** zeigt die Torte zwei
   Stücke, und die Legende zeigt „Sprit 200,00 € · 80 %" und „Versicherung 50,00 € · 20 %" (TK-1, TK-6, TK-8).
+- **Gegeben** in Lebensunterhalt „Auto" nur „Kfz-Steuer" 120,00 € jährlich und „Sprit" 30,00 € monatlich, **wenn**
+  der Benutzer „Lebensunterhalt › Auto" wählt, **dann** zeigt die Legende „Kfz-Steuer 10,00 € · 25 %" und
+  „Sprit 30,00 € · 75 %", und die Stücke stehen im Verhältnis 1 : 3 (TK-6, TK-8).
 - **Gegeben** die Torte im Ausschnitt „50/30/20-Regel", **wenn** der Benutzer auf das Stück Lebensunterhalt klickt
   und dann auf das Stück „Auto", **dann** ist „Lebensunterhalt › Auto" gewählt; **wenn** er dann „Zurück" wählt,
   **dann** ist „Lebensunterhalt" gewählt (TK-4).
