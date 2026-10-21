@@ -179,6 +179,24 @@ export function itemDescriptions(page: Page, section: 'Einnahmen' | Category, su
   return itemGroup(page, section, subcategory).locator('.item .description');
 }
 
+/** Opens the dialog of the saving potential of an expense (PM-4b). */
+export async function openSavingPotential(page: Page, description: string) {
+  await page.getByRole('button', { name: `Sparpotential bei ${description}`, exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('heading')).toHaveText(`Sparpotential bei ${description}`);
+  return dialog;
+}
+
+/** Saves the saving potential of an expense, or the prefilled monthly amount (PM-4b). */
+export async function setSavingPotential(page: Page, description: string, monthly?: string) {
+  const dialog = await openSavingPotential(page, description);
+  if (monthly !== undefined) {
+    await dialog.getByLabel('Betrag pro Monat').fill(monthly);
+  }
+  await dialog.getByRole('button', { name: 'Speichern' }).click();
+  await expect(dialog).toBeHidden();
+}
+
 /** Yearly or monthly value of the row "Gesamteinnahmen", "Gesamtausgaben" or "Saldo" in the box "Bilanz" (BI-1). */
 export function balanceSheet(
   page: Page,
@@ -186,8 +204,20 @@ export function balanceSheet(
   per: 'Jahr' | 'Monat' = 'Jahr',
 ) {
   return page
-    .locator('app-overview-summary tbody tr')
+    .locator('app-overview-summary .balance-sheet tbody tr')
     .filter({ has: page.getByRole('rowheader', { name: label, exact: true }) })
+    .locator(per === 'Jahr' ? '.value.yearly' : '.value.monthly');
+}
+
+/** Monthly or yearly saving potential of a subcategory in the box beside the balance sheet (SU-6). */
+export function savingPotentialOfSubcategory(
+  page: Page,
+  subcategory: string,
+  per: 'Jahr' | 'Monat' = 'Monat',
+) {
+  return page
+    .locator('app-saving-potential-summary tbody tr')
+    .filter({ has: page.getByRole('rowheader', { name: subcategory, exact: true }) })
     .locator(per === 'Jahr' ? '.value.yearly' : '.value.monthly');
 }
 

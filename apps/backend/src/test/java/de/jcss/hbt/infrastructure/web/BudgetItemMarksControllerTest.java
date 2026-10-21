@@ -160,7 +160,7 @@ class BudgetItemMarksControllerTest extends HouseholdPlanControllerTestSupport {
                 ItemAmount.monthly(Money.of(new BigDecimal("2000"))), null, null, new ItemMarks(true, null)));
     }
 
-    /** PM-9, PM-10, PM-13, PM-14 */
+    /** PM-9, PM-10, PM-13, PM-14, SU-1, SU-4 */
     @Test
     void overviewShowsTheMarksAndTheSavingPotential() throws Exception {
         HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, Year.of(2026), List.of(
@@ -183,6 +183,10 @@ class BudgetItemMarksControllerTest extends HouseholdPlanControllerTestSupport {
                 .andExpect(jsonPath("$.items[1].important").value(false))
                 .andExpect(jsonPath("$.items[2].savingPotential").isEmpty())
                 .andExpect(jsonPath("$.monthlySavingPotential").value("35.00"))
-                .andExpect(jsonPath("$.savingPotential").value("420.00"));
+                .andExpect(jsonPath("$.savingPotential").value("420.00"))
+                .andExpect(jsonPath("$.savingPotentialsBySubcategory.length()").value(1))
+                .andExpect(jsonPath("$.savingPotentialsBySubcategory[0].subcategory").value("Sonstiges"))
+                .andExpect(jsonPath("$.savingPotentialsBySubcategory[0].monthlyAmount").value("35.00"))
+                .andExpect(jsonPath("$.savingPotentialsBySubcategory[0].amount").value("420.00"));
     }
 }

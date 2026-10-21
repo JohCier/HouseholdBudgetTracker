@@ -34,6 +34,8 @@ public record HouseholdPlanOverviewResponse(
         @Schema(implementation = String.class, format = "decimal", example = "420.00",
                 description = "Twelve times the monthly saving potential")
         BigDecimal savingPotential,
+        @Schema(description = "The subcategories with a saving potential, the largest first (SU-3, SU-4)")
+        List<SubcategorySavingPotentialResponse> savingPotentialsBySubcategory,
         boolean expensesExceedIncome,
         List<CategoryBreakdownResponse> categoryBreakdowns,
         @Schema(description = "In display order, the topmost first") List<BudgetItemResponse> items,
@@ -54,6 +56,7 @@ public record HouseholdPlanOverviewResponse(
                 overview.monthlyBalance().value(),
                 overview.monthlySavingPotential().value(),
                 overview.savingPotential().value(),
+                overview.savingPotentialsBySubcategory().stream().map(SubcategorySavingPotentialResponse::from).toList(),
                 overview.expensesExceedIncome(),
                 overview.categoryBreakdowns().stream().map(CategoryBreakdownResponse::from).toList(),
                 overview.items().stream().map(BudgetItemResponse::from).toList(),

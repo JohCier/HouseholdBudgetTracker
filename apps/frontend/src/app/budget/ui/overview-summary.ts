@@ -3,63 +3,76 @@ import { Component, computed, input } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { HouseholdPlanOverview } from '../budget.model';
+import { SavingPotentialSummary } from './saving-potential-summary';
 
 /**
  * Income, expenses and balance of the plan in one box, per month and per year side by side (BI-1);
  * below them, apart from the balance, the saving potential of all expenses (PM-14). In a narrow box
- * the year stands below the month (BI-5).
+ * the year stands below the month (BI-5). Left beside the box, the saving potential per subcategory, if
+ * there is any (SU-6, SU-7); below the box where there is no room beside it (SU-8).
  */
 @Component({
   selector: 'app-overview-summary',
-  imports: [CurrencyPipe, NgTemplateOutlet, MatCardModule, MatIconModule],
+  imports: [CurrencyPipe, NgTemplateOutlet, MatCardModule, MatIconModule, SavingPotentialSummary],
   template: `
-    <mat-card appearance="outlined" class="balance-sheet">
-      <mat-card-header>
-        <mat-card-title id="balance-sheet-title">Bilanz</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <!-- Only one of both is displayed, depending on the width of the card (BI-5) -->
-        <div class="side-by-side">
-          <ng-container *ngTemplateOutlet="sheet; context: { $implicit: ['monthly', 'yearly'] }" />
-        </div>
-        <div class="stacked">
-          <ng-container *ngTemplateOutlet="sheet; context: { $implicit: ['monthly'] }" />
-          <ng-container *ngTemplateOutlet="sheet; context: { $implicit: ['yearly'] }" />
-        </div>
-        <ng-template #sheet let-periods>
-          <table aria-labelledby="balance-sheet-title">
-            <thead>
-              <tr>
-                <td></td>
-                @for (period of asPeriods(periods); track period) {
-                  <th scope="col">{{ periodLabels[period] }}</th>
-                }
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of rows(); track row.key) {
-                <tr [class]="row.key">
-                  <th scope="row">{{ row.label }}</th>
+    <!-- In reverse order, so the saving potentials stand left beside the box or below it (SU-6, SU-8) -->
+    <div class="boxes">
+      <mat-card appearance="outlined" class="balance-sheet">
+        <mat-card-header>
+          <mat-card-title id="balance-sheet-title">Bilanz</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <!-- Only one of both is displayed, depending on the width of the card (BI-5) -->
+          <div class="side-by-side">
+            <ng-container
+              *ngTemplateOutlet="sheet; context: { $implicit: ['monthly', 'yearly'] }"
+            />
+          </div>
+          <div class="stacked">
+            <ng-container *ngTemplateOutlet="sheet; context: { $implicit: ['monthly'] }" />
+            <ng-container *ngTemplateOutlet="sheet; context: { $implicit: ['yearly'] }" />
+          </div>
+          <ng-template #sheet let-periods>
+            <table aria-labelledby="balance-sheet-title">
+              <thead>
+                <tr>
+                  <td></td>
                   @for (period of asPeriods(periods); track period) {
-                    <td
-                      class="value"
-                      [class]="period"
-                      [class.income]="row.key === 'total-income'"
-                      [class.expense]="
-                        row.key === 'total-expense' ||
-                        (row.key === 'balance' && row.amounts[period].startsWith('-'))
-                      "
-                    >
-                      {{ row.amounts[period] | currency: 'EUR' }}
-                    </td>
+                    <th scope="col">{{ periodLabels[period] }}</th>
                   }
                 </tr>
-              }
-            </tbody>
-          </table>
-        </ng-template>
-      </mat-card-content>
-    </mat-card>
+              </thead>
+              <tbody>
+                @for (row of rows(); track row.key) {
+                  <tr [class]="row.key">
+                    <th scope="row">{{ row.label }}</th>
+                    @for (period of asPeriods(periods); track period) {
+                      <td
+                        class="value"
+                        [class]="period"
+                        [class.income]="row.key === 'total-income'"
+                        [class.expense]="
+                          row.key === 'total-expense' ||
+                          (row.key === 'balance' && row.amounts[period].startsWith('-'))
+                        "
+                      >
+                        {{ row.amounts[period] | currency: 'EUR' }}
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </ng-template>
+        </mat-card-content>
+      </mat-card>
+      @if (overview().savingPotentialsBySubcategory.length) {
+        <app-saving-potential-summary
+          class="saving-potentials"
+          [sums]="overview().savingPotentialsBySubcategory"
+        />
+      }
+    </div>
     @if (overview().expensesExceedIncome) {
       <div class="warning" role="alert">
         <mat-icon svgIcon="warning" />
@@ -68,8 +81,21 @@ import { HouseholdPlanOverview } from '../budget.model';
     }
   `,
   styles: `
-    .balance-sheet {
+    .boxes {
+      display: flex;
+      flex-flow: row-reverse wrap;
+      justify-content: flex-end;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .balance-sheet,
+    .saving-potentials {
+      flex: 1 1 30rem;
+      min-width: 0;
       max-width: 560px;
+    }
+    .saving-potentials {
+      flex-basis: 20rem;
     }
     mat-card-content {
       container-type: inline-size;

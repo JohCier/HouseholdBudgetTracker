@@ -86,7 +86,7 @@ test.describe('Bilanz in der Übersicht', () => {
     const lastMonthly = await box(balanceSheet(page, 'Sparpotential', 'Monat'));
     expect(yearly.y).toBeGreaterThan(lastMonthly.y + lastMonthly.height - 1);
     expect(Math.abs(yearly.x + yearly.width - (monthly.x + monthly.width))).toBeLessThan(2);
-    const sheet = await box(page.locator('app-overview-summary mat-card'));
+    const sheet = await box(page.locator('app-overview-summary .balance-sheet'));
     expect(sheet.x).toBeGreaterThanOrEqual(0);
     expect(sheet.x + sheet.width).toBeLessThanOrEqual(390);
     expect(yearly.x + yearly.width).toBeLessThanOrEqual(sheet.x + sheet.width);
