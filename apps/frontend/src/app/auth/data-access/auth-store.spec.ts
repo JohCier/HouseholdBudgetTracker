@@ -19,6 +19,7 @@ describe('AuthStore', () => {
       register: vi.fn(() => of(user)),
       login: vi.fn(() => of(user)),
       logout: vi.fn(() => of(undefined)),
+      changePassword: vi.fn(() => of(undefined)),
     };
     TestBed.configureTestingModule({ providers: [{ provide: AuthApi, useValue: api }] });
     store = TestBed.inject(AuthStore);
@@ -79,6 +80,28 @@ describe('AuthStore', () => {
     api.register.mockReturnValue(throwError(httpError(400, 'urn:hbt:invalid-input')));
 
     await expect(store.register(credentials)).rejects.toThrow('Die Eingabe ist ungültig.');
+  });
+
+  // PA-1, PA-7
+  it('changes the password and stays signed in', async () => {
+    await store.login(credentials);
+    const request = { currentPassword: 'geheim123', newPassword: 'neues-geheim' };
+
+    await store.changePassword(request);
+
+    expect(api.changePassword).toHaveBeenCalledWith(request);
+    expect(store.user()).toEqual(user);
+  });
+
+  // PA-2
+  it('explains why the password was not changed', async () => {
+    api.changePassword.mockReturnValue(
+      throwError(httpError(400, 'urn:hbt:wrong-current-password')),
+    );
+
+    await expect(
+      store.changePassword({ currentPassword: 'falsch123', newPassword: 'neues-geheim' }),
+    ).rejects.toThrow('Das aktuelle Passwort ist falsch.');
   });
 
   it('is signed out even if the server cannot be told', async () => {

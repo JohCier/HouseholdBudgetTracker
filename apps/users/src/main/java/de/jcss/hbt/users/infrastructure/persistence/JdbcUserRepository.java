@@ -42,6 +42,14 @@ public class JdbcUserRepository implements UserRepository {
     }
 
     @Override
+    public Optional<User> findById(UserId id) {
+        return jdbcClient.sql("SELECT id, email, password_hash FROM users.app_user WHERE id = :id")
+                .param("id", id.value())
+                .query(ROW_MAPPER)
+                .optional();
+    }
+
+    @Override
     public boolean existsByEmail(EmailAddress email) {
         return jdbcClient.sql("SELECT EXISTS (SELECT 1 FROM users.app_user WHERE email = :email)")
                 .param("email", email.value())
@@ -63,5 +71,14 @@ public class JdbcUserRepository implements UserRepository {
         } catch (DuplicateKeyException e) {
             throw new EmailAddressAlreadyRegisteredException(user.email());
         }
+    }
+
+    @Override
+    public void save(User user) {
+        jdbcClient.sql("UPDATE users.app_user SET email = :email, password_hash = :passwordHash WHERE id = :id")
+                .param("id", user.id().value())
+                .param("email", user.email().value())
+                .param("passwordHash", user.passwordHash().value())
+                .update();
     }
 }

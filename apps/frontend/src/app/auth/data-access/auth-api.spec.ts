@@ -61,4 +61,14 @@ describe('AuthApi', () => {
     expect(logout.request.method).toBe('POST');
     logout.flush(null, { status: 204, statusText: 'No Content' });
   });
+
+  it('changes the password', () => {
+    const request = { currentPassword: 'geheim123', newPassword: 'neues-geheim' };
+    api.changePassword(request).subscribe();
+
+    const change = http.expectOne('/api/auth/password');
+    expect(change.request.method).toBe('POST');
+    expect(change.request.body).toEqual(request);
+    change.flush(null, { status: 204, statusText: 'No Content' });
+  });
 });

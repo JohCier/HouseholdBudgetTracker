@@ -4,9 +4,12 @@ import de.jcss.hbt.users.application.user.UserApplicationService;
 import de.jcss.hbt.users.application.user.LoginLockedException;
 import de.jcss.hbt.users.domain.exception.EmailAddressAlreadyRegisteredException;
 import de.jcss.hbt.users.domain.exception.InvalidCredentialsException;
+import de.jcss.hbt.users.domain.exception.PasswordUnchangedException;
+import de.jcss.hbt.users.domain.exception.WrongCurrentPasswordException;
 import de.jcss.hbt.users.domain.user.EmailAddress;
 import de.jcss.hbt.users.domain.user.Password;
 import de.jcss.hbt.users.domain.user.UserId;
+import de.jcss.hbt.users.domain.user.command.ChangePasswordCommand;
 import de.jcss.hbt.users.domain.user.command.RegisterUserCommand;
 import de.jcss.hbt.users.infrastructure.security.SecurityConfig;
 import de.jcss.hbt.users.infrastructure.security.SessionCookies;
@@ -18,12 +21,16 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -182,5 +189,76 @@ class AuthControllerTest {
         mockMvc.perform(get("/api/auth/me"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.detail").value("Not signed in"));
+    }
+
+    /** PA-1, PA-7 */
+    @Test
+    void changePasswordReturns204AndKeepsTheSession() throws Exception {
+        mockMvc.perform(signedIn(changePassword("richtig-geheim", "neues-geheim")))
+                .andExpect(status().isNoContent())
+                .andExpect(header().doesNotExist(HttpHeaders.SET_COOKIE));
+
+        verify(users).changePassword(
+                new ChangePasswordCommand(USER, Password.of("richtig-geheim"), Password.of("neues-geheim")));
+    }
+
+    /** PA-1 */
+    @Test
+    void changePasswordWithoutSessionReturns401() throws Exception {
+        mockMvc.perform(changePassword("richtig-geheim", "neues-geheim"))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(users);
+    }
+
+    /** PA-2 */
+    @Test
+    void wrongCurrentPasswordReturns400() throws Exception {
+        doThrow(new WrongCurrentPasswordException()).when(users).changePassword(any());
+
+        mockMvc.perform(signedIn(changePassword("falsch-geheim", "neues-geheim")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.type").value("urn:hbt:wrong-current-password"));
+    }
+
+    /** PA-3 */
+    @Test
+    void tooShortNewPasswordReturns400() throws Exception {
+        mockMvc.perform(signedIn(changePassword("richtig-geheim", "kurz")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.type").value("urn:hbt:invalid-input"));
+
+        verifyNoInteractions(users);
+    }
+
+    /** PA-4 */
+    @Test
+    void unchangedPasswordReturns400() throws Exception {
+        doThrow(new PasswordUnchangedException()).when(users).changePassword(any());
+
+        mockMvc.perform(signedIn(changePassword("richtig-geheim", "richtig-geheim")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.type").value("urn:hbt:password-unchanged"));
+    }
+
+    /** PA-6 */
+    @Test
+    void changingThePasswordOfALockedAddressReturns429() throws Exception {
+        doThrow(new LoginLockedException()).when(users).changePassword(any());
+
+        mockMvc.perform(signedIn(changePassword("richtig-geheim", "neues-geheim")))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.type").value("urn:hbt:too-many-login-attempts"));
+    }
+
+    private static MockHttpServletRequestBuilder changePassword(String currentPassword, String newPassword) {
+        return post("/api/auth/password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"currentPassword":"%s","newPassword":"%s"}""".formatted(currentPassword, newPassword));
+    }
+
+    private static MockHttpServletRequestBuilder signedIn(MockHttpServletRequestBuilder request) {
+        return request.with(jwt().jwt(token -> token.subject(USER.value().toString()).claim("email", "max@example.org")));
     }
 }

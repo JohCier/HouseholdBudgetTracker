@@ -1,17 +1,22 @@
 import { Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { Router, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { AuthStore } from './auth/data-access/auth-store';
 
 @Component({
   selector: 'app-root',
-  imports: [MatButtonModule, MatToolbarModule, RouterOutlet],
+  imports: [MatButtonModule, MatIconModule, MatToolbarModule, RouterLink, RouterOutlet],
   template: `
     <mat-toolbar>
       <span>Haushaltsbuch</span>
       @if (auth.user(); as user) {
         <span class="user">{{ user.email }}</span>
+        <a matButton routerLink="/passwort" aria-label="Passwort ändern">
+          <mat-icon svgIcon="key" />
+          <span class="label">Passwort ändern</span>
+        </a>
         <button matButton type="button" (click)="logout()">Abmelden</button>
       }
     </mat-toolbar>
@@ -28,8 +33,29 @@ import { AuthStore } from './auth/data-access/auth-store';
       margin-left: auto;
       font: var(--mat-sys-body-medium);
       color: var(--mat-sys-on-surface-variant);
+      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    mat-toolbar a,
+    mat-toolbar button {
+      flex-shrink: 0;
+    }
+    /* Only the key icon on narrow screens, so the toolbar fits without scrolling (PA-8). */
+    @media (max-width: 600px) {
+      .label {
+        display: none;
+      }
+      mat-toolbar {
+        gap: 4px;
+      }
+      mat-toolbar a {
+        min-width: 40px;
+        padding-inline: 8px;
+      }
+      mat-toolbar a mat-icon {
+        margin: 0;
+      }
     }
     main {
       max-width: 1200px;

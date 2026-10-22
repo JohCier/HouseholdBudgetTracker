@@ -26,6 +26,19 @@ describe('toMessage', () => {
         problem(429, 'urn:hbt:too-many-login-attempts', 'Too many failed sign-in attempts'),
       ),
     ).toBe('Zu viele Anmeldeversuche. Bitte versuche es in 15 Minuten erneut.');
+    // PA-2, PA-4
+    expect(
+      toMessage(problem(400, 'urn:hbt:wrong-current-password', 'The current password is wrong')),
+    ).toBe('Das aktuelle Passwort ist falsch.');
+    expect(
+      toMessage(
+        problem(
+          400,
+          'urn:hbt:password-unchanged',
+          'The new password must differ from the current one',
+        ),
+      ),
+    ).toBe('Das neue Passwort muss sich vom aktuellen unterscheiden.');
     expect(toMessage(problem(400, 'urn:hbt:invalid-input', 'amount must be positive'))).toBe(
       'Die Eingabe ist ungültig.',
     );

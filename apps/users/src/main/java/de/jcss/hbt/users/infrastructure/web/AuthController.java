@@ -4,8 +4,10 @@ import de.jcss.hbt.users.application.user.UserApplicationService;
 import de.jcss.hbt.users.domain.user.EmailAddress;
 import de.jcss.hbt.users.domain.user.Password;
 import de.jcss.hbt.users.domain.user.UserId;
+import de.jcss.hbt.users.domain.user.command.ChangePasswordCommand;
 import de.jcss.hbt.users.domain.user.command.RegisterUserCommand;
 import de.jcss.hbt.users.infrastructure.security.SessionCookies;
+import de.jcss.hbt.users.infrastructure.web.dto.ChangePasswordRequest;
 import de.jcss.hbt.users.infrastructure.web.dto.LoginRequest;
 import de.jcss.hbt.users.infrastructure.web.dto.RegisterUserRequest;
 import de.jcss.hbt.users.infrastructure.web.dto.UserResponse;
@@ -72,6 +74,18 @@ public class AuthController {
     @SecurityRequirement(name = OpenApiConfig.SESSION_COOKIE)
     public UserResponse currentUser(@AuthenticationPrincipal Jwt session) {
         return new UserResponse(UUID.fromString(session.getSubject()), session.getClaimAsString("email"));
+    }
+
+    /**
+     * Changes the password of the signed-in user (PA-1); 401 without a valid session. The
+     * session stays valid (PA-7).
+     */
+    @PostMapping("/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @SecurityRequirement(name = OpenApiConfig.SESSION_COOKIE)
+    public void changePassword(@AuthenticationPrincipal Jwt session, @Valid @RequestBody ChangePasswordRequest request) {
+        users.changePassword(new ChangePasswordCommand(UserId.of(UUID.fromString(session.getSubject())),
+                Password.of(request.currentPassword()), Password.of(request.newPassword())));
     }
 
     private UserResponse startSession(UserId id, EmailAddress email, HttpServletResponse response) {

@@ -74,7 +74,8 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Registrieren | `User.register`, `/api/auth/register` | Benutzer anlegen und direkt anmelden |
 | Anmelden | `authenticate`, `/api/auth/login` | Prüfen, ob E-Mail-Adresse und Passwort zusammenpassen, und eine Sitzung starten |
 | Sitzung | Cookie `HBT_SESSION` mit JWT | Weist den Benutzer gegenüber beiden Diensten aus; 8 Stunden gültig, nicht serverseitig gespeichert |
-| Anmeldesperre | `LoginThrottle` (Application-Port, kein Aggregate) | Nach 5 fehlgeschlagenen Anmeldungen in 15 Minuten ist die Anmeldung mit dieser Adresse 15 Minuten lang gesperrt |
+| Anmeldesperre | `LoginThrottle` (Application-Port, kein Aggregate) | Nach 5 fehlgeschlagenen Anmeldungen in 15 Minuten ist die Anmeldung mit dieser Adresse 15 Minuten lang gesperrt; falsche aktuelle Passwörter beim Passwortändern zählen mit |
+| Passwort ändern | `User.changePassword`, `ChangePasswordCommand`, `/api/auth/password` | Ein angemeldeter Benutzer ersetzt sein Passwort; dafür gibt er das aktuelle an, das neue muss sich davon unterscheiden |
 
 ## Domain Events
 
@@ -91,3 +92,4 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | `BudgetItemsReordered` | Die Posten einer Unterkategorie-Gruppe wurden umsortiert |
 | `SubcategoriesReordered` | Die Unterkategorie-Gruppen der Einnahmen oder einer Kategorie wurden umsortiert |
 | `UserRegistered` | Ein Benutzer hat sich registriert |
+| `PasswordChanged` | Ein Benutzer hat sein Passwort geändert |

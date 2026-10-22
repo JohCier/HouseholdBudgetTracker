@@ -21,24 +21,27 @@ import org.springframework.security.oauth2.server.resource.web.BearerTokenResolv
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.util.WebUtils;
 
 import java.nio.charset.StandardCharsets;
 
 /**
- * Registering, signing in and out are open to everyone; only {@code GET /api/auth/me}
- * requires a session, i.e. a valid token in the session cookie (see {@link SessionCookies}).
+ * Registering, signing in and out are open to everyone; only {@code GET /api/auth/me} and
+ * {@code POST /api/auth/password} require a session, i.e. a valid token in the session cookie
+ * (see {@link SessionCookies}).
  * <p>
- * The cookie is only looked at for that endpoint: an expired cookie still sent by the
+ * The cookie is only looked at for these endpoints: an expired cookie still sent by the
  * browser must not get in the way of signing in again.
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(AuthProperties.class)
 public class SecurityConfig {
 
-    private static final RequestMatcher CURRENT_USER =
-            PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.GET, "/api/auth/me");
+    private static final RequestMatcher SESSION_REQUIRED = new OrRequestMatcher(
+            PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.GET, "/api/auth/me"),
+            PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/api/auth/password"));
 
     /** Answers unauthenticated requests with a problem detail, like all other errors. */
     private static final AuthenticationEntryPoint UNAUTHORIZED = (request, response, exception) -> {
@@ -55,19 +58,19 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
-                        .requestMatchers(CURRENT_USER).authenticated()
+                        .requestMatchers(SESSION_REQUIRED).authenticated()
                         .anyRequest().permitAll())
                 .oauth2ResourceServer(resourceServer -> resourceServer
-                        .bearerTokenResolver(sessionCookieOfCurrentUserRequests(auth.cookieName()))
+                        .bearerTokenResolver(sessionCookieOfSessionRequests(auth.cookieName()))
                         .authenticationEntryPoint(UNAUTHORIZED)
                         .jwt(Customizer.withDefaults()))
                 .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(UNAUTHORIZED))
                 .build();
     }
 
-    private static BearerTokenResolver sessionCookieOfCurrentUserRequests(String cookieName) {
+    private static BearerTokenResolver sessionCookieOfSessionRequests(String cookieName) {
         return request -> {
-            if (!CURRENT_USER.matches(request)) {
+            if (!SESSION_REQUIRED.matches(request)) {
                 return null;
             }
             Cookie cookie = WebUtils.getCookie(request, cookieName);

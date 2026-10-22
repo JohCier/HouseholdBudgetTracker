@@ -23,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Exercises registration and sessions end to end: HTTP in through the web layer, the
+ * Exercises registration, sessions and changing the password end to end: HTTP in through the web layer, the
  * application service and the aggregate, stored in PostgreSQL with a real BCrypt hash,
  * and the session cookie checked by the security configuration.
  */
@@ -118,6 +118,55 @@ class UsersIntegrationTest {
                         .content("""
                                 {"email":"max@example.org","password":"richtig-geheim"}"""))
                 .andExpect(status().isOk());
+    }
+
+    /** PA-1, PA-2, PA-7 */
+    @Test
+    void signedInUsersCanChangeTheirPassword() throws Exception {
+        Cookie session = sessionOf(credentials("register", "max@example.org", "richtig-geheim")
+                .andExpect(status().isCreated()));
+
+        changePassword(session, "falsch-geheim", "neues-geheim")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.type").value("urn:hbt:wrong-current-password"));
+        changePassword(session, "richtig-geheim", "neues-geheim").andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/auth/me").cookie(session)).andExpect(status().isOk());
+        credentials("login", "max@example.org", "richtig-geheim").andExpect(status().isUnauthorized());
+        credentials("login", "max@example.org", "neues-geheim").andExpect(status().isOk());
+        String stored = jdbcClient.sql("SELECT password_hash FROM users.app_user").query(String.class).single();
+        assertThat(stored).startsWith("$2").doesNotContain("neues-geheim");
+    }
+
+    /** PA-6 */
+    @Test
+    void fiveWrongCurrentPasswordsLockTheAddress() throws Exception {
+        Cookie session = sessionOf(credentials("register", "max@example.org", "richtig-geheim")
+                .andExpect(status().isCreated()));
+
+        for (int i = 0; i < 5; i++) {
+            changePassword(session, "falsch-geheim", "neues-geheim").andExpect(status().isBadRequest());
+        }
+
+        changePassword(session, "richtig-geheim", "neues-geheim").andExpect(status().isTooManyRequests());
+        credentials("login", "max@example.org", "richtig-geheim").andExpect(status().isTooManyRequests());
+    }
+
+    /** PA-1 */
+    @Test
+    void changingThePasswordNeedsASession() throws Exception {
+        mockMvc.perform(post("/api/auth/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"currentPassword":"richtig-geheim","newPassword":"neues-geheim"}"""))
+                .andExpect(status().isUnauthorized());
+    }
+
+    private ResultActions changePassword(Cookie session, String currentPassword, String newPassword) throws Exception {
+        return mockMvc.perform(post("/api/auth/password").cookie(session)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"currentPassword":"%s","newPassword":"%s"}""".formatted(currentPassword, newPassword)));
     }
 
     private ResultActions credentials(String action, String email, String password) throws Exception {

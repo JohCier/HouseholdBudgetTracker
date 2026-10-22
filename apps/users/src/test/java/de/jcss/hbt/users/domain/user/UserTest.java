@@ -1,6 +1,9 @@
 package de.jcss.hbt.users.domain.user;
 
 import de.jcss.hbt.users.domain.exception.InvalidCredentialsException;
+import de.jcss.hbt.users.domain.exception.PasswordUnchangedException;
+import de.jcss.hbt.users.domain.exception.WrongCurrentPasswordException;
+import de.jcss.hbt.users.domain.user.event.PasswordChanged;
 import de.jcss.hbt.users.domain.user.event.UserRegistered;
 import org.junit.jupiter.api.Test;
 
@@ -38,6 +41,44 @@ class UserTest {
         assertThatCode(() -> user.authenticate(PASSWORD, hasher)).doesNotThrowAnyException();
         assertThatThrownBy(() -> user.authenticate(Password.of("falsch-geheim"), hasher))
                 .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    /** PA-1, PA-3 */
+    @Test
+    void changePasswordKeepsOnlyTheHashOfTheNewPasswordAndRecordsIt() {
+        User user = User.reconstitute(id, EMAIL, hasher.hash(PASSWORD));
+        Password newPassword = Password.of("neues-geheim");
+
+        User changed = user.changePassword(PASSWORD, newPassword, hasher);
+
+        assertThat(changed).isEqualTo(user);
+        assertThat(changed.email()).isEqualTo(EMAIL);
+        assertThat(changed.passwordHash()).isEqualTo(hasher.hash(newPassword));
+        assertThatCode(() -> changed.authenticate(newPassword, hasher)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> changed.authenticate(PASSWORD, hasher))
+                .isInstanceOf(InvalidCredentialsException.class);
+        assertThat(changed.pullDomainEvents())
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+                .containsExactly(new PasswordChanged(id, Instant.now()));
+    }
+
+    /** PA-2 */
+    @Test
+    void changePasswordNeedsTheRightCurrentPassword() {
+        User user = User.reconstitute(id, EMAIL, hasher.hash(PASSWORD));
+
+        assertThatThrownBy(() -> user.changePassword(Password.of("falsch-geheim"), Password.of("neues-geheim"), hasher))
+                .isInstanceOf(WrongCurrentPasswordException.class);
+        assertThat(user.pullDomainEvents()).isEmpty();
+    }
+
+    /** PA-4 */
+    @Test
+    void theNewPasswordMustDifferFromTheCurrentOne() {
+        User user = User.reconstitute(id, EMAIL, hasher.hash(PASSWORD));
+
+        assertThatThrownBy(() -> user.changePassword(PASSWORD, PASSWORD, hasher))
+                .isInstanceOf(PasswordUnchangedException.class);
     }
 
     @Test

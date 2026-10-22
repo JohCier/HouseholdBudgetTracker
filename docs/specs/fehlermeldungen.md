@@ -50,6 +50,8 @@ Benutzer sollen jede Meldung auf Deutsch lesen.
   | `urn:hbt:email-already-registered` | 409 | Für diese E-Mail-Adresse gibt es bereits ein Konto. |
   | `urn:hbt:invalid-credentials` | 401 | E-Mail-Adresse oder Passwort ist falsch. |
   | `urn:hbt:too-many-login-attempts` | 429 | Zu viele Anmeldeversuche. Bitte versuche es in 15 Minuten erneut. (AN-10) |
+  | `urn:hbt:wrong-current-password` | 400 | Das aktuelle Passwort ist falsch. (PA-2) |
+  | `urn:hbt:password-unchanged` | 400 | Das neue Passwort muss sich vom aktuellen unterscheiden. (PA-4) |
 
   Fehler des Frameworks (z. B. ein Jahr, das keine Zahl ist) behalten `about:blank` und bekommen die allgemeine Meldung
   (FM-3). Die Kennungen stehen nicht im API-Vertrag, weil Springdoc die Fehlerantworten nicht beschreibt; eine neue

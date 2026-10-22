@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, firstValueFrom } from 'rxjs';
 import { toMessage } from '../../shared/http-error';
-import { LoginRequest, RegisterUserRequest, User } from '../auth.model';
+import { ChangePasswordRequest, LoginRequest, RegisterUserRequest, User } from '../auth.model';
 import { AuthApi } from './auth-api';
 
 /**
@@ -35,6 +35,15 @@ export class AuthStore {
 
   register(request: RegisterUserRequest): Promise<void> {
     return this.startSession(this.api.register(request));
+  }
+
+  /** Changes the password of the signed-in user, who stays signed in (PA-7). */
+  async changePassword(request: ChangePasswordRequest): Promise<void> {
+    try {
+      await firstValueFrom(this.api.changePassword(request), { defaultValue: undefined });
+    } catch (error) {
+      throw new Error(toMessage(error));
+    }
   }
 
   async logout(): Promise<void> {

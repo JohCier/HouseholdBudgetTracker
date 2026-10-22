@@ -10,6 +10,9 @@ public interface UserRepository {
     /** The user who signs in with the given address, if there is one. */
     Optional<User> findByEmail(EmailAddress email);
 
+    /** The user with the given id, if there is one. */
+    Optional<User> findById(UserId id);
+
     boolean existsByEmail(EmailAddress email);
 
     /**
@@ -18,4 +21,7 @@ public interface UserRepository {
      * @throws EmailAddressAlreadyRegisteredException if there already is a user with the same address
      */
     void add(User user);
+
+    /** Stores a changed user, e.g. after {@link User#changePassword}. */
+    void save(User user);
 }
