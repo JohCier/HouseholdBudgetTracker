@@ -53,7 +53,8 @@ interface SectionView {
  * order is emitted, saving it is up to the parent. The row of a group's sum offers to add an
  * item to the group; what to fill in is emitted (EG-9, EG-10). Each item can be marked as
  * important, which highlights it, and each expense can be given a saving potential, shown below its
- * description; both are only asked for here, saving them is up to the parent (PM-4, PM-9, PM-10).
+ * description; both are only asked for here, saving them is up to the parent (PM-4, PM-9, PM-10). The
+ * row of a group's sum shows the saving potential of its items, if any (SU-10).
  */
 @Component({
   selector: 'app-budget-entries',
@@ -120,6 +121,11 @@ export class BudgetEntries {
   }
 
   /** Asks to add an item to the group, its type, category and subcategory filled in (EG-10). */
+  /** Whether the group has items with a saving potential; groups of incomes never do (SU-10, SU-12). */
+  protected hasSavingPotential(group: ItemGroup): boolean {
+    return Number(group.monthlySavingPotential) > 0;
+  }
+
   protected addTo(section: SectionView, group: ItemGroup): void {
     this.add.emit({
       group: group.subcategory,

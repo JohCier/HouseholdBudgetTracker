@@ -20,7 +20,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-/** The saving potential of the overview per subcategory (SU-1 to SU-4). */
+/** The saving potential of the overview per subcategory (SU-1 to SU-4) and per group (SU-10, SU-12). */
 class HouseholdPlanOverviewSavingPotentialTest {
 
     private static final HouseholdPlanId PLAN_ID = HouseholdPlanId.generate();
@@ -101,6 +101,36 @@ class HouseholdPlanOverviewSavingPotentialTest {
 
         assertThat(overview.savingPotentialsBySubcategory()).extracting(sum -> sum.subcategory().value())
                 .containsExactly("auto", "Zeitschriften");
+    }
+
+    /** SU-10 */
+    @Test
+    void eachGroupSumsUpTheSavingPotentialsOfItsOwnItems() {
+        List<OverviewItem> items = List.of(
+                expense("Streaming", ExpenseCategory.FREIZEIT_SPASS, "Abonnements", "5.00"),
+                expense("Zeitung", ExpenseCategory.FREIZEIT_SPASS, "Abonnements", "10.00"),
+                expense("Ausflüge", ExpenseCategory.FREIZEIT_SPASS, "Auto", "10.00"),
+                expense("Tanken", ExpenseCategory.LEBENSUNTERHALT, "Auto", "12.50"));
+
+        HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, YEAR, items, Map.of());
+
+        assertThat(overview.expenseCategories())
+                .flatExtracting(OverviewCategoryItems::groups)
+                .extracting(group -> group.subcategory().value(), OverviewItemGroup::monthlySavingPotential)
+                .containsExactly(
+                        tuple("Auto", money("12.50")),
+                        tuple("Abonnements", money("15.00")),
+                        tuple("Auto", money("10.00")));
+    }
+
+    /** SU-12 */
+    @Test
+    void aGroupWithoutSavingPotentialHasZero() {
+        HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, YEAR,
+                List.of(expense("Miete", ExpenseCategory.LEBENSUNTERHALT, "Miete", null)), Map.of());
+
+        assertThat(overview.expenseCategories().getFirst().groups().getFirst().monthlySavingPotential())
+                .isEqualTo(Money.ZERO);
     }
 
     @Test

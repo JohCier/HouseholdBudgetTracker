@@ -56,6 +56,7 @@ const overview: HouseholdPlanOverview = {
           total: '12.50',
           monthlyTotal: '1.04',
           percentageOfSection: 0,
+          monthlySavingPotential: '0.00',
           items: [item],
         },
       ],
@@ -180,6 +181,7 @@ describe('BudgetDashboard', () => {
               {
                 subcategory: 'Auto',
                 percentageOfSection: 0,
+                monthlySavingPotential: '0.00',
                 total: '12.50',
                 monthlyTotal: '1.04',
                 items: [{ ...item, id: '2', description: 'Tank', subcategory: 'Auto' }],
@@ -189,6 +191,7 @@ describe('BudgetDashboard', () => {
                 total: '12.50',
                 monthlyTotal: '1.04',
                 percentageOfSection: 0,
+                monthlySavingPotential: '0.00',
                 items: [item],
               },
             ],

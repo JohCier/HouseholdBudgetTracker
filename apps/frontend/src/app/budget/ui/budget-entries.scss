@@ -253,6 +253,35 @@ h4 {
   box-shadow: inset 4px 0 0 var(--app-important-color);
 }
 
+// The saving potential of a group stands below the marks of its items, smaller and fainter than the
+// sum, not colored like an expense (SU-11)
+.group-saving-potential {
+  display: inline-flex;
+  flex: 0 0 96px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  font: var(--mat-sys-body-small);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--app-income-color);
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 // Set marks are colored, unset ones faint, so the marks read at a glance (PM-9, PM-10)
 .marks {
   display: flex;
@@ -349,6 +378,11 @@ h4 {
 
   .summary .amount-column {
     padding: 4px 0;
+  }
+
+  // Moves with the amounts of the sum, left of the monthly one (SU-13)
+  .group-saving-potential {
+    flex: 0 0 auto;
   }
 
   .handle,

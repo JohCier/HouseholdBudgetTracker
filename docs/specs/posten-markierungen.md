@@ -101,7 +101,8 @@ Jahr.
 ## Nicht im Umfang
 
 - Sparpotential je Gruppe oder Kategorie in den Summenzeilen der Karte „Einträge"; je Unterkategorie steht es seit
-  [sparpotential-unterkategorie.md](sparpotential-unterkategorie.md) in einem Kasten neben der Bilanz
+  [sparpotential-unterkategorie.md](sparpotential-unterkategorie.md) in einem Kasten neben der Bilanz und in der
+  Summenzeile jeder Unterkategorie-Gruppe
 - Filtern oder Sortieren nach Markierungen, alle Posten auf einmal markieren
 - Sparpotential in der Jahresübersicht
 - Weitere oder selbst definierte Markierungen und Farben

@@ -228,6 +228,24 @@
         <div class="summary group-summary">
           <span class="summary-label">Summe {{ group.subcategory }}</span>
           <span class="amounts">
+            <!-- Left of the monthly sum, below the marks of the items; only for expenses (SU-10 to SU-13) -->
+            @if (hasSavingPotential(group)) {
+              <span
+                class="group-saving-potential"
+                [matTooltip]="
+                  'Sparpotential ' +
+                  group.subcategory +
+                  ': ' +
+                  (group.monthlySavingPotential | currency: 'EUR') +
+                  ' im Monat'
+                "
+              >
+                <mat-icon svgIcon="savings" aria-hidden="true" />
+                <span class="visually-hidden">Sparpotential {{ group.subcategory }}:</span>
+                {{ group.monthlySavingPotential | currency: 'EUR' }}
+                <span class="visually-hidden">im Monat</span>
+              </span>
+            }
             <span class="amount-column total monthly">{{
               group.monthlyTotal | currency: 'EUR'
             }}</span>
