@@ -2,6 +2,7 @@ package de.jcss.hbt.users.application.user;
 
 import de.jcss.hbt.users.domain.exception.EmailAddressAlreadyRegisteredException;
 import de.jcss.hbt.users.domain.exception.InvalidCredentialsException;
+import de.jcss.hbt.users.domain.exception.WrongCurrentPasswordException;
 import de.jcss.hbt.users.domain.user.EmailAddress;
 import de.jcss.hbt.users.domain.user.FakePasswordHasher;
 import de.jcss.hbt.users.domain.user.Password;
@@ -10,7 +11,9 @@ import de.jcss.hbt.users.domain.user.PasswordHasher;
 import de.jcss.hbt.users.domain.user.User;
 import de.jcss.hbt.users.domain.user.UserId;
 import de.jcss.hbt.users.domain.user.UserRepository;
+import de.jcss.hbt.users.domain.user.command.ChangePasswordCommand;
 import de.jcss.hbt.users.domain.user.command.RegisterUserCommand;
+import de.jcss.hbt.users.domain.user.event.PasswordChanged;
 import de.jcss.hbt.users.domain.user.event.UserRegistered;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +29,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Verifies that {@link UserApplicationService} registers and authenticates users correctly,
+ * Verifies that {@link UserApplicationService} registers and authenticates users and changes
+ * their passwords correctly,
  * using in-memory fakes and capturing the published events.
  */
 class UserApplicationServiceTest {
@@ -143,6 +147,52 @@ class UserApplicationServiceTest {
         assertThat(loginThrottle.resets).containsExactly(EMAIL);
     }
 
+    /** PA-1, PA-6 */
+    @Test
+    void changePasswordStoresTheNewPasswordAndPublishesIt() {
+        UserId id = service.register(new RegisterUserCommand(EMAIL, PASSWORD));
+        publishedEvents.clear();
+        Password newPassword = Password.of("neues-geheim");
+
+        service.changePassword(new ChangePasswordCommand(id, PASSWORD, newPassword));
+
+        assertThat(publishedEvents).singleElement()
+                .isInstanceOfSatisfying(PasswordChanged.class, event -> assertThat(event.userId()).isEqualTo(id));
+        assertThat(loginThrottle.attempts).containsExactly(EMAIL);
+        assertThat(loginThrottle.resets).containsExactly(EMAIL);
+        assertThat(service.authenticate(EMAIL, newPassword)).isEqualTo(id);
+        assertThatThrownBy(() -> service.authenticate(EMAIL, PASSWORD))
+                .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    /** PA-2, PA-6 */
+    @Test
+    void aWrongCurrentPasswordCountsAsFailedSignIn() {
+        UserId id = service.register(new RegisterUserCommand(EMAIL, PASSWORD));
+        publishedEvents.clear();
+
+        assertThatThrownBy(() -> service.changePassword(
+                new ChangePasswordCommand(id, Password.of("falsch-geheim"), Password.of("neues-geheim"))))
+                .isInstanceOf(WrongCurrentPasswordException.class);
+
+        assertThat(loginThrottle.attempts).containsExactly(EMAIL);
+        assertThat(loginThrottle.resets).isEmpty();
+        assertThat(publishedEvents).isEmpty();
+        assertThat(service.authenticate(EMAIL, PASSWORD)).isEqualTo(id);
+    }
+
+    /** PA-6 */
+    @Test
+    void aLockedAddressCannotChangeItsPassword() {
+        UserId id = service.register(new RegisterUserCommand(EMAIL, PASSWORD));
+        loginThrottle.locked.add(EMAIL);
+
+        assertThatThrownBy(() -> service.changePassword(
+                new ChangePasswordCommand(id, PASSWORD, Password.of("neues-geheim"))))
+                .isInstanceOf(LoginLockedException.class);
+        assertThat(repository.users.get(EMAIL).passwordHash()).isEqualTo(new FakePasswordHasher().hash(PASSWORD));
+    }
+
     private static final class FakeLoginThrottle implements LoginThrottle {
 
         private final Set<EmailAddress> locked = new HashSet<>();
@@ -174,6 +224,12 @@ class UserApplicationServiceTest {
         }
 
         @Override
+        public Optional<User> findById(UserId id) {
+            return users.values().stream().filter(user -> user.id().equals(id)).findFirst()
+                    .map(user -> User.reconstitute(user.id(), user.email(), user.passwordHash()));
+        }
+
+        @Override
         public boolean existsByEmail(EmailAddress email) {
             return users.containsKey(email);
         }
@@ -183,6 +239,11 @@ class UserApplicationServiceTest {
             if (users.putIfAbsent(user.email(), user) != null) {
                 throw new EmailAddressAlreadyRegisteredException(user.email());
             }
+        }
+
+        @Override
+        public void save(User user) {
+            users.put(user.email(), user);
         }
     }
 }

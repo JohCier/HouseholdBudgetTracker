@@ -9,6 +9,9 @@ import de.jcss.hbt.users.domain.user.PasswordHasher;
 import de.jcss.hbt.users.domain.user.User;
 import de.jcss.hbt.users.domain.user.UserId;
 import de.jcss.hbt.users.domain.user.UserRepository;
+import de.jcss.hbt.users.domain.exception.PasswordUnchangedException;
+import de.jcss.hbt.users.domain.exception.WrongCurrentPasswordException;
+import de.jcss.hbt.users.domain.user.command.ChangePasswordCommand;
 import de.jcss.hbt.users.domain.user.command.RegisterUserCommand;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -18,7 +21,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Entry point for registering and signing in users. Issuing the session for a signed-in
+ * Entry point for registering and signing in users and for changing passwords. Issuing the session for a signed-in
  * user is up to the web layer; this service only tells who the user is.
  * <p>
  * Contains no business rules of its own. The only check it makes, that the e-mail address
@@ -32,7 +35,8 @@ import java.util.UUID;
  * row: registering stores the user with a single {@code INSERT}, signing in only reads.
  * <p>
  * Signing in counts every attempt with the {@link LoginThrottle} before the password is
- * checked, which may lock the address (AN-10); a successful attempt resets the count.
+ * checked, which may lock the address (AN-10); a successful attempt resets the count. Changing
+ * the password counts the same way, so it cannot be used to try out passwords (PA-6).
  */
 @Service
 public class UserApplicationService {
@@ -86,5 +90,23 @@ public class UserApplicationService {
         user.get().authenticate(password, passwordHasher);
         loginThrottle.reset(email);
         return user.get().id();
+    }
+
+    /**
+     * Changes the password of the signed-in user. Like signing in, the attempt is counted up front
+     * with the user's address and forgotten once the password is changed (PA-6).
+     *
+     * @throws LoginLockedException          if the user's address is locked after too many failed attempts
+     * @throws WrongCurrentPasswordException if the current password is wrong
+     * @throws PasswordUnchangedException    if the new password is the current one
+     * @throws InvalidCredentialsException   if the session belongs to no user
+     */
+    public void changePassword(ChangePasswordCommand command) {
+        User user = repository.findById(command.userId()).orElseThrow(InvalidCredentialsException::new);
+        loginThrottle.countAttempt(user.email());
+        User changed = user.changePassword(command.currentPassword(), command.newPassword(), passwordHasher);
+        loginThrottle.reset(user.email());
+        repository.save(changed);
+        changed.pullDomainEvents().forEach(eventPublisher::publishEvent);
     }
 }

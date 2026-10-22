@@ -4,6 +4,8 @@ import de.jcss.hbt.users.application.user.LoginLockedException;
 import de.jcss.hbt.users.domain.exception.DomainValidationException;
 import de.jcss.hbt.users.domain.exception.EmailAddressAlreadyRegisteredException;
 import de.jcss.hbt.users.domain.exception.InvalidCredentialsException;
+import de.jcss.hbt.users.domain.exception.PasswordUnchangedException;
+import de.jcss.hbt.users.domain.exception.WrongCurrentPasswordException;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -37,6 +39,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     static final URI EMAIL_ALREADY_REGISTERED = URI.create("urn:hbt:email-already-registered");
     static final URI INVALID_CREDENTIALS = URI.create("urn:hbt:invalid-credentials");
     static final URI TOO_MANY_LOGIN_ATTEMPTS = URI.create("urn:hbt:too-many-login-attempts");
+    static final URI WRONG_CURRENT_PASSWORD = URI.create("urn:hbt:wrong-current-password");
+    static final URI PASSWORD_UNCHANGED = URI.create("urn:hbt:password-unchanged");
 
     @ExceptionHandler(DomainValidationException.class)
     public ProblemDetail handleDomainValidation(DomainValidationException ex) {
@@ -56,6 +60,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(LoginLockedException.class)
     public ProblemDetail handleLoginLocked(LoginLockedException ex) {
         return problem(HttpStatus.TOO_MANY_REQUESTS, TOO_MANY_LOGIN_ATTEMPTS, ex);
+    }
+
+    @ExceptionHandler(WrongCurrentPasswordException.class)
+    public ProblemDetail handleWrongCurrentPassword(WrongCurrentPasswordException ex) {
+        return problem(HttpStatus.BAD_REQUEST, WRONG_CURRENT_PASSWORD, ex);
+    }
+
+    @ExceptionHandler(PasswordUnchangedException.class)
+    public ProblemDetail handlePasswordUnchanged(PasswordUnchangedException ex) {
+        return problem(HttpStatus.BAD_REQUEST, PASSWORD_UNCHANGED, ex);
     }
 
     private static ProblemDetail problem(HttpStatus status, URI type, RuntimeException ex) {

@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, of, throwError } from 'rxjs';
-import { LoginRequest, RegisterUserRequest, User } from '../auth.model';
+import { ChangePasswordRequest, LoginRequest, RegisterUserRequest, User } from '../auth.model';
 
 /**
  * Thin HTTP adapter for the users app's /api/auth endpoints. The session itself is an
@@ -31,6 +31,10 @@ export class AuthApi {
 
   login(request: LoginRequest): Observable<User> {
     return this.http.post<User>(`${this.baseUrl}/login`, request);
+  }
+
+  changePassword(request: ChangePasswordRequest): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/password`, request);
   }
 
   logout(): Observable<void> {

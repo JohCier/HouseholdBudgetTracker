@@ -69,6 +69,30 @@
         "tags" : [ "auth" ]
       }
     },
+    "/api/auth/password" : {
+      "post" : {
+        "operationId" : "changePassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "auth" ]
+      }
+    },
     "/api/auth/register" : {
       "post" : {
         "operationId" : "register",
@@ -100,6 +124,20 @@
   },
   "components" : {
     "schemas" : {
+      "ChangePasswordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "currentPassword" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "newPassword" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "currentPassword", "newPassword" ]
+      },
       "LoginRequest" : {
         "type" : "object",
         "properties" : {

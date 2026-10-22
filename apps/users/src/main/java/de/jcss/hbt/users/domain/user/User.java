@@ -1,6 +1,9 @@
 package de.jcss.hbt.users.domain.user;
 
 import de.jcss.hbt.users.domain.exception.InvalidCredentialsException;
+import de.jcss.hbt.users.domain.exception.PasswordUnchangedException;
+import de.jcss.hbt.users.domain.exception.WrongCurrentPasswordException;
+import de.jcss.hbt.users.domain.user.event.PasswordChanged;
 import de.jcss.hbt.users.domain.user.event.UserRegistered;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
@@ -15,6 +18,8 @@ import java.util.Objects;
  * Aggregate root for a person who can sign in, identified by their {@link EmailAddress}
  * and a password. The password itself is never kept, only its {@link PasswordHash};
  * whether a password is right is decided by the user itself ({@link #authenticate}).
+ * Changing the password ({@link #changePassword}) yields the user with the new hash, since
+ * all fields are final.
  * <p>
  * That an e-mail address belongs to at most one user spans several aggregates and is
  * therefore ensured by the application layer and the repository, not by this class.
@@ -58,6 +63,28 @@ public final class User {
         if (!hasher.matches(password, passwordHash)) {
             throw new InvalidCredentialsException();
         }
+    }
+
+    /**
+     * Changes the password, provided the current one is right (PA-2) and the new one differs
+     * from it (PA-4). Returns this user with the new password, which is to be saved; pending
+     * events are carried over.
+     *
+     * @throws WrongCurrentPasswordException if the current password is not this user's
+     * @throws PasswordUnchangedException    if the new password is the current one
+     */
+    public User changePassword(Password currentPassword, Password newPassword, PasswordHasher hasher) {
+        Objects.requireNonNull(newPassword, "newPassword must not be null");
+        if (!hasher.matches(currentPassword, passwordHash)) {
+            throw new WrongCurrentPasswordException();
+        }
+        if (newPassword.equals(currentPassword)) {
+            throw new PasswordUnchangedException();
+        }
+        User changed = new User(id, email, hasher.hash(newPassword));
+        changed.domainEvents.addAll(domainEvents);
+        changed.domainEvents.add(new PasswordChanged(id, Instant.now()));
+        return changed;
     }
 
     /**

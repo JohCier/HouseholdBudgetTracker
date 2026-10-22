@@ -16,6 +16,12 @@ export const routes: Routes = [
     title: 'Haushaltsplan – Haushaltsbuch',
   },
   {
+    path: 'passwort',
+    loadComponent: () => import('./auth/ui/change-password-page').then((m) => m.ChangePasswordPage),
+    canActivate: [signedInGuard],
+    title: 'Passwort ändern – Haushaltsbuch',
+  },
+  {
     path: 'login',
     loadComponent: () => import('./auth/ui/login-page').then((m) => m.LoginPage),
     canActivate: [signedOutGuard],

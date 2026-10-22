@@ -7,6 +7,7 @@ import type { UsersSchemas as Schemas } from '@hbt/shared-types';
 export type User = Schemas['UserResponse'];
 export type LoginRequest = Schemas['LoginRequest'];
 export type RegisterUserRequest = Schemas['RegisterUserRequest'];
+export type ChangePasswordRequest = Schemas['ChangePasswordRequest'];
 
 /** Password rules of the server, checked in the forms already to give early feedback. */
 export const PASSWORD_MIN_LENGTH = 8;

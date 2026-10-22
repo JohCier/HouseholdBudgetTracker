@@ -34,6 +34,7 @@ describe('App', () => {
     const toolbar = (fixture.nativeElement as HTMLElement).querySelector('mat-toolbar')!;
 
     expect(toolbar.textContent).toContain('max@example.org');
+    expect(toolbar.querySelector('a[href="/passwort"]')?.textContent).toContain('Passwort ändern');
     toolbar.querySelector('button')!.click();
     await fixture.whenStable();
 

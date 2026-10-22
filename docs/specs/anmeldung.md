@@ -49,7 +49,7 @@ und meldet sich an. Die Sitzung gilt für beide Dienste (Users und Backend).
 ## Nicht im Umfang
 
 - Begrenzung der Anmeldeversuche je IP-Adresse; Sperre bei der Registrierung
-- Passwort zurücksetzen oder ändern
+- Passwort zurücksetzen; Passwort ändern beschreibt [passwort-aendern.md](passwort-aendern.md)
 - E-Mail-Adresse bestätigen
 - Benutzerkonto löschen
 - Anmeldung über externe Anbieter (Google, GitHub …)

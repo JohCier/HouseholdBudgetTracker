@@ -14,6 +14,8 @@ const MESSAGES: Readonly<Record<string, string>> = {
   'urn:hbt:invalid-credentials': 'E-Mail-Adresse oder Passwort ist falsch.',
   'urn:hbt:too-many-login-attempts':
     'Zu viele Anmeldeversuche. Bitte versuche es in 15 Minuten erneut.',
+  'urn:hbt:wrong-current-password': 'Das aktuelle Passwort ist falsch.',
+  'urn:hbt:password-unchanged': 'Das neue Passwort muss sich vom aktuellen unterscheiden.',
 };
 
 /** A German, user-facing message for an error; a general one for unknown errors (FM-3). */

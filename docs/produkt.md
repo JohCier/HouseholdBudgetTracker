@@ -20,6 +20,7 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 | Bereich | Was der Benutzer tun kann | Spec | Regeln |
 |---|---|---|---|
 | Anmeldung | Registrieren, anmelden, abmelden; Sitzung läuft nach 8 Stunden ab; Sperre nach 5 Fehlversuchen | [anmeldung.md](specs/anmeldung.md) | AN-… |
+| Passwort ändern | Angemeldet das eigene Passwort mit dem aktuellen Passwort ändern; falsche Versuche zählen zur Anmeldesperre | [passwort-aendern.md](specs/passwort-aendern.md) | PA-… |
 | Haushaltsplan | Pro Jahr einen Plan anlegen, zwischen Jahren wechseln | [haushaltsplan.md](specs/haushaltsplan.md) | HP-… |
 | Jahresübersicht | Startseite mit allen Plänen: Einnahmen, Ausgaben, Überschuss und Veränderung zum Vorjahr je Jahr | [jahresuebersicht.md](specs/jahresuebersicht.md) | JU-… |
 | Monatsbeträge in der Jahresübersicht | Die Jahresübersicht wahlweise in Monats- oder Jahresbeträgen ansehen; der Browser merkt sich die Wahl | [jahresuebersicht-monatsbetraege.md](specs/jahresuebersicht-monatsbetraege.md) | JM-… |
@@ -54,7 +55,7 @@ Werte und Berechnungen gehen deshalb vom Monatsbetrag aus, Jahreswerte sind dara
 - Keine Anbindung an Bankkonten, kein Import von Kontoauszügen.
 - Keine gemeinsamen Pläne mehrerer Benutzer, keine Freigaben.
 - Keine anderen Budgetregeln als 50/30/20, keine eigenen Kategorien, keine anderen Währungen.
-- Keine Passwort-Zurücksetzung, keine E-Mail-Bestätigung, kein Löschen des Benutzerkontos.
+- Keine Passwort-Zurücksetzung (Passwort vergessen), keine E-Mail-Bestätigung, kein Löschen des Benutzerkontos.
 
 ## Roadmap
 

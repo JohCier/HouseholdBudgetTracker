@@ -1,11 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import {
-  AbstractControl,
-  FormBuilder,
-  ReactiveFormsModule,
-  ValidationErrors,
-  Validators,
-} from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -13,12 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '../auth.model';
 import { AuthStore } from '../data-access/auth-store';
-
-/** The repeated password has to match the password. */
-function passwordsMatch(group: AbstractControl): ValidationErrors | null {
-  const { password, passwordRepeat } = group.value as { password: string; passwordRepeat: string };
-  return password === passwordRepeat ? null : { passwordMismatch: true };
-}
+import { passwordsMatch } from './passwords-match';
 
 @Component({
   selector: 'app-register-page',
