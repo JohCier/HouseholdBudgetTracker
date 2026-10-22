@@ -50,6 +50,7 @@ const overview = (year: number, items = [item]): HouseholdPlanOverview => ({
             total: '2000.00',
             monthlyTotal: '166.67',
             percentageOfSection: 100,
+            monthlySavingPotential: '0.00',
             items,
           },
         ],
@@ -440,6 +441,7 @@ describe('BudgetStore', () => {
           total: '2000.00',
           monthlyTotal: '166.67',
           percentageOfSection: 0,
+          monthlySavingPotential: '0.00',
           items: [item],
         },
         {
@@ -447,6 +449,7 @@ describe('BudgetStore', () => {
           total: '2000.00',
           monthlyTotal: '166.67',
           percentageOfSection: 0,
+          monthlySavingPotential: '0.00',
           items: [added],
         },
       ],

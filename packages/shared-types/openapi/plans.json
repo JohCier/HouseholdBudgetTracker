@@ -976,7 +976,7 @@
         }
       },
       "ItemGroupResponse" : {
-        "required" : [ "items", "monthlyTotal", "percentageOfSection", "subcategory", "total" ],
+        "required" : [ "items", "monthlySavingPotential", "monthlyTotal", "percentageOfSection", "subcategory", "total" ],
         "type" : "object",
         "properties" : {
           "items" : {
@@ -984,6 +984,12 @@
             "items" : {
               "$ref" : "#/components/schemas/BudgetItemResponse"
             }
+          },
+          "monthlySavingPotential" : {
+            "type" : "string",
+            "description" : "The sum of the monthly saving potentials of its items, \"0.00\" if none has one (SU-10)",
+            "format" : "decimal",
+            "example" : "15.0"
           },
           "monthlyTotal" : {
             "type" : "string",

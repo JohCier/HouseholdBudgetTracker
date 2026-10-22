@@ -79,6 +79,7 @@ const living: CategoryItems = {
       total: '3000.00',
       monthlyTotal: '250.00',
       percentageOfSection: 20,
+      monthlySavingPotential: '0.00',
       items: [expense('fuel', 'Sprit', '200.00', 80), expense('ins', 'Versicherung', '50.00', 20)],
     },
     {
@@ -86,6 +87,7 @@ const living: CategoryItems = {
       total: '12000.00',
       monthlyTotal: '1000.00',
       percentageOfSection: 80,
+      monthlySavingPotential: '0.00',
       items: [expense('rent', 'Miete', '1000.00', 100)],
     },
   ],
@@ -282,6 +284,7 @@ describe('CategoryPieChart', () => {
               total: '6000.00',
               monthlyTotal: '500.00',
               percentageOfSection: 16.67,
+              monthlySavingPotential: '0.00',
               items: [expense('reise', 'Reise', '500.00', 100)],
             },
           ],

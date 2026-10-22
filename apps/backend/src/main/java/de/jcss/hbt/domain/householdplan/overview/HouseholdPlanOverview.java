@@ -128,11 +128,7 @@ public record HouseholdPlanOverview(
         List<SubcategorySavingPotential> sums = new ArrayList<>();
         for (OverviewCategoryItems category : expenseCategories) {
             for (OverviewItemGroup group : category.groups()) {
-                Money monthly = group.items().stream()
-                        .map(item -> item.marks().savingPotential())
-                        .filter(Objects::nonNull)
-                        .map(SavingPotential::monthly)
-                        .reduce(Money.ZERO, Money::add);
+                Money monthly = group.monthlySavingPotential();
                 if (monthly.isZero()) {
                     continue;
                 }

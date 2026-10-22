@@ -1,11 +1,13 @@
 import { expect, Locator, Page, test } from '@playwright/test';
 import {
   addExpense,
+  addIncome,
   balanceSheet,
   openSavingPotential,
   registerWithPlan,
   savingPotentialOfSubcategory,
   setSavingPotential,
+  sumRow,
 } from './support';
 
 async function box(locator: Locator) {
@@ -22,6 +24,9 @@ async function scrollsSideways(page: Page): Promise<boolean> {
 }
 
 const savingPotentials = (page: Page) => page.locator('app-saving-potential-summary');
+
+/** The saving potential in the row of a group's sum in the entries (SU-10). */
+const groupSavingPotential = (row: Locator) => row.locator('.group-saving-potential');
 
 // docs/specs/sparpotential-unterkategorie.md
 test.describe('Sparpotential je Unterkategorie', () => {
@@ -122,6 +127,83 @@ test.describe('Sparpotential je Unterkategorie', () => {
       savingPotentialOfSubcategory(page, 'Abonnements und Mitgliedschaften', 'Jahr'),
     );
     expect(yearly.x + yearly.width).toBeLessThanOrEqual(list.x + list.width);
+    await expect.poll(() => scrollsSideways(page)).toBe(false);
+  });
+
+  test('die Summenzeile einer Unterkategorie zeigt ihr Sparpotential links neben dem Monatsbetrag (SU-10, SU-11)', async ({
+    page,
+  }) => {
+    await addExpense(page, 'Streaming', '15', 'Freizeit & Spaß', 'Abonnements', 'Monatlich');
+    await addExpense(page, 'Zeitung', '20', 'Freizeit & Spaß', 'Abonnements', 'Monatlich');
+    await setSavingPotential(page, 'Streaming', '5');
+    await setSavingPotential(page, 'Zeitung', '10');
+
+    const row = sumRow(page, 'Freizeit & Spaß', 'Abonnements');
+    await expect(groupSavingPotential(row)).toHaveText(/15,00\s€/);
+    await expect(groupSavingPotential(row)).toContainText('Sparpotential Abonnements:');
+    const potential = await box(groupSavingPotential(row));
+    const monthly = await box(row.locator('.amount-column.monthly'));
+    expect(potential.x + potential.width).toBeLessThanOrEqual(monthly.x + 1);
+    expect(
+      Math.abs(potential.y + potential.height / 2 - (monthly.y + monthly.height / 2)),
+    ).toBeLessThan(6);
+  });
+
+  test('je Kategorie zählt die Gruppe für sich, ohne Sparpotential bleibt die Stelle leer (SU-10, SU-12)', async ({
+    page,
+  }) => {
+    await addIncome(page, 'Gehalt', '3000', 'Gehalt', 'Monatlich');
+    await addExpense(page, 'Tanken', '100', 'Lebensunterhalt', 'Auto', 'Monatlich');
+    await addExpense(page, 'Ausflüge', '50', 'Freizeit & Spaß', 'Auto', 'Monatlich');
+    await addExpense(page, 'Miete', '850', 'Lebensunterhalt', 'Miete', 'Monatlich');
+    await setSavingPotential(page, 'Tanken', '10');
+    await setSavingPotential(page, 'Ausflüge', '10');
+
+    await expect(groupSavingPotential(sumRow(page, 'Lebensunterhalt', 'Auto'))).toHaveText(
+      /10,00\s€/,
+    );
+    await expect(groupSavingPotential(sumRow(page, 'Freizeit & Spaß', 'Auto'))).toHaveText(
+      /10,00\s€/,
+    );
+    await expect(savingPotentialOfSubcategory(page, 'Auto', 'Monat')).toHaveText('20,00 €');
+    await expect(groupSavingPotential(sumRow(page, 'Lebensunterhalt', 'Miete'))).toHaveCount(0);
+    await expect(groupSavingPotential(sumRow(page, 'Einnahmen', 'Gehalt'))).toHaveCount(0);
+    await expect(groupSavingPotential(sumRow(page, 'Lebensunterhalt'))).toHaveCount(0);
+    await expect(groupSavingPotential(sumRow(page, 'Ausgaben'))).toHaveCount(0);
+  });
+
+  test('das Sparpotential der Summenzeile ändert sich sofort mit (SU-14)', async ({ page }) => {
+    await addExpense(page, 'Streaming', '15', 'Freizeit & Spaß', 'Abonnements', 'Monatlich');
+    await addExpense(page, 'Zeitung', '20', 'Freizeit & Spaß', 'Abonnements', 'Monatlich');
+    await setSavingPotential(page, 'Streaming', '5');
+    await setSavingPotential(page, 'Zeitung', '10');
+    const row = sumRow(page, 'Freizeit & Spaß', 'Abonnements');
+    await expect(groupSavingPotential(row)).toHaveText(/15,00\s€/);
+
+    const dialog = await openSavingPotential(page, 'Zeitung');
+    await dialog.getByRole('button', { name: 'Entfernen' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(groupSavingPotential(row)).toHaveText(/5,00\s€/);
+  });
+
+  test('auf dem Handy steht das Sparpotential links neben dem Monatsbetrag, die Seite passt (SU-13)', async ({
+    page,
+  }) => {
+    await addExpense(page, 'Streaming', '15', 'Freizeit & Spaß', 'Abonnements', 'Monatlich');
+    await setSavingPotential(page, 'Streaming', '5');
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    const row = sumRow(page, 'Freizeit & Spaß', 'Abonnements');
+    const potential = await box(groupSavingPotential(row));
+    const monthly = await box(row.locator('.amount-column.monthly'));
+    const yearly = await box(row.locator('.amount-column.yearly'));
+    expect(potential.x).toBeGreaterThanOrEqual(0);
+    expect(potential.x + potential.width).toBeLessThanOrEqual(monthly.x + 1);
+    expect(yearly.x + yearly.width).toBeLessThanOrEqual(390);
+    const item = await box(
+      page.locator('.item').filter({ hasText: 'Streaming' }).locator('.amount.monthly'),
+    );
+    expect(Math.abs(monthly.x + monthly.width - (item.x + item.width))).toBeLessThan(2);
     await expect.poll(() => scrollsSideways(page)).toBe(false);
   });
 });

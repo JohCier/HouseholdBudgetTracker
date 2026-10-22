@@ -77,6 +77,7 @@ const overview: HouseholdPlanOverview = {
       total: '3000.00',
       monthlyTotal: '250.00',
       percentageOfSection: 0,
+      monthlySavingPotential: '0.00',
       items: [salary],
     },
   ],
@@ -91,6 +92,7 @@ const overview: HouseholdPlanOverview = {
           total: '100.00',
           monthlyTotal: '8.33',
           percentageOfSection: 0,
+          monthlySavingPotential: '0.00',
           items: [fuel, tax],
         },
         {
@@ -98,6 +100,7 @@ const overview: HouseholdPlanOverview = {
           total: '900.00',
           monthlyTotal: '75.00',
           percentageOfSection: 0,
+          monthlySavingPotential: '0.00',
           items: [rent],
         },
       ],
@@ -112,6 +115,7 @@ const overview: HouseholdPlanOverview = {
           total: '500.00',
           monthlyTotal: '41.67',
           percentageOfSection: 0,
+          monthlySavingPotential: '0.00',
           items: [savings],
         },
       ],
@@ -163,6 +167,37 @@ describe('BudgetEntries', () => {
     expect(text(expenses.lastElementChild)).toBe('Summe Ausgaben−€125.00−€1,500.00');
   });
 
+  // SU-10, SU-11, SU-12
+  it('shows the saving potential of an expense group left of its monthly sum, nothing without one', async () => {
+    const [living, saving] = overview.expenseCategories;
+    const { element } = await render({
+      ...overview,
+      expenseCategories: [
+        {
+          ...living,
+          groups: [{ ...living.groups[0], monthlySavingPotential: '15.00' }, living.groups[1]],
+        },
+        saving,
+      ],
+    });
+
+    const summaries = [...element.querySelectorAll('.group-summary')];
+    const potentials = summaries.map((summary) => summary.querySelector('.group-saving-potential'));
+    expect(potentials.map((potential) => potential !== null)).toEqual([false, true, false, false]);
+    const car = summaries[1];
+    expect(text(car.querySelector('.summary-label'))).toBe('Summe Auto');
+    expect(text(potentials[1])).toBe('Sparpotential Auto: €15.00 im Monat');
+    // In the row of the sum, the saving potential comes right before the monthly amount
+    const amounts = [...car.querySelectorAll('.group-saving-potential, .amount-column')];
+    expect(amounts.map((amount) => amount.classList.contains('monthly'))).toEqual([
+      false,
+      true,
+      false,
+    ]);
+    expect(element.querySelector('.section > .summary .group-saving-potential')).toBeNull();
+    expect(element.querySelector('.area-summary .group-saving-potential')).toBeNull();
+  });
+
   // EG-9, EG-10
   it('offers to add an item to each group, filling in what the group stands for', async () => {
     const { component, element } = await render(overview);
@@ -205,6 +240,7 @@ describe('BudgetEntries', () => {
             {
               subcategory: 'Sonstiges',
               percentageOfSection: 0,
+              monthlySavingPotential: '0.00',
               monthlyTotal: '850.00',
               total: '10200.00',
               items: [monthlyRent],
