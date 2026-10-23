@@ -30,6 +30,7 @@
 #              waits for java, frontend and e2e, so a failed E2E test stops the image push and the deploy.
 #              Unchanged apps keep their previous image and get no new sha-<commit> tag.
 #   deploy     copies compose.prod.yaml to the server via SCP and starts the new images via SSH (master only)
+#              (incl. Caddy, the HTTPS entry point; the domain comes from DOMAIN in /opt/hbt/.env on the server)
 #
 # Variables:
 #   steps.filter.outputs.changes   origin: dorny/paths-filter; JSON list of the filters with changed files,
@@ -312,7 +313,7 @@ jobs:
           script: |
             set -e
             cd /opt/hbt
-            docker compose -f compose.prod.yaml pull backend users frontend
+            docker compose -f compose.prod.yaml pull backend users frontend caddy
             # --remove-orphans: drops containers of services that no longer exist (e.g. the former "app")
             docker compose -f compose.prod.yaml up -d --remove-orphans
             docker image prune -f

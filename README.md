@@ -219,7 +219,19 @@ akzeptierte Funde kommen mit Begründung in eine `.trivyignore` im Repository-Ro
 Trivy-Version (`version` in `ci.yml`) aktualisiert Dependabot nicht, sie ist von Hand nachzuziehen.
 
 Für das Deployment (`compose.prod.yaml`) braucht der Server in `/opt/hbt/.env` neben `DB_PASSWORD` auch ein
-`JWT_SECRET` (z. B. `openssl rand -base64 48`). Optional schaltet `SECURE_COOKIE=true` das `Secure`-Flag ein, sobald
-der Server per HTTPS erreichbar ist.
+`JWT_SECRET` (z. B. `openssl rand -base64 48`). In Produktion steht vor dem Frontend ein [Caddy](https://caddyserver.com)
+als einziger nach außen erreichbarer Container (Ports 80 und 443). Ohne weitere Angaben liefert er die App wie bisher
+per HTTP auf Port 80 aus.
+
+HTTPS einschalten:
+
+1. Für die Domain einen DNS-A-Eintrag (bei IPv6 zusätzlich AAAA) auf die IP des Servers setzen.
+2. In der Firewall des Servers die Ports 80 und 443 (TCP, für HTTP/3 auch UDP) öffnen; Let's Encrypt prüft die
+   Domain über Port 80.
+3. In `/opt/hbt/.env` `DOMAIN=budget.example.de` und `SECURE_COOKIE=true` eintragen und
+   `docker compose -f compose.prod.yaml up -d` ausführen (oder den nächsten Deploy abwarten).
+
+Caddy holt dann ein Zertifikat von Let's Encrypt, verlängert es selbst und leitet HTTP auf HTTPS um. Zertifikate liegen
+im Volume `caddy-data`, damit sie Neustarts überdauern.
 
 Die Node-Version steht ausschließlich in `apps/frontend/.nvmrc`.
