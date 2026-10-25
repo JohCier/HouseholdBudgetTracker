@@ -1,8 +1,8 @@
 package de.jcss.hbt.domain.householdplan.event;
 
-import de.jcss.hbt.domain.householdplan.BudgetItemId;
-import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
-import de.jcss.hbt.domain.householdplan.ItemMark;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemMark;
 
 import java.time.Instant;
 import java.util.Objects;

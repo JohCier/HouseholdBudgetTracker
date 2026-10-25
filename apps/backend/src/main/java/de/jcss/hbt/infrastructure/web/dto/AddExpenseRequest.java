@@ -1,8 +1,8 @@
 package de.jcss.hbt.infrastructure.web.dto;
 
-import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
-import de.jcss.hbt.domain.householdplan.BudgetItemNote;
-import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemNote;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemSubcategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;

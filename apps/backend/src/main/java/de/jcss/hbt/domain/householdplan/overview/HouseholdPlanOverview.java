@@ -1,15 +1,15 @@
 package de.jcss.hbt.domain.householdplan.overview;
 
-import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
-import de.jcss.hbt.domain.householdplan.BudgetSummary;
-import de.jcss.hbt.domain.householdplan.ExpenseCategory;
-import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
-import de.jcss.hbt.domain.householdplan.ItemSection;
-import de.jcss.hbt.domain.householdplan.ItemType;
-import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.householdplan.Percentage;
-import de.jcss.hbt.domain.householdplan.SavingPotential;
-import de.jcss.hbt.domain.householdplan.SubcategoryOrder;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemSubcategory;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetSummary;
+import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemSection;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemType;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.Percentage;
+import de.jcss.hbt.domain.householdplan.valueobject.SavingPotential;
+import de.jcss.hbt.domain.householdplan.valueobject.SubcategoryOrder;
 import org.jmolecules.architecture.cqrs.QueryModel;
 
 import java.time.Year;

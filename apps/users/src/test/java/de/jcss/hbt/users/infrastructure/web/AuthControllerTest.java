@@ -1,16 +1,16 @@
 package de.jcss.hbt.users.infrastructure.web;
 
-import de.jcss.hbt.users.application.user.UserApplicationService;
 import de.jcss.hbt.users.application.user.LoginLockedException;
+import de.jcss.hbt.users.application.user.UserApplicationService;
 import de.jcss.hbt.users.domain.exception.EmailAddressAlreadyRegisteredException;
 import de.jcss.hbt.users.domain.exception.InvalidCredentialsException;
 import de.jcss.hbt.users.domain.exception.PasswordUnchangedException;
 import de.jcss.hbt.users.domain.exception.WrongCurrentPasswordException;
-import de.jcss.hbt.users.domain.user.EmailAddress;
-import de.jcss.hbt.users.domain.user.Password;
-import de.jcss.hbt.users.domain.user.UserId;
 import de.jcss.hbt.users.domain.user.command.ChangePasswordCommand;
 import de.jcss.hbt.users.domain.user.command.RegisterUserCommand;
+import de.jcss.hbt.users.domain.user.valueobject.EmailAddress;
+import de.jcss.hbt.users.domain.user.valueobject.Password;
+import de.jcss.hbt.users.domain.user.valueobject.UserId;
 import de.jcss.hbt.users.infrastructure.security.SecurityConfig;
 import de.jcss.hbt.users.infrastructure.security.SessionCookies;
 import org.junit.jupiter.api.Test;

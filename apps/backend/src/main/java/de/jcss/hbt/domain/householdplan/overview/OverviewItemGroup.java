@@ -1,9 +1,9 @@
 package de.jcss.hbt.domain.householdplan.overview;
 
-import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
-import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.householdplan.Percentage;
-import de.jcss.hbt.domain.householdplan.SavingPotential;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemSubcategory;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.Percentage;
+import de.jcss.hbt.domain.householdplan.valueobject.SavingPotential;
 import org.jmolecules.architecture.cqrs.QueryModel;
 
 import java.util.List;

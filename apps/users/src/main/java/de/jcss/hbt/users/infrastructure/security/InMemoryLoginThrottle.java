@@ -2,7 +2,7 @@ package de.jcss.hbt.users.infrastructure.security;
 
 import de.jcss.hbt.users.application.user.LoginLockedException;
 import de.jcss.hbt.users.application.user.LoginThrottle;
-import de.jcss.hbt.users.domain.user.EmailAddress;
+import de.jcss.hbt.users.domain.user.valueobject.EmailAddress;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;

@@ -5,6 +5,16 @@ import de.jcss.hbt.domain.exception.DomainValidationException;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemChanged;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemsReordered;
 import de.jcss.hbt.domain.householdplan.event.SubcategoriesReordered;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemSubcategory;
+import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemSection;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
+import de.jcss.hbt.domain.householdplan.valueobject.SubcategoryOrder;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

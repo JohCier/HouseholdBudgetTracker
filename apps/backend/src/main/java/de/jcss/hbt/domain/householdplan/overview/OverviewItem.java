@@ -1,14 +1,14 @@
 package de.jcss.hbt.domain.householdplan.overview;
 
-import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
-import de.jcss.hbt.domain.householdplan.BudgetItemId;
-import de.jcss.hbt.domain.householdplan.BudgetItemNote;
-import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
-import de.jcss.hbt.domain.householdplan.ExpenseCategory;
-import de.jcss.hbt.domain.householdplan.ItemAmount;
-import de.jcss.hbt.domain.householdplan.ItemMarks;
-import de.jcss.hbt.domain.householdplan.ItemSection;
-import de.jcss.hbt.domain.householdplan.ItemType;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemNote;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemSubcategory;
+import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemMarks;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemSection;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemType;
 import org.jmolecules.architecture.cqrs.QueryModel;
 
 /**

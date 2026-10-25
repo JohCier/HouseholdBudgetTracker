@@ -21,7 +21,11 @@ jMolecules) in beiden Apps maschinell. Schlägt `ArchitectureTest` fehl, wird de
   dann nicht auf
 
 - Pakete (Beispiel Backend, `users` entsprechend unter `de.jcss.hbt.users`):
-  - `domain/<aggregat>/`: Aggregate Root, Entities, Value Objects, typisierte IDs, Repository-Interface, Domain-Ports
+  - `domain/<aggregat>/`: Aggregate Root, ihre Entities, Repository-Interface, Domain-Ports. Entities liegen im Paket
+    ihrer Root, damit ihre verändernden Methoden package-private bleiben können (ArchUnit)
+  - `domain/<aggregat>/valueobject/`: alle Value Objects des Aggregates einschließlich der typisierten IDs und Enums,
+    und nur diese (ArchUnit). Value Objects kennen weder Aggregate Root noch Entities (ArchUnit); ein Verweis im
+    Javadoc ist erlaubt
   - `domain/<aggregat>/command/`: Domain Commands (ArchUnit)
   - `domain/<aggregat>/event/`: Domain Events
   - `domain/<aggregat>/overview/`: Read Models und Query-Handler-Interfaces (ArchUnit)

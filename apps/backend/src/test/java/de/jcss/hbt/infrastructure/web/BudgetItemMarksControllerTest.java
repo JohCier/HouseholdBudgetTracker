@@ -2,20 +2,20 @@ package de.jcss.hbt.infrastructure.web;
 
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
 import de.jcss.hbt.domain.exception.DomainValidationException;
-import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
-import de.jcss.hbt.domain.householdplan.BudgetItemId;
-import de.jcss.hbt.domain.householdplan.ExpenseCategory;
-import de.jcss.hbt.domain.householdplan.ItemAmount;
-import de.jcss.hbt.domain.householdplan.ItemMarks;
-import de.jcss.hbt.domain.householdplan.ItemType;
-import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.householdplan.SavingPotential;
 import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
 import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
 import de.jcss.hbt.domain.householdplan.command.ChangeSavingPotentialCommand;
 import de.jcss.hbt.domain.householdplan.command.MarkBudgetItemImportantCommand;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemMarks;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemType;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.SavingPotential;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 

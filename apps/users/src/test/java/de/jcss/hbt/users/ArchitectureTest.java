@@ -24,6 +24,7 @@ import static com.tngtech.archunit.core.domain.properties.CanBeAnnotated.Predica
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
  * Enforces the layering (infrastructure → application → domain, declared per package as
@@ -79,6 +80,22 @@ class ArchitectureTest {
             .or().areAnnotatedWith(ValueObject.class)
             .or().implement(DomainEvent.class)
             .should().resideInAPackage("de.jcss.hbt.users.domain..");
+
+    @ArchTest
+    static final ArchRule valueObjectsLiveInTheValueObjectPackage = classes()
+            .that().areAnnotatedWith(ValueObject.class)
+            .should().resideInAPackage("de.jcss.hbt.users.domain.*.valueobject");
+
+    @ArchTest
+    static final ArchRule valueObjectPackagesOnlyContainValueObjects = classes()
+            .that().resideInAPackage("de.jcss.hbt.users.domain..valueobject..")
+            .and().areTopLevelClasses()
+            .should().beAnnotatedWith(ValueObject.class);
+
+    @ArchTest
+    static final ArchRule valueObjectsDoNotKnowAggregates = noClasses()
+            .that().areAnnotatedWith(ValueObject.class)
+            .should().dependOnClassesThat().areAnnotatedWith(AggregateRoot.class);
 
     @ArchTest
     static final ArchRule domainObjectsHaveNoPublicSetters = methods()

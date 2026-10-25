@@ -43,8 +43,8 @@ de.jcss.hbt
 ├── domain                  reines Java, ohne Frameworks
 │   ├── shared              @QueryHandler (die übrigen DDD-Bausteine kommen aus jMolecules, s. u.)
 │   └── householdplan       HouseholdPlan (Aggregate Root, ein Plan pro Besitzer und Jahr) mit BudgetItems (Entities),
-│                           Value Objects (Money, OwnerId, BudgetSummary, ExpenseCategory, …), HouseholdPlanRepository,
-│                           Commands in .command, Events in .event
+│                           HouseholdPlanRepository; Value Objects (Money, OwnerId, BudgetSummary, ExpenseCategory, …)
+│                           in .valueobject, Commands in .command, Events in .event
 │                           Leseseite (.overview): Read Model HouseholdPlanOverview und HouseholdPlanOverviewQueryHandler
 ├── application/householdplan  HouseholdPlanApplicationService
 └── infrastructure
@@ -77,8 +77,8 @@ liest direkt per SQL, ohne Aggregat oder Repository.
 ```
 de.jcss.hbt.users
 ├── domain
-│   └── user                User (Aggregate Root), Value Objects (UserId, EmailAddress, Password, PasswordHash),
-│                           PasswordHasher (Port), UserRepository, RegisterUserCommand, Event UserRegistered
+│   └── user                User (Aggregate Root), PasswordHasher (Port), UserRepository; Value Objects (UserId,
+│                           EmailAddress, Password, PasswordHash) in .valueobject, Commands in .command, Events in .event
 ├── application/user        UserApplicationService (register, authenticate)
 └── infrastructure
     ├── web                 AuthController (/api/auth/register, /login, /logout, /me)
@@ -97,7 +97,8 @@ deklariert (`package-info.java` mit `@DomainRing`, `@ApplicationRing`, `@Infrast
 In beiden Apps prüft `ArchitectureTest` (ArchUnit) die Abhängigkeitsregeln (Infrastructure → Application → Domain
 über jMolecules' `ensureOnionSimple`, Domain ohne Frameworks außer jMolecules), die DDD-Regeln von jMolecules (u. a.
 Referenzen auf andere Aggregates nur über deren ID) sowie Lage und Form der Bausteine (keine Setter, nur finale Felder,
-Value Objects als Records/Enums, Events als Records mit `timestamp`, Gleichheit von Entities über ihre ID).
+Value Objects als Records/Enums im Paket `valueobject`, Entities im Paket ihrer Aggregate Root, Events als Records mit
+`timestamp`, Gleichheit von Entities über ihre ID).
 
 ## Lokale Entwicklung
 

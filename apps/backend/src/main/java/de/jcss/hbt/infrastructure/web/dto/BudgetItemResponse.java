@@ -1,8 +1,8 @@
 package de.jcss.hbt.infrastructure.web.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import de.jcss.hbt.domain.householdplan.Percentage;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
+import de.jcss.hbt.domain.householdplan.valueobject.Percentage;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;

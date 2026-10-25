@@ -1,8 +1,8 @@
 package de.jcss.hbt.infrastructure.persistence;
 
-import de.jcss.hbt.domain.householdplan.ItemMarks;
-import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.householdplan.SavingPotential;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemMarks;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.SavingPotential;
 
 import java.math.BigDecimal;
 import java.sql.ResultSet;

@@ -1,9 +1,9 @@
 package de.jcss.hbt.domain.householdplan.command;
 
-import de.jcss.hbt.domain.householdplan.BudgetItemId;
-import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
-import de.jcss.hbt.domain.householdplan.OwnerId;
-import de.jcss.hbt.domain.householdplan.SavingPotential;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
+import de.jcss.hbt.domain.householdplan.valueobject.SavingPotential;
 import org.jmolecules.architecture.cqrs.Command;
 
 import java.util.Objects;

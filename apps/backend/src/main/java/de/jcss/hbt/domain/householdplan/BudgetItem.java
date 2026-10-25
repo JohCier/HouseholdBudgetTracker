@@ -1,6 +1,17 @@
 package de.jcss.hbt.domain.householdplan;
 
 import de.jcss.hbt.domain.exception.DomainValidationException;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemNote;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemSubcategory;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetSummary;
+import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemMarks;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemSection;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemType;
+import de.jcss.hbt.domain.householdplan.valueobject.SavingPotential;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
 

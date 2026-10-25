@@ -1,6 +1,6 @@
 package de.jcss.hbt.infrastructure.web.dto;
 
-import de.jcss.hbt.domain.householdplan.ItemType;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /** API representation of {@link ItemType}. */

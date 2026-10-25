@@ -3,6 +3,17 @@ package de.jcss.hbt.domain.householdplan;
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
 import de.jcss.hbt.domain.exception.DomainValidationException;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemMarked;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetSummary;
+import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemMark;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemMarks;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
+import de.jcss.hbt.domain.householdplan.valueobject.SavingPotential;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
