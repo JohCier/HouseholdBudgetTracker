@@ -67,7 +67,7 @@ test.describe('Jahresübersicht', () => {
     await showAllYears(page);
     await showAmounts(page, 'Jährlich');
 
-    await expect(page.locator('app-yearly-overview-page tbody th')).toHaveText([
+    await expect(page.locator('app-yearly-overview-page tbody tr[data-year] th')).toHaveText([
       String(year),
       String(year - 1),
       String(year - 2),
@@ -105,7 +105,7 @@ test.describe('Jahresübersicht', () => {
 
     await showAllYears(page);
 
-    await expect(page.locator('app-yearly-overview-page tbody th')).toHaveText([
+    await expect(page.locator('app-yearly-overview-page tbody tr[data-year] th')).toHaveText([
       String(year),
       String(year - 2),
     ]);

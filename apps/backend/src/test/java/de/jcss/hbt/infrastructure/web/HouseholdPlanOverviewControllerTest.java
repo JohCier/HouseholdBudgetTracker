@@ -62,6 +62,36 @@ class HouseholdPlanOverviewControllerTest extends HouseholdPlanControllerTestSup
                 .andExpect(jsonPath("$.years[1].expensesExceedIncome").value(true));
     }
 
+    // docs/specs/einmalposten.md
+    @Test
+    void yearlyOverviewHasTheOneTimeTotalsAndYearsWithoutPlan() throws Exception { // EP-12, EP-13
+        when(plans.getYearlyOverview(OWNER)).thenReturn(YearlyOverview.of(
+                List.of(new YearlyOverview.PlanSummary(PLAN_ID, Year.of(2026), BudgetSummary.EMPTY
+                        .withIncome(Money.of(new BigDecimal("36000.00"))))),
+                List.of(new YearlyOverview.OneTimeSummary(Year.of(2026), Money.of(new BigDecimal("800.00")),
+                                Money.of(new BigDecimal("1200.00"))),
+                        new YearlyOverview.OneTimeSummary(Year.of(2027), Money.of(new BigDecimal("2000.00")),
+                                Money.ZERO))));
+
+        mockMvc.perform(get("/api/plans/years"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.years.length()").value(2))
+                .andExpect(jsonPath("$.years[0].year").value(2027))
+                .andExpect(jsonPath("$.years[0].planId").isEmpty())
+                .andExpect(jsonPath("$.years[0].totalIncome").isEmpty())
+                .andExpect(jsonPath("$.years[0].monthlyBalance").isEmpty())
+                .andExpect(jsonPath("$.years[0].oneTimeIncome").value("2000.00"))
+                .andExpect(jsonPath("$.years[0].oneTimeExpense").value("0.00"))
+                .andExpect(jsonPath("$.years[0].oneTimeBalance").value("2000.00"))
+                .andExpect(jsonPath("$.years[0].oneTimeExpensesExceedIncome").value(false))
+                .andExpect(jsonPath("$.years[1].planId").value(PLAN.toString()))
+                .andExpect(jsonPath("$.years[1].totalIncome").value("36000.00"))
+                .andExpect(jsonPath("$.years[1].oneTimeIncome").value("800.00"))
+                .andExpect(jsonPath("$.years[1].oneTimeExpense").value("1200.00"))
+                .andExpect(jsonPath("$.years[1].oneTimeBalance").value("-400.00"))
+                .andExpect(jsonPath("$.years[1].oneTimeExpensesExceedIncome").value(true));
+    }
+
     @Test
     void yearlyOverviewNeedsASignedInUser() throws Exception {
         anonymous.perform(get("/api/plans/years")).andExpect(status().isUnauthorized());

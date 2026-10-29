@@ -8,6 +8,7 @@ import { BudgetDashboard } from './budget-dashboard';
 import { BudgetItem, HouseholdPlanOverview, YearlyOverviewEntry } from './budget.model';
 import { BudgetApi } from './data-access/budget-api';
 import { BudgetStore } from './data-access/budget-store';
+import { OneTimeItemStore } from './data-access/one-time-item-store';
 
 const item: BudgetItem = {
   id: '1',
@@ -64,6 +65,26 @@ const overview: HouseholdPlanOverview = {
   ],
 };
 
+/** The one-time items of the year, empty; they have tests of their own. */
+function oneTimeItemStore() {
+  return {
+    provide: OneTimeItemStore,
+    useValue: {
+      overview: signal({
+        year: 2026,
+        items: [],
+        totalIncome: '0.00',
+        totalExpense: '0.00',
+        balance: '0.00',
+        expensesExceedIncome: false,
+      }),
+      loadError: signal(null),
+      load: vi.fn(async () => undefined),
+      selectYear: vi.fn(async () => undefined),
+    },
+  };
+}
+
 describe('BudgetDashboard', () => {
   it('offers to undo a deletion', async () => {
     const undo = new Subject<void>();
@@ -89,7 +110,7 @@ describe('BudgetDashboard', () => {
     });
     // The dashboard provides a store of its own, replace that with the fake.
     TestBed.overrideComponent(BudgetDashboard, {
-      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+      set: { providers: [{ provide: BudgetStore, useValue: store }, oneTimeItemStore()] },
     });
     const fixture = TestBed.createComponent(BudgetDashboard);
     fixture.componentRef.setInput('year', String(store.year()));
@@ -130,7 +151,7 @@ describe('BudgetDashboard', () => {
     });
     // The dashboard provides a store of its own, replace that with the fake.
     TestBed.overrideComponent(BudgetDashboard, {
-      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+      set: { providers: [{ provide: BudgetStore, useValue: store }, oneTimeItemStore()] },
     });
     const fixture = TestBed.createComponent(BudgetDashboard);
     fixture.componentRef.setInput('year', String(store.year()));
@@ -212,7 +233,7 @@ describe('BudgetDashboard', () => {
     });
     // The dashboard provides a store of its own, replace that with the fake.
     TestBed.overrideComponent(BudgetDashboard, {
-      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+      set: { providers: [{ provide: BudgetStore, useValue: store }, oneTimeItemStore()] },
     });
     const fixture = TestBed.createComponent(BudgetDashboard);
     fixture.componentRef.setInput('year', String(store.year()));
@@ -254,7 +275,7 @@ describe('BudgetDashboard', () => {
     });
     // The dashboard provides a store of its own, replace that with the fake.
     TestBed.overrideComponent(BudgetDashboard, {
-      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+      set: { providers: [{ provide: BudgetStore, useValue: store }, oneTimeItemStore()] },
     });
     const fixture = TestBed.createComponent(BudgetDashboard);
     fixture.componentRef.setInput('year', String(store.year()));
@@ -299,7 +320,7 @@ describe('BudgetDashboard', () => {
       ],
     });
     TestBed.overrideComponent(BudgetDashboard, {
-      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+      set: { providers: [{ provide: BudgetStore, useValue: store }, oneTimeItemStore()] },
     });
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     const fixture = TestBed.createComponent(BudgetDashboard);
@@ -344,7 +365,7 @@ describe('BudgetDashboard', () => {
       ],
     });
     TestBed.overrideComponent(BudgetDashboard, {
-      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+      set: { providers: [{ provide: BudgetStore, useValue: store }, oneTimeItemStore()] },
     });
     const navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     const fixture = TestBed.createComponent(BudgetDashboard);
@@ -397,7 +418,7 @@ describe('BudgetDashboard', () => {
       ],
     });
     TestBed.overrideComponent(BudgetDashboard, {
-      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+      set: { providers: [{ provide: BudgetStore, useValue: store }, oneTimeItemStore()] },
     });
     const fixture = TestBed.createComponent(BudgetDashboard);
     fixture.componentRef.setInput('year', '2030');
@@ -437,7 +458,7 @@ describe('BudgetDashboard', () => {
       providers: [provideRouter([]), { provide: BudgetApi, useValue: api }],
     });
     TestBed.overrideComponent(BudgetDashboard, {
-      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+      set: { providers: [{ provide: BudgetStore, useValue: store }, oneTimeItemStore()] },
     });
     const fixture = TestBed.createComponent(BudgetDashboard);
     fixture.componentRef.setInput('year', '2030');
@@ -466,7 +487,7 @@ describe('BudgetDashboard', () => {
     };
     TestBed.configureTestingModule({ providers: [provideRouter([])] });
     TestBed.overrideComponent(BudgetDashboard, {
-      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+      set: { providers: [{ provide: BudgetStore, useValue: store }, oneTimeItemStore()] },
     });
     const router = TestBed.inject(Router);
     const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
@@ -504,7 +525,7 @@ describe('BudgetDashboard', () => {
     };
     TestBed.configureTestingModule({ providers: [provideRouter([])] });
     TestBed.overrideComponent(BudgetDashboard, {
-      set: { providers: [{ provide: BudgetStore, useValue: store }] },
+      set: { providers: [{ provide: BudgetStore, useValue: store }, oneTimeItemStore()] },
     });
     const navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     const fixture = TestBed.createComponent(BudgetDashboard);

@@ -24,6 +24,10 @@ const entry = (year: number, changes: Partial<YearlyOverviewEntry> = {}): Yearly
   incomeChange: null,
   expenseChange: null,
   balanceChange: null,
+  oneTimeIncome: '0.00',
+  oneTimeExpense: '0.00',
+  oneTimeBalance: '0.00',
+  oneTimeExpensesExceedIncome: false,
   ...changes,
 });
 
@@ -83,7 +87,7 @@ describe('YearlyOverviewPage', () => {
       entry(currentYear() - 1),
     ]);
 
-    const rows = [...element.querySelectorAll('tbody tr')];
+    const rows = [...element.querySelectorAll('tbody tr[data-year]')];
     expect(rows.map((r) => r.querySelector('th')!.textContent!.trim())).toEqual([
       String(currentYear()),
       String(currentYear() - 1),
@@ -213,7 +217,7 @@ describe('YearlyOverviewPage', () => {
       }),
     );
     expect(navigate).not.toHaveBeenCalled();
-    expect(element.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(element.querySelectorAll('tbody tr[data-year]')).toHaveLength(1);
   });
 
   // PL-8
@@ -274,6 +278,82 @@ describe('YearlyOverviewPage', () => {
       ),
     );
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  // docs/specs/einmalposten.md
+  // EP-13, EP-14
+  it('shows the one-time totals of each year in columns of their own, always per year', async () => {
+    const element = await render([
+      entry(currentYear(), {
+        oneTimeIncome: '800.00',
+        oneTimeExpense: '1200.00',
+        oneTimeBalance: '-400.00',
+        oneTimeExpensesExceedIncome: true,
+      }),
+    ]);
+
+    const headings = [...element.querySelectorAll('thead .group-head th')].map((th) =>
+      th.textContent!.trim(),
+    );
+    expect(headings).toEqual(['Haushaltsplan', 'Einmalig (Jahr)']);
+    expect(periodToggle(element, 'Monatlich').getAttribute('aria-checked')).toBe('true');
+    const oneTime = [...row(element, currentYear()).querySelectorAll('td.one-time')];
+    expect(oneTime.map((cell) => cell.querySelector('.value')!.textContent!.trim())).toEqual([
+      '€800.00',
+      '€1,200.00',
+      '-€400.00',
+    ]);
+    expect(oneTime[2].textContent).toContain('Defizit');
+    expect(oneTime.some((cell) => cell.querySelector('app-year-change'))).toBe(false);
+  });
+
+  // EP-12
+  it('lists a year with only one-time items without plan figures or buttons for a plan', async () => {
+    const element = await render([
+      entry(currentYear() + 1, {
+        planId: null,
+        totalIncome: null,
+        totalExpense: null,
+        balance: null,
+        monthlyTotalIncome: null,
+        monthlyTotalExpense: null,
+        monthlyBalance: null,
+        oneTimeIncome: '2000.00',
+        oneTimeBalance: '2000.00',
+      }),
+      entry(currentYear()),
+    ]);
+
+    const withoutPlan = row(element, currentYear() + 1);
+    const planCells = [...withoutPlan.querySelectorAll('td:not(.one-time):not(.actions)')];
+    expect(planCells.map((cell) => cell.textContent!.trim())).toEqual(['–', '–', '–']);
+    expect(withoutPlan.querySelector('td.one-time')!.textContent).toContain('2,000.00');
+    expect(withoutPlan.querySelectorAll('.actions button')).toHaveLength(0);
+    expect(row(element, currentYear()).querySelectorAll('.actions button')).toHaveLength(2);
+
+    withoutPlan.click();
+    expect(navigate).toHaveBeenCalledWith(['/jahre', currentYear() + 1]);
+  });
+
+  // EP-12, JU-12, JU-13
+  it('counts only years with a plan when offering to create one', async () => {
+    const element = await render([
+      entry(currentYear(), { planId: null, totalIncome: null, oneTimeIncome: '5.00' }),
+    ]);
+
+    expect(element.textContent).toContain('Noch keine Haushaltspläne.');
+    expect(element.textContent).toContain('Haushaltsplan anlegen');
+    expect(element.querySelector('mat-button-toggle-group')).toBeNull();
+    expect(row(element, currentYear())).not.toBeNull();
+  });
+
+  // EP-18
+  it('has a row of its own for the one-time totals of each year, for narrow screens', async () => {
+    const element = await render([entry(currentYear(), { oneTimeIncome: '800.00' })]);
+
+    const oneTimeRow = element.querySelector(`tr[data-one-time-year="${currentYear()}"]`)!;
+    expect(oneTimeRow.querySelector('th')!.textContent).toContain('Einmalig (Jahr)');
+    expect(oneTimeRow.querySelector('td')!.textContent).toContain('800.00');
   });
 
   it('shows a load error and loads again on request', async () => {

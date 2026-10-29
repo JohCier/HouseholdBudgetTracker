@@ -16,7 +16,7 @@ async function copyToNextYear(page: Page, year: number): Promise<void> {
 }
 
 function overviewYears(page: Page) {
-  return page.locator("app-yearly-overview-page tbody th");
+  return page.locator("app-yearly-overview-page tbody tr[data-year] th");
 }
 
 // docs/specs/plan-loeschen.md
