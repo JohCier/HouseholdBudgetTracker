@@ -21,7 +21,6 @@ import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemNote;
 import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
-import de.jcss.hbt.domain.householdplan.valueobject.ItemMarks;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemSection;
 import de.jcss.hbt.domain.householdplan.valueobject.Money;
 import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
@@ -134,7 +133,7 @@ public class HouseholdPlanController {
         AddedBudgetItem added = plans.addIncome(new AddIncomeCommand(owner(user), HouseholdPlanId.of(planId),
                 BudgetItemDescription.of(request.description()), new ItemAmount(Money.of(request.amount()), request.period().toDomain()),
                 BudgetItemSubcategory.ofNullable(request.subcategory()), BudgetItemNote.ofNullable(request.note()),
-                marks(request.important(), null)));
+                Boolean.TRUE.equals(request.important())));
         return AddedBudgetItemResponse.from(added);
     }
 
@@ -145,7 +144,8 @@ public class HouseholdPlanController {
         AddedBudgetItem added = plans.addExpense(new AddExpenseCommand(owner(user), HouseholdPlanId.of(planId),
                 BudgetItemDescription.of(request.description()), new ItemAmount(Money.of(request.amount()), request.period().toDomain()),
                 request.category().toDomain(), BudgetItemSubcategory.ofNullable(request.subcategory()),
-                BudgetItemNote.ofNullable(request.note()), marks(request.important(), request.savingPotential())));
+                BudgetItemNote.ofNullable(request.note()), Boolean.TRUE.equals(request.important()),
+                savingPotential(request.savingPotential())));
         return AddedBudgetItemResponse.from(added);
     }
 
@@ -215,10 +215,9 @@ public class HouseholdPlanController {
                 new RemoveBudgetItemCommand(owner(user), HouseholdPlanId.of(planId), BudgetItemId.of(itemId))));
     }
 
-    /** The marks of an item to restore (PM-6); absent values mean none. */
-    private static ItemMarks marks(Boolean important, BigDecimal savingPotential) {
-        return new ItemMarks(Boolean.TRUE.equals(important),
-                savingPotential == null ? null : SavingPotential.monthly(Money.of(savingPotential)));
+    /** The saving potential of an expense to restore (PM-6); {@code null} if it has none. */
+    private static SavingPotential savingPotential(BigDecimal savingPotential) {
+        return savingPotential == null ? null : SavingPotential.monthly(Money.of(savingPotential));
     }
 
     /** The signed-in user; the subject of their session token is their user id. */

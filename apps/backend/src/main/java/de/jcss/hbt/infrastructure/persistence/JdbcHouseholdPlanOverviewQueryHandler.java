@@ -46,7 +46,8 @@ public class JdbcHouseholdPlanOverviewQueryHandler implements HouseholdPlanOverv
                 category == null ? null : ExpenseCategory.valueOf(category),
                 BudgetItemSubcategory.ofNullable(rs.getString("subcategory")),
                 BudgetItemNote.ofNullable(rs.getString("note")),
-                ItemMarksColumns.of(rs));
+                rs.getBoolean("important"),
+                SavingPotentialColumn.of(rs));
     };
 
     private final JdbcClient jdbcClient;

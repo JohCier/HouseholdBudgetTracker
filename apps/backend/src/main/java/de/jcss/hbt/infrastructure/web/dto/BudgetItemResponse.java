@@ -53,8 +53,8 @@ public record BudgetItemResponse(
                 item.category() == null ? null : ExpenseCategoryDto.from(item.category()),
                 item.subcategory() == null ? null : item.subcategory().value(),
                 item.note() == null ? null : item.note().value(),
-                item.marks().important(),
-                item.marks().savingPotential() == null ? null : item.marks().savingPotential().monthly().value(),
+                item.important(),
+                item.savingPotential() == null ? null : item.savingPotential().monthly().value(),
                 percentageOfGroup == null ? null : percentageOfGroup.value()
         );
     }

@@ -108,7 +108,7 @@ public record HouseholdPlanOverview(
     /** The saving potential per month: the sum of the saving potentials of all expenses that have one (PM-13). */
     public Money monthlySavingPotential() {
         return items.stream()
-                .map(item -> item.marks().savingPotential())
+                .map(OverviewItem::savingPotential)
                 .filter(Objects::nonNull)
                 .map(SavingPotential::monthly)
                 .reduce(Money.ZERO, Money::add);

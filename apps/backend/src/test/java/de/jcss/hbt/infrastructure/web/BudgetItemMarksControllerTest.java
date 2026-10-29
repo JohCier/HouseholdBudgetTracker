@@ -12,7 +12,6 @@ import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
-import de.jcss.hbt.domain.householdplan.valueobject.ItemMarks;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemType;
 import de.jcss.hbt.domain.householdplan.valueobject.Money;
 import de.jcss.hbt.domain.householdplan.valueobject.SavingPotential;
@@ -155,9 +154,9 @@ class BudgetItemMarksControllerTest extends HouseholdPlanControllerTestSupport {
         ItemAmount streaming = ItemAmount.monthly(Money.of(new BigDecimal("15")));
         verify(plans).addExpense(new AddExpenseCommand(OWNER, PLAN_ID, BudgetItemDescription.of("Streaming"),
                 streaming, ExpenseCategory.FREIZEIT_SPASS, null, null,
-                new ItemMarks(true, SavingPotential.monthly(Money.of(new BigDecimal("5.00"))))));
+                true, SavingPotential.monthly(Money.of(new BigDecimal("5.00")))));
         verify(plans).addIncome(new AddIncomeCommand(OWNER, PLAN_ID, BudgetItemDescription.of("Gehalt"),
-                ItemAmount.monthly(Money.of(new BigDecimal("2000"))), null, null, new ItemMarks(true, null)));
+                ItemAmount.monthly(Money.of(new BigDecimal("2000"))), null, null, true));
     }
 
     /** PM-9, PM-10, PM-13, PM-14, SU-1, SU-4, SU-10 */
@@ -167,10 +166,10 @@ class BudgetItemMarksControllerTest extends HouseholdPlanControllerTestSupport {
                 new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Streaming"),
                         ItemAmount.monthly(Money.of(new BigDecimal("15.00"))), ItemType.EXPENSE,
                         ExpenseCategory.FREIZEIT_SPASS, null, null,
-                        new ItemMarks(true, SavingPotential.monthly(Money.of(new BigDecimal("5.00"))))),
+                        true, SavingPotential.monthly(Money.of(new BigDecimal("5.00")))),
                 new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Fitnessstudio"),
                         yearly("360.00"), ItemType.EXPENSE, ExpenseCategory.FREIZEIT_SPASS, null, null,
-                        new ItemMarks(false, SavingPotential.monthly(Money.of(new BigDecimal("30.00"))))),
+                        false, SavingPotential.monthly(Money.of(new BigDecimal("30.00")))),
                 new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Gehalt"),
                         yearly("1000.00"), ItemType.INCOME, null, null, null)),
                 Map.of());

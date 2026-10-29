@@ -33,7 +33,7 @@ public record OverviewItemGroup(BudgetItemSubcategory subcategory, Money total, 
     /** The sum of the monthly saving potentials of its items; zero if none has one (SU-10, SU-12). */
     public Money monthlySavingPotential() {
         return items.stream()
-                .map(item -> item.marks().savingPotential())
+                .map(OverviewItem::savingPotential)
                 .filter(Objects::nonNull)
                 .map(SavingPotential::monthly)
                 .reduce(Money.ZERO, Money::add);

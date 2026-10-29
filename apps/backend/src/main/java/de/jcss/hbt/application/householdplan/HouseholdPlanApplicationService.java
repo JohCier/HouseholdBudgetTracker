@@ -121,7 +121,7 @@ public class HouseholdPlanApplicationService {
     public AddedBudgetItem addIncome(AddIncomeCommand command) {
         HouseholdPlan plan = load(command.planId(), command.owner());
         BudgetItemId itemId = plan.addIncome(command.description(), command.amount(), command.subcategory(),
-                command.note(), command.marks());
+                command.note(), command.important());
         saveAndPublishEvents(plan);
         return new AddedBudgetItem(itemId, overviewOf(plan, command.owner()));
     }
@@ -129,7 +129,7 @@ public class HouseholdPlanApplicationService {
     public AddedBudgetItem addExpense(AddExpenseCommand command) {
         HouseholdPlan plan = load(command.planId(), command.owner());
         BudgetItemId itemId = plan.addExpense(command.description(), command.amount(), command.category(),
-                command.subcategory(), command.note(), command.marks());
+                command.subcategory(), command.note(), command.important(), command.savingPotential());
         saveAndPublishEvents(plan);
         return new AddedBudgetItem(itemId, overviewOf(plan, command.owner()));
     }

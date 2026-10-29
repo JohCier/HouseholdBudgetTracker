@@ -21,8 +21,6 @@ import de.jcss.hbt.domain.householdplan.valueobject.BudgetSummary;
 import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
-import de.jcss.hbt.domain.householdplan.valueobject.ItemMark;
-import de.jcss.hbt.domain.householdplan.valueobject.ItemMarks;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemSection;
 import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
 import de.jcss.hbt.domain.householdplan.valueobject.SavingPotential;
@@ -192,20 +190,20 @@ public final class HouseholdPlan {
      */
     public BudgetItemId addIncome(BudgetItemDescription description, ItemAmount amount,
                                   BudgetItemSubcategory subcategory, BudgetItemNote note) {
-        return addIncome(description, amount, subcategory, note, ItemMarks.NONE);
+        return addIncome(description, amount, subcategory, note, false);
     }
 
     /**
-     * Adds an income with the given marks at the bottom of its group, e.g. one that is restored (EG-3, PM-6).
+     * Adds an income that may be marked as important at the bottom of its group, e.g. one that is restored
+     * (EG-3, PM-6). An income never has a saving potential (PM-2).
      *
      * @param subcategory {@code null} if the income has no subcategory
      * @param note        {@code null} if the income has no note
-     * @throws DomainValidationException if the marks name a saving potential (PM-2)
      */
     public BudgetItemId addIncome(BudgetItemDescription description, ItemAmount amount,
-                                  BudgetItemSubcategory subcategory, BudgetItemNote note, ItemMarks marks) {
+                                  BudgetItemSubcategory subcategory, BudgetItemNote note, boolean important) {
         BudgetItem item = BudgetItem.income(BudgetItemId.generate(), description, amount,
-                spellingOf(subcategory, null), note).withMarks(marks);
+                spellingOf(subcategory, null), note).withImportant(important);
         items.addLast(item);
         record(new IncomeAdded(id, item.id(), Instant.now()));
         return item.id();
@@ -219,20 +217,22 @@ public final class HouseholdPlan {
      */
     public BudgetItemId addExpense(BudgetItemDescription description, ItemAmount amount, ExpenseCategory category,
                                    BudgetItemSubcategory subcategory, BudgetItemNote note) {
-        return addExpense(description, amount, category, subcategory, note, ItemMarks.NONE);
+        return addExpense(description, amount, category, subcategory, note, false, null);
     }
 
     /**
      * Adds an expense with the given marks at the bottom of its group, e.g. one that is restored (EG-3, PM-6).
      *
      * @param subcategory {@code null} if the expense has no subcategory
-     * @param note        {@code null} if the expense has no note
+     * @param note            {@code null} if the expense has no note
+     * @param savingPotential {@code null} if the expense has none
      * @throws DomainValidationException if the saving potential exceeds the monthly amount (PM-2a)
      */
     public BudgetItemId addExpense(BudgetItemDescription description, ItemAmount amount, ExpenseCategory category,
-                                   BudgetItemSubcategory subcategory, BudgetItemNote note, ItemMarks marks) {
+                                   BudgetItemSubcategory subcategory, BudgetItemNote note, boolean important,
+                                   SavingPotential savingPotential) {
         BudgetItem item = BudgetItem.expense(BudgetItemId.generate(), description, amount, category,
-                spellingOf(subcategory, null), note).withMarks(marks);
+                spellingOf(subcategory, null), note).withImportant(important).withSavingPotential(savingPotential);
         items.addLast(item);
         record(new ExpenseAdded(id, item.id(), Instant.now()));
         return item.id();
@@ -276,11 +276,11 @@ public final class HouseholdPlan {
     public void markImportant(BudgetItemId itemId, boolean important) {
         int index = indexOf(itemId);
         BudgetItem current = items.get(index);
-        if (current.marks().important() == important) {
+        if (current.isImportant() == important) {
             return;
         }
-        items.set(index, current.withMarks(current.marks().withImportant(important)));
-        record(new BudgetItemMarked(id, itemId, ItemMark.IMPORTANT, important, Instant.now()));
+        items.set(index, current.withImportant(important));
+        record(new BudgetItemMarked(id, itemId, BudgetItemMarked.Mark.IMPORTANT, important, Instant.now()));
     }
 
     /**
@@ -294,12 +294,13 @@ public final class HouseholdPlan {
     public void changeSavingPotential(BudgetItemId itemId, SavingPotential savingPotential) {
         int index = indexOf(itemId);
         BudgetItem current = items.get(index);
-        BudgetItem changed = current.withMarks(current.marks().withSavingPotential(savingPotential));
+        BudgetItem changed = current.withSavingPotential(savingPotential);
         if (changed.hasSameValuesAs(current)) {
             return;
         }
         items.set(index, changed);
-        record(new BudgetItemMarked(id, itemId, ItemMark.SAVING_POTENTIAL, savingPotential != null, Instant.now()));
+        record(new BudgetItemMarked(id, itemId, BudgetItemMarked.Mark.SAVING_POTENTIAL, savingPotential != null,
+                Instant.now()));
     }
 
     private int indexOf(BudgetItemId itemId) {

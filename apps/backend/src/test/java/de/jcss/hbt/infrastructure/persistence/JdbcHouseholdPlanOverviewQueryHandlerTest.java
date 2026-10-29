@@ -16,7 +16,6 @@ import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
-import de.jcss.hbt.domain.householdplan.valueobject.ItemMarks;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemSection;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemType;
 import de.jcss.hbt.domain.householdplan.valueobject.Money;
@@ -103,11 +102,13 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
 
         HouseholdPlanOverview overview = queryHandler.findByOwnerAndYear(OWNER, Year.of(2026)).orElseThrow();
 
-        assertThat(overview.items()).extracting(OverviewItem::id, OverviewItem::marks).containsExactly(
-                tuple(streaming, new ItemMarks(false, SavingPotential.monthly(money("5.00")))),
-                tuple(gym, new ItemMarks(false, SavingPotential.monthly(money("30.00")))),
-                tuple(salary, new ItemMarks(true, null)),
-                tuple(BudgetItemId.of(older), ItemMarks.NONE));
+        assertThat(overview.items())
+                .extracting(OverviewItem::id, OverviewItem::important, OverviewItem::savingPotential)
+                .containsExactly(
+                        tuple(streaming, false, SavingPotential.monthly(money("5.00"))),
+                        tuple(gym, false, SavingPotential.monthly(money("30.00"))),
+                        tuple(salary, true, null),
+                        tuple(BudgetItemId.of(older), false, null));
         assertThat(overview.monthlySavingPotential()).isEqualTo(money("35.00"));
         assertThat(overview.savingPotential()).isEqualTo(money("420.00"));
         assertThat(overview.balance()).isEqualTo(money("34460.00"));

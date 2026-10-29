@@ -59,7 +59,8 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                 category == null ? null : ExpenseCategory.valueOf(category),
                 BudgetItemSubcategory.ofNullable(rs.getString("subcategory")),
                 BudgetItemNote.ofNullable(rs.getString("note")),
-                ItemMarksColumns.of(rs));
+                rs.getBoolean("important"),
+                SavingPotentialColumn.of(rs));
     };
 
     private final JdbcClient jdbcClient;
@@ -201,7 +202,8 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
     private static boolean sameValues(BudgetItem item, BudgetItem other) {
         return item.description().equals(other.description()) && item.amount().equals(other.amount())
                 && item.category().equals(other.category()) && item.subcategory().equals(other.subcategory())
-                && item.note().equals(other.note()) && item.marks().equals(other.marks());
+                && item.note().equals(other.note()) && item.isImportant() == other.isImportant()
+                && item.savingPotential().equals(other.savingPotential());
     }
 
     private void insertItem(HouseholdPlanId planId, BudgetItem item, int position) {
@@ -220,8 +222,8 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                 .param("category", categoryOf(item))
                 .param("subcategory", subcategoryOf(item))
                 .param("note", noteOf(item))
-                .param("important", item.marks().important())
-                .param("savingPotential", ItemMarksColumns.savingPotentialOf(item.marks()))
+                .param("important", item.isImportant())
+                .param("savingPotential", SavingPotentialColumn.valueOf(item))
                 .param("position", position)
                 .update();
     }
@@ -242,8 +244,8 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                 .param("category", categoryOf(item))
                 .param("subcategory", subcategoryOf(item))
                 .param("note", noteOf(item))
-                .param("important", item.marks().important())
-                .param("savingPotential", ItemMarksColumns.savingPotentialOf(item.marks()))
+                .param("important", item.isImportant())
+                .param("savingPotential", SavingPotentialColumn.valueOf(item))
                 .param("position", position)
                 .update();
     }

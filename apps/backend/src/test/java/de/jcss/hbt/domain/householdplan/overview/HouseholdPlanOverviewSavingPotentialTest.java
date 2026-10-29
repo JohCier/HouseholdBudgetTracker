@@ -6,7 +6,6 @@ import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
-import de.jcss.hbt.domain.householdplan.valueobject.ItemMarks;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemType;
 import de.jcss.hbt.domain.householdplan.valueobject.Money;
 import de.jcss.hbt.domain.householdplan.valueobject.SavingPotential;
@@ -144,12 +143,10 @@ class HouseholdPlanOverviewSavingPotentialTest {
     /** @param savingPotential monthly, {@code null} for none */
     private static OverviewItem expense(String description, ExpenseCategory category, String subcategory,
                                         String savingPotential) {
-        ItemMarks marks = savingPotential == null
-                ? ItemMarks.NONE
-                : new ItemMarks(false, SavingPotential.monthly(money(savingPotential)));
         return new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of(description),
                 ItemAmount.monthly(money("100.00")), ItemType.EXPENSE, category,
-                BudgetItemSubcategory.ofNullable(subcategory), null, marks);
+                BudgetItemSubcategory.ofNullable(subcategory), null, false,
+                savingPotential == null ? null : SavingPotential.monthly(money(savingPotential)));
     }
 
     private static Money money(String amount) {

@@ -11,7 +11,6 @@ import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
-import de.jcss.hbt.domain.householdplan.valueobject.ItemMarks;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemSection;
 import de.jcss.hbt.domain.householdplan.valueobject.Money;
 import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
@@ -47,6 +46,7 @@ import java.util.function.BiFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 @IntegrationTest
 class JdbcHouseholdPlanRepositoryTest {
@@ -103,15 +103,16 @@ class JdbcHouseholdPlanRepositoryTest {
         repository.save(loaded);
 
         HouseholdPlan restored = repository.findById(plan.id()).orElseThrow();
-        assertThat(restored.items()).extracting(BudgetItem::marks).containsExactly(
-                new ItemMarks(true, null),
-                new ItemMarks(false, SavingPotential.monthly(Money.of(new BigDecimal("25.50")))));
+        assertThat(restored.items()).extracting(BudgetItem::isImportant, BudgetItem::savingPotential).containsExactly(
+                tuple(true, Optional.empty()),
+                tuple(false, Optional.of(SavingPotential.monthly(Money.of(new BigDecimal("25.50"))))));
 
         restored.changeSavingPotential(rent, null);
         repository.save(restored);
 
         assertThat(repository.findById(plan.id()).orElseThrow().items())
-                .extracting(BudgetItem::marks).containsExactly(new ItemMarks(true, null), ItemMarks.NONE);
+                .extracting(BudgetItem::isImportant, BudgetItem::savingPotential)
+                .containsExactly(tuple(true, Optional.empty()), tuple(false, Optional.empty()));
     }
 
     @Test
