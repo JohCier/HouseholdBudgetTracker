@@ -68,6 +68,8 @@ const overview: HouseholdPlanOverview = {
 
   savingPotential: '0.00',
   savingPotentialsBySubcategory: [],
+  topSavingPotentials: [],
+  topExpenses: [],
   expensesExceedIncome: false,
   categoryBreakdowns: [],
   items: [salary, fuel, tax, rent, savings],

@@ -15,6 +15,7 @@ export type CategoryBreakdown = Schemas['CategoryBreakdownResponse'];
 export type ItemGroup = Schemas['ItemGroupResponse'];
 export type CategoryItems = Schemas['CategoryItemsResponse'];
 export type SubcategorySavingPotential = Schemas['SubcategorySavingPotentialResponse'];
+export type TopItem = Schemas['TopItemResponse'];
 export type HouseholdPlanOverview = Schemas['HouseholdPlanOverviewResponse'];
 export type AddIncomeRequest = Schemas['AddIncomeRequest'];
 export type AddExpenseRequest = Schemas['AddExpenseRequest'];
@@ -67,6 +68,9 @@ export const AMOUNT_PERIODS: readonly { value: AmountPeriod; label: string }[] =
 
 /** How the 50/30/20 card shows the breakdown: as one bar per category or as a pie chart. */
 export type BreakdownView = 'bars' | 'pie';
+
+/** Which list the card "Top 5" shows: the highest saving potentials or the highest expenses (TP-7). */
+export type TopItemsView = 'savingPotential' | 'expenses';
 
 /**
  * Which part of the plan the pie shows (TK-1): the 50/30/20 rule, the subcategory groups of one

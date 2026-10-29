@@ -1,6 +1,6 @@
 # Top 5: Sparpotential und Ausgaben
 
-Status: geplant
+Status: umgesetzt
 
 ## Zweck
 
@@ -22,7 +22,8 @@ Mit dieser Spec steht unter der Karte „50/30/20-Regel" eine Karte „Top 5". E
   Freizeit & Spaß. Ausgaben in Sparen & Investieren stehen nicht darin, weil sie keine Ausgaben sind, die man senken
   möchte. Einnahmen stehen in keiner der beiden Listen.
 - **TP-3**: Maßgeblich ist der Monatsbetrag: Eine Ausgabe „Kfz-Versicherung" 600,00 € jährlich zählt mit 50,00 €.
-  Der Jahreswert ist das Zwölffache.
+  Der Jahreswert des Sparpotentials ist das Zwölffache (PM-13), der einer Ausgabe ihr Jahresbetrag wie in den
+  Einträgen (MJ-8).
 - **TP-4**: Geordnet wird nach dem Monatsbetrag, der größte oben; bei gleichem Betrag alphabetisch nach Beschreibung.
   Gibt es weniger als fünf passende Ausgaben, zeigt die Liste entsprechend weniger Zeilen.
 - **TP-5**: Das Backend stellt beide Listen zusammen und liefert sie mit jeder Übersicht (AU-1). Die Oberfläche
@@ -80,7 +81,20 @@ Mit dieser Spec steht unter der Karte „50/30/20-Regel" eine Karte „Top 5". E
 
 ## Umsetzung
 
-Folgt nach der Freigabe.
+- Read Model: `TopItem` (Posten, Monatsbetrag, Jahreswert, `LIMIT` = 5) und `HouseholdPlanOverview.topSavingPotentials()`
+  bzw. `topExpenses()`: filtern, ordnen nach Monatsbetrag, dann Beschreibung ohne Beachtung der Groß- und
+  Kleinschreibung, höchstens fünf (TP-1 bis TP-4)
+- API: `HouseholdPlanOverviewResponse.topSavingPotentials` und `topExpenses` mit `TopItemResponse` (`id`,
+  `description`, `subcategory`, `monthlyAmount`, `amount`, `itemMonthlyAmount`); kommen mit jeder Übersicht, also auch
+  nach jeder Änderung (TP-5, TP-12, AU-1)
+- Frontend: `budget/ui/top-items.ts` ist die Karte mit Umschalter „Sparpotential | Ausgaben" und Tabelle; unter 22em
+  Kartenbreite (Container-Abfrage) steht die Beschreibung über den Beträgen (TP-11). Die gewählte Liste hält
+  `budget/budget-dashboard.ts` (`topItemsView`), damit sie den Wechsel des Jahres übersteht (TP-7); `TopItemsView` in
+  `budget/budget.model.ts`
+- Tests: `HouseholdPlanOverviewTopItemsTest`, `HouseholdPlanOverviewControllerTest`, `top-items.spec.ts`
+- E2E: `e2e/tests/top-5.spec.ts` (TP-1 bis TP-4, TP-7 bis TP-12; TP-5 und TP-6 decken die Backend-Tests ab).
+  `showTopItems` und `topItemRows` stehen in `support.ts`; `addExpense` wählt „Ausgabe" jetzt exakt, weil der
+  Umschalter „Ausgaben" hinzukam
 
 ## Offene Fragen
 

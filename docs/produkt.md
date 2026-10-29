@@ -37,6 +37,7 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 | Bilanz | Gesamteinnahmen, Gesamtausgaben und Saldo in einem Kasten, je Monat und je Jahr nebeneinander | [bilanz.md](specs/bilanz.md) | BI-… |
 | Posten markieren | Posten in den Einträgen als wichtig hervorheben; bei Ausgaben ein monatliches Sparpotential festhalten, in der Bilanz summiert | [posten-markierungen.md](specs/posten-markierungen.md) | PM-… |
 | Sparpotential je Unterkategorie | Links neben der Bilanz die Summe des Sparpotentials je Unterkategorie, je Monat und Jahr, das größte oben; je Gruppe auch in ihrer Summenzeile der Einträge | [sparpotential-unterkategorie.md](specs/sparpotential-unterkategorie.md) | SU-… |
+| Top 5 | Unter der 50/30/20-Karte die fünf Ausgaben mit dem höchsten Sparpotential oder die fünf höchsten Ausgaben aus Lebensunterhalt und Freizeit & Spaß, umschaltbar, je Monat und Jahr | [top-5.md](specs/top-5.md) | TP-… |
 | Fehlermeldungen | Alle Meldungen auf Deutsch, auch die der API | [fehlermeldungen.md](specs/fehlermeldungen.md) | FM-… |
 | Auswertung | Summen, Saldo, Warnung bei Defizit, Anteil und Zielerreichung je 50/30/20-Kategorie | [auswertung-50-30-20.md](specs/auswertung-50-30-20.md) | AW-… |
 | Tortendiagramm | Die 50/30/20-Auswertung wahlweise als Balken oder als Tortendiagramm ansehen | [tortendiagramm.md](specs/tortendiagramm.md) | TD-… |

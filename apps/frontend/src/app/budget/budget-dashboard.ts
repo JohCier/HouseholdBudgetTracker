@@ -13,6 +13,7 @@ import {
   NewItemPreset,
   PieSelection,
   RULE_SELECTION,
+  TopItemsView,
   Year,
 } from './budget.model';
 import { BudgetApi } from './data-access/budget-api';
@@ -27,6 +28,7 @@ import {
   openCopyPlanDialog,
 } from './ui/copy-plan-dialog';
 import { CategoryBreakdownCard } from './ui/category-breakdown';
+import { TopItems } from './ui/top-items';
 import { deletedMessage, openDeletePlanDialog } from './ui/delete-plan-dialog';
 import { EditItemDialog } from './ui/edit-item-dialog';
 import { SavingPotentialDialog } from './ui/saving-potential-dialog';
@@ -43,6 +45,7 @@ import { parseYear } from './year';
     AddItemForm,
     BudgetEntries,
     CategoryBreakdownCard,
+    TopItems,
     OverviewSummary,
     RouterLink,
   ],
@@ -114,6 +117,11 @@ import { parseYear } from './year';
               [expenseCategories]="overview.expenseCategories"
               [(view)]="breakdownView"
               [(pieSelection)]="pieSelection"
+            />
+            <app-top-items
+              [savingPotentials]="overview.topSavingPotentials"
+              [expenses]="overview.topExpenses"
+              [(view)]="topItemsView"
             />
           }
         </div>
@@ -248,6 +256,8 @@ export class BudgetDashboard {
   protected readonly breakdownView = signal<BreakdownView>('bars');
   /** Part of the plan the pie shows, kept like the view (TK-5). */
   protected readonly pieSelection = signal<PieSelection>(RULE_SELECTION);
+  /** Which top 5 list is shown; kept here so that it survives changing the year (TP-7). */
+  protected readonly topItemsView = signal<TopItemsView>('savingPotential');
   /** The years the user has plans for, other than the one shown; looked up for a year without plan (PU-12). */
   protected readonly otherPlanYears = signal<Year[]>([]);
 

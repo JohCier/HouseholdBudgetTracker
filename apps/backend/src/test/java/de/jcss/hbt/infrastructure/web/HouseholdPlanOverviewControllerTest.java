@@ -14,6 +14,7 @@ import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemType;
 import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.SavingPotential;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -193,5 +194,38 @@ class HouseholdPlanOverviewControllerTest extends HouseholdPlanControllerTestSup
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(plans);
+    }
+
+    /** TP-1 to TP-3, TP-5, TP-8, TP-9 */
+    @Test
+    void overviewListsTheTopSavingPotentialsAndExpenses() throws Exception {
+        HouseholdPlanOverview overview = HouseholdPlanOverview.of(PLAN_ID, Year.of(2026), List.of(
+                new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Fitnessstudio"),
+                        yearly("360.00"), ItemType.EXPENSE, ExpenseCategory.FREIZEIT_SPASS,
+                        BudgetItemSubcategory.of("Hobbys"), null,
+                        false, SavingPotential.monthly(Money.of(new BigDecimal("30.00")))),
+                new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("Miete"),
+                        ItemAmount.monthly(Money.of(new BigDecimal("1000.00"))), ItemType.EXPENSE,
+                        ExpenseCategory.LEBENSUNTERHALT, null, null),
+                new OverviewItem(BudgetItemId.generate(), BudgetItemDescription.of("ETF-Sparplan"),
+                        ItemAmount.monthly(Money.of(new BigDecimal("500.00"))), ItemType.EXPENSE,
+                        ExpenseCategory.SPAREN_INVESTIEREN, null, null)),
+                Map.of());
+        when(plans.getOverview(OWNER, Year.of(2026))).thenReturn(overview);
+
+        mockMvc.perform(get("/api/plans").param("year", "2026"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.topSavingPotentials.length()").value(1))
+                .andExpect(jsonPath("$.topSavingPotentials[0].description").value("Fitnessstudio"))
+                .andExpect(jsonPath("$.topSavingPotentials[0].subcategory").value("Hobbys"))
+                .andExpect(jsonPath("$.topSavingPotentials[0].monthlyAmount").value("30.00"))
+                .andExpect(jsonPath("$.topSavingPotentials[0].amount").value("360.00"))
+                .andExpect(jsonPath("$.topSavingPotentials[0].itemMonthlyAmount").value("30.00"))
+                .andExpect(jsonPath("$.topExpenses.length()").value(2))
+                .andExpect(jsonPath("$.topExpenses[0].description").value("Miete"))
+                .andExpect(jsonPath("$.topExpenses[0].subcategory").value("Sonstiges"))
+                .andExpect(jsonPath("$.topExpenses[0].monthlyAmount").value("1000.00"))
+                .andExpect(jsonPath("$.topExpenses[0].amount").value("12000.00"))
+                .andExpect(jsonPath("$.topExpenses[1].description").value("Fitnessstudio"));
     }
 }

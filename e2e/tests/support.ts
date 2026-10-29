@@ -98,7 +98,7 @@ export async function addExpense(
   subcategory?: string,
   period: Period = 'Jährlich',
 ): Promise<void> {
-  await page.getByRole('radio', { name: 'Ausgabe' }).click();
+  await page.getByRole('radio', { name: 'Ausgabe', exact: true }).click();
   await page.getByLabel('Beschreibung').fill(description);
   await page.getByLabel('Betrag').fill(amount);
   await choosePeriod(page, period);
@@ -269,4 +269,16 @@ export function pieEntry(page: Page, name: string) {
 /** The selected category or group with its total above the legend (TK-7). */
 export function pieSummary(page: Page) {
   return page.locator('app-category-pie .selection-summary');
+}
+
+/** Switches the card "Top 5" between "Sparpotential" and "Ausgaben" (TP-7). */
+export async function showTopItems(page: Page, list: 'Sparpotential' | 'Ausgaben'): Promise<void> {
+  const toggle = page.getByRole('radiogroup', { name: 'Liste' }).getByRole('radio', { name: list });
+  await toggle.click();
+  await expect(toggle).toBeChecked();
+}
+
+/** The rows of the list the card "Top 5" shows (TP-8). */
+export function topItemRows(page: Page) {
+  return page.getByRole('table', { name: 'Top 5' }).locator('tbody tr');
 }
