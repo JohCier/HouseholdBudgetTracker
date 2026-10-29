@@ -1,6 +1,6 @@
 # Sortierung der Torte
 
-Status: geplant
+Status: umgesetzt
 
 ## Zweck
 
@@ -78,8 +78,12 @@ der Einträge zu ändern. Die Spec ersetzt das Nicht-Ziel „Umsortieren in der 
 
 ## Umsetzung
 
-Noch nicht umgesetzt. Geplant: `PieSort` in `budget/budget.model.ts`; Auswahl „Sortierung“ (`mat-select`) und Knopf
-für die Richtung in `budget/ui/category-pie.ts`, die Sortierung hält `budget/budget-dashboard.ts` wie `pieSelection`
-(TS-6). Tests in `category-pie.spec.ts`, E2E in `e2e/tests/torte-sortierung.spec.ts`.
+- Frontend: `PieSort`, `PieSortKey` und `ENTRIES_SORT` in `budget/budget.model.ts`; `budget/ui/category-pie.ts` mit
+  der Auswahl „Sortierung“ (`mat-select`) und dem Knopf für die Richtung (`sortBy`, `reverse`), die Funktion `sorted`
+  ordnet Gruppen bzw. Posten stabil vor dem Abstufen der Farbe (TS-3, TS-4); „nicht verplant“ wird danach angehängt
+  (TS-5). Die Sortierung hält `budget/budget-dashboard.ts` (`pieSort`) und reicht sie über
+  `budget/ui/category-breakdown.ts` weiter (TS-6). Pfeile `arrow_downward`, `arrow_upward` in `icons.ts`
+- Tests: `category-pie.spec.ts` (Block `sort`)
+- E2E: `e2e/tests/torte-sortierung.spec.ts`
 
 ## Offene Fragen

@@ -5,6 +5,7 @@ import {
   CategoryItems,
   ExpenseCategory,
   PieSelection,
+  PieSort,
 } from '../budget.model';
 import { CategoryPieChart } from './category-pie';
 
@@ -36,12 +37,16 @@ async function renderPie(
   breakdowns: CategoryBreakdown[],
   expenseCategories: CategoryItems[] = [],
   selection?: PieSelection,
+  sort?: PieSort,
 ) {
   const fixture = TestBed.createComponent(CategoryPieChart);
   fixture.componentRef.setInput('breakdowns', breakdowns);
   fixture.componentRef.setInput('expenseCategories', expenseCategories);
   if (selection) {
     fixture.componentRef.setInput('selection', selection);
+  }
+  if (sort) {
+    fixture.componentRef.setInput('sort', sort);
   }
   await fixture.whenStable();
   return { fixture, element: fixture.nativeElement as HTMLElement };
@@ -355,5 +360,154 @@ describe('CategoryPieChart', () => {
     element.querySelectorAll<SVGElement>('.slice')[1].dispatchEvent(new MouseEvent('mouseenter'));
     await fixture.whenStable();
     expect(highlighted()).toEqual(['Versicherung']);
+  });
+
+  describe('sort', () => {
+    const LIVING: PieSelection = { level: 'category', category: 'LEBENSUNTERHALT' };
+    const AUTO: PieSelection = {
+      level: 'group',
+      category: 'LEBENSUNTERHALT',
+      subcategory: 'Auto',
+    };
+    const names = (element: HTMLElement) =>
+      [...element.querySelectorAll('.legend-item .name')].map((n) => n.textContent?.trim());
+
+    /** Lebensunterhalt with a third group "Versicherungen" below "Miete" (TS-1). */
+    const livingWithInsurance: CategoryItems = {
+      ...living,
+      groups: [
+        ...living.groups,
+        {
+          subcategory: 'Versicherungen',
+          total: '960.00',
+          monthlyTotal: '80.00',
+          percentageOfSection: 6.02,
+          monthlySavingPotential: '0.00',
+          items: [expense('liab', 'Haftpflicht', '80.00', 100)],
+        },
+      ],
+    };
+
+    // TS-1
+    it('keeps the order of the entries until the user chooses another one', async () => {
+      const { element } = await renderPie(breakdownsWithLiving(), [livingWithInsurance], LIVING);
+
+      expect(names(element)).toEqual(['Auto', 'Miete', 'Versicherungen']);
+      expect(element.querySelector('.sort-field')?.textContent).toContain('Einträge');
+      expect(element.querySelector('button.direction')).toBeNull();
+    });
+
+    // TS-1
+    it('offers no sorting for the 50/30/20 rule', async () => {
+      const { element } = await renderPie(breakdownsWithLiving(), [living]);
+
+      expect(element.querySelector('.sort-field')).toBeNull();
+    });
+
+    // TS-1, TS-2, TS-4
+    it('sorts by amount, the largest first in the strongest shade', async () => {
+      const { element } = await renderPie(breakdownsWithLiving(), [livingWithInsurance], LIVING, {
+        key: 'amount',
+        descending: true,
+      });
+
+      expect(names(element)).toEqual(['Miete', 'Auto', 'Versicherungen']);
+      const slices = [...element.querySelectorAll<SVGElement>('.slice')];
+      // The first slice starts at twelve o'clock
+      expect(slices[0].getAttribute('d')).toMatch(/^M 0 0 L 0 -80 /);
+      expect(slices[0].getAttribute('aria-label')).toMatch(/^Miete/);
+      expect(slices[0].style.fill).toContain('--app-lebensunterhalt-color');
+      expect(slices[0].style.fill).not.toContain('color-mix');
+      expect(element.querySelector('button.direction')?.getAttribute('aria-label')).toBe(
+        'Richtung: absteigend',
+      );
+    });
+
+    // TS-2
+    it('reverses the direction with the arrow button', async () => {
+      const { fixture, element } = await renderPie(
+        breakdownsWithLiving(),
+        [livingWithInsurance],
+        LIVING,
+        { key: 'amount', descending: true },
+      );
+
+      element.querySelector<HTMLButtonElement>('button.direction')!.click();
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.sort()).toEqual({ key: 'amount', descending: false });
+      expect(names(element)).toEqual(['Versicherungen', 'Auto', 'Miete']);
+      expect(element.querySelector('button.direction')?.getAttribute('aria-label')).toBe(
+        'Richtung: aufsteigend',
+      );
+    });
+
+    // TS-1, TS-3
+    it('sorts items by name ignoring case, ties keep the order of the entries', async () => {
+      const auto: CategoryItems = {
+        ...living,
+        groups: [
+          {
+            ...living.groups[0],
+            items: [
+              expense('ins', 'Versicherung', '50.00', 19.23),
+              expense('fuel', 'sprit', '200.00', 76.92),
+              expense('tax', 'Kfz-Steuer', '10.00', 3.85),
+              expense('tax2', 'kfz-steuer', '0.00', 0),
+            ],
+          },
+        ],
+      };
+      const { element } = await renderPie(breakdownsWithLiving(), [auto], AUTO, {
+        key: 'name',
+        descending: false,
+      });
+
+      expect(names(element)).toEqual(['Kfz-Steuer', 'kfz-steuer', 'sprit', 'Versicherung']);
+    });
+
+    // TS-5
+    it('keeps "nicht verplant" last whatever the order', async () => {
+      const leisure: CategoryBreakdown = {
+        ...breakdown('FREIZEIT_SPASS', '3000.00', 100),
+        unplanned: '30000.00',
+        monthlyUnplanned: '2500.00',
+        unplannedPercentageOfTotal: 83.33,
+      };
+      const group = (subcategory: string, monthlyTotal: string) => ({
+        subcategory,
+        total: (Number(monthlyTotal) * 12).toFixed(2),
+        monthlyTotal,
+        percentageOfSection: 0,
+        monthlySavingPotential: '0.00',
+        items: [expense(subcategory, subcategory, monthlyTotal, 100)],
+      });
+      const { element } = await renderPie(
+        [leisure],
+        [
+          {
+            category: 'FREIZEIT_SPASS',
+            total: '6000.00',
+            monthlyTotal: '500.00',
+            groups: [group('Hobby', '300.00'), group('Urlaub', '200.00')],
+          },
+        ],
+        { level: 'category', category: 'FREIZEIT_SPASS' },
+        { key: 'amount', descending: false },
+      );
+
+      expect(names(element)).toEqual(['Urlaub', 'Hobby', 'nicht verplant']);
+    });
+
+    // TS-2
+    it('starts amount descending and name ascending when chosen', async () => {
+      const { fixture } = await renderPie(breakdownsWithLiving(), [living], LIVING);
+      const pie = fixture.componentInstance as unknown as { sortBy(key: string): void };
+
+      pie.sortBy('amount');
+      expect(fixture.componentInstance.sort()).toEqual({ key: 'amount', descending: true });
+      pie.sortBy('name');
+      expect(fixture.componentInstance.sort()).toEqual({ key: 'name', descending: false });
+    });
   });
 });

@@ -60,6 +60,7 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Aufteilung je Kategorie | `CategoryBreakdown` | Teil der Übersicht: Summe, Anteil, Zielanteil und Zielerreichung einer Kategorie |
 | Darstellung (Balken, Torte) | `BreakdownView` (`bars`, `pie`), nur im Frontend | Wie die Karte „50/30/20-Regel" die Aufteilung zeigt: als Balken je Kategorie oder als Tortendiagramm |
 | Ausschnitt der Torte | `PieSelection` (`rule`, `category`, `group`), nur im Frontend | Was die Torte zeigt: die 50/30/20-Regel, eine Kategorie aufgeteilt nach Unterkategorien oder eine Unterkategorie einer Kategorie aufgeteilt nach Posten |
+| Sortierung der Torte | `PieSort` (`entries`, `amount`, `name`, `descending`), nur im Frontend | Reihenfolge der Stücke einer Kategorie oder Unterkategorie in Torte und Legende: wie die Einträge, nach Betrag je Monat oder nach Name |
 | Anteil am Ausschnitt | `percentageOfSection`, `percentageOfGroup`, `unplannedPercentageOfTotal` | Anteil einer Gruppe an ihrer Kategorie bzw. eines Postens an seiner Gruppe, aus den Monatsbeträgen; bei Sparen & Investieren einschließlich des Überschusses |
 | Protokoll | `audit_log`, `AuditLogListener` | Jedes Domain Event wird nach erfolgreichem Speichern protokolliert |
 

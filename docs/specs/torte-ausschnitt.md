@@ -116,7 +116,8 @@ bleiben unverändert.
 - Ausschnitte in der Balkenansicht
 - Speichern des Ausschnitts über das Neuladen der Seite hinaus
 - Vergleich zweier Ausschnitte oder zweier Jahre nebeneinander
-- Umsortieren in der Torte; die Reihenfolge kommt aus der Karte „Einträge"
+- Umsortieren in der Torte; die Reihenfolge kommt aus der Karte „Einträge"; seit [torte-sortierung.md](torte-sortierung.md)
+  nach Betrag oder Name sortierbar (TS-1)
 
 ## Umsetzung
 
