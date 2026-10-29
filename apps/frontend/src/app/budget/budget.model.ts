@@ -26,10 +26,32 @@ export type ReorderSubcategoriesRequest = Schemas['ReorderSubcategoriesRequest']
 export type AddedBudgetItemResponse = Schemas['AddedBudgetItemResponse'];
 export type CreateHouseholdPlanRequest = Schemas['CreateHouseholdPlanRequest'];
 export type CreatedHouseholdPlanResponse = Schemas['CreatedHouseholdPlanResponse'];
-export type YearlyOverview = Schemas['YearlyOverviewResponse'];
+// Prototype until the backend contract exists (GP-21)
+export type YearlyOverview = Schemas['YearlyOverviewResponse'] & { deletedPlanCount: number };
 export type YearlyOverviewEntry = Schemas['YearlyOverviewEntryResponse'];
 export type CopyHouseholdPlanRequest = Schemas['CopyHouseholdPlanRequest'];
 export type CopiedHouseholdPlanResponse = Schemas['CopiedHouseholdPlanResponse'];
+
+// Prototype until the backend contract exists (GP-22)
+export interface DeletedPlan {
+  planId: string;
+  year: number;
+  deletedAt: string;
+  itemCount: number;
+  totalIncome: string;
+  totalExpense: string;
+  balance: string;
+  monthlyTotalIncome: string;
+  monthlyTotalExpense: string;
+  monthlyBalance: string;
+  expensesExceedIncome: boolean;
+}
+export interface DeletedPlans {
+  plans: DeletedPlan[];
+}
+export interface RestoreHouseholdPlanRequest {
+  overwrite: boolean;
+}
 
 /** A calendar year, e.g. 2026. */
 export type Year = number;
