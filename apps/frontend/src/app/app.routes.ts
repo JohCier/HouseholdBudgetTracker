@@ -22,6 +22,12 @@ export const routes: Routes = [
     title: 'Gelöschte Pläne – Haushaltsbuch',
   },
   {
+    path: 'vermoegen/:year',
+    loadComponent: () => import('./net-worth/net-worth-page').then((m) => m.NetWorthPage),
+    canActivate: [signedInGuard],
+    title: 'Vermögen – Haushaltsbuch',
+  },
+  {
     path: 'passwort',
     loadComponent: () => import('./auth/ui/change-password-page').then((m) => m.ChangePasswordPage),
     canActivate: [signedInGuard],

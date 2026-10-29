@@ -4,6 +4,9 @@ import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
 import de.jcss.hbt.domain.exception.DomainValidationException;
 import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
 import de.jcss.hbt.domain.exception.HouseholdPlanNotFoundException;
+import de.jcss.hbt.domain.exception.NetWorthEntryNotFoundException;
+import de.jcss.hbt.domain.exception.NetWorthStatementAlreadyExistsException;
+import de.jcss.hbt.domain.exception.NetWorthStatementNotFoundException;
 import de.jcss.hbt.domain.exception.OneTimeItemNotFoundException;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
@@ -39,6 +42,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     static final URI PLAN_NOT_FOUND = URI.create("urn:hbt:plan-not-found");
     static final URI ITEM_NOT_FOUND = URI.create("urn:hbt:item-not-found");
     static final URI PLAN_ALREADY_EXISTS = URI.create("urn:hbt:plan-already-exists");
+    static final URI NET_WORTH_NOT_FOUND = URI.create("urn:hbt:net-worth-not-found");
+    static final URI NET_WORTH_ENTRY_NOT_FOUND = URI.create("urn:hbt:net-worth-entry-not-found");
+    static final URI NET_WORTH_ALREADY_EXISTS = URI.create("urn:hbt:net-worth-already-exists");
     static final URI ONE_TIME_ITEM_NOT_FOUND = URI.create("urn:hbt:one-time-item-not-found");
 
     @ExceptionHandler(DomainValidationException.class)
@@ -64,6 +70,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(HouseholdPlanAlreadyExistsException.class)
     public ProblemDetail handleHouseholdPlanAlreadyExists(HouseholdPlanAlreadyExistsException ex) {
         return problem(HttpStatus.CONFLICT, PLAN_ALREADY_EXISTS, ex);
+    }
+
+    @ExceptionHandler(NetWorthStatementNotFoundException.class)
+    public ProblemDetail handleNetWorthNotFound(NetWorthStatementNotFoundException ex) {
+        return problem(HttpStatus.NOT_FOUND, NET_WORTH_NOT_FOUND, ex);
+    }
+
+    @ExceptionHandler(NetWorthEntryNotFoundException.class)
+    public ProblemDetail handleNetWorthEntryNotFound(NetWorthEntryNotFoundException ex) {
+        return problem(HttpStatus.NOT_FOUND, NET_WORTH_ENTRY_NOT_FOUND, ex);
+    }
+
+    @ExceptionHandler(NetWorthStatementAlreadyExistsException.class)
+    public ProblemDetail handleNetWorthAlreadyExists(NetWorthStatementAlreadyExistsException ex) {
+        return problem(HttpStatus.CONFLICT, NET_WORTH_ALREADY_EXISTS, ex);
     }
 
     private static ProblemDetail problem(HttpStatus status, URI type, RuntimeException ex) {

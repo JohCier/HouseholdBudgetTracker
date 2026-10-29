@@ -59,7 +59,11 @@ describe('YearlyOverviewPage', () => {
     navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true) as never;
   });
 
-  afterEach(() => http.verify());
+  // The card "Vermögen" loads its own figures (VS-18); its tests are in net-worth-card.spec.ts
+  afterEach(() => {
+    http.match('/api/net-worth/years').forEach((request) => request.flush({ years: [] }));
+    http.verify();
+  });
 
   async function render(years: YearlyOverviewEntry[], deletedPlanCount = 0) {
     const fixture = TestBed.createComponent(YearlyOverviewPage);

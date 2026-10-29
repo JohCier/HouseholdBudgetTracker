@@ -271,6 +271,89 @@ export function pieSummary(page: Page) {
   return page.locator('app-category-pie .selection-summary');
 }
 
+export type NetWorthType = 'Vermögenswert' | 'Schuld';
+
+/** Records an asset or a liability on the page "Vermögen" shown, from the list of its type (VS-11). */
+export async function addNetWorthEntry(
+  page: Page,
+  type: NetWorthType,
+  name: string,
+  amount: string,
+): Promise<void> {
+  const list = netWorthList(page, type === 'Schuld' ? 'Schulden' : 'Vermögen');
+  const empty = page.getByText(/ist noch kein Vermögen erfasst\./);
+  if (await empty.isVisible()) {
+    await page.getByRole('button', { name: 'Wert erfassen' }).click();
+  } else {
+    await list.getByRole('button', { name: 'Wert erfassen' }).click();
+  }
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('radio', { name: type }).click();
+  await dialog.getByLabel('Bezeichnung').fill(name);
+  await dialog.getByLabel('Betrag am Jahresende').fill(amount);
+  await dialog.getByRole('button', { name: 'Speichern' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(netWorthEntry(page, name)).toBeVisible();
+}
+
+/** Records assets and liabilities of a year straight through the API, signed in as the page is (VS-1). */
+export async function recordNetWorth(
+  page: Page,
+  year: number,
+  entries: readonly (readonly [type: 'ASSET' | 'LIABILITY', name: string, amount: string])[],
+): Promise<void> {
+  for (const [type, name, amount] of entries) {
+    const response = await page.request.post(`/api/net-worth/${year}/entries`, { data: { type, name, amount } });
+    expect(response.status()).toBe(201);
+  }
+}
+
+/** Opens the page "Vermögen" of a year (VS-8). */
+export async function openNetWorth(page: Page, year: number): Promise<void> {
+  await page.goto(`/vermoegen/${year}`);
+  await expect(page.getByRole('heading', { name: `Vermögen ${year}`, exact: true })).toBeVisible();
+}
+
+/** The list "Vermögen" or "Schulden" of the page "Vermögen" (VS-8). */
+export function netWorthList(page: Page, list: 'Vermögen' | 'Schulden') {
+  return page.locator(`app-net-worth-page .list[data-type="${list === 'Schulden' ? 'LIABILITY' : 'ASSET'}"]`);
+}
+
+/** The line of an asset or a liability on the page "Vermögen". */
+export function netWorthEntry(page: Page, name: string) {
+  return page.locator('app-net-worth-page li.entry').filter({ has: page.getByText(name, { exact: true }) });
+}
+
+/** The box with the sums of the page "Vermögen" (VS-8). */
+export function netWorthSums(page: Page) {
+  return page.locator('app-net-worth-page .sums');
+}
+
+/** The card "Vermögen" of the yearly overview (VS-18). */
+export function netWorthCard(page: Page) {
+  return page.locator('app-net-worth-card');
+}
+
+/** The row of a year in the card "Vermögen" (VS-18). */
+export function netWorthRow(page: Page, year: number) {
+  return page.locator(`app-net-worth-card tbody tr[data-year="${year}"]`);
+}
+
+/** Sorts the slices of a category or group in the pie by entries, amount or name (TS-1). */
+export async function sortPie(page: Page, by: 'Einträge' | 'Betrag' | 'Name') {
+  const sort = page.getByRole('combobox', { name: 'Sortierung' });
+  await sort.click();
+  await page.getByRole('option', { name: by, exact: true }).click();
+  await expect(sort).toContainText(by);
+  // Until the list has closed, a click on the field does not open it again
+  await expect(page.getByRole('listbox')).toBeHidden();
+}
+
+/** Names in the legend of a category or group, top to bottom (TK-8). */
+export function pieNames(page: Page) {
+  return page.locator('app-category-pie .legend-item .name');
+}
+
 /** A one-time item as entered in its dialog (EP-1). */
 export interface OneTimeItemInput {
   type: 'Einnahme' | 'Ausgabe';

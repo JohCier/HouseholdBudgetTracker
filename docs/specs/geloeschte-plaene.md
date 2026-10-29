@@ -166,7 +166,7 @@ JU-1. Im Glossar ändern sich „Haushaltsplan" (höchstens ein **aktiver** Plan
 
 ## Umsetzung
 
-- Datenbank: `V11__household_plan_deleted.sql` ergänzt `household_plan.deleted_at`; die Eindeutigkeit von Besitzer und
+- Datenbank: `V13__household_plan_deleted.sql` ergänzt `household_plan.deleted_at`; die Eindeutigkeit von Besitzer und
   Jahr gilt nur noch für Zeilen ohne `deleted_at` (Teilindex `household_plan_owner_year_active_unique`, GP-1)
 - Domäne: `HouseholdPlan.delete`, `restore` und `purge` zeichnen `HouseholdPlanDeleted`, `HouseholdPlanRestored` und
   `HouseholdPlanPurged` auf (GP-27); `HouseholdPlan.createFrom(…, replacesPlan)` für die Übernahme (GP-19).
