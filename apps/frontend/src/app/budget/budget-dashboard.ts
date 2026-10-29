@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, Injector, effect, inject, input, signal, untracked } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -11,13 +12,17 @@ import {
   BreakdownView,
   BudgetItem,
   NewItemPreset,
+  ENTRIES_SORT,
+  OneTimeItem,
   PieSelection,
+  PieSort,
   RULE_SELECTION,
   TopItemsView,
   Year,
 } from './budget.model';
 import { BudgetApi } from './data-access/budget-api';
 import { BudgetStore } from './data-access/budget-store';
+import { OneTimeItemStore } from './data-access/one-time-item-store';
 import { AddItemDialog } from './ui/add-item-dialog';
 import { AddItemForm } from './ui/add-item-form';
 import { BudgetEntries, GroupOrder, ImportantMark } from './ui/budget-entries';
@@ -30,7 +35,10 @@ import {
 import { CategoryBreakdownCard } from './ui/category-breakdown';
 import { TopItems } from './ui/top-items';
 import { deletedMessage, openDeletePlanDialog } from './ui/delete-plan-dialog';
+import { openDeleteOneTimeItemDialog } from './ui/delete-one-time-item-dialog';
 import { EditItemDialog } from './ui/edit-item-dialog';
+import { openOneTimeItemDialog } from './ui/one-time-item-dialog';
+import { OneTimeItems } from './ui/one-time-items';
 import { SavingPotentialDialog } from './ui/saving-potential-dialog';
 import { OverviewSummary } from './ui/overview-summary';
 import { parseYear } from './year';
@@ -40,6 +48,7 @@ import { parseYear } from './year';
   imports: [
     MatButtonModule,
     MatCardModule,
+    NgTemplateOutlet,
     MatIconModule,
     MatProgressBarModule,
     AddItemForm,
@@ -47,9 +56,10 @@ import { parseYear } from './year';
     CategoryBreakdownCard,
     TopItems,
     OverviewSummary,
+    OneTimeItems,
     RouterLink,
   ],
-  providers: [BudgetStore],
+  providers: [BudgetStore, OneTimeItemStore],
   template: `
     @if (store.loading()) {
       <mat-progress-bar mode="indeterminate" class="loading" />
@@ -117,6 +127,7 @@ import { parseYear } from './year';
               [expenseCategories]="overview.expenseCategories"
               [(view)]="breakdownView"
               [(pieSelection)]="pieSelection"
+              [(pieSort)]="pieSort"
             />
             <app-top-items
               [savingPotentials]="overview.topSavingPotentials"
@@ -125,18 +136,21 @@ import { parseYear } from './year';
             />
           }
         </div>
-        @if (store.overview(); as overview) {
-          <app-budget-entries
-            [overview]="overview"
-            (edit)="edit($event)"
-            (remove)="remove($event)"
-            (reorderItems)="reorderItems($event)"
-            (reorderGroups)="reorderGroups($event)"
-            (add)="addTo($event)"
-            (markImportant)="markImportant($event)"
-            (savingPotential)="editSavingPotential($event)"
-          />
-        }
+        <div class="main">
+          @if (store.overview(); as overview) {
+            <app-budget-entries
+              [overview]="overview"
+              (edit)="edit($event)"
+              (remove)="remove($event)"
+              (reorderItems)="reorderItems($event)"
+              (reorderGroups)="reorderGroups($event)"
+              (add)="addTo($event)"
+              (markImportant)="markImportant($event)"
+              (savingPotential)="editSavingPotential($event)"
+            />
+          }
+          <ng-container *ngTemplateOutlet="oneTimeSection" />
+        </div>
       </div>
     } @else if (store.planMissing() && !store.loadError()) {
       <mat-card appearance="outlined" class="no-plan">
@@ -155,7 +169,20 @@ import { parseYear } from './year';
           </div>
         </mat-card-content>
       </mat-card>
+      <ng-container *ngTemplateOutlet="oneTimeSection" />
     }
+
+    <!-- Shown with and without a plan; one-time items do not belong to it (EP-5, EP-10) -->
+    <ng-template #oneTimeSection>
+      <app-one-time-items
+        [overview]="oneTimeItems.overview()"
+        [loadError]="oneTimeItems.loadError()"
+        (add)="addOneTimeItem()"
+        (edit)="editOneTimeItem($event)"
+        (remove)="removeOneTimeItem($event)"
+        (retry)="oneTimeItems.load()"
+      />
+    </ng-template>
   `,
   styles: `
     :host {
@@ -228,7 +255,8 @@ import { parseYear } from './year';
     .grid > * {
       min-width: 0;
     }
-    .side {
+    .side,
+    .main {
       display: flex;
       flex-direction: column;
       gap: 24px;
@@ -245,6 +273,7 @@ export class BudgetDashboard {
   readonly year = input<string>();
 
   protected readonly store = inject(BudgetStore);
+  protected readonly oneTimeItems = inject(OneTimeItemStore);
   private readonly api = inject(BudgetApi);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
@@ -256,6 +285,8 @@ export class BudgetDashboard {
   protected readonly breakdownView = signal<BreakdownView>('bars');
   /** Part of the plan the pie shows, kept like the view (TK-5). */
   protected readonly pieSelection = signal<PieSelection>(RULE_SELECTION);
+  /** Order of the slices in the pie; kept here like the selection (TS-6). */
+  protected readonly pieSort = signal<PieSort>(ENTRIES_SORT);
   /** Which top 5 list is shown; kept here so that it survives changing the year (TP-7). */
   protected readonly topItemsView = signal<TopItemsView>('savingPotential');
   /** The years the user has plans for, other than the one shown; looked up for a year without plan (PU-12). */
@@ -271,6 +302,7 @@ export class BudgetDashboard {
           void this.router.navigateByUrl('/');
         } else {
           void this.store.selectYear(year);
+          void this.oneTimeItems.selectYear(year);
         }
       });
     });
@@ -342,13 +374,47 @@ export class BudgetDashboard {
       const overview = await firstValueFrom(this.api.getYearlyOverview());
       if (this.store.year() === year && this.store.planMissing()) {
         this.otherPlanYears.set(
-          overview.years.map((entry) => entry.year).filter((y) => y !== year),
+          overview.years
+            .filter((entry) => entry.planId !== null)
+            .map((entry) => entry.year)
+            .filter((y) => y !== year),
         );
       }
     } catch {
       // Without the list the year just offers to create a plan.
       this.otherPlanYears.set([]);
     }
+  }
+
+  /** Enters a one-time item, starting with a day of the year shown (EP-7, EP-11). */
+  protected addOneTimeItem(): void {
+    openOneTimeItemDialog(this.dialog, this.injector, { year: this.store.year() }).subscribe(
+      (saved) => {
+        if (saved) {
+          this.snackBar.open('Einmalposten erfasst', undefined, { duration: 3000 });
+        }
+      },
+    );
+  }
+
+  /** Changes a one-time item; with a day in another year it leaves the section (EP-7). */
+  protected editOneTimeItem(item: OneTimeItem): void {
+    openOneTimeItemDialog(this.dialog, this.injector, { year: this.store.year(), item }).subscribe(
+      (saved) => {
+        if (saved) {
+          this.snackBar.open('Einmalposten geändert', undefined, { duration: 3000 });
+        }
+      },
+    );
+  }
+
+  /** Deletes a one-time item after asking; there is no undo (EP-17). */
+  protected removeOneTimeItem(item: OneTimeItem): void {
+    openDeleteOneTimeItemDialog(this.dialog, this.injector, item).subscribe((deleted) => {
+      if (deleted) {
+        this.snackBar.open(`„${item.description}" gelöscht`, undefined, { duration: 3000 });
+      }
+    });
   }
 
   protected edit(item: BudgetItem): void {

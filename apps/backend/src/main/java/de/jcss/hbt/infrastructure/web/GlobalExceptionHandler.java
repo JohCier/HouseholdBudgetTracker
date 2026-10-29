@@ -4,6 +4,7 @@ import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
 import de.jcss.hbt.domain.exception.DomainValidationException;
 import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
 import de.jcss.hbt.domain.exception.HouseholdPlanNotFoundException;
+import de.jcss.hbt.domain.exception.OneTimeItemNotFoundException;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -38,6 +39,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     static final URI PLAN_NOT_FOUND = URI.create("urn:hbt:plan-not-found");
     static final URI ITEM_NOT_FOUND = URI.create("urn:hbt:item-not-found");
     static final URI PLAN_ALREADY_EXISTS = URI.create("urn:hbt:plan-already-exists");
+    static final URI ONE_TIME_ITEM_NOT_FOUND = URI.create("urn:hbt:one-time-item-not-found");
 
     @ExceptionHandler(DomainValidationException.class)
     public ProblemDetail handleDomainValidation(DomainValidationException ex) {
@@ -52,6 +54,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(BudgetItemNotFoundException.class)
     public ProblemDetail handleItemNotFound(BudgetItemNotFoundException ex) {
         return problem(HttpStatus.NOT_FOUND, ITEM_NOT_FOUND, ex);
+    }
+
+    @ExceptionHandler(OneTimeItemNotFoundException.class)
+    public ProblemDetail handleOneTimeItemNotFound(OneTimeItemNotFoundException ex) {
+        return problem(HttpStatus.NOT_FOUND, ONE_TIME_ITEM_NOT_FOUND, ex);
     }
 
     @ExceptionHandler(HouseholdPlanAlreadyExistsException.class)

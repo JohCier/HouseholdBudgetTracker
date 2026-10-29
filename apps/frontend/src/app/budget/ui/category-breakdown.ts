@@ -7,7 +7,9 @@ import {
   BreakdownView,
   CategoryBreakdown,
   CategoryItems,
+  ENTRIES_SORT,
   PieSelection,
+  PieSort,
   RULE_SELECTION,
   categoryLabel,
   missedTargetLabel,
@@ -54,6 +56,7 @@ import { CategoryPieChart } from './category-pie';
             [breakdowns]="breakdowns()"
             [expenseCategories]="expenseCategories()"
             [(selection)]="pieSelection"
+            [(sort)]="pieSort"
           />
         } @else {
           @for (breakdown of breakdowns(); track breakdown.category) {
@@ -95,6 +98,8 @@ export class CategoryBreakdownCard {
   readonly view = model<BreakdownView>('bars');
   /** Selected part of the plan in the pie; kept by the parent like the view (TK-5). */
   readonly pieSelection = model<PieSelection>(RULE_SELECTION);
+  /** Order of the slices in the pie; kept by the parent like the selection (TS-6). */
+  readonly pieSort = model<PieSort>(ENTRIES_SORT);
 
   protected label(breakdown: CategoryBreakdown): string {
     return categoryLabel(breakdown.category);

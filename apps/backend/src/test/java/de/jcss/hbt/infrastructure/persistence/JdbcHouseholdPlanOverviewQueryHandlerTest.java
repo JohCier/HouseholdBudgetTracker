@@ -52,6 +52,7 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
     @BeforeEach
     void cleanUp() {
         jdbcClient.sql("DELETE FROM household_plan").update();
+        jdbcClient.sql("DELETE FROM one_time_item").update();
     }
 
     @Test
@@ -240,6 +241,48 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
     @Test
     void ownerWithoutPlansHasAnEmptyYearlyOverview() { // JU-13
         assertThat(queryHandler.findYearlyOverviewByOwner(OWNER, Year.of(1900), Year.of(2200)).years()).isEmpty();
+    }
+
+    // docs/specs/einmalposten.md
+    @Test
+    void yearlyOverviewSumsTheOneTimeItemsPerYearAlsoWithoutPlan() { // EP-12, EP-13
+        repository.add(HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2026)));
+        oneTimeItem(OWNER, "EXPENSE", "1200.00", "2026-03-15");
+        oneTimeItem(OWNER, "INCOME", "800.00", "2026-07-10");
+        oneTimeItem(OWNER, "INCOME", "2000.00", "2027-12-01");
+        oneTimeItem(OwnerId.of(UUID.randomUUID()), "INCOME", "5.00", "2026-01-01");
+
+        List<YearlyOverviewEntry> years = queryHandler.findYearlyOverviewByOwner(OWNER, Year.of(1900), Year.of(2200))
+                .years();
+
+        assertThat(years).extracting(YearlyOverviewEntry::year, YearlyOverviewEntry::hasPlan,
+                        YearlyOverviewEntry::oneTimeIncome, YearlyOverviewEntry::oneTimeExpense)
+                .containsExactly(
+                        tuple(Year.of(2027), false, money("2000.00"), Money.ZERO),
+                        tuple(Year.of(2026), true, money("800.00"), money("1200.00")));
+    }
+
+    @Test
+    void yearlyOverviewLeavesOutOneTimeItemsOutsideTheRange() { // EP-3, EP-12
+        oneTimeItem(OWNER, "INCOME", "1.00", "2025-12-31");
+        oneTimeItem(OWNER, "INCOME", "2.00", "2026-01-01");
+
+        assertThat(queryHandler.findYearlyOverviewByOwner(OWNER, Year.of(2026), Year.of(2026)).years())
+                .extracting(YearlyOverviewEntry::oneTimeIncome)
+                .containsExactly(money("2.00"));
+    }
+
+    private void oneTimeItem(OwnerId owner, String type, String amount, String date) {
+        jdbcClient.sql("""
+                        INSERT INTO one_time_item (id, owner_id, type, description, amount, item_date)
+                        VALUES (:id, :owner, :type, 'Einmalig', CAST(:amount AS NUMERIC), CAST(:date AS DATE))
+                        """)
+                .param("id", UUID.randomUUID())
+                .param("owner", owner.value())
+                .param("type", type)
+                .param("amount", amount)
+                .param("date", date)
+                .update();
     }
 
     private static BudgetItemDescription description(String value) {

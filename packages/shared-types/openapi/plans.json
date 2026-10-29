@@ -9,6 +9,121 @@
     "description" : "Generated server url"
   } ],
   "paths" : {
+    "/api/one-time-items" : {
+      "get" : {
+        "operationId" : "oneTimeItemOverview",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "maximum" : 2200,
+            "minimum" : 1900,
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OneTimeItemOverviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "one-time-items" ]
+      },
+      "post" : {
+        "operationId" : "createOneTimeItem",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OneTimeItemRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CreatedOneTimeItemResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "one-time-items" ]
+      }
+    },
+    "/api/one-time-items/{itemId}" : {
+      "delete" : {
+        "operationId" : "deleteOneTimeItem",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "itemId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "one-time-items" ]
+      },
+      "put" : {
+        "operationId" : "changeOneTimeItem",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "itemId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OneTimeItemRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "one-time-items" ]
+      }
+    },
     "/api/plans" : {
       "get" : {
         "operationId" : "overview",
@@ -873,6 +988,16 @@
           }
         }
       },
+      "CreatedOneTimeItemResponse" : {
+        "required" : [ "id" ],
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }
+      },
       "ExpenseCategory" : {
         "type" : "string",
         "description" : "Required for the expenses, must be absent for the incomes",
@@ -1041,6 +1166,104 @@
           }
         }
       },
+      "OneTimeItemOverviewResponse" : {
+        "required" : [ "balance", "expensesExceedIncome", "items", "totalExpense", "totalIncome", "year" ],
+        "type" : "object",
+        "properties" : {
+          "balance" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "-400.0"
+          },
+          "expensesExceedIncome" : {
+            "type" : "boolean"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OneTimeItemResponse"
+            }
+          },
+          "totalExpense" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "1200.0"
+          },
+          "totalIncome" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "800.0"
+          },
+          "year" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 2026
+          }
+        }
+      },
+      "OneTimeItemRequest" : {
+        "required" : [ "amount", "date", "description", "type" ],
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "1200.0"
+          },
+          "date" : {
+            "type" : "string",
+            "description" : "The day of the item, 1900-01-01 to 2200-12-31",
+            "format" : "date",
+            "example" : "2026-03-15"
+          },
+          "description" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "note" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string",
+            "description" : "Optional; empty or blank means no note",
+            "nullable" : true
+          },
+          "type" : {
+            "$ref" : "#/components/schemas/ItemType"
+          }
+        }
+      },
+      "OneTimeItemResponse" : {
+        "required" : [ "amount", "date", "description", "id", "note", "type" ],
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "1200.0"
+          },
+          "date" : {
+            "type" : "string",
+            "format" : "date",
+            "example" : "2026-03-15"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "note" : {
+            "type" : "string",
+            "description" : "Only set if the item has a note",
+            "nullable" : true
+          },
+          "type" : {
+            "$ref" : "#/components/schemas/ItemType"
+          }
+        }
+      },
       "ReorderBudgetItemsRequest" : {
         "required" : [ "itemIds" ],
         "type" : "object",
@@ -1157,12 +1380,14 @@
         "description" : "At most five expenses of living costs and leisure with the highest monthly amount, the largest first (TP-2, TP-4)"
       },
       "YearlyOverviewEntryResponse" : {
-        "required" : [ "balance", "balanceChange", "expenseChange", "expensesExceedIncome", "incomeChange", "monthlyBalance", "monthlyTotalExpense", "monthlyTotalIncome", "planId", "totalExpense", "totalIncome", "year" ],
+        "required" : [ "balance", "balanceChange", "expenseChange", "expensesExceedIncome", "incomeChange", "monthlyBalance", "monthlyTotalExpense", "monthlyTotalIncome", "oneTimeBalance", "oneTimeExpense", "oneTimeExpensesExceedIncome", "oneTimeIncome", "planId", "totalExpense", "totalIncome", "year" ],
         "type" : "object",
         "properties" : {
           "balance" : {
             "type" : "string",
+            "description" : "null without a plan (EP-12)",
             "format" : "decimal",
+            "nullable" : true,
             "example" : "6650.0"
           },
           "balanceChange" : {
@@ -1188,34 +1413,64 @@
           },
           "monthlyBalance" : {
             "type" : "string",
-            "description" : "The yearly balance divided by 12",
+            "description" : "The yearly balance divided by 12; null without a plan",
             "format" : "decimal",
+            "nullable" : true,
             "example" : "554.17"
           },
           "monthlyTotalExpense" : {
             "type" : "string",
-            "description" : "The yearly total divided by 12",
+            "description" : "The yearly total divided by 12; null without a plan",
             "format" : "decimal",
+            "nullable" : true,
             "example" : "2020.83"
           },
           "monthlyTotalIncome" : {
             "type" : "string",
-            "description" : "The yearly total divided by 12",
+            "description" : "The yearly total divided by 12; null without a plan",
             "format" : "decimal",
+            "nullable" : true,
             "example" : "2575.0"
+          },
+          "oneTimeBalance" : {
+            "type" : "string",
+            "description" : "One-time incomes minus one-time expenses of the year (EP-13)",
+            "format" : "decimal",
+            "example" : "-400.0"
+          },
+          "oneTimeExpense" : {
+            "type" : "string",
+            "description" : "Sum of the one-time expenses of the year, always a yearly amount (EP-13, EP-14)",
+            "format" : "decimal",
+            "example" : "1200.0"
+          },
+          "oneTimeExpensesExceedIncome" : {
+            "type" : "boolean"
+          },
+          "oneTimeIncome" : {
+            "type" : "string",
+            "description" : "Sum of the one-time incomes of the year, always a yearly amount (EP-13, EP-14)",
+            "format" : "decimal",
+            "example" : "800.0"
           },
           "planId" : {
             "type" : "string",
-            "format" : "uuid"
+            "description" : "null for a year with one-time items but without a plan (EP-12)",
+            "format" : "uuid",
+            "nullable" : true
           },
           "totalExpense" : {
             "type" : "string",
+            "description" : "null without a plan (EP-12)",
             "format" : "decimal",
+            "nullable" : true,
             "example" : "24250.0"
           },
           "totalIncome" : {
             "type" : "string",
+            "description" : "null without a plan (EP-12)",
             "format" : "decimal",
+            "nullable" : true,
             "example" : "30900.0"
           },
           "year" : {
