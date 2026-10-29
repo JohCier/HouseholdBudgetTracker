@@ -23,7 +23,7 @@ function overviewYears(page: Page) {
 test.describe("Haushaltsplan löschen", () => {
   const year = new Date().getFullYear();
 
-  test("löscht einen Plan aus der Jahresübersicht nach Rückfrage mit Jahr und Anzahl der Posten, ohne ihn zu öffnen (PL-1, PL-2, PL-7 bis PL-9)", async ({
+  test("löscht einen Plan aus der Jahresübersicht nach Rückfrage mit Jahr und Anzahl der Posten, ohne ihn zu öffnen (PL-1, PL-7 bis PL-9, GP-8)", async ({
     page,
   }) => {
     await registerWithPlan(page);
@@ -40,7 +40,7 @@ test.describe("Haushaltsplan löschen", () => {
     await expect(dialog.getByRole("heading")).toHaveText(`Plan ${year + 1} löschen`);
     await expect(
       dialog.getByText(
-        `Der Haushaltsplan ${year + 1} mit 2 Posten wird gelöscht. Das lässt sich nicht rückgängig machen.`,
+        `Der Haushaltsplan ${year + 1} mit 2 Posten wird unter „Gelöschte Pläne" abgelegt und lässt sich dort wiederherstellen.`,
       ),
     ).toBeVisible();
     await dialog.getByRole("button", { name: "Löschen" }).click();
@@ -59,7 +59,7 @@ test.describe("Haushaltsplan löschen", () => {
       .getByRole("button", { name: `Plan ${year} löschen` })
       .click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText(/mit 1 Posten wird gelöscht/)).toBeVisible();
+    await expect(dialog.getByText(/mit 1 Posten wird unter/)).toBeVisible();
     await dialog.getByRole("button", { name: "Abbrechen" }).click();
 
     await expect(dialog).toBeHidden();
@@ -77,7 +77,7 @@ test.describe("Haushaltsplan löschen", () => {
     await page.getByRole("button", { name: "Plan löschen" }).click();
     const dialog = page.getByRole("dialog");
     await expect(
-      dialog.getByText(`Der Haushaltsplan ${year} mit 1 Posten wird gelöscht.`, {
+      dialog.getByText(`Der Haushaltsplan ${year} mit 1 Posten wird unter`, {
         exact: false,
       }),
     ).toBeVisible();
@@ -101,7 +101,7 @@ test.describe("Haushaltsplan löschen", () => {
 
     await page.getByRole("button", { name: "Plan löschen" }).click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText(/mit 0 Posten wird gelöscht/)).toBeVisible();
+    await expect(dialog.getByText(/mit 0 Posten wird unter/)).toBeVisible();
     await dialog.getByRole("button", { name: "Löschen" }).click();
 
     await expect(page.getByText("Noch keine Haushaltspläne.")).toBeVisible();

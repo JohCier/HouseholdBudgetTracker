@@ -7,6 +7,8 @@ import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
 import de.jcss.hbt.domain.householdplan.overview.OverviewCategoryItems;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItemGroup;
+import de.jcss.hbt.domain.householdplan.overview.DeletedPlanEntry;
+import de.jcss.hbt.domain.householdplan.overview.DeletedPlans;
 import de.jcss.hbt.domain.householdplan.overview.YearlyOverview;
 import de.jcss.hbt.domain.householdplan.overview.YearlyOverviewEntry;
 import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
@@ -15,6 +17,7 @@ import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemNote;
 import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.AmountPeriod;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemSection;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemType;
@@ -27,6 +30,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.Year;
 import java.util.List;
 import java.util.UUID;
@@ -236,6 +241,52 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
         assertThat(queryHandler.findYearlyOverviewByOwner(OWNER, Year.of(1900), Year.of(2200)).years())
                 .extracting(YearlyOverviewEntry::planId)
                 .containsExactly(inRange.id());
+    }
+
+    @Test
+    void deletedPlansAreLeftOutOfTheOverviewsButCountedAndListed() { // GP-3, GP-21, GP-22, GP-24
+        HouseholdPlan earlier = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2026));
+        earlier.addIncome(description("Gehalt"), yearly("38400.00"), null, null);
+        earlier.addExpense(description("Miete"), new ItemAmount(Money.of(new BigDecimal("900.00")), AmountPeriod.MONTHLY),
+                ExpenseCategory.LEBENSUNTERHALT, null, null);
+        repository.add(earlier);
+        markDeleted(earlier, "2026-10-20T18:42:00Z");
+        HouseholdPlan later = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2026));
+        repository.add(later);
+        markDeleted(later, "2026-10-29T20:15:00Z");
+        HouseholdPlan of2023 = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2023));
+        repository.add(of2023);
+        markDeleted(of2023, "2026-11-02T09:05:00Z");
+        HouseholdPlan active = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2027));
+        repository.add(active);
+        HouseholdPlan foreign = HouseholdPlan.create(HouseholdPlanId.generate(), OwnerId.of(UUID.randomUUID()),
+                Year.of(2026));
+        repository.add(foreign);
+        repository.markDeleted(foreign);
+
+        YearlyOverview overview = queryHandler.findYearlyOverviewByOwner(OWNER, Year.of(1900), Year.of(2200));
+        DeletedPlans deleted = queryHandler.findDeletedPlansByOwner(OWNER, Year.of(1900), Year.of(2200));
+
+        assertThat(queryHandler.findByOwnerAndYear(OWNER, Year.of(2026))).isEmpty();
+        assertThat(overview.years()).extracting(YearlyOverviewEntry::planId).containsExactly(active.id());
+        assertThat(overview.years().getFirst().incomeChange()).isNull();
+        assertThat(overview.deletedPlanCount()).isEqualTo(3);
+        assertThat(deleted.plans()).extracting(DeletedPlanEntry::planId)
+                .containsExactly(later.id(), earlier.id(), of2023.id());
+        DeletedPlanEntry entry = deleted.plans().get(1);
+        assertThat(entry.deletedAt()).isEqualTo(Instant.parse("2026-10-20T18:42:00Z"));
+        assertThat(entry.itemCount()).isEqualTo(2);
+        assertThat(entry.totalIncome()).isEqualTo(Money.of(new BigDecimal("38400.00")));
+        assertThat(entry.totalExpense()).isEqualTo(Money.of(new BigDecimal("10800.00")));
+        assertThat(entry.monthlyBalance()).isEqualTo(Money.of(new BigDecimal("2300.00")));
+        assertThat(deleted.plans().getFirst().itemCount()).isZero();
+    }
+
+    private void markDeleted(HouseholdPlan plan, String deletedAt) {
+        jdbcClient.sql("UPDATE household_plan SET deleted_at = :deletedAt WHERE id = :id")
+                .param("deletedAt", Timestamp.from(Instant.parse(deletedAt)))
+                .param("id", plan.id().value())
+                .update();
     }
 
     @Test

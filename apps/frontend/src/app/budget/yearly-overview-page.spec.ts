@@ -4,7 +4,7 @@ import { ApplicationRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { of } from 'rxjs';
+import { EMPTY, Subject, of } from 'rxjs';
 import { Router, provideRouter } from '@angular/router';
 import { YearlyOverviewEntry } from './budget.model';
 import { PERIOD_STORAGE_KEY } from './data-access/yearly-overview-store';
@@ -40,7 +40,7 @@ describe('YearlyOverviewPage', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    snackBar = { open: vi.fn() };
+    snackBar = { open: vi.fn(() => ({ onAction: () => EMPTY })) };
     dialog = {
       open: vi.fn(() => ({
         afterClosed: () => of({ sourceYear: currentYear(), targetYear: currentYear() + 1 }),
@@ -61,10 +61,10 @@ describe('YearlyOverviewPage', () => {
 
   afterEach(() => http.verify());
 
-  async function render(years: YearlyOverviewEntry[]) {
+  async function render(years: YearlyOverviewEntry[], deletedPlanCount = 0) {
     const fixture = TestBed.createComponent(YearlyOverviewPage);
     fixture.detectChanges();
-    http.expectOne('/api/plans/years').flush({ years });
+    http.expectOne('/api/plans/years').flush({ years, deletedPlanCount });
     await settle(fixture);
     return fixture.nativeElement as HTMLElement;
   }
@@ -200,7 +200,9 @@ describe('YearlyOverviewPage', () => {
 
   // PL-7, PL-9
   it('deletes the plan of a row after asking without opening it, and stays on the overview', async () => {
-    dialog.open.mockReturnValue({ afterClosed: () => of(true) });
+    dialog.open.mockReturnValue({
+      afterClosed: () => of({ planId: `plan-${currentYear()}`, year: currentYear(), itemCount: 2 }),
+    });
     const element = await render([entry(currentYear()), entry(currentYear() - 1)]);
 
     row(element, currentYear())
@@ -210,14 +212,67 @@ describe('YearlyOverviewPage', () => {
     expect(dialog.open).toHaveBeenCalledWith(expect.anything(), {
       data: { year: currentYear() },
     });
-    http.expectOne('/api/plans/years').flush({ years: [entry(currentYear() - 1)] });
+    http
+      .expectOne('/api/plans/years')
+      .flush({ years: [entry(currentYear() - 1)], deletedPlanCount: 1 });
     await vi.waitFor(() =>
-      expect(snackBar.open).toHaveBeenCalledWith(`Plan ${currentYear()} gelöscht.`, undefined, {
-        duration: 3000,
+      expect(snackBar.open).toHaveBeenCalledWith(`Plan ${currentYear()} gelöscht.`, 'Rückgängig', {
+        duration: 6000,
       }),
     );
     expect(navigate).not.toHaveBeenCalled();
     expect(element.querySelectorAll('tbody tr[data-year]')).toHaveLength(1);
+    expect(element.textContent).toContain('Gelöschte Pläne (1)');
+  });
+
+  // GP-9, GP-12
+  it('restores a deleted plan if the user chooses undo', async () => {
+    const undo = new Subject<void>();
+    snackBar.open.mockReturnValue({ onAction: () => undo });
+    dialog.open.mockReturnValue({
+      afterClosed: () => of({ planId: `plan-${currentYear()}`, year: currentYear(), itemCount: 2 }),
+    });
+    const element = await render([entry(currentYear())]);
+    row(element, currentYear())
+      .querySelector<HTMLButtonElement>(`button[aria-label="Plan ${currentYear()} löschen"]`)!
+      .click();
+    http.expectOne('/api/plans/years').flush({ years: [], deletedPlanCount: 1 });
+    await vi.waitFor(() => expect(snackBar.open).toHaveBeenCalled());
+
+    undo.next();
+    const restore = http.expectOne(`/api/plans/plan-${currentYear()}/restore`);
+    expect(restore.request.body).toEqual({ overwrite: false });
+    restore.flush(null, { status: 204, statusText: 'No Content' });
+    await vi.waitFor(() =>
+      http
+        .expectOne('/api/plans/years')
+        .flush({ years: [entry(currentYear())], deletedPlanCount: 0 }),
+    );
+
+    await vi.waitFor(() =>
+      expect(snackBar.open).toHaveBeenCalledWith(
+        `Plan ${currentYear()} wiederhergestellt.`,
+        undefined,
+        {
+          duration: 3000,
+        },
+      ),
+    );
+  });
+
+  // GP-21
+  it('links to the deleted plans only if there are any', async () => {
+    expect((await render([entry(currentYear())])).textContent).not.toContain('Gelöschte Pläne');
+  });
+
+  // GP-21, JU-13
+  it('links to the deleted plans also without active plans', async () => {
+    const element = await render([], 2);
+
+    expect(element.textContent).toContain('Noch keine Haushaltspläne.');
+    expect(
+      element.querySelector<HTMLAnchorElement>('a[href="/geloeschte-plaene"]')!.textContent,
+    ).toContain('Gelöschte Pläne (2)');
   });
 
   // PL-8

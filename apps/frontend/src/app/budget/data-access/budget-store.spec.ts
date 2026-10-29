@@ -68,9 +68,12 @@ describe('BudgetStore', () => {
     plannedYears = [2025, 2026, 2027, currentYear()];
     api = {
       getOverview: vi.fn((year: number) => of(plannedYears.includes(year) ? overview(year) : null)),
-      getYearlyOverview: vi.fn(() => of({ years: [] })),
+      getYearlyOverview: vi.fn(() => of({ years: [], deletedPlanCount: 0 })),
       copyPlan: vi.fn(),
       deletePlan: vi.fn(),
+      getDeletedPlans: vi.fn(),
+      restorePlan: vi.fn(),
+      purgePlan: vi.fn(),
       createPlan: vi.fn((year: number) => of({ id: `plan-${year}`, overview: overview(year, []) })),
       addIncome: vi.fn((planId: string) =>
         of({ id: 'added', overview: overview(yearOf(planId), [item, added]) }),

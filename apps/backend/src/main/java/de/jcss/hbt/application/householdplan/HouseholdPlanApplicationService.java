@@ -12,9 +12,12 @@ import de.jcss.hbt.domain.householdplan.command.CopyHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.DeleteHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.MarkBudgetItemImportantCommand;
+import de.jcss.hbt.domain.householdplan.command.PurgeHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderBudgetItemsCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderSubcategoriesCommand;
+import de.jcss.hbt.domain.householdplan.command.RestoreHouseholdPlanCommand;
+import de.jcss.hbt.domain.householdplan.overview.DeletedPlans;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverviewQueryHandler;
 import de.jcss.hbt.domain.householdplan.overview.YearlyOverview;
@@ -47,9 +50,9 @@ import java.util.Optional;
  * Read side: the {@link HouseholdPlanOverview} read model is loaded through its
  * {@link HouseholdPlanOverviewQueryHandler}, bypassing the aggregate and its repository.
  * <p>
- * Contains no business rules of its own. The only check it makes, that the user has no plan
- * for the year yet, is a process step before creating one (when copying a plan, before deciding
- * whether to create or to overwrite one): it spans several aggregates
+ * Contains no business rules of its own. The only check it makes, that the user has no active
+ * plan for the year yet, is a process step before creating or restoring one (when copying or
+ * restoring a plan, before deciding whether to replace one): it spans several aggregates
  * and gives a clear error early, while the unique constraint behind
  * {@link HouseholdPlanRepository#add} remains the actual safeguard against races.
  * Concurrent changes to the same plan are serialized by {@link HouseholdPlanRepository#findById}.
@@ -81,40 +84,76 @@ public class HouseholdPlanApplicationService {
     }
 
     /**
-     * Copies a plan of the user to the target year: into a new plan if the user has none for
-     * it yet, otherwise over the one they have, but only if the command allows that (PU-8, PU-9).
-     * Only the plan of the target year is changed; the source is just read (PU-5).
+     * Copies a plan of the user to the target year into a new plan (PU-8). If the user has a plan
+     * for the target year, it is deleted first, but only if the command allows that (PU-9, GP-19).
+     * The source is just read (PU-5). Replacing a plan changes two aggregates in one transaction,
+     * so that it succeeds as a whole or not at all (PU-7).
      *
-     * @throws HouseholdPlanNotFoundException      if the source is not a plan of the user
+     * @throws HouseholdPlanNotFoundException      if the source is not an active plan of the user
      * @throws HouseholdPlanAlreadyExistsException if the user has a plan for the target year and it may not be overwritten
      */
     public CopiedHouseholdPlan copyPlan(CopyHouseholdPlanCommand command) {
         HouseholdPlan source = load(command.sourcePlanId(), command.owner());
         Optional<HouseholdPlan> existing = repository.findFor(command.owner(), command.targetYear());
-        HouseholdPlan target;
-        if (existing.isEmpty()) {
-            target = HouseholdPlan.createFrom(source, HouseholdPlanId.generate(), command.targetYear());
-            repository.add(target);
-            publishEvents(target);
-        } else if (command.overwrite()) {
-            target = existing.get();
-            target.overwriteWith(source);
-            saveAndPublishEvents(target);
-        } else {
+        if (existing.isPresent() && !command.overwrite()) {
             throw new HouseholdPlanAlreadyExistsException(command.targetYear());
         }
+        HouseholdPlan target = HouseholdPlan.createFrom(source, HouseholdPlanId.generate(), command.targetYear(),
+                existing.isPresent());
+        existing.ifPresent(this::delete);
+        repository.add(target);
+        publishEvents(target);
         return new CopiedHouseholdPlan(target.id(), existing.isPresent(), overviewOf(target, command.owner()));
     }
 
     /**
-     * Deletes a plan of the user with all its items (PL-1, PL-2); other plans stay as they are (PL-3).
+     * Moves a plan of the user with all its items to the deleted plans (PL-1, GP-7); other plans stay as they
+     * are (PL-3).
      *
-     * @throws HouseholdPlanNotFoundException if it is not a plan of the user, or no longer exists
+     * @throws HouseholdPlanNotFoundException if it is not an active plan of the user
      */
     public void deletePlan(DeleteHouseholdPlanCommand command) {
-        HouseholdPlan plan = load(command.planId(), command.owner());
-        plan.delete();
+        delete(load(command.planId(), command.owner()));
+    }
+
+    /**
+     * Makes a deleted plan of the user active again (GP-11). If the user has an active plan for its
+     * year, that one is deleted first, but only if the command allows that (GP-13, GP-14). Replacing
+     * a plan changes two aggregates in one transaction, so that it succeeds as a whole or not at all
+     * (GP-15).
+     *
+     * @throws HouseholdPlanNotFoundException      if it is not a deleted plan of the user
+     * @throws HouseholdPlanAlreadyExistsException if the user has an active plan for the year and it may not be replaced
+     */
+    public void restorePlan(RestoreHouseholdPlanCommand command) {
+        HouseholdPlan plan = loadDeleted(command.planId(), command.owner());
+        Optional<HouseholdPlan> active = repository.findFor(command.owner(), plan.year());
+        if (active.isPresent()) {
+            if (!command.overwrite()) {
+                throw new HouseholdPlanAlreadyExistsException(plan.year());
+            }
+            delete(active.get());
+        }
+        plan.restore();
+        repository.restore(plan);
+        publishEvents(plan);
+    }
+
+    /**
+     * Deletes a deleted plan of the user for good, with all its items (GP-17).
+     *
+     * @throws HouseholdPlanNotFoundException if it is not a deleted plan of the user, e.g. an active one (GP-18)
+     */
+    public void purgePlan(PurgeHouseholdPlanCommand command) {
+        HouseholdPlan plan = loadDeleted(command.planId(), command.owner());
+        plan.purge();
         repository.remove(plan);
+        publishEvents(plan);
+    }
+
+    private void delete(HouseholdPlan plan) {
+        plan.delete();
+        repository.markDeleted(plan);
         publishEvents(plan);
     }
 
@@ -187,8 +226,9 @@ public class HouseholdPlanApplicationService {
     }
 
     /**
-     * All plans of the owner with their totals and changes from the previous year, and the totals of their
-     * one-time items, also of years without a plan; only reachable years (HP-1, JU-1, EP-12, EP-13).
+     * All years of the owner with an active plan or one-time items: the totals of the plan with their changes
+     * from the previous year and the totals of the one-time items, also of years without a plan, and how many
+     * deleted plans the owner has; only reachable years (HP-1, JU-1, EP-12, EP-13, GP-21).
      */
     @Transactional(readOnly = true)
     public YearlyOverview getYearlyOverview(OwnerId owner) {
@@ -196,8 +236,21 @@ public class HouseholdPlanApplicationService {
                 Year.of(HouseholdPlan.FIRST_YEAR), Year.of(HouseholdPlan.LAST_YEAR));
     }
 
+    /** The deleted plans of the owner with their totals; only reachable years (HP-1, GP-22). */
+    @Transactional(readOnly = true)
+    public DeletedPlans getDeletedPlans(OwnerId owner) {
+        return overviewQueryHandler.findDeletedPlansByOwner(owner,
+                Year.of(HouseholdPlan.FIRST_YEAR), Year.of(HouseholdPlan.LAST_YEAR));
+    }
+
     private HouseholdPlan load(HouseholdPlanId id, OwnerId owner) {
         return repository.findById(id)
+                .filter(plan -> plan.isOwnedBy(owner))
+                .orElseThrow(() -> new HouseholdPlanNotFoundException(id));
+    }
+
+    private HouseholdPlan loadDeleted(HouseholdPlanId id, OwnerId owner) {
+        return repository.findDeletedById(id)
                 .filter(plan -> plan.isOwnedBy(owner))
                 .orElseThrow(() -> new HouseholdPlanNotFoundException(id));
     }

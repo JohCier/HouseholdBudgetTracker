@@ -30,7 +30,7 @@ import {
   openCopyPlanDialog,
 } from './ui/copy-plan-dialog';
 import { CategoryBreakdownCard } from './ui/category-breakdown';
-import { deletedMessage, openDeletePlanDialog } from './ui/delete-plan-dialog';
+import { DELETED_PLAN_STATE, openDeletePlanDialog } from './ui/delete-plan-dialog';
 import { openDeleteOneTimeItemDialog } from './ui/delete-one-time-item-dialog';
 import { EditItemDialog } from './ui/edit-item-dialog';
 import { openOneTimeItemDialog } from './ui/one-time-item-dialog';
@@ -331,8 +331,8 @@ export class BudgetDashboard {
     const year = this.store.year();
     openDeletePlanDialog(this.dialog, year).subscribe(async (deleted) => {
       if (deleted) {
-        await this.router.navigateByUrl('/');
-        this.snackBar.open(deletedMessage(year), undefined, { duration: 3000 });
+        // The overview confirms the deletion and offers to undo it (GP-9)
+        await this.router.navigateByUrl('/', { state: { [DELETED_PLAN_STATE]: deleted } });
       }
     });
   }

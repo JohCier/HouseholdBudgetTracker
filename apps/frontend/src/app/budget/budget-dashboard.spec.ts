@@ -341,9 +341,10 @@ describe('BudgetDashboard', () => {
   });
 
   // PL-7, PL-9
-  it('deletes the plan shown after asking and shows the yearly overview', async () => {
+  it('deletes the plan shown after asking and hands it to the yearly overview', async () => {
     const snackBar = { open: vi.fn() };
-    const dialog = { open: vi.fn(() => ({ afterClosed: () => of(true) })) };
+    const deleted = { planId: 'plan-2026', year: 2026, itemCount: 1 };
+    const dialog = { open: vi.fn(() => ({ afterClosed: () => of(deleted) })) };
     const store = {
       year: signal(2026),
       hasPreviousYear: signal(true),
@@ -377,12 +378,11 @@ describe('BudgetDashboard', () => {
       .click();
 
     expect(dialog.open).toHaveBeenCalledWith(expect.anything(), { data: { year: 2026 } });
+    // The overview confirms the deletion and offers to undo it (GP-9)
     await vi.waitFor(() =>
-      expect(snackBar.open).toHaveBeenCalledWith('Plan 2026 gelöscht.', undefined, {
-        duration: 3000,
-      }),
+      expect(navigateByUrl).toHaveBeenCalledWith('/', { state: { deletedPlan: deleted } }),
     );
-    expect(navigateByUrl).toHaveBeenCalledWith('/');
+    expect(snackBar.open).not.toHaveBeenCalled();
   });
 
   // PU-12, PU-15

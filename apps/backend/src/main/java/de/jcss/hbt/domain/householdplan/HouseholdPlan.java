@@ -11,6 +11,8 @@ import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCopied;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCreated;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanDeleted;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanEvent;
+import de.jcss.hbt.domain.householdplan.event.HouseholdPlanPurged;
+import de.jcss.hbt.domain.householdplan.event.HouseholdPlanRestored;
 import de.jcss.hbt.domain.householdplan.event.IncomeAdded;
 import de.jcss.hbt.domain.householdplan.event.SubcategoriesReordered;
 import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
@@ -56,8 +58,10 @@ import java.util.Set;
  * takes the spelling of the subcategory other items of the plan already have, so all items
  * of a group are spelled alike (UK-5).
  * <p>
- * That a user has at most one plan per year spans several aggregates and is therefore
- * ensured by the application layer, not by this class.
+ * A plan is either active or deleted (GP-1); which it is, is kept by the repository, which
+ * hands out deleted plans only to be restored or purged (GP-4). That a user has at most one
+ * active plan per year spans several aggregates and is therefore ensured by the application
+ * layer, not by this class.
  * <p>
  * New plans are only created for the years {@value #FIRST_YEAR} to {@value #LAST_YEAR}. Stored plans
  * of other years are still reconstituted, so that existing data stays readable.
@@ -122,48 +126,46 @@ public final class HouseholdPlan {
      * Starts a new plan of the owner of the source for the given year, holding copies of all
      * items of the source in their order (PU-3, PU-4, PU-8). The source stays unchanged (PU-5).
      *
+     * @param replacesPlan whether the new plan replaces one the owner had for the year, which the caller deletes
+     *                     (PU-9, GP-19)
      * @throws DomainValidationException if the year is out of range or the year of the source (PU-2)
      */
-    public static HouseholdPlan createFrom(HouseholdPlan source, HouseholdPlanId id, Year year) {
+    public static HouseholdPlan createFrom(HouseholdPlan source, HouseholdPlanId id, Year year, boolean replacesPlan) {
         Objects.requireNonNull(source, "source must not be null");
-        HouseholdPlan plan = create(id, source.owner, year);
-        plan.takeOver(source, false);
-        return plan;
-    }
-
-    /**
-     * Replaces all items of this plan and the order of their groups by copies of those of the
-     * source (PU-9). The plan keeps its id, owner and year.
-     *
-     * @throws DomainValidationException if the source is this plan, i.e. has the same year (PU-2)
-     * @throws IllegalArgumentException  if the source belongs to someone else
-     */
-    public void overwriteWith(HouseholdPlan source) {
-        Objects.requireNonNull(source, "source must not be null");
-        takeOver(source, true);
-    }
-
-    private void takeOver(HouseholdPlan source, boolean overwritten) {
-        if (!source.isOwnedBy(owner)) {
-            throw new IllegalArgumentException("source %s belongs to someone else".formatted(source.id));
-        }
         if (source.year.equals(year)) {
             throw new DomainValidationException(
                     "the target year must differ from the year of the source, %s".formatted(year));
         }
-        items.clear();
-        source.items.forEach(item -> items.add(item.copy()));
-        subcategoryOrders.clear();
-        subcategoryOrders.putAll(source.subcategoryOrders);
-        record(new HouseholdPlanCopied(id, source.id, overwritten, Instant.now()));
+        HouseholdPlan plan = create(id, source.owner, year);
+        source.items.forEach(item -> plan.items.add(item.copy()));
+        plan.subcategoryOrders.putAll(source.subcategoryOrders);
+        plan.record(new HouseholdPlanCopied(id, source.id, replacesPlan, Instant.now()));
+        return plan;
     }
 
     /**
-     * Marks the plan as deleted with all its items (PL-2, PL-6): records a single event naming the
-     * number of items, none per item. Removing the plan from its repository is up to the caller.
+     * Moves the plan to the deleted plans with all its items (GP-7, PL-6): records a single event
+     * naming the number of items, none per item. Keeping it as deleted, with when that happened
+     * (GP-2), is up to the repository.
      */
     public void delete() {
         record(new HouseholdPlanDeleted(id, year, items.size(), Instant.now()));
+    }
+
+    /**
+     * Makes a deleted plan active again with all its items and their order (GP-11). Whether the year has an
+     * active plan already is up to the caller (GP-13, GP-14), as is keeping it as active in the repository.
+     */
+    public void restore() {
+        record(new HouseholdPlanRestored(id, year, Instant.now()));
+    }
+
+    /**
+     * Deletes a deleted plan for good with all its items (GP-17): records a single event naming the number
+     * of items, none per item. Removing it from the repository is up to the caller.
+     */
+    public void purge() {
+        record(new HouseholdPlanPurged(id, year, items.size(), Instant.now()));
     }
 
     /**

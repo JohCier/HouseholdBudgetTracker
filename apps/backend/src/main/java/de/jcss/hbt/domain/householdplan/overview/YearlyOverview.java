@@ -19,12 +19,23 @@ import java.util.stream.Collectors;
  * EP-12). Each year has the totals of its plan and their change from the plan of the immediately
  * preceding year (JU-4, JU-5), and the totals of its one-time items (EP-13). The figures of a plan
  * come from {@link BudgetSummary} and {@link de.jcss.hbt.domain.householdplan.valueobject.Percentage#changeFrom}.
+ * Deleted plans are not part of it (GP-3); it only counts them, so the overview can link to them (GP-21).
+ *
+ * @param deletedPlanCount how many deleted plans the user has
  */
 @QueryModel
-public record YearlyOverview(List<YearlyOverviewEntry> years) {
+public record YearlyOverview(List<YearlyOverviewEntry> years, int deletedPlanCount) {
 
     public YearlyOverview {
         years = List.copyOf(years);
+        if (deletedPlanCount < 0) {
+            throw new IllegalArgumentException("deletedPlanCount must not be negative, but was " + deletedPlanCount);
+        }
+    }
+
+    /** The same years, with the given number of deleted plans (GP-21). */
+    public YearlyOverview withDeletedPlanCount(int count) {
+        return new YearlyOverview(years, count);
     }
 
     /** A plan with the summary of its items, as the query handler loads it. */
@@ -53,7 +64,7 @@ public record YearlyOverview(List<YearlyOverviewEntry> years) {
     }
 
     /**
-     * Compares every plan with the plan of the year before, if the user has one; plans of other
+     * Without deleted plans. Compares every plan with the plan of the year before, if the user has one; plans of other
      * years never, and a year with only one-time items does not count as a plan (JU-4, EP-15).
      */
     public static YearlyOverview of(List<PlanSummary> plans, List<OneTimeSummary> oneTimeItems) {
@@ -67,7 +78,7 @@ public record YearlyOverview(List<YearlyOverviewEntry> years) {
         return new YearlyOverview(years.stream()
                 .map(year -> entryOf(year, planByYear.get(year), planByYear.get(year.minusYears(1)),
                         oneTimeByYear.get(year)))
-                .toList());
+                .toList(), 0);
     }
 
     private static YearlyOverviewEntry entryOf(Year year, PlanSummary plan, PlanSummary previousYear,

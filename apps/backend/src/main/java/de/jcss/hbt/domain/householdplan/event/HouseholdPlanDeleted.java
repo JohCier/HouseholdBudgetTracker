@@ -7,7 +7,8 @@ import java.time.Year;
 import java.util.Objects;
 
 /**
- * A user deleted one of their household plans with all its items (PL-6).
+ * A user deleted one of their household plans, which moved to the deleted plans with all its items
+ * (PL-6, GP-7, GP-27).
  *
  * @param itemCount how many items the plan had when it was deleted
  */

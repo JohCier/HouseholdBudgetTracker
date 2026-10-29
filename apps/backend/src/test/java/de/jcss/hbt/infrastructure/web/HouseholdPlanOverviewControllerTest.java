@@ -41,11 +41,12 @@ class HouseholdPlanOverviewControllerTest extends HouseholdPlanControllerTestSup
                         .withExpense(ExpenseCategory.LEBENSUNTERHALT, Money.of(new BigDecimal("25000.00")))),
                 new YearlyOverview.PlanSummary(PLAN_ID, Year.of(2026), BudgetSummary.EMPTY
                         .withIncome(Money.of(new BigDecimal("30900.00")))
-                        .withExpense(ExpenseCategory.LEBENSUNTERHALT, Money.of(new BigDecimal("24250.00")))))));
+                        .withExpense(ExpenseCategory.LEBENSUNTERHALT, Money.of(new BigDecimal("24250.00")))))).withDeletedPlanCount(2));
 
         mockMvc.perform(get("/api/plans/years"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.years.length()").value(2))
+                .andExpect(jsonPath("$.deletedPlanCount").value(2)) // GP-21
                 .andExpect(jsonPath("$.years[0].planId").value(PLAN.toString()))
                 .andExpect(jsonPath("$.years[0].year").value(2026))
                 .andExpect(jsonPath("$.years[0].totalIncome").value("30900.00"))

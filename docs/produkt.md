@@ -25,7 +25,8 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 | Jahresübersicht | Startseite mit allen Plänen: Einnahmen, Ausgaben, Überschuss und Veränderung zum Vorjahr je Jahr | [jahresuebersicht.md](specs/jahresuebersicht.md) | JU-… |
 | Monatsbeträge in der Jahresübersicht | Die Jahresübersicht wahlweise in Monats- oder Jahresbeträgen ansehen; der Browser merkt sich die Wahl | [jahresuebersicht-monatsbetraege.md](specs/jahresuebersicht-monatsbetraege.md) | JM-… |
 | Plan als Vorlage übernehmen | Einen Plan mit allen Posten in ein frei wählbares Jahr übernehmen (vorgeschlagen: Folgejahr), aus Planansicht, Jahresübersicht oder einem Jahr ohne Plan; einen bestehenden Plan nach Rückfrage überschreiben | [plan-uebernehmen.md](specs/plan-uebernehmen.md) | PU-… |
-| Plan löschen | Einen Plan mit allen Posten nach Rückfrage endgültig löschen, aus der Jahresübersicht oder der Planansicht | [plan-loeschen.md](specs/plan-loeschen.md) | PL-… |
+| Plan löschen | Einen Plan mit allen Posten nach Rückfrage löschen, aus der Jahresübersicht oder der Planansicht; „Rückgängig" in der Meldung | [plan-loeschen.md](specs/plan-loeschen.md) | PL-… |
+| Gelöschte Pläne | Gelöschte Pläne mit Datum und Summen ansehen, wiederherstellen (einen vorhandenen Plan des Jahres nach Rückfrage ersetzen) oder endgültig löschen; auch beim Übernehmen überschriebene Pläne | [geloeschte-plaene.md](specs/geloeschte-plaene.md) | GP-… |
 | Posten | Einnahmen und Ausgaben (mit Kategorie) erfassen, löschen, Löschen rückgängig machen | [posten.md](specs/posten.md) | PO-… |
 | Posten bearbeiten | Beschreibung, Betrag und Kategorie eines Postens ändern | [posten-bearbeiten.md](specs/posten-bearbeiten.md) | PB-… |
 | Notiz zum Posten | Optionaler Freitext je Posten, beim Erfassen und Bearbeiten | [posten-notiz.md](specs/posten-notiz.md) | PN-… |

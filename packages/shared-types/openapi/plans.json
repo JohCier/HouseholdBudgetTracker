@@ -185,6 +185,50 @@
         "tags" : [ "household-plans" ]
       }
     },
+    "/api/plans/deleted" : {
+      "get" : {
+        "operationId" : "deletedPlans",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DeletedPlansResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "household-plans" ]
+      }
+    },
+    "/api/plans/deleted/{planId}" : {
+      "delete" : {
+        "operationId" : "purgePlan",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "planId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "household-plans" ]
+      }
+    },
     "/api/plans/years" : {
       "get" : {
         "operationId" : "yearlyOverview",
@@ -605,6 +649,39 @@
         "tags" : [ "household-plans" ]
       }
     },
+    "/api/plans/{planId}/restore" : {
+      "post" : {
+        "operationId" : "restorePlan",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "planId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestoreHouseholdPlanRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "household-plans" ]
+      }
+    },
     "/api/plans/{planId}/subcategory-order" : {
       "put" : {
         "operationId" : "reorderSubcategories",
@@ -998,6 +1075,79 @@
           }
         }
       },
+      "DeletedPlanResponse" : {
+        "required" : [ "balance", "deletedAt", "expensesExceedIncome", "itemCount", "monthlyBalance", "monthlyTotalExpense", "monthlyTotalIncome", "planId", "totalExpense", "totalIncome", "year" ],
+        "type" : "object",
+        "properties" : {
+          "balance" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "4200.0"
+          },
+          "deletedAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "example" : "2026-10-29T20:15:00Z"
+          },
+          "expensesExceedIncome" : {
+            "type" : "boolean"
+          },
+          "itemCount" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 12
+          },
+          "monthlyBalance" : {
+            "type" : "string",
+            "description" : "The yearly balance divided by 12",
+            "format" : "decimal",
+            "example" : "350.0"
+          },
+          "monthlyTotalExpense" : {
+            "type" : "string",
+            "description" : "The yearly total divided by 12",
+            "format" : "decimal",
+            "example" : "2850.0"
+          },
+          "monthlyTotalIncome" : {
+            "type" : "string",
+            "description" : "The yearly total divided by 12",
+            "format" : "decimal",
+            "example" : "3200.0"
+          },
+          "planId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "totalExpense" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "34200.0"
+          },
+          "totalIncome" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "38400.0"
+          },
+          "year" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 2026
+          }
+        }
+      },
+      "DeletedPlansResponse" : {
+        "required" : [ "plans" ],
+        "type" : "object",
+        "properties" : {
+          "plans" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DeletedPlanResponse"
+            }
+          }
+        }
+      },
       "ExpenseCategory" : {
         "type" : "string",
         "description" : "Required for the expenses, must be absent for the incomes",
@@ -1288,6 +1438,14 @@
           }
         }
       },
+      "RestoreHouseholdPlanRequest" : {
+        "type" : "object",
+        "properties" : {
+          "overwrite" : {
+            "type" : "boolean"
+          }
+        }
+      },
       "SavingPotentialRequest" : {
         "required" : [ "monthlyAmount" ],
         "type" : "object",
@@ -1429,9 +1587,14 @@
         }
       },
       "YearlyOverviewResponse" : {
-        "required" : [ "years" ],
+        "required" : [ "deletedPlanCount", "years" ],
         "type" : "object",
         "properties" : {
+          "deletedPlanCount" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 2
+          },
           "years" : {
             "type" : "array",
             "items" : {

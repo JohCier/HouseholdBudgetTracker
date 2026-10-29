@@ -13,6 +13,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -185,9 +187,9 @@ class HouseholdPlanIntegrationTest extends HouseholdPlanIntegrationTestSupport {
                         tuple("HouseholdPlanCopied", UUID.fromString(target), source, "false"));
     }
 
-    /** PU-9, PU-11 */
+    /** PU-9, PU-11, GP-19 */
     @Test
-    void copyingOverAnExistingPlanNeedsConsentAndReplacesItsItems() throws Exception {
+    void copyingOverAnExistingPlanNeedsConsentAndMovesItToTheDeletedPlans() throws Exception {
         String source = createPlan(2026);
         post("/api/plans/" + source + "/incomes", """
                 {"description":"Gehalt","amount":"3000.00","period":"YEARLY"}""");
@@ -207,11 +209,16 @@ class HouseholdPlanIntegrationTest extends HouseholdPlanIntegrationTestSupport {
                         .content("""
                                 {"targetYear":2027,"overwrite":true}"""))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(target))
+                .andExpect(jsonPath("$.id").value(not(target)))
                 .andExpect(jsonPath("$.overview.items.length()").value(1))
                 .andExpect(jsonPath("$.overview.items[0].description").value("Gehalt"));
 
         assertThat(JsonPath.<List<String>>read(overview(2027), "$.items[*].description")).containsExactly("Gehalt");
+        String deletedPlans = mockMvc.perform(get("/api/plans/deleted").cookie(alice))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(JsonPath.<List<String>>read(deletedPlans, "$.plans[*].planId")).containsExactly(target);
+        assertThat(JsonPath.<List<Integer>>read(deletedPlans, "$.plans[*].itemCount")).containsExactly(1);
         assertThat(jdbcClient.sql("""
                         SELECT COUNT(*) FROM audit_log
                         WHERE event_type = 'HouseholdPlanCopied' AND (payload ->> 'overwritten')::boolean""")
@@ -233,9 +240,9 @@ class HouseholdPlanIntegrationTest extends HouseholdPlanIntegrationTestSupport {
                 .andExpect(status().isNotFound());
     }
 
-    /** PL-1 to PL-3, PL-6 */
+    /** PL-1, PL-3, PL-6, GP-2, GP-3, GP-7, GP-21 */
     @Test
-    void deletingAPlanRemovesItWithAllItemsAndIsAudited() throws Exception {
+    void deletingAPlanMovesItToTheDeletedPlansAndIsAudited() throws Exception {
         String deleted = createPlan(2026);
         post("/api/plans/" + deleted + "/incomes", """
                 {"description":"Gehalt","amount":"3000.00","period":"YEARLY"}""");
@@ -252,8 +259,18 @@ class HouseholdPlanIntegrationTest extends HouseholdPlanIntegrationTestSupport {
         mockMvc.perform(get("/api/plans").param("year", "2026").cookie(alice))
                 .andExpect(status().isNotFound());
         assertThat(JsonPath.<List<String>>read(overview(2027), "$.items[*].description")).containsExactly("Bonus");
-        assertThat(jdbcClient.sql("SELECT COUNT(*) FROM budget_item WHERE household_plan_id = :id")
-                .param("id", UUID.fromString(deleted)).query(Integer.class).single()).isZero();
+        mockMvc.perform(get("/api/plans/years").cookie(alice))
+                .andExpect(jsonPath("$.years[*].year").value(contains(2027)))
+                .andExpect(jsonPath("$.deletedPlanCount").value(1));
+        mockMvc.perform(get("/api/plans/deleted").cookie(alice))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.plans.length()").value(1))
+                .andExpect(jsonPath("$.plans[0].planId").value(deleted))
+                .andExpect(jsonPath("$.plans[0].year").value(2026))
+                .andExpect(jsonPath("$.plans[0].itemCount").value(2))
+                .andExpect(jsonPath("$.plans[0].totalIncome").value("3000.00"))
+                .andExpect(jsonPath("$.plans[0].totalExpense").value("10800.00"))
+                .andExpect(jsonPath("$.plans[0].deletedAt").isNotEmpty());
         assertThat(jdbcClient.sql("""
                         SELECT event_type, household_plan_id, (payload ->> 'year')::int AS year,
                                (payload ->> 'itemCount')::int AS item_count
@@ -265,9 +282,65 @@ class HouseholdPlanIntegrationTest extends HouseholdPlanIntegrationTestSupport {
 
         mockMvc.perform(delete("/api/plans/{planId}", deleted).cookie(alice))
                 .andExpect(status().isNotFound());
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/plans/{planId}/incomes", deleted).cookie(alice)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"description":"Bonus","amount":"1.00","period":"YEARLY"}"""))
+                .andExpect(status().isNotFound());
         String recreated = createPlan(2026);
         assertThat(JsonPath.<List<Object>>read(overview(2026), "$.items")).isEmpty();
         assertThat(recreated).isNotEqualTo(deleted);
+    }
+
+    /** GP-11 to GP-14, GP-17, GP-18, GP-27 */
+    @Test
+    void aDeletedPlanCanBeRestoredOverTheActiveOneAfterConsentAndPurged() throws Exception {
+        String old = createPlan(2026);
+        post("/api/plans/" + old + "/incomes", """
+                {"description":"Gehalt","amount":"3000.00","period":"YEARLY"}""");
+        mockMvc.perform(delete("/api/plans/{planId}", old).cookie(alice)).andExpect(status().isNoContent());
+        String newer = createPlan(2026);
+        jdbcClient.sql("DELETE FROM audit_log").update();
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/plans/{planId}/restore", old).cookie(alice)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.type").value("urn:hbt:plan-already-exists"));
+        assertThat(JsonPath.<String>read(overview(2026), "$.id")).isEqualTo(newer);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/plans/{planId}/restore", old).cookie(alice)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"overwrite":true}"""))
+                .andExpect(status().isNoContent());
+
+        assertThat(JsonPath.<String>read(overview(2026), "$.id")).isEqualTo(old);
+        assertThat(JsonPath.<List<String>>read(overview(2026), "$.items[*].description")).containsExactly("Gehalt");
+        mockMvc.perform(get("/api/plans/deleted").cookie(alice))
+                .andExpect(jsonPath("$.plans[*].planId").value(contains(newer)));
+
+        mockMvc.perform(delete("/api/plans/deleted/{planId}", old).cookie(alice))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/plans/deleted/{planId}", newer).cookie(bob))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/plans/deleted/{planId}", newer).cookie(alice))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/plans/deleted").cookie(alice))
+                .andExpect(jsonPath("$.plans.length()").value(0));
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/plans/{planId}/restore", newer).cookie(alice)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isNotFound());
+        assertThat(jdbcClient.sql("SELECT COUNT(*) FROM household_plan WHERE id = :id")
+                .param("id", UUID.fromString(newer)).query(Integer.class).single()).isZero();
+        assertThat(jdbcClient.sql("SELECT event_type, household_plan_id FROM audit_log ORDER BY id")
+                .query().listOfRows())
+                .extracting(row -> row.get("event_type"), row -> row.get("household_plan_id"))
+                .containsExactly(tuple("HouseholdPlanDeleted", UUID.fromString(newer)),
+                        tuple("HouseholdPlanRestored", UUID.fromString(old)),
+                        tuple("HouseholdPlanPurged", UUID.fromString(newer)));
     }
 
     /** PL-1, HP-4 */

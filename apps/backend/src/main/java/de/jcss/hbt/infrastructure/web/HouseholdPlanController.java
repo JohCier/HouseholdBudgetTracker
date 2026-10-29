@@ -12,9 +12,11 @@ import de.jcss.hbt.domain.householdplan.command.CopyHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.DeleteHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.MarkBudgetItemImportantCommand;
+import de.jcss.hbt.domain.householdplan.command.PurgeHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderBudgetItemsCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderSubcategoriesCommand;
+import de.jcss.hbt.domain.householdplan.command.RestoreHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemNote;
@@ -33,11 +35,13 @@ import de.jcss.hbt.infrastructure.web.dto.CopiedHouseholdPlanResponse;
 import de.jcss.hbt.infrastructure.web.dto.CopyHouseholdPlanRequest;
 import de.jcss.hbt.infrastructure.web.dto.CreateHouseholdPlanRequest;
 import de.jcss.hbt.infrastructure.web.dto.CreatedHouseholdPlanResponse;
+import de.jcss.hbt.infrastructure.web.dto.DeletedPlansResponse;
 import de.jcss.hbt.infrastructure.web.dto.ExpenseCategoryDto;
 import de.jcss.hbt.infrastructure.web.dto.HouseholdPlanOverviewResponse;
 import de.jcss.hbt.infrastructure.web.dto.MarkImportantRequest;
 import de.jcss.hbt.infrastructure.web.dto.ReorderBudgetItemsRequest;
 import de.jcss.hbt.infrastructure.web.dto.ReorderSubcategoriesRequest;
+import de.jcss.hbt.infrastructure.web.dto.RestoreHouseholdPlanRequest;
 import de.jcss.hbt.infrastructure.web.dto.SavingPotentialRequest;
 import de.jcss.hbt.infrastructure.web.dto.YearlyOverviewResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -119,11 +123,36 @@ public class HouseholdPlanController {
                 .body(CopiedHouseholdPlanResponse.from(copied));
     }
 
-    /** Deletes a plan with all its items (PL-1, PL-2): 204, or 404 if it is not a plan of the user. */
+    /** Moves a plan with all its items to the deleted plans (PL-1, GP-7): 204, or 404 if it is not an active plan of the user. */
     @DeleteMapping("/{planId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletePlan(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId) {
         plans.deletePlan(new DeleteHouseholdPlanCommand(owner(user), HouseholdPlanId.of(planId)));
+    }
+
+    /** The deleted plans of the user, the newest year and the latest deleted first, with their totals (GP-22, GP-24). */
+    @GetMapping("/deleted")
+    public DeletedPlansResponse deletedPlans(@AuthenticationPrincipal Jwt user) {
+        return DeletedPlansResponse.from(plans.getDeletedPlans(owner(user)));
+    }
+
+    /**
+     * Makes a deleted plan active again (GP-11 to GP-14): 204, 409 if the user has an active plan for its year
+     * that may not be replaced, 404 if it is not a deleted plan of the user.
+     */
+    @PostMapping("/{planId}/restore")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void restorePlan(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId,
+                            @Valid @RequestBody RestoreHouseholdPlanRequest request) {
+        plans.restorePlan(new RestoreHouseholdPlanCommand(owner(user), HouseholdPlanId.of(planId),
+                Boolean.TRUE.equals(request.overwrite())));
+    }
+
+    /** Deletes a deleted plan for good (GP-17, GP-18): 204, or 404 if it is not a deleted plan of the user. */
+    @DeleteMapping("/deleted/{planId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void purgePlan(@AuthenticationPrincipal Jwt user, @PathVariable UUID planId) {
+        plans.purgePlan(new PurgeHouseholdPlanCommand(owner(user), HouseholdPlanId.of(planId)));
     }
 
     @PostMapping("/{planId}/incomes")

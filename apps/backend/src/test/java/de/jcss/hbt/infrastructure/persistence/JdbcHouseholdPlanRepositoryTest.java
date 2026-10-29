@@ -319,7 +319,49 @@ class JdbcHouseholdPlanRepositoryTest {
         assertThat(repository.findFor(OwnerId.of(UUID.randomUUID()), Year.of(2031))).isEmpty();
     }
 
-    /** PL-2, PL-3 */
+    /** GP-1 to GP-4, GP-7 */
+    @Test
+    void keepsADeletedPlanWithItsItemsButOnlyHandsItOutToBeRestoredOrPurged() {
+        HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
+        expense(plan, "Wartung", "Auto");
+        repository.add(plan);
+
+        repository.markDeleted(repository.findById(plan.id()).orElseThrow());
+
+        assertThat(repository.findById(plan.id())).isEmpty();
+        assertThat(repository.findFor(OWNER, YEAR)).isEmpty();
+        assertThat(repository.existsFor(OWNER, YEAR)).isFalse();
+        assertThat(repository.findDeletedById(plan.id()).orElseThrow().items()).hasSize(1);
+        assertThat(jdbcClient.sql("SELECT deleted_at FROM household_plan WHERE id = :id")
+                .param("id", plan.id().value()).query(Instant.class).single()).isNotNull();
+        HouseholdPlan newer = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
+        repository.add(newer);
+        repository.markDeleted(newer);
+        assertThat(repository.findDeletedById(newer.id())).isPresent();
+    }
+
+    /** GP-11, GP-14 */
+    @Test
+    void restoresADeletedPlanOnlyIfItsYearHasNoActivePlan() {
+        HouseholdPlan plan = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
+        expense(plan, "Wartung", "Auto");
+        repository.add(plan);
+        repository.markDeleted(plan);
+        HouseholdPlan active = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
+        repository.add(active);
+
+        assertThatThrownBy(() -> repository.restore(repository.findDeletedById(plan.id()).orElseThrow()))
+                .isInstanceOf(HouseholdPlanAlreadyExistsException.class);
+
+        repository.markDeleted(active);
+        repository.restore(repository.findDeletedById(plan.id()).orElseThrow());
+
+        assertThat(repository.findFor(OWNER, YEAR).orElseThrow().id()).isEqualTo(plan.id());
+        assertThat(repository.findById(plan.id()).orElseThrow().items()).hasSize(1);
+        assertThat(repository.findDeletedById(plan.id())).isEmpty();
+    }
+
+    /** GP-17, PL-3 */
     @Test
     void removesAPlanWithItsItemsAndOrdersAndKeepsOtherPlans() {
         HouseholdPlan removed = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, YEAR);
@@ -331,9 +373,11 @@ class JdbcHouseholdPlanRepositoryTest {
             repository.add(plan);
         }
 
-        repository.remove(repository.findById(removed.id()).orElseThrow());
+        repository.markDeleted(repository.findById(removed.id()).orElseThrow());
+        repository.remove(repository.findDeletedById(removed.id()).orElseThrow());
 
         assertThat(repository.findById(removed.id())).isEmpty();
+        assertThat(repository.findDeletedById(removed.id())).isEmpty();
         assertThat(repository.existsFor(OWNER, YEAR)).isFalse();
         assertThat(jdbcClient.sql("SELECT COUNT(*) FROM budget_item WHERE household_plan_id = :id")
                 .param("id", removed.id().value()).query(Integer.class).single()).isZero();

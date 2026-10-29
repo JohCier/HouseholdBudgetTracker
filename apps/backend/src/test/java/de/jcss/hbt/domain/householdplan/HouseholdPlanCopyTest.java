@@ -54,7 +54,7 @@ class HouseholdPlanCopyTest {
     void createFromCopiesAllItemsInTheirOrder() {
         HouseholdPlanId id = HouseholdPlanId.generate();
 
-        HouseholdPlan copy = HouseholdPlan.createFrom(source, id, Year.of(2027));
+        HouseholdPlan copy = HouseholdPlan.createFrom(source, id, Year.of(2027), false);
 
         assertThat(copy.id()).isEqualTo(id);
         assertThat(copy.year()).isEqualTo(Year.of(2027));
@@ -67,7 +67,7 @@ class HouseholdPlanCopyTest {
     /** PU-3, MJ-1: monthly items stay monthly, yearly items stay yearly */
     @Test
     void createFromKeepsTheAmountWithItsPeriod() {
-        HouseholdPlan copy = HouseholdPlan.createFrom(source, HouseholdPlanId.generate(), Year.of(2027));
+        HouseholdPlan copy = HouseholdPlan.createFrom(source, HouseholdPlanId.generate(), Year.of(2027), false);
 
         assertThat(copy.items()).extracting(BudgetItem::amount)
                 .containsExactlyElementsOf(source.items().stream().map(BudgetItem::amount).toList())
@@ -78,7 +78,7 @@ class HouseholdPlanCopyTest {
     /** PU-5 */
     @Test
     void copiedItemsAreItemsOfTheirOwn() {
-        HouseholdPlan copy = HouseholdPlan.createFrom(source, HouseholdPlanId.generate(), Year.of(2027));
+        HouseholdPlan copy = HouseholdPlan.createFrom(source, HouseholdPlanId.generate(), Year.of(2027), false);
 
         assertThat(copy.items()).extracting(BudgetItem::id).doesNotContainAnyElementsOf(
                 source.items().stream().map(BudgetItem::id).toList());
@@ -92,7 +92,7 @@ class HouseholdPlanCopyTest {
     void createFromRecordsCreationAndCopyOnly() {
         HouseholdPlanId id = HouseholdPlanId.generate();
 
-        HouseholdPlan copy = HouseholdPlan.createFrom(source, id, Year.of(2027));
+        HouseholdPlan copy = HouseholdPlan.createFrom(source, id, Year.of(2027), false);
 
         assertThat(copy.pullDomainEvents())
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
@@ -103,16 +103,16 @@ class HouseholdPlanCopyTest {
     /** PU-2 */
     @Test
     void createFromAcceptsEarlierYears() {
-        assertThat(HouseholdPlan.createFrom(source, HouseholdPlanId.generate(), Year.of(2020)).items()).hasSize(4);
+        assertThat(HouseholdPlan.createFrom(source, HouseholdPlanId.generate(), Year.of(2020), false).items()).hasSize(4);
     }
 
     /** PU-2, HP-1 */
     @Test
     void createFromRejectsTheYearOfTheSourceAndYearsOutOfRange() {
-        assertThatThrownBy(() -> HouseholdPlan.createFrom(source, HouseholdPlanId.generate(), Year.of(2026)))
+        assertThatThrownBy(() -> HouseholdPlan.createFrom(source, HouseholdPlanId.generate(), Year.of(2026), false))
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessage("the target year must differ from the year of the source, 2026");
-        assertThatThrownBy(() -> HouseholdPlan.createFrom(source, HouseholdPlanId.generate(), Year.of(2201)))
+        assertThatThrownBy(() -> HouseholdPlan.createFrom(source, HouseholdPlanId.generate(), Year.of(2201), false))
                 .isInstanceOf(DomainValidationException.class);
     }
 
@@ -121,47 +121,20 @@ class HouseholdPlanCopyTest {
     void anEmptyPlanGivesAnEmptyCopy() {
         HouseholdPlan empty = HouseholdPlan.create(HouseholdPlanId.generate(), OWNER, Year.of(2030));
 
-        assertThat(HouseholdPlan.createFrom(empty, HouseholdPlanId.generate(), Year.of(2031)).items()).isEmpty();
+        assertThat(HouseholdPlan.createFrom(empty, HouseholdPlanId.generate(), Year.of(2031), false).items()).isEmpty();
     }
 
-    /** PU-9, PU-11 */
+    /** PU-11, GP-19 */
     @Test
-    void overwriteWithReplacesAllItemsAndTheOrder() {
-        HouseholdPlanId targetId = HouseholdPlanId.generate();
-        HouseholdPlan target = HouseholdPlan.create(targetId, OWNER, Year.of(2027));
-        BudgetItemId old = target.addExpense(BudgetItemDescription.of("Alt"), amount, ExpenseCategory.FREIZEIT_SPASS,
-                null, null);
-        target.reorderSubcategories(ItemSection.expenses(ExpenseCategory.FREIZEIT_SPASS),
-                List.of(BudgetItemSubcategory.OTHER));
-        target.pullDomainEvents();
+    void aCopyReplacingAPlanSaysSoInItsEvent() {
+        HouseholdPlanId id = HouseholdPlanId.generate();
 
-        target.overwriteWith(source);
+        HouseholdPlan copy = HouseholdPlan.createFrom(source, id, Year.of(2027), true);
 
-        assertThat(target.id()).isEqualTo(targetId);
-        assertThat(target.year()).isEqualTo(Year.of(2027));
-        assertThat(target.items()).extracting(BudgetItem::id).doesNotContain(old);
-        assertSameItems(target, source);
-        assertThat(target.subcategoryOrders()).isEqualTo(source.subcategoryOrders());
-        assertThat(target.pullDomainEvents())
+        assertSameItems(copy, source);
+        assertThat(copy.pullDomainEvents())
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
-                .containsExactly(new HouseholdPlanCopied(targetId, source.id(), true, Instant.now()));
-    }
-
-    /** PU-2 */
-    @Test
-    void aPlanCannotBeOverwrittenWithItself() {
-        assertThatThrownBy(() -> source.overwriteWith(source))
-                .isInstanceOf(DomainValidationException.class);
-        assertThat(source.items()).hasSize(4);
-    }
-
-    /** HP-4 */
-    @Test
-    void onlyPlansOfTheSameOwnerAreCopied() {
-        HouseholdPlan foreign = HouseholdPlan.create(HouseholdPlanId.generate(), OwnerId.of(UUID.randomUUID()),
-                Year.of(2027));
-
-        assertThatThrownBy(() -> foreign.overwriteWith(source)).isInstanceOf(IllegalArgumentException.class);
+                .contains(new HouseholdPlanCopied(id, source.id(), true, Instant.now()));
     }
 
     private static void assertSameItems(HouseholdPlan copy, HouseholdPlan original) {

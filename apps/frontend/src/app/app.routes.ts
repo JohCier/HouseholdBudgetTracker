@@ -16,6 +16,12 @@ export const routes: Routes = [
     title: 'Haushaltsplan – Haushaltsbuch',
   },
   {
+    path: 'geloeschte-plaene',
+    loadComponent: () => import('./budget/deleted-plans-page').then((m) => m.DeletedPlansPage),
+    canActivate: [signedInGuard],
+    title: 'Gelöschte Pläne – Haushaltsbuch',
+  },
+  {
     path: 'passwort',
     loadComponent: () => import('./auth/ui/change-password-page').then((m) => m.ChangePasswordPage),
     canActivate: [signedInGuard],

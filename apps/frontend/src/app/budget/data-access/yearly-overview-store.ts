@@ -23,6 +23,7 @@ export class YearlyOverviewStore {
 
   /** `undefined` until loaded. */
   private readonly _years = signal<YearlyOverviewEntry[] | undefined>(undefined);
+  private readonly _deletedPlanCount = signal(0);
   private readonly _loading = signal(false);
   private readonly _loadError = signal<string | null>(null);
   private readonly _period = signal<AmountPeriod>(storedPeriod());
@@ -40,6 +41,8 @@ export class YearlyOverviewStore {
       this.loaded() &&
       !this.years().some((entry) => entry.year === this.currentYear && hasPlan(entry)),
   );
+  /** How many deleted plans the user has; the overview links to them if there are any (GP-21). */
+  readonly deletedPlanCount = this._deletedPlanCount.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly loadError = this._loadError.asReadonly();
   /** Whether the amounts are shown per month or per year; monthly unless chosen otherwise (JM-7). */
@@ -60,6 +63,7 @@ export class YearlyOverviewStore {
     try {
       const overview = await firstValueFrom(this.api.getYearlyOverview());
       this._years.set(overview.years);
+      this._deletedPlanCount.set(overview.deletedPlanCount);
       this._loadError.set(null);
     } catch (error) {
       this._loadError.set(toMessage(error));
@@ -84,7 +88,8 @@ export function hasPlan(entry: YearlyOverviewEntry): boolean {
   return entry.planId !== null;
 }
 
-function storedPeriod(): AmountPeriod {
+/** The period last chosen in this browser, monthly unless chosen otherwise (JM-7). */
+export function storedPeriod(): AmountPeriod {
   try {
     return localStorage.getItem(PERIOD_STORAGE_KEY) === 'YEARLY' ? 'YEARLY' : 'MONTHLY';
   } catch {

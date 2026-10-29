@@ -42,6 +42,9 @@ import java.util.UUID;
  * below zero are fine. The
  * arranged order of the subcategory groups is stored in {@code subcategory_order}.
  * <p>
+ * Deleted plans keep their row and are marked by {@code household_plan.deleted_at} (GP-2); a
+ * user has at most one row per year without it (GP-1).
+ * <p>
  * Concurrent changes are prevented by locking the plan row in {@link #findById}
  * ({@code SELECT ... FOR UPDATE}) until the transaction ends: a second transaction
  * loading the same plan waits and then sees the stored changes, so none get lost.
@@ -71,8 +74,22 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
 
     @Override
     public Optional<HouseholdPlan> findById(HouseholdPlanId id) {
-        return jdbcClient.sql("SELECT owner_id, year FROM household_plan WHERE id = :id FOR UPDATE")
+        return find(id, false);
+    }
+
+    @Override
+    public Optional<HouseholdPlan> findDeletedById(HouseholdPlanId id) {
+        return find(id, true);
+    }
+
+    private Optional<HouseholdPlan> find(HouseholdPlanId id, boolean deleted) {
+        return jdbcClient.sql("""
+                        SELECT owner_id, year FROM household_plan
+                        WHERE id = :id AND (deleted_at IS NOT NULL) = :deleted
+                        FOR UPDATE
+                        """)
                 .param("id", id.value())
+                .param("deleted", deleted)
                 .query((rs, rowNum) -> new PlanRow(OwnerId.of(rs.getObject("owner_id", UUID.class)),
                         Year.of(rs.getInt("year"))))
                 .optional()
@@ -85,7 +102,11 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
 
     @Override
     public Optional<HouseholdPlan> findFor(OwnerId owner, Year year) {
-        return jdbcClient.sql("SELECT id FROM household_plan WHERE owner_id = :owner AND year = :year FOR UPDATE")
+        return jdbcClient.sql("""
+                        SELECT id FROM household_plan
+                        WHERE owner_id = :owner AND year = :year AND deleted_at IS NULL
+                        FOR UPDATE
+                        """)
                 .param("owner", owner.value())
                 .param("year", year.getValue())
                 .query((rs, rowNum) -> HouseholdPlanId.of(rs.getObject("id", UUID.class)))
@@ -112,7 +133,10 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
 
     @Override
     public boolean existsFor(OwnerId owner, Year year) {
-        return jdbcClient.sql("SELECT EXISTS (SELECT 1 FROM household_plan WHERE owner_id = :owner AND year = :year)")
+        return jdbcClient.sql("""
+                        SELECT EXISTS (SELECT 1 FROM household_plan
+                                       WHERE owner_id = :owner AND year = :year AND deleted_at IS NULL)
+                        """)
                 .param("owner", owner.value())
                 .param("year", year.getValue())
                 .query(Boolean.class)
@@ -136,6 +160,25 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
             insertItem(plan.id(), items.get(index), positions.get(index));
         }
         insertSubcategoryOrders(plan.id(), plan.subcategoryOrders());
+    }
+
+    /** The time of deletion is that of the database: the start of the transaction (GP-2). */
+    @Override
+    public void markDeleted(HouseholdPlan plan) {
+        jdbcClient.sql("UPDATE household_plan SET deleted_at = now() WHERE id = :id")
+                .param("id", plan.id().value())
+                .update();
+    }
+
+    @Override
+    public void restore(HouseholdPlan plan) {
+        try {
+            jdbcClient.sql("UPDATE household_plan SET deleted_at = NULL WHERE id = :id")
+                    .param("id", plan.id().value())
+                    .update();
+        } catch (DuplicateKeyException e) {
+            throw new HouseholdPlanAlreadyExistsException(plan.year());
+        }
     }
 
     /** Items and the order of their groups go with the plan through {@code ON DELETE CASCADE}. */

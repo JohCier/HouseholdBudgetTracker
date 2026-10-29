@@ -7,6 +7,8 @@ import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCreated;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanDeleted;
+import de.jcss.hbt.domain.householdplan.event.HouseholdPlanPurged;
+import de.jcss.hbt.domain.householdplan.event.HouseholdPlanRestored;
 import de.jcss.hbt.domain.householdplan.event.IncomeAdded;
 import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
@@ -165,7 +167,24 @@ class HouseholdPlanTest {
         assertThat(plan.pullDomainEvents()).isEmpty();
     }
 
-    /** PL-6 */
+    /** GP-27 */
+    @Test
+    void restoreAndPurgeRecordOneEventEach() {
+        HouseholdPlan plan = emptyPlan();
+        plan.addIncome(salary, amount, null, null);
+        plan.pullDomainEvents();
+
+        plan.restore();
+        plan.purge();
+
+        assertThat(plan.pullDomainEvents())
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+                .containsExactly(new HouseholdPlanRestored(planId, plan.year(), Instant.now()),
+                        new HouseholdPlanPurged(planId, plan.year(), 1, Instant.now()));
+        assertThat(plan.items()).hasSize(1);
+    }
+
+    /** PL-6, GP-7 */
     @Test
     void deleteRecordsOneEventWithTheNumberOfItemsAndNoneForTheItems() {
         HouseholdPlan plan = emptyPlan();

@@ -143,7 +143,7 @@ test.describe("Plan als Vorlage übernehmen", () => {
 
     let dialog = await openCopyDialog(page);
     await expect(dialog.getByRole("alert")).toContainText(
-      `Für ${year + 1} gibt es bereits einen Haushaltsplan mit 1 Posten. Er wird überschrieben, die Posten lassen sich nicht wiederherstellen.`,
+      `Für ${year + 1} gibt es bereits einen Haushaltsplan mit 1 Posten. Er wird überschrieben und unter „Gelöschte Pläne" abgelegt.`,
     );
     await dialog.getByRole("button", { name: "Abbrechen" }).click();
     await openYear(page, year + 1);

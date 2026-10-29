@@ -8,10 +8,19 @@ import de.jcss.hbt.domain.exception.HouseholdPlanNotFoundException;
 import de.jcss.hbt.domain.householdplan.command.CopyHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.DeleteHouseholdPlanCommand;
+import de.jcss.hbt.domain.householdplan.command.PurgeHouseholdPlanCommand;
+import de.jcss.hbt.domain.householdplan.command.RestoreHouseholdPlanCommand;
+import de.jcss.hbt.domain.householdplan.overview.DeletedPlanEntry;
+import de.jcss.hbt.domain.householdplan.overview.DeletedPlans;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetSummary;
+import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.Year;
 import java.util.List;
 
@@ -230,6 +239,79 @@ class HouseholdPlanControllerTest extends HouseholdPlanControllerTestSupport {
                 .andExpect(content().string(""));
 
         verify(plans).deletePlan(new DeleteHouseholdPlanCommand(OWNER, PLAN_ID));
+    }
+
+    /** GP-14 */
+    @Test
+    void restorePlanReturns204AndPassesWhetherToOverwrite() throws Exception {
+        mockMvc.perform(post("/api/plans/{planId}/restore", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"overwrite\": true}"))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(post("/api/plans/{planId}/restore", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isNoContent());
+
+        verify(plans).restorePlan(new RestoreHouseholdPlanCommand(OWNER, PLAN_ID, true));
+        verify(plans).restorePlan(new RestoreHouseholdPlanCommand(OWNER, PLAN_ID, false));
+    }
+
+    /** GP-14 */
+    @Test
+    void restorePlanOverAnActivePlanWithoutOverwriteReturns409() throws Exception {
+        doThrow(new HouseholdPlanAlreadyExistsException(Year.of(2026))).when(plans).restorePlan(any());
+
+        mockMvc.perform(post("/api/plans/{planId}/restore", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.type").value("urn:hbt:plan-already-exists"));
+    }
+
+    /** GP-17 */
+    @Test
+    void purgePlanReturns204() throws Exception {
+        mockMvc.perform(delete("/api/plans/deleted/{planId}", PLAN))
+                .andExpect(status().isNoContent());
+
+        verify(plans).purgePlan(new PurgeHouseholdPlanCommand(OWNER, PLAN_ID));
+    }
+
+    /** GP-10, GP-18 */
+    @Test
+    void restoringOrPurgingAPlanThatIsNotADeletedOneReturns404() throws Exception {
+        doThrow(new HouseholdPlanNotFoundException(PLAN_ID)).when(plans).restorePlan(any());
+        doThrow(new HouseholdPlanNotFoundException(PLAN_ID)).when(plans).purgePlan(any());
+
+        mockMvc.perform(post("/api/plans/{planId}/restore", PLAN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/plans/deleted/{planId}", PLAN))
+                .andExpect(status().isNotFound());
+    }
+
+    /** GP-22 */
+    @Test
+    void deletedPlansListsThemWithTheirTotals() throws Exception {
+        when(plans.getDeletedPlans(OWNER)).thenReturn(new DeletedPlans(List.of(DeletedPlanEntry.of(PLAN_ID,
+                Year.of(2026), Instant.parse("2026-10-29T20:15:00Z"), 2, BudgetSummary.EMPTY
+                        .withIncome(Money.of(new BigDecimal("38400.00")))
+                        .withExpense(ExpenseCategory.LEBENSUNTERHALT, Money.of(new BigDecimal("34200.00")))))));
+
+        mockMvc.perform(get("/api/plans/deleted"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.plans.length()").value(1))
+                .andExpect(jsonPath("$.plans[0].planId").value(PLAN.toString()))
+                .andExpect(jsonPath("$.plans[0].year").value(2026))
+                .andExpect(jsonPath("$.plans[0].deletedAt").value("2026-10-29T20:15:00Z"))
+                .andExpect(jsonPath("$.plans[0].itemCount").value(2))
+                .andExpect(jsonPath("$.plans[0].totalIncome").value("38400.00"))
+                .andExpect(jsonPath("$.plans[0].balance").value("4200.00"))
+                .andExpect(jsonPath("$.plans[0].monthlyTotalIncome").value("3200.00"))
+                .andExpect(jsonPath("$.plans[0].monthlyBalance").value("350.00"))
+                .andExpect(jsonPath("$.plans[0].expensesExceedIncome").value(false));
     }
 
     /** PL-1, HP-4 */

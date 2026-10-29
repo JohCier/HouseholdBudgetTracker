@@ -21,12 +21,14 @@ Jahresübersicht löschen" in [jahresuebersicht.md](jahresuebersicht.md) und das
 
 - **PL-1**: Der Benutzer kann jeden seiner Pläne (HP-4) löschen, auch einen leeren. Pläne anderer Benutzer werden
   behandelt, als gäbe es sie nicht.
-- **PL-2**: Gelöscht werden der Plan mit allen Posten und seiner Reihenfolge der Gruppen (UK-14). Danach gibt es für
-  dieses Jahr keinen Plan mehr; der Benutzer kann dort wieder einen anlegen (HP-5) oder einen übernehmen (PU-8).
+- **PL-2**: Der Plan kommt mit allen Posten und seiner Reihenfolge der Gruppen (UK-14) unter „Gelöschte Pläne"
+  ([GP-7](geloeschte-plaene.md)). Danach gibt es für dieses Jahr keinen aktiven Plan mehr; der Benutzer kann dort wieder
+  einen anlegen (HP-5) oder einen übernehmen (PU-8).
 - **PL-3**: Andere Pläne bleiben unverändert, auch solche, die aus dem gelöschten übernommen wurden oder als Vorlage
   für ihn dienten (PU-5).
 - **PL-4**: Das Löschen gelingt ganz oder gar nicht.
-- **PL-5**: Ein gelöschter Plan lässt sich nicht wiederherstellen; „Rückgängig" (PO-9) gibt es dafür nicht.
+- **PL-5**: Ein gelöschter Plan lässt sich unter „Gelöschte Pläne" wiederherstellen oder endgültig löschen, und die
+  Meldung nach dem Löschen bietet „Rückgängig" an ([GP-9 bis GP-17](geloeschte-plaene.md)).
 
 ### Protokoll
 
@@ -40,9 +42,9 @@ Jahresübersicht löschen" in [jahresuebersicht.md](jahresuebersicht.md) und das
   - in jeder Zeile der Jahresübersicht neben „Als Vorlage übernehmen"; sie öffnet nicht den Plan der Zeile (JU-11),
   - in der Planansicht eines Jahres, solange ein Plan angezeigt wird, neben „Als Vorlage übernehmen".
 - **PL-8**: Vor dem Löschen fragt ein Dialog nach: Titel „Plan 2026 löschen", Text „Der Haushaltsplan 2026 mit 12
-  Posten wird gelöscht. Das lässt sich nicht rückgängig machen." (bei einem leeren Plan „… mit 0 Posten …"), die
-  Schaltflächen „Löschen" und „Abbrechen". „Abbrechen" ändert nichts.
-- **PL-9**: Nach dem Löschen bestätigt eine Meldung „Plan 2026 gelöscht.".
+  Posten wird unter „Gelöschte Pläne" abgelegt und lässt sich dort wiederherstellen." (bei einem leeren Plan „… mit 0
+  Posten …", [GP-8](geloeschte-plaene.md)), die Schaltflächen „Löschen" und „Abbrechen". „Abbrechen" ändert nichts.
+- **PL-9**: Nach dem Löschen bestätigt eine Meldung „Plan 2026 gelöscht." mit „Rückgängig" ([GP-9](geloeschte-plaene.md)).
   - Aus der Jahresübersicht gestartet, bleibt die Jahresübersicht offen; die Zeile ist verschwunden, und die
     Veränderung zum Vorjahr der Zeile des Folgejahres entfällt (JU-4).
   - Aus der Planansicht gestartet, zeigt die Anwendung danach die Jahresübersicht.
@@ -72,7 +74,7 @@ Jahresübersicht löschen" in [jahresuebersicht.md](jahresuebersicht.md) und das
 
 ## Nicht im Umfang
 
-- Gelöschte Pläne wiederherstellen oder einen Papierkorb (PL-5)
+- Gelöschte Pläne wiederherstellen: siehe [geloeschte-plaene.md](geloeschte-plaene.md)
 - Mehrere Pläne auf einmal löschen
 - Plan auf ein anderes Jahr verschieben
 - Benutzerkonto löschen
@@ -80,17 +82,17 @@ Jahresübersicht löschen" in [jahresuebersicht.md](jahresuebersicht.md) und das
 ## Umsetzung
 
 - Domäne: `HouseholdPlan.delete` zeichnet `HouseholdPlanDeleted` mit Jahr und Anzahl der Posten auf (PL-6);
-  `HouseholdPlanRepository.remove`
-- Ablauf: `HouseholdPlanApplicationService.deletePlan` mit `DeleteHouseholdPlanCommand` lädt den Plan gesperrt und
-  nur für den Besitzer (HP-4, HP-6), sonst `HouseholdPlanNotFoundException` (404), und entfernt ihn in einer
-  Transaktion (PL-4); `JdbcHouseholdPlanRepository.remove` löscht die Zeile in `household_plan`, Posten und
-  Reihenfolge der Gruppen fallen über `ON DELETE CASCADE` weg (PL-2). Das Protokoll hat keinen Fremdschlüssel und
-  behält frühere Einträge (PL-6)
+  `HouseholdPlanRepository.markDeleted` legt den Plan unter „Gelöschte Pläne" ab (seit
+  [geloeschte-plaene.md](geloeschte-plaene.md), vorher endgültig über `remove`)
+- Ablauf: `HouseholdPlanApplicationService.deletePlan` mit `DeleteHouseholdPlanCommand` lädt den aktiven Plan gesperrt
+  und nur für den Besitzer (HP-4, HP-6), sonst `HouseholdPlanNotFoundException` (404), und markiert ihn in einer
+  Transaktion als gelöscht (PL-4); `JdbcHouseholdPlanRepository.markDeleted` setzt `household_plan.deleted_at`,
+  Posten und Reihenfolge der Gruppen bleiben erhalten
 - API: `DELETE /api/plans/{planId}`, antwortet mit 204, für fremde, unbekannte oder schon gelöschte Pläne mit 404
 - Frontend: `budget/ui/delete-plan-dialog.ts` fragt nach und nennt Jahr und Anzahl der Posten, die er über
   `GET /api/plans?year=` ermittelt (PL-8); geöffnet aus `budget/yearly-overview-page.ts` (Papierkorb je Zeile, die
   Übersicht lädt danach neu) und `budget/budget-dashboard.ts` („Plan löschen", danach die Jahresübersicht) (PL-7,
-  PL-9)
+  PL-9); die Jahresübersicht bietet in der Meldung „Rückgängig" an (GP-9)
 - Tests: `HouseholdPlanTest`, `HouseholdPlanApplicationServiceTest`, `HouseholdPlanControllerTest`,
   `JdbcHouseholdPlanRepositoryTest`, `HouseholdPlanIntegrationTest`, `delete-plan-dialog.spec.ts`,
   `budget-dashboard.spec.ts`, `yearly-overview-page.spec.ts`, `budget-api.spec.ts`
