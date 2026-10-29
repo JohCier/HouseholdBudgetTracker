@@ -118,8 +118,8 @@ type YearCheck =
             <mat-icon svgIcon="warning" />
             <span>
               Für {{ targetYear.value }} gibt es bereits einen Haushaltsplan mit
-              {{ plan.itemCount }} Posten. Er wird überschrieben, die Posten lassen sich nicht
-              wiederherstellen.
+              {{ plan.itemCount }} Posten. Er wird überschrieben und unter „Gelöschte Pläne"
+              abgelegt.
             </span>
           </p>
         }

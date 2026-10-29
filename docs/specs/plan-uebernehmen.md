@@ -43,17 +43,18 @@ neuer Plan ist weiterhin leer, außer er entsteht durch Übernahme, und ein best
 
 - **PU-8**: Gibt es im Zieljahr noch keinen Plan, legt die Übernahme ihn an; er gehört dem Benutzer (HP-3).
 - **PU-9**: Gibt es im Zieljahr schon einen Plan, auch einen leeren, wird er nur nach ausdrücklicher Bestätigung
-  überschrieben (PU-14). Überschreiben heißt: Alle Posten des Plans im Zieljahr werden entfernt und durch die
-  übernommenen ersetzt, ebenso seine Reihenfolge der Gruppen. Der Plan selbst bleibt derselbe (gleiche ID, gleicher
-  Besitzer). Ohne Bestätigung ändert sich nichts.
-- **PU-10**: Überschriebene Posten lassen sich nicht wiederherstellen; „Rückgängig" (PO-9) gibt es dafür nicht.
+  überschrieben (PU-14). Überschreiben heißt: Der Plan im Zieljahr wird mit allen Posten gelöscht und unter
+  „Gelöschte Pläne" abgelegt, und für das Zieljahr entsteht ein neuer Plan mit den übernommenen Posten
+  ([GP-19](geloeschte-plaene.md)). Ohne Bestätigung ändert sich nichts.
+- **PU-10**: Der überschriebene Plan lässt sich unter „Gelöschte Pläne" wiederherstellen ([GP-19](geloeschte-plaene.md));
+  „Rückgängig" (PO-9) gibt es dafür nicht.
 
 ### Protokoll
 
 - **PU-11**: Die Übernahme wird als ein Event `HouseholdPlanCopied` mit Quelle, Ziel und der Angabe protokolliert, ob
-  ein bestehender Plan überschrieben wurde (HP-7). Wird der Plan neu angelegt, kommt `HouseholdPlanCreated` hinzu. Die
-  übernommenen und die überschriebenen Posten erzeugen keine eigenen Events `IncomeAdded`, `ExpenseAdded` oder
-  `BudgetItemRemoved`.
+  ein bestehender Plan überschrieben wurde (HP-7). Der neue Plan bringt `HouseholdPlanCreated` mit, ein überschriebener
+  `HouseholdPlanDeleted` ([GP-28](geloeschte-plaene.md)). Die übernommenen und die überschriebenen Posten erzeugen
+  keine eigenen Events `IncomeAdded`, `ExpenseAdded` oder `BudgetItemRemoved`.
 
 ### Anzeige
 
@@ -67,8 +68,8 @@ neuer Plan ist weiterhin leer, außer er entsteht durch Übernahme, und ein best
   (vorbelegt mit dem neuesten Plan vor dem Zieljahr, sonst dem ältesten danach). Der Dialog nennt die Anzahl der Posten,
   die übernommen werden, und hat die Schaltflächen „Übernehmen" und „Abbrechen". „Abbrechen" ändert nichts.
 - **PU-14**: Gibt es im gewählten Zieljahr schon einen Plan, zeigt der Dialog vor dem Übernehmen den Hinweis „Für 2027
-  gibt es bereits einen Haushaltsplan mit 12 Posten. Er wird überschrieben, die Posten lassen sich nicht
-  wiederherstellen." Die Schaltfläche heißt dann „Überschreiben" statt „Übernehmen".
+  gibt es bereits einen Haushaltsplan mit 12 Posten. Er wird überschrieben und unter „Gelöschte Pläne" abgelegt."
+  ([GP-20](geloeschte-plaene.md)). Die Schaltfläche heißt dann „Überschreiben" statt „Übernehmen".
 - **PU-15**: Nach der Übernahme ist der Plan im Zieljahr geöffnet, egal von wo sie gestartet wurde, und eine Meldung
   bestätigt „Plan 2026 nach 2027 übernommen.". Zurück in der Jahresübersicht steht das Zieljahr mit den neuen Summen.
 
@@ -107,28 +108,30 @@ neuer Plan ist weiterhin leer, außer er entsteht durch Übernahme, und ein best
 - **Gegeben** Benutzer A mit einem Plan, **wenn** Benutzer B diesen Plan übernehmen will, **dann** antwortet die API
   mit 404, und für B entsteht oder ändert sich kein Plan (HP-4).
 - **Gegeben** eine Übernahme in ein Jahr ohne Plan, **dann** enthält das Protokoll `HouseholdPlanCreated` und
-  `HouseholdPlanCopied`; bei einer Übernahme mit Überschreiben nur `HouseholdPlanCopied`; in beiden Fällen kein
+  `HouseholdPlanCopied`; bei einer Übernahme mit Überschreiben zusätzlich `HouseholdPlanDeleted` für den überschriebenen
+  Plan (GP-28); in beiden Fällen kein
   `IncomeAdded`, `ExpenseAdded` oder `BudgetItemRemoved` (PU-11).
 
 ## Nicht im Umfang
 
 - Mehrere Pläne zusammenführen oder Posten zu einem bestehenden Plan hinzufügen, ohne ihn zu überschreiben
 - Nur einen Teil der Posten übernehmen oder Beträge bei der Übernahme pauschal anpassen (z. B. +3 %)
-- Überschreiben rückgängig machen (PU-10)
+- Überschreiben rückgängig machen; den überschriebenen Plan stellt der Benutzer unter „Gelöschte Pläne" wieder her
+  (PU-10)
 - Pläne löschen, siehe [plan-loeschen.md](plan-loeschen.md)
 
 ## Umsetzung
 
-- Domäne: `HouseholdPlan.createFrom` (PU-8) und `HouseholdPlan.overwriteWith` (PU-9) kopieren über
-  `BudgetItem.copy` alle Posten mit neuer ID und alle Werte des Postens (PU-3, PU-5) sowie die Reihenfolge der Posten
-  und `SubcategoryOrder` (PU-4); beide lehnen das Jahr der Quelle mit `DomainValidationException` ab (PU-2) und
-  zeichnen `HouseholdPlanCopied` auf (PU-11), `createFrom` über `create` zusätzlich `HouseholdPlanCreated`. Die
+- Domäne: `HouseholdPlan.createFrom` (PU-8, PU-9) kopiert über `BudgetItem.copy` alle Posten mit neuer ID und alle
+  Werte des Postens (PU-3, PU-5) sowie die Reihenfolge der Posten und `SubcategoryOrder` (PU-4); es lehnt das Jahr der
+  Quelle mit `DomainValidationException` ab (PU-2) und zeichnet `HouseholdPlanCreated` und `HouseholdPlanCopied` auf
+  (PU-11), mit `replacesPlan`, wenn es einen Plan ablöst. Die
   Angabe monatlich/jährlich aus [monats-jahresbetrag.md](monats-jahresbetrag.md) übernimmt `BudgetItem.copy`, sobald
   `BudgetItem` sie trägt
 - Ablauf: `HouseholdPlanApplicationService.copyPlan` mit `CopyHouseholdPlanCommand` lädt die Quelle (HP-4), sucht
-  den Plan des Zieljahres über `HouseholdPlanRepository.findFor` (gesperrt wie `findById`) und legt ihn an oder
-  überschreibt ihn nur mit `overwrite`, sonst `HouseholdPlanAlreadyExistsException` (409); alles in einer
-  Transaktion (PU-7)
+  den aktiven Plan des Zieljahres über `HouseholdPlanRepository.findFor` (gesperrt wie `findById`), löscht ihn nur mit
+  `overwrite` (`markDeleted`, GP-19), sonst `HouseholdPlanAlreadyExistsException` (409), und legt den neuen Plan an;
+  alles in einer Transaktion (PU-7)
 - API: `POST /api/plans/{planId}/copies` mit `CopyHouseholdPlanRequest` (`targetYear` 1900 bis 2200, `overwrite`),
   antwortet mit `CopiedHouseholdPlanResponse`: 201 für einen neuen Plan, 200 nach dem Überschreiben
 - Frontend: `budget/ui/copy-plan-dialog.ts` fragt Zieljahr bzw. Vorlage ab, prüft über `GET /api/plans?year=`, ob

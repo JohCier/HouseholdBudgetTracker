@@ -71,6 +71,40 @@ describe('BudgetApi', () => {
     expect(await result).toBeNull();
   });
 
+  // GP-22
+  it('fetches the deleted plans', async () => {
+    const result = firstValueFrom(api.getDeletedPlans());
+
+    const req = http.expectOne('/api/plans/deleted');
+    expect(req.request.method).toBe('GET');
+    req.flush({ plans: [] });
+
+    expect(await result).toEqual({ plans: [] });
+  });
+
+  // GP-11, GP-14
+  it('restores a deleted plan, overwriting only if allowed', async () => {
+    const result = firstValueFrom(api.restorePlan(planId, { overwrite: true }));
+
+    const req = http.expectOne(`/api/plans/${planId}/restore`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ overwrite: true });
+    req.flush(null, { status: 204, statusText: 'No Content' });
+
+    expect(await result).toBeNull();
+  });
+
+  // GP-17
+  it('deletes a deleted plan for good', async () => {
+    const result = firstValueFrom(api.purgePlan(planId));
+
+    const req = http.expectOne(`/api/plans/deleted/${planId}`);
+    expect(req.request.method).toBe('DELETE');
+    req.flush(null, { status: 204, statusText: 'No Content' });
+
+    expect(await result).toBeNull();
+  });
+
   // JU-1
   it('fetches the yearly overview of all plans', async () => {
     const result = firstValueFrom(api.getYearlyOverview());

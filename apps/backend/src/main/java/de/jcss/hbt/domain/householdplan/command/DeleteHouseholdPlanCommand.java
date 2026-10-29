@@ -6,7 +6,7 @@ import org.jmolecules.architecture.cqrs.Command;
 
 import java.util.Objects;
 
-/** Delete a household plan of the given owner with all its items (PL-1, PL-2). */
+/** Move a household plan of the given owner with all its items to the deleted plans (PL-1, GP-7). */
 @Command
 public record DeleteHouseholdPlanCommand(OwnerId owner, HouseholdPlanId planId) {
 

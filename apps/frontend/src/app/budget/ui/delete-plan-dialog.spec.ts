@@ -45,7 +45,7 @@ function overview(items: number): HouseholdPlanOverview {
   };
 }
 
-// PL-8, PL-9
+// PL-8, PL-9, GP-8, GP-9
 describe('DeletePlanDialog', () => {
   let api: { getOverview: ReturnType<typeof vi.fn>; deletePlan: ReturnType<typeof vi.fn> };
   let dialogRef: { close: ReturnType<typeof vi.fn> };
@@ -82,7 +82,7 @@ describe('DeletePlanDialog', () => {
     expect(api.getOverview).toHaveBeenCalledWith(2026);
     expect(element.querySelector('h2')!.textContent).toContain('Plan 2026 löschen');
     expect(element.textContent).toContain(
-      'Der Haushaltsplan 2026 mit 12 Posten wird gelöscht. Das lässt sich nicht rückgängig machen.',
+      'Der Haushaltsplan 2026 mit 12 Posten wird unter „Gelöschte Pläne" abgelegt und lässt sich dort wiederherstellen.',
     );
     expect(button('Abbrechen')).toBeTruthy();
   });
@@ -90,17 +90,17 @@ describe('DeletePlanDialog', () => {
   it('names 0 items for an empty plan', async () => {
     await open(overview(0));
 
-    expect(element.textContent).toContain('Der Haushaltsplan 2026 mit 0 Posten wird gelöscht.');
+    expect(element.textContent).toContain('Der Haushaltsplan 2026 mit 0 Posten wird unter');
   });
 
-  it('deletes the plan and closes', async () => {
+  it('deletes the plan and closes with it, so it can be restored', async () => {
     await open(overview(2));
 
     button('Löschen').click();
     await fixture.whenStable();
 
     expect(api.deletePlan).toHaveBeenCalledWith('plan-2026');
-    expect(dialogRef.close).toHaveBeenCalledWith(true);
+    expect(dialogRef.close).toHaveBeenCalledWith({ planId: 'plan-2026', year: 2026, itemCount: 2 });
   });
 
   it('stays open and shows the message if deleting fails', async () => {

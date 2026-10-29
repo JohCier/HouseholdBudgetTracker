@@ -13,14 +13,20 @@ import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.CopyHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.DeleteHouseholdPlanCommand;
+import de.jcss.hbt.domain.householdplan.command.PurgeHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
+import de.jcss.hbt.domain.householdplan.command.RestoreHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemChanged;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemRemoved;
 import de.jcss.hbt.domain.householdplan.event.ExpenseAdded;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCopied;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanCreated;
 import de.jcss.hbt.domain.householdplan.event.HouseholdPlanDeleted;
+import de.jcss.hbt.domain.householdplan.event.HouseholdPlanPurged;
+import de.jcss.hbt.domain.householdplan.event.HouseholdPlanRestored;
 import de.jcss.hbt.domain.householdplan.event.IncomeAdded;
+import de.jcss.hbt.domain.householdplan.overview.DeletedPlanEntry;
+import de.jcss.hbt.domain.householdplan.overview.DeletedPlans;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverviewQueryHandler;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
@@ -37,9 +43,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -298,7 +306,7 @@ class HouseholdPlanApplicationServiceTest {
         assertThat(publishedEvents).hasExactlyElementsOfTypes(HouseholdPlanCreated.class, HouseholdPlanCopied.class);
     }
 
-    /** PU-9 */
+    /** PU-9, GP-19, GP-28 */
     @Test
     void copyPlanOverwritesThePlanOfTheTargetYearOnlyIfAllowed() {
         service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("3000.00"), null, null));
@@ -314,11 +322,14 @@ class HouseholdPlanApplicationServiceTest {
 
         CopiedHouseholdPlan copied = service.copyPlan(new CopyHouseholdPlanCommand(OWNER, planId, Year.of(2027), true));
 
-        assertThat(copied.id()).isEqualTo(target);
+        assertThat(copied.id()).isNotEqualTo(target);
         assertThat(copied.overwritten()).isTrue();
-        assertThat(repository.plans.get(target).items()).singleElement()
+        assertThat(repository.plans.get(copied.id()).items()).singleElement()
                 .satisfies(item -> assertThat(item.description()).isEqualTo(SALARY));
-        assertThat(publishedEvents).hasExactlyElementsOfTypes(HouseholdPlanCopied.class);
+        assertThat(repository.deleted.get(target).items()).singleElement()
+                .satisfies(item -> assertThat(item.description().value()).isEqualTo("Bonus"));
+        assertThat(publishedEvents).hasExactlyElementsOfTypes(HouseholdPlanDeleted.class, HouseholdPlanCreated.class,
+                HouseholdPlanCopied.class);
     }
 
     /** HP-4 */
@@ -336,9 +347,9 @@ class HouseholdPlanApplicationServiceTest {
                 .isInstanceOf(DomainValidationException.class);
     }
 
-    /** PL-1 to PL-3, PL-6 */
+    /** PL-1, PL-3, PL-6, GP-7 */
     @Test
-    void deletePlanRemovesItWithAllItemsAndKeepsOtherPlans() {
+    void deletePlanMovesItWithAllItemsToTheDeletedPlansAndKeepsOtherPlans() {
         service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("3000.00"), null, null));
         service.addIncome(new AddIncomeCommand(OWNER, planId, BudgetItemDescription.of("Bonus"), money("500.00"), null, null));
         HouseholdPlanId other = service.copyPlan(new CopyHouseholdPlanCommand(OWNER, planId, Year.of(2027), false)).id();
@@ -348,6 +359,7 @@ class HouseholdPlanApplicationServiceTest {
 
         assertThat(repository.plans).containsOnlyKeys(other);
         assertThat(repository.plans.get(other).items()).hasSize(2);
+        assertThat(repository.deleted.get(planId).items()).hasSize(2);
         assertThat(publishedEvents).singleElement()
                 .isInstanceOfSatisfying(HouseholdPlanDeleted.class, event -> {
                     assertThat(event.planId()).isEqualTo(planId);
@@ -357,7 +369,7 @@ class HouseholdPlanApplicationServiceTest {
         assertThatThrownBy(() -> service.getOverview(OWNER, YEAR)).isInstanceOf(HouseholdPlanNotFoundException.class);
     }
 
-    /** PL-2: the year is free again */
+    /** GP-7: the year is free again */
     @Test
     void deletedPlanCanBeCreatedAgainEmpty() {
         service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("3000.00"), null, null));
@@ -379,7 +391,7 @@ class HouseholdPlanApplicationServiceTest {
         assertThat(publishedEvents).isEmpty();
     }
 
-    /** PL-2 */
+    /** GP-4 */
     @Test
     void deletingAPlanTwiceIsNotFound() {
         service.deletePlan(new DeleteHouseholdPlanCommand(OWNER, planId));
@@ -388,9 +400,111 @@ class HouseholdPlanApplicationServiceTest {
                 .isInstanceOf(HouseholdPlanNotFoundException.class);
     }
 
+    /** GP-4 */
+    @Test
+    void aDeletedPlanCanBeNeitherChangedNorCopied() {
+        service.deletePlan(new DeleteHouseholdPlanCommand(OWNER, planId));
+
+        assertThatThrownBy(() -> service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("1.00"), null, null)))
+                .isInstanceOf(HouseholdPlanNotFoundException.class);
+        assertThatThrownBy(() -> service.copyPlan(new CopyHouseholdPlanCommand(OWNER, planId, Year.of(2027), false)))
+                .isInstanceOf(HouseholdPlanNotFoundException.class);
+    }
+
+    /** GP-11, GP-12, GP-27 */
+    @Test
+    void restorePlanMakesItActiveAgainWithAllItems() {
+        service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("3000.00"), null, null));
+        service.deletePlan(new DeleteHouseholdPlanCommand(OWNER, planId));
+        publishedEvents.clear();
+
+        service.restorePlan(new RestoreHouseholdPlanCommand(OWNER, planId, false));
+
+        assertThat(repository.deleted).isEmpty();
+        assertThat(service.getOverview(OWNER, YEAR).planId()).isEqualTo(planId);
+        assertThat(repository.plans.get(planId).items()).singleElement()
+                .satisfies(item -> assertThat(item.description()).isEqualTo(SALARY));
+        assertThat(publishedEvents).singleElement().isInstanceOfSatisfying(HouseholdPlanRestored.class, event -> {
+            assertThat(event.planId()).isEqualTo(planId);
+            assertThat(event.year()).isEqualTo(YEAR);
+        });
+    }
+
+    /** GP-13, GP-14 */
+    @Test
+    void restorePlanReplacesTheActivePlanOfItsYearOnlyIfAllowed() {
+        service.deletePlan(new DeleteHouseholdPlanCommand(OWNER, planId));
+        HouseholdPlanId newer = service.createPlan(new CreateHouseholdPlanCommand(OWNER, YEAR)).id();
+        publishedEvents.clear();
+
+        assertThatThrownBy(() -> service.restorePlan(new RestoreHouseholdPlanCommand(OWNER, planId, false)))
+                .isInstanceOf(HouseholdPlanAlreadyExistsException.class);
+        assertThat(repository.plans).containsOnlyKeys(newer);
+        assertThat(repository.deleted).containsOnlyKeys(planId);
+
+        service.restorePlan(new RestoreHouseholdPlanCommand(OWNER, planId, true));
+
+        assertThat(repository.plans).containsOnlyKeys(planId);
+        assertThat(repository.deleted).containsOnlyKeys(newer);
+        assertThat(publishedEvents).hasExactlyElementsOfTypes(HouseholdPlanDeleted.class, HouseholdPlanRestored.class);
+    }
+
+    /** GP-10, GP-18 */
+    @Test
+    void restoringOrPurgingSomeoneElsesOrAnActivePlanIsNotFound() {
+        assertThatThrownBy(() -> service.restorePlan(new RestoreHouseholdPlanCommand(OWNER, planId, true)))
+                .isInstanceOf(HouseholdPlanNotFoundException.class);
+        assertThatThrownBy(() -> service.purgePlan(new PurgeHouseholdPlanCommand(OWNER, planId)))
+                .isInstanceOf(HouseholdPlanNotFoundException.class);
+        service.deletePlan(new DeleteHouseholdPlanCommand(OWNER, planId));
+
+        assertThatThrownBy(() -> service.restorePlan(new RestoreHouseholdPlanCommand(SOMEONE_ELSE, planId, true)))
+                .isInstanceOf(HouseholdPlanNotFoundException.class);
+        assertThatThrownBy(() -> service.purgePlan(new PurgeHouseholdPlanCommand(SOMEONE_ELSE, planId)))
+                .isInstanceOf(HouseholdPlanNotFoundException.class);
+        assertThat(repository.deleted).containsOnlyKeys(planId);
+        assertThat(service.getDeletedPlans(SOMEONE_ELSE).plans()).isEmpty();
+    }
+
+    /** GP-17, GP-27 */
+    @Test
+    void purgePlanDeletesItForGood() {
+        service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("3000.00"), null, null));
+        service.deletePlan(new DeleteHouseholdPlanCommand(OWNER, planId));
+        publishedEvents.clear();
+
+        service.purgePlan(new PurgeHouseholdPlanCommand(OWNER, planId));
+
+        assertThat(repository.deleted).isEmpty();
+        assertThat(publishedEvents).singleElement().isInstanceOfSatisfying(HouseholdPlanPurged.class, event -> {
+            assertThat(event.planId()).isEqualTo(planId);
+            assertThat(event.itemCount()).isEqualTo(1);
+        });
+        assertThatThrownBy(() -> service.restorePlan(new RestoreHouseholdPlanCommand(OWNER, planId, true)))
+                .isInstanceOf(HouseholdPlanNotFoundException.class);
+    }
+
+    /** GP-21, GP-22 */
+    @Test
+    void theDeletedPlansAreCountedAndListed() {
+        service.addIncome(new AddIncomeCommand(OWNER, planId, SALARY, money("3000.00"), null, null));
+        service.deletePlan(new DeleteHouseholdPlanCommand(OWNER, planId));
+
+        assertThat(service.getYearlyOverview(OWNER).years()).isEmpty();
+        assertThat(service.getYearlyOverview(OWNER).deletedPlanCount()).isEqualTo(1);
+        assertThat(service.getDeletedPlans(OWNER).plans()).singleElement().satisfies(plan -> {
+            assertThat(plan.planId()).isEqualTo(planId);
+            assertThat(plan.itemCount()).isEqualTo(1);
+            assertThat(plan.totalIncome()).isEqualTo(Money.of(new BigDecimal("3000.00")));
+        });
+    }
+
     private static final class FakeRepository implements HouseholdPlanRepository {
 
+        /** The active plans. */
         private final Map<HouseholdPlanId, HouseholdPlan> plans = new HashMap<>();
+        /** The deleted plans, in the order they were deleted. */
+        private final Map<HouseholdPlanId, HouseholdPlan> deleted = new LinkedHashMap<>();
 
         @Override
         public Optional<HouseholdPlan> findById(HouseholdPlanId id) {
@@ -405,6 +519,13 @@ class HouseholdPlanApplicationServiceTest {
                     .filter(plan -> plan.isOwnedBy(owner) && plan.year().equals(year))
                     .findFirst()
                     .flatMap(plan -> findById(plan.id()));
+        }
+
+        @Override
+        public Optional<HouseholdPlan> findDeletedById(HouseholdPlanId id) {
+            return Optional.ofNullable(deleted.get(id))
+                    .map(plan -> HouseholdPlan.reconstitute(plan.id(), plan.owner(), plan.year(), plan.items(),
+                            plan.subcategoryOrders()));
         }
 
         @Override
@@ -428,8 +549,21 @@ class HouseholdPlanApplicationServiceTest {
         }
 
         @Override
+        public void markDeleted(HouseholdPlan plan) {
+            deleted.put(plan.id(), plans.remove(plan.id()));
+        }
+
+        @Override
+        public void restore(HouseholdPlan plan) {
+            if (existsFor(plan.owner(), plan.year())) {
+                throw new HouseholdPlanAlreadyExistsException(plan.year());
+            }
+            plans.put(plan.id(), deleted.remove(plan.id()));
+        }
+
+        @Override
         public void remove(HouseholdPlan plan) {
-            plans.remove(plan.id());
+            deleted.remove(plan.id());
         }
 
         HouseholdPlanOverviewQueryHandler queryHandler() {
@@ -450,7 +584,21 @@ class HouseholdPlanApplicationServiceTest {
                             .filter(plan -> plan.isOwnedBy(owner))
                             .filter(plan -> !plan.year().isBefore(firstYear) && !plan.year().isAfter(lastYear))
                             .map(plan -> new YearlyOverview.PlanSummary(plan.id(), plan.year(), summaryOf(plan)))
-                            .toList());
+                            .toList())
+                            .withDeletedPlanCount((int) deleted.values().stream().filter(plan -> plan.isOwnedBy(owner)).count());
+                }
+
+                @Override
+                public DeletedPlans findDeletedPlansByOwner(OwnerId owner, Year firstYear, Year lastYear) {
+                    // The order of deletion stands in for the time, one millisecond apart
+                    List<DeletedPlanEntry> entries = new ArrayList<>();
+                    for (HouseholdPlan plan : deleted.values()) {
+                        if (plan.isOwnedBy(owner)) {
+                            entries.add(DeletedPlanEntry.of(plan.id(), plan.year(),
+                                    Instant.ofEpochMilli(entries.size()), plan.items().size(), summaryOf(plan)));
+                        }
+                    }
+                    return new DeletedPlans(entries);
                 }
             };
         }

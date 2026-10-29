@@ -9,10 +9,12 @@ import {
   CopiedHouseholdPlanResponse,
   CopyHouseholdPlanRequest,
   CreatedHouseholdPlanResponse,
+  DeletedPlans,
   HouseholdPlanOverview,
   MarkImportantRequest,
   ReorderBudgetItemsRequest,
   ReorderSubcategoriesRequest,
+  RestoreHouseholdPlanRequest,
   SavingPotentialRequest,
   Year,
   YearlyOverview,
@@ -61,9 +63,27 @@ export class BudgetApi {
     return this.http.post<CopiedHouseholdPlanResponse>(`${this.planUrl(planId)}/copies`, request);
   }
 
-  /** Deletes a plan with all its items (PL-1, PL-2); fails with 404 if it is no longer there. */
+  /** Moves a plan to the deleted plans (GP-7); fails with 404 if it is no longer active. */
   deletePlan(planId: string): Observable<void> {
     return this.http.delete<void>(this.planUrl(planId));
+  }
+
+  /** The deleted plans of the user, the newest year and the latest deleted first (GP-22, GP-24). */
+  getDeletedPlans(): Observable<DeletedPlans> {
+    return this.http.get<DeletedPlans>(`${this.baseUrl}/deleted`);
+  }
+
+  /**
+   * Makes a deleted plan active again (GP-11). Fails with 409 if its year has an active plan
+   * that may not be replaced (GP-14).
+   */
+  restorePlan(planId: string, request: RestoreHouseholdPlanRequest): Observable<void> {
+    return this.http.post<void>(`${this.planUrl(planId)}/restore`, request);
+  }
+
+  /** Deletes a deleted plan for good (GP-17); fails with 404 for an active or unknown plan (GP-18). */
+  purgePlan(planId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/deleted/${encodeURIComponent(planId)}`);
   }
 
   addIncome(planId: string, request: AddIncomeRequest): Observable<AddedBudgetItemResponse> {

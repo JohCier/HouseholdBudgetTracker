@@ -403,6 +403,25 @@ export function oneTimeCells(page: Page, year: number) {
   return { income: cells.nth(0), expense: cells.nth(1), balance: cells.nth(2) };
 }
 
+/** Opens the deleted plans from the link below the yearly overview (GP-21). */
+export async function openDeletedPlans(page: Page, count: number): Promise<void> {
+  await page.getByRole('link', { name: `Gelöschte Pläne (${count})` }).click();
+  await expect(page).toHaveURL('/geloeschte-plaene');
+  await expect(page.getByRole('heading', { name: 'Gelöschte Pläne' })).toBeVisible();
+}
+
+/** The rows of the deleted plans, the newest year and the latest deleted first (GP-22, GP-24). */
+export function deletedPlanRows(page: Page) {
+  return page.locator('app-deleted-plans-page tbody tr');
+}
+
+/** Deletes the plan of a year from its row in the yearly overview (PL-7). */
+export async function deletePlanInOverview(page: Page, year: number): Promise<void> {
+  await yearRow(page, year).getByRole('button', { name: `Plan ${year} löschen` }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Löschen' }).click();
+  await expect(page.getByText(`Plan ${year} gelöscht.`)).toBeVisible();
+}
+
 /** Switches the card "Top 5" between "Sparpotential" and "Ausgaben" (TP-7). */
 export async function showTopItems(page: Page, list: 'Sparpotential' | 'Ausgaben'): Promise<void> {
   const toggle = page.getByRole('radiogroup', { name: 'Liste' }).getByRole('radio', { name: list });

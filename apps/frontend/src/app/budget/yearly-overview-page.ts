@@ -9,9 +9,11 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { AMOUNT_PERIODS, Year, YearlyOverviewEntry } from './budget.model';
+import { BudgetApi } from './data-access/budget-api';
 import { YearlyOverviewStore, hasPlan } from './data-access/yearly-overview-store';
 import { copiedMessage, openCopyPlanDialog } from './ui/copy-plan-dialog';
-import { deletedMessage, openDeletePlanDialog } from './ui/delete-plan-dialog';
+import { DELETED_PLAN_STATE, deletedMessage, openDeletePlanDialog } from './ui/delete-plan-dialog';
+import { DeletedPlanRef, restorePlan, restoredMessage } from './ui/restore-plan-dialog';
 import { NetWorthCard } from '../net-worth/ui/net-worth-card';
 import { YearChange } from './ui/year-change';
 
@@ -198,6 +200,13 @@ import { YearChange } from './ui/year-change';
       </mat-card>
     }
 
+    @if (store.deletedPlanCount() > 0) {
+      <a matButton routerLink="/geloeschte-plaene" class="deleted-plans">
+        <mat-icon svgIcon="delete" />
+        Gelöschte Pläne ({{ store.deletedPlanCount() }})
+      </a>
+    }
+
     <!-- Independent of the plans: shown also without any, never in monthly amounts (VS-18, VS-19) -->
     <app-net-worth-card />
     <ng-template #oneTimeBalance let-entry>
@@ -315,6 +324,9 @@ import { YearChange } from './ui/year-change';
       --mat-icon-button-icon-color: var(--mat-sys-error);
       --mat-icon-button-state-layer-color: var(--mat-sys-error);
     }
+    .deleted-plans {
+      align-self: flex-start;
+    }
     .visually-hidden {
       position: absolute;
       width: 1px;
@@ -381,6 +393,12 @@ export class YearlyOverviewPage implements OnInit {
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
+  private readonly api = inject(BudgetApi);
+
+  /** A plan deleted in the plan view just before it showed this page, to offer undo for (GP-9). */
+  private readonly deletedInPlanView = this.router.currentNavigation()?.extras.state?.[
+    DELETED_PLAN_STATE
+  ] as DeletedPlanRef | undefined;
 
   protected readonly creating = signal(false);
   protected readonly periods = AMOUNT_PERIODS;
@@ -410,6 +428,9 @@ export class YearlyOverviewPage implements OnInit {
 
   ngOnInit(): void {
     void this.store.load();
+    if (this.deletedInPlanView) {
+      this.offerUndo(this.deletedInPlanView);
+    }
   }
 
   /** Opens the plan of the year (JU-11). */
@@ -432,7 +453,24 @@ export class YearlyOverviewPage implements OnInit {
     openDeletePlanDialog(this.dialog, year).subscribe(async (deleted) => {
       if (deleted) {
         await this.store.load();
-        this.snackBar.open(deletedMessage(year), undefined, { duration: 3000 });
+        this.offerUndo(deleted);
+      }
+    });
+  }
+
+  /** Confirms the deletion and restores the plan if the user chooses undo (GP-9). */
+  private offerUndo(deleted: DeletedPlanRef): void {
+    const undo = this.snackBar.open(deletedMessage(deleted.year), 'Rückgängig', {
+      duration: 6000,
+    });
+    undo.onAction().subscribe(async () => {
+      try {
+        if (await restorePlan(this.api, this.dialog, deleted)) {
+          await this.store.load();
+          this.snackBar.open(restoredMessage(deleted.year), undefined, { duration: 3000 });
+        }
+      } catch (error) {
+        this.snackBar.open((error as Error).message, 'OK', { duration: 6000 });
       }
     });
   }

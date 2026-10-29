@@ -16,6 +16,12 @@ export const routes: Routes = [
     title: 'Haushaltsplan – Haushaltsbuch',
   },
   {
+    path: 'geloeschte-plaene',
+    loadComponent: () => import('./budget/deleted-plans-page').then((m) => m.DeletedPlansPage),
+    canActivate: [signedInGuard],
+    title: 'Gelöschte Pläne – Haushaltsbuch',
+  },
+  {
     path: 'vermoegen/:year',
     loadComponent: () => import('./net-worth/net-worth-page').then((m) => m.NetWorthPage),
     canActivate: [signedInGuard],

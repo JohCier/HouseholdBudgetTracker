@@ -203,7 +203,7 @@ class HouseholdPlanMarksTest {
         plan.markImportant(salaryId, true);
         plan.changeSavingPotential(streamingId, potential("5.00"));
 
-        HouseholdPlan copy = HouseholdPlan.createFrom(plan, HouseholdPlanId.generate(), Year.of(2027));
+        HouseholdPlan copy = HouseholdPlan.createFrom(plan, HouseholdPlanId.generate(), Year.of(2027), false);
 
         assertThat(copy.items()).extracting(BudgetItem::isImportant, BudgetItem::savingPotential)
                 .containsExactly(tuple(true, Optional.empty()), tuple(false, Optional.of(potential("5.00"))));
