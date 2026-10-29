@@ -1,6 +1,6 @@
 package de.jcss.hbt.infrastructure.web.dto;
 
-import de.jcss.hbt.domain.networth.NetWorthEntryType;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /** API representation of {@link NetWorthEntryType}. */

@@ -1,6 +1,7 @@
-package de.jcss.hbt.domain.networth;
+package de.jcss.hbt.domain.networth.valueobject;
 
 import de.jcss.hbt.domain.exception.DomainValidationException;
+import de.jcss.hbt.domain.networth.NetWorthEntry;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 /**

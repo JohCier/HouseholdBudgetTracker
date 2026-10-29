@@ -1,7 +1,7 @@
 package de.jcss.hbt.domain.networth.event;
 
-import de.jcss.hbt.domain.networth.NetWorthEntryId;
-import de.jcss.hbt.domain.networth.NetWorthStatementId;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryId;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthStatementId;
 
 import java.time.Instant;
 import java.util.Objects;

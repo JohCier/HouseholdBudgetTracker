@@ -1,7 +1,7 @@
 package de.jcss.hbt.domain.networth.event;
 
-import de.jcss.hbt.domain.householdplan.OwnerId;
-import de.jcss.hbt.domain.networth.NetWorthStatementId;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthStatementId;
 
 import java.time.Instant;
 import java.time.Year;

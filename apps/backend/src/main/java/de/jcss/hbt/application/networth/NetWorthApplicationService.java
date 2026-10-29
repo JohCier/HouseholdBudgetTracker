@@ -2,9 +2,8 @@ package de.jcss.hbt.application.networth;
 
 import de.jcss.hbt.domain.exception.NetWorthStatementAlreadyExistsException;
 import de.jcss.hbt.domain.exception.NetWorthStatementNotFoundException;
-import de.jcss.hbt.domain.householdplan.OwnerId;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
 import de.jcss.hbt.domain.networth.NetWorthStatement;
-import de.jcss.hbt.domain.networth.NetWorthStatementId;
 import de.jcss.hbt.domain.networth.NetWorthStatementRepository;
 import de.jcss.hbt.domain.networth.command.AddNetWorthEntryCommand;
 import de.jcss.hbt.domain.networth.command.ChangeNetWorthEntryCommand;
@@ -13,6 +12,7 @@ import de.jcss.hbt.domain.networth.command.RemoveNetWorthEntryCommand;
 import de.jcss.hbt.domain.networth.overview.NetWorthHistory;
 import de.jcss.hbt.domain.networth.overview.NetWorthOverview;
 import de.jcss.hbt.domain.networth.overview.NetWorthQueryHandler;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthStatementId;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

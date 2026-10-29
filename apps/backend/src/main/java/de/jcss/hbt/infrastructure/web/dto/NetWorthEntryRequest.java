@@ -1,6 +1,6 @@
 package de.jcss.hbt.infrastructure.web.dto;
 
-import de.jcss.hbt.domain.networth.NetWorthEntryName;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;

@@ -1,7 +1,10 @@
 package de.jcss.hbt.domain.networth;
 
 import de.jcss.hbt.domain.exception.DomainValidationException;
-import de.jcss.hbt.domain.householdplan.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryId;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryName;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryType;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
 

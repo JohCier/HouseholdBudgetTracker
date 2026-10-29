@@ -1,15 +1,15 @@
 package de.jcss.hbt.infrastructure.persistence;
 
 import de.jcss.hbt.domain.exception.NetWorthStatementAlreadyExistsException;
-import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.householdplan.OwnerId;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
 import de.jcss.hbt.domain.networth.NetWorthEntry;
-import de.jcss.hbt.domain.networth.NetWorthEntryId;
-import de.jcss.hbt.domain.networth.NetWorthEntryName;
-import de.jcss.hbt.domain.networth.NetWorthEntryType;
 import de.jcss.hbt.domain.networth.NetWorthStatement;
-import de.jcss.hbt.domain.networth.NetWorthStatementId;
 import de.jcss.hbt.domain.networth.NetWorthStatementRepository;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryId;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryName;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryType;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthStatementId;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;

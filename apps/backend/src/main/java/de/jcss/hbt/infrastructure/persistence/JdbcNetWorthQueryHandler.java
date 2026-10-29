@@ -1,15 +1,15 @@
 package de.jcss.hbt.infrastructure.persistence;
 
-import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.householdplan.OwnerId;
-import de.jcss.hbt.domain.networth.NetWorthEntryId;
-import de.jcss.hbt.domain.networth.NetWorthEntryName;
-import de.jcss.hbt.domain.networth.NetWorthEntryType;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
 import de.jcss.hbt.domain.networth.overview.NetWorthHistory;
 import de.jcss.hbt.domain.networth.overview.NetWorthOverview;
 import de.jcss.hbt.domain.networth.overview.NetWorthOverviewEntry;
 import de.jcss.hbt.domain.networth.overview.NetWorthQueryHandler;
 import de.jcss.hbt.domain.networth.overview.NetWorthTotals;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryId;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryName;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 

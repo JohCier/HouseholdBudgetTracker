@@ -1,5 +1,6 @@
-package de.jcss.hbt.domain.networth;
+package de.jcss.hbt.domain.networth.valueobject;
 
+import de.jcss.hbt.domain.networth.NetWorthEntry;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 /** Whether a {@link NetWorthEntry} is something the user owns or something they owe (VS-1). */

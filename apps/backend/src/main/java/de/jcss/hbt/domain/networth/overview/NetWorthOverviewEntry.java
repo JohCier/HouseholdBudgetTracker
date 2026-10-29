@@ -1,9 +1,9 @@
 package de.jcss.hbt.domain.networth.overview;
 
-import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.networth.NetWorthEntryId;
-import de.jcss.hbt.domain.networth.NetWorthEntryName;
-import de.jcss.hbt.domain.networth.NetWorthEntryType;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryId;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryName;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryType;
 import org.jmolecules.architecture.cqrs.QueryModel;
 
 import java.util.Objects;

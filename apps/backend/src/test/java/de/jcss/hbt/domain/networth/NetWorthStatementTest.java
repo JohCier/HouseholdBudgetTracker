@@ -2,21 +2,24 @@ package de.jcss.hbt.domain.networth;
 
 import de.jcss.hbt.domain.exception.DomainValidationException;
 import de.jcss.hbt.domain.exception.NetWorthEntryNotFoundException;
-import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.householdplan.OwnerId;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
 import de.jcss.hbt.domain.networth.event.NetWorthEntryAdded;
 import de.jcss.hbt.domain.networth.event.NetWorthEntryChanged;
 import de.jcss.hbt.domain.networth.event.NetWorthEntryRemoved;
 import de.jcss.hbt.domain.networth.event.NetWorthStatementCopied;
 import de.jcss.hbt.domain.networth.event.NetWorthStatementCreated;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryId;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryName;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthStatementId;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.Year;
 import java.util.UUID;
 
-import static de.jcss.hbt.domain.networth.NetWorthEntryType.ASSET;
-import static de.jcss.hbt.domain.networth.NetWorthEntryType.LIABILITY;
+import static de.jcss.hbt.domain.networth.valueobject.NetWorthEntryType.ASSET;
+import static de.jcss.hbt.domain.networth.valueobject.NetWorthEntryType.LIABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;

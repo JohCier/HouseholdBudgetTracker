@@ -2,14 +2,18 @@ package de.jcss.hbt.domain.networth;
 
 import de.jcss.hbt.domain.exception.DomainValidationException;
 import de.jcss.hbt.domain.exception.NetWorthEntryNotFoundException;
-import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.householdplan.OwnerId;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
 import de.jcss.hbt.domain.networth.event.NetWorthEntryAdded;
 import de.jcss.hbt.domain.networth.event.NetWorthEntryChanged;
 import de.jcss.hbt.domain.networth.event.NetWorthEntryRemoved;
 import de.jcss.hbt.domain.networth.event.NetWorthStatementCopied;
 import de.jcss.hbt.domain.networth.event.NetWorthStatementCreated;
 import de.jcss.hbt.domain.networth.event.NetWorthStatementEvent;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryId;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryName;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthEntryType;
+import de.jcss.hbt.domain.networth.valueobject.NetWorthStatementId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 

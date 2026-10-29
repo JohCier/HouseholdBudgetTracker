@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.networth.overview;
 
-import de.jcss.hbt.domain.householdplan.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
 import org.jmolecules.architecture.cqrs.QueryModel;
 
 import java.time.Year;

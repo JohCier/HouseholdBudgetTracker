@@ -1,5 +1,6 @@
-package de.jcss.hbt.domain.networth;
+package de.jcss.hbt.domain.networth.valueobject;
 
+import de.jcss.hbt.domain.networth.NetWorthStatement;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.util.Objects;

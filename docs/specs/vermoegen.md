@@ -176,7 +176,7 @@ Beispielbestand für die Kriterien:
 
 ## Umsetzung
 
-- Domäne: Aggregate `NetWorthStatement` (Vermögensstand) in `domain/networth/` je Besitzer und Jahr, mit Entities
+- Domäne: Aggregate `NetWorthStatement` (Vermögensstand) in `domain/networth/` (Value Objects in `valueobject/`) je Besitzer und Jahr, mit Entities
   `NetWorthEntry` aus `NetWorthEntryType` (`ASSET`, `LIABILITY`), `NetWorthEntryName` und `Money` (VS-1, VS-2);
   `addEntry`, `changeEntry`, `removeEntry` und `isEmpty` (VS-5, VS-7); `createFrom`, `overwriteWith` und
   `requireCopyableTo` (VS-15, VS-16); Events `NetWorthStatementCreated`, `NetWorthEntryAdded`, `NetWorthEntryChanged`,

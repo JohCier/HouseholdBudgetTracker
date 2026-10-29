@@ -1,7 +1,7 @@
 package de.jcss.hbt.domain.networth;
 
 import de.jcss.hbt.domain.exception.NetWorthStatementAlreadyExistsException;
-import de.jcss.hbt.domain.householdplan.OwnerId;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
 
 import java.time.Year;
 import java.util.Optional;
