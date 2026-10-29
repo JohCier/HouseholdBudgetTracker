@@ -13,6 +13,7 @@ const MESSAGES: Readonly<Record<string, string>> = {
   'urn:hbt:net-worth-not-found': 'Für dieses Jahr ist kein Vermögen (mehr) erfasst.',
   'urn:hbt:net-worth-entry-not-found': 'Diesen Wert gibt es nicht (mehr).',
   'urn:hbt:net-worth-already-exists': 'Für dieses Jahr ist bereits Vermögen erfasst.',
+  'urn:hbt:one-time-item-not-found': 'Diesen Einmalposten gibt es nicht (mehr).',
   'urn:hbt:email-already-registered': 'Für diese E-Mail-Adresse gibt es bereits ein Konto.',
   'urn:hbt:invalid-credentials': 'E-Mail-Adresse oder Passwort ist falsch.',
   'urn:hbt:too-many-login-attempts':

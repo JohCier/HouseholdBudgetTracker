@@ -33,7 +33,7 @@ Skill `api-vertrag`. Welche Spec zu einem Regel-Präfix (z. B. `PM-`) gehört, z
 
 | Ordner | Inhalt |
 |---|---|
-| `apps/backend/` | Spring Boot, Haushaltspläne, `/api/plans`; Pakete `domain`, `application`, `infrastructure` unter `de.jcss.hbt` |
+| `apps/backend/` | Spring Boot, Haushaltspläne und Einmalposten, `/api/plans`, `/api/one-time-items`; Pakete `domain`, `application`, `infrastructure` unter `de.jcss.hbt` |
 | `apps/users/` | Spring Boot, Registrierung und Anmeldung, `/api/auth`; gleiche Schichten unter `de.jcss.hbt.users` |
 | `apps/frontend/` | Angular + Material; je Feature `data-access/` (API, Signal-Store) und `ui/` (Komponenten) |
 | `e2e/` | Playwright-Tests der Kernabläufe gegen den Compose-Stack; je Spec eine Datei unter `e2e/tests/` |

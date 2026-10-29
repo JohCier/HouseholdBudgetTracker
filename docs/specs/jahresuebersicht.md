@@ -17,7 +17,8 @@ Benutzer den Plan eines Jahres.
 ### Inhalt
 
 - **JU-1**: Die Jahresübersicht enthält alle Pläne des angemeldeten Benutzers (HP-4) mit Jahr im erlaubten Bereich
-  (HP-1), das neueste Jahr oben. Pläne anderer Benutzer erscheinen nie.
+  (HP-1), das neueste Jahr oben. Pläne anderer Benutzer erscheinen nie. Dazu kommen Jahre, die nur Einmalposten haben,
+  und je Jahr die Summen der Einmalposten ([EP-12, EP-13](einmalposten.md)).
 - **JU-2**: Je Plan zeigt sie das Jahr, die Einnahmen (AW-1), die Ausgaben (AW-1) und den Überschuss. Der Überschuss
   ist der Saldo nach AW-2 (Einnahmen − Ausgaben) und darf negativ sein; ein negativer Überschuss wird als Defizit
   gekennzeichnet (AW-3). Die Beträge sind Jahresbeträge oder, nach Wahl des Benutzers, Monatsbeträge

@@ -118,7 +118,7 @@ test.describe("Plan als Vorlage übernehmen", () => {
     await expect(page).toHaveURL(`/jahre/${year + 1}`);
     await expect(itemIn(page, "Einnahmen", "Gehalt")).toBeVisible();
     await showAllYears(page);
-    await expect(page.locator("app-yearly-overview-page tbody th")).toHaveText([
+    await expect(page.locator("app-yearly-overview-page tbody tr[data-year] th")).toHaveText([
       String(year + 1),
       String(year),
     ]);
