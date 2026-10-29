@@ -58,6 +58,7 @@ abstract class HouseholdPlanIntegrationTestSupport {
         alice = session(UUID.randomUUID(), auth.issuer(), Instant.now().plus(Duration.ofHours(1)));
         bob = session(UUID.randomUUID(), auth.issuer(), Instant.now().plus(Duration.ofHours(1)));
         jdbcClient.sql("DELETE FROM household_plan").update();
+        jdbcClient.sql("DELETE FROM one_time_item").update();
         jdbcClient.sql("DELETE FROM audit_log").update();
     }
 

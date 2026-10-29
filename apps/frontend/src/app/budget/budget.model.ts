@@ -30,6 +30,10 @@ export type YearlyOverview = Schemas['YearlyOverviewResponse'];
 export type YearlyOverviewEntry = Schemas['YearlyOverviewEntryResponse'];
 export type CopyHouseholdPlanRequest = Schemas['CopyHouseholdPlanRequest'];
 export type CopiedHouseholdPlanResponse = Schemas['CopiedHouseholdPlanResponse'];
+export type OneTimeItem = Schemas['OneTimeItemResponse'];
+export type OneTimeItemOverview = Schemas['OneTimeItemOverviewResponse'];
+export type OneTimeItemRequest = Schemas['OneTimeItemRequest'];
+export type CreatedOneTimeItemResponse = Schemas['CreatedOneTimeItemResponse'];
 
 /** A calendar year, e.g. 2026. */
 export type Year = number;
@@ -63,6 +67,12 @@ export function categoryLabel(category: ExpenseCategory | null): string {
 export const AMOUNT_PERIODS: readonly { value: AmountPeriod; label: string }[] = [
   { value: 'MONTHLY', label: 'Monatlich' },
   { value: 'YEARLY', label: 'Jährlich' },
+];
+
+/** Whether a one-time item is an income or an expense (EP-1), in the order the toggle offers them. */
+export const ITEM_TYPES: readonly { value: ItemType; label: string }[] = [
+  { value: 'INCOME', label: 'Einnahme' },
+  { value: 'EXPENSE', label: 'Ausgabe' },
 ];
 
 /** How the 50/30/20 card shows the breakdown: as one bar per category or as a pie chart. */

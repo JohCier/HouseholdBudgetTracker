@@ -285,3 +285,52 @@ export async function sortPie(page: Page, by: 'Einträge' | 'Betrag' | 'Name') {
 export function pieNames(page: Page) {
   return page.locator('app-category-pie .legend-item .name');
 }
+
+/** A one-time item as entered in its dialog (EP-1). */
+export interface OneTimeItemInput {
+  type: 'Einnahme' | 'Ausgabe';
+  description: string;
+  amount: string;
+  /** As the API and an input of type date take it, e.g. "2026-03-15". */
+  date: string;
+  note?: string;
+}
+
+/** Fills the dialog of a one-time item and saves it (EP-7). */
+export async function fillOneTimeItemDialog(page: Page, item: OneTimeItemInput): Promise<void> {
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByLabel('Beschreibung')).toBeVisible();
+  await dialog.getByRole('radio', { name: item.type }).click();
+  await dialog.getByLabel('Beschreibung').fill(item.description);
+  await dialog.getByLabel('Betrag').fill(item.amount);
+  await dialog.getByLabel('Datum').fill(item.date);
+  await dialog.getByLabel('Notiz (optional)').fill(item.note ?? '');
+  await dialog.getByRole('button', { name: /^(Erfassen|Speichern)$/ }).click();
+  await expect(dialog).toBeHidden();
+}
+
+/** Enters a one-time item in the section "Einmalposten" of the year shown (EP-7). */
+export async function addOneTimeItem(page: Page, item: OneTimeItemInput): Promise<void> {
+  await page.getByRole('button', { name: 'Einmalposten erfassen' }).click();
+  await fillOneTimeItemDialog(page, item);
+  await expect(oneTimeItemRow(page, item.description)).toBeVisible();
+}
+
+/** Entry of a one-time item in the section "Einmalposten" (EP-8). */
+export function oneTimeItemRow(page: Page, description: string) {
+  return page.locator('app-one-time-items [role="listitem"]').filter({ hasText: description });
+}
+
+/** One of the totals below the one-time items of the year shown (EP-9). */
+export function oneTimeTotal(page: Page, label: 'Einnahmen' | 'Ausgaben' | 'Saldo') {
+  return page
+    .locator('app-one-time-items .total-row')
+    .filter({ has: page.getByText(label, { exact: true }) })
+    .locator('.amount');
+}
+
+/** The one-time income, expenses and balance of a year in the yearly overview (EP-13). */
+export function oneTimeCells(page: Page, year: number) {
+  const cells = yearRow(page, year).locator('td.one-time');
+  return { income: cells.nth(0), expense: cells.nth(1), balance: cells.nth(2) };
+}

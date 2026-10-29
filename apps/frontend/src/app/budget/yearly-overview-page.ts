@@ -1,4 +1,4 @@
-import { CurrencyPipe } from '@angular/common';
+import { CurrencyPipe, NgTemplateOutlet } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -9,7 +9,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { AMOUNT_PERIODS, Year, YearlyOverviewEntry } from './budget.model';
-import { YearlyOverviewStore } from './data-access/yearly-overview-store';
+import { YearlyOverviewStore, hasPlan } from './data-access/yearly-overview-store';
 import { copiedMessage, openCopyPlanDialog } from './ui/copy-plan-dialog';
 import { deletedMessage, openDeletePlanDialog } from './ui/delete-plan-dialog';
 import { YearChange } from './ui/year-change';
@@ -18,6 +18,8 @@ import { YearChange } from './ui/year-change';
  * The start page after signing in: all plans of the user with their income, expenses and
  * balance and how these changed from the previous year (JU-1 to JU-13). A row opens the plan
  * of its year. The amounts are shown per month or per year, as the user chooses (JM-1 to JM-7).
+ * Next to them stand the yearly totals of the one-time items, also for years with only those
+ * (EP-12 to EP-15); on a phone they move to a row of their own below (EP-18).
  */
 @Component({
   selector: 'app-yearly-overview-page',
@@ -28,6 +30,7 @@ import { YearChange } from './ui/year-change';
     MatCardModule,
     MatIconModule,
     MatProgressBarModule,
+    NgTemplateOutlet,
     RouterLink,
     YearChange,
   ],
@@ -39,7 +42,7 @@ import { YearChange } from './ui/year-change';
 
     <div class="heading">
       <h1>Haushaltspläne</h1>
-      @if (store.years().length > 0) {
+      @if (store.hasPlans()) {
         <mat-button-toggle-group
           aria-label="Beträge monatlich oder jährlich"
           [value]="store.period()"
@@ -78,66 +81,128 @@ import { YearChange } from './ui/year-change';
       <mat-card appearance="outlined" class="years">
         <table>
           <thead>
+            <tr class="group-head">
+              <td></td>
+              <th scope="colgroup" colspan="3" class="group">Haushaltsplan</th>
+              <th scope="colgroup" colspan="3" class="group one-time first">Einmalig (Jahr)</th>
+              <td></td>
+            </tr>
             <tr>
               <th scope="col">Jahr</th>
               <th scope="col" class="amount">Einnahmen</th>
               <th scope="col" class="amount">Ausgaben</th>
               <th scope="col" class="amount">Überschuss</th>
+              <th scope="col" class="amount one-time first">
+                <span class="visually-hidden">Einmalige </span>Einnahmen
+              </th>
+              <th scope="col" class="amount one-time">
+                <span class="visually-hidden">Einmalige </span>Ausgaben
+              </th>
+              <th scope="col" class="amount one-time">
+                <span class="visually-hidden">Einmaliger </span>Saldo
+              </th>
               <th scope="col" class="actions"><span class="visually-hidden">Aktionen</span></th>
             </tr>
           </thead>
           <tbody>
-            @for (entry of store.years(); track entry.planId) {
-              <tr (click)="open(entry.year)" [attr.data-year]="entry.year">
+            @for (entry of store.years(); track entry.year) {
+              <tr (click)="open(entry.year)" [attr.data-year]="entry.year" class="plan-row">
                 <th scope="row">
                   <a [routerLink]="['/jahre', entry.year]" (click)="$event.stopPropagation()">{{
                     entry.year
                   }}</a>
                 </th>
-                <td class="amount">
-                  <span class="value">{{ income(entry) | currency: 'EUR' }}</span>
-                  <app-year-change kind="income" [change]="entry.incomeChange" />
-                </td>
-                <td class="amount">
-                  <span class="value">{{ expense(entry) | currency: 'EUR' }}</span>
-                  <app-year-change kind="expense" [change]="entry.expenseChange" />
-                </td>
-                <td class="amount">
-                  <span class="value" [class.deficit]="entry.expensesExceedIncome">
-                    {{ balance(entry) | currency: 'EUR' }}
-                  </span>
-                  @if (entry.expensesExceedIncome) {
-                    <span class="deficit-label">Defizit</span>
+                @if (hasPlan(entry)) {
+                  <td class="amount">
+                    <span class="value">{{ income(entry) | currency: 'EUR' }}</span>
+                    <app-year-change kind="income" [change]="entry.incomeChange" />
+                  </td>
+                  <td class="amount">
+                    <span class="value">{{ expense(entry) | currency: 'EUR' }}</span>
+                    <app-year-change kind="expense" [change]="entry.expenseChange" />
+                  </td>
+                  <td class="amount">
+                    <span class="value" [class.deficit]="entry.expensesExceedIncome">
+                      {{ balance(entry) | currency: 'EUR' }}
+                    </span>
+                    @if (entry.expensesExceedIncome) {
+                      <span class="deficit-label">Defizit</span>
+                    }
+                    <app-year-change kind="balance" [change]="entry.balanceChange" />
+                  </td>
+                } @else {
+                  <!-- Only one-time items, no plan (EP-12) -->
+                  @for (column of planColumns; track column) {
+                    <td class="amount no-plan">
+                      <span class="value" [attr.aria-label]="'Kein Haushaltsplan'">–</span>
+                    </td>
                   }
-                  <app-year-change kind="balance" [change]="entry.balanceChange" />
+                }
+                <td class="amount one-time first">
+                  <span class="value">{{ entry.oneTimeIncome | currency: 'EUR' }}</span>
+                </td>
+                <td class="amount one-time">
+                  <span class="value">{{ entry.oneTimeExpense | currency: 'EUR' }}</span>
+                </td>
+                <td class="amount one-time">
+                  <ng-container *ngTemplateOutlet="oneTimeBalance; context: { $implicit: entry }" />
                 </td>
                 <td class="actions">
-                  <button
-                    matIconButton
-                    type="button"
-                    [attr.aria-label]="'Plan ' + entry.year + ' als Vorlage übernehmen'"
-                    title="Als Vorlage übernehmen"
-                    (click)="$event.stopPropagation(); copyPlan(entry.year)"
-                  >
-                    <mat-icon svgIcon="content_copy" />
-                  </button>
-                  <button
-                    matIconButton
-                    type="button"
-                    class="delete-plan"
-                    [attr.aria-label]="'Plan ' + entry.year + ' löschen'"
-                    title="Plan löschen"
-                    (click)="$event.stopPropagation(); deletePlan(entry.year)"
-                  >
-                    <mat-icon svgIcon="delete" />
-                  </button>
+                  @if (hasPlan(entry)) {
+                    <button
+                      matIconButton
+                      type="button"
+                      [attr.aria-label]="'Plan ' + entry.year + ' als Vorlage übernehmen'"
+                      title="Als Vorlage übernehmen"
+                      (click)="$event.stopPropagation(); copyPlan(entry.year)"
+                    >
+                      <mat-icon svgIcon="content_copy" />
+                    </button>
+                    <button
+                      matIconButton
+                      type="button"
+                      class="delete-plan"
+                      [attr.aria-label]="'Plan ' + entry.year + ' löschen'"
+                      title="Plan löschen"
+                      (click)="$event.stopPropagation(); deletePlan(entry.year)"
+                    >
+                      <mat-icon svgIcon="delete" />
+                    </button>
+                  }
                 </td>
+              </tr>
+              <!-- The one-time totals of the year on a phone, below those of the plan (EP-18) -->
+              <tr
+                class="one-time-row"
+                [attr.data-one-time-year]="entry.year"
+                (click)="open(entry.year)"
+              >
+                <th scope="row" class="one-time-label">Einmalig (Jahr)</th>
+                <td class="amount">
+                  <span class="value">{{ entry.oneTimeIncome | currency: 'EUR' }}</span>
+                </td>
+                <td class="amount">
+                  <span class="value">{{ entry.oneTimeExpense | currency: 'EUR' }}</span>
+                </td>
+                <td class="amount">
+                  <ng-container *ngTemplateOutlet="oneTimeBalance; context: { $implicit: entry }" />
+                </td>
+                <td class="actions"></td>
               </tr>
             }
           </tbody>
         </table>
       </mat-card>
     }
+
+    <ng-template #oneTimeBalance let-entry>
+      <span class="value" [class.deficit]="entry.oneTimeExpensesExceedIncome">
+        {{ entry.oneTimeBalance | currency: 'EUR' }}
+      </span>
+      @if (entry.oneTimeExpensesExceedIncome) {
+        <span class="deficit-label">Defizit</span>
+      }
+    </ng-template>
   `,
   styles: `
     :host {
@@ -198,14 +263,34 @@ import { YearChange } from './ui/year-change';
       color: var(--mat-sys-on-surface-variant);
       border-bottom: 1px solid var(--mat-sys-outline-variant);
     }
+    .group-head > * {
+      padding-bottom: 0;
+      border-bottom: none;
+      text-align: center;
+      font: var(--mat-sys-label-medium);
+      color: var(--mat-sys-on-surface-variant);
+    }
+    /* The one-time totals are set apart from those of the plan (EP-13) */
+    .one-time {
+      background: var(--mat-sys-surface-container-low);
+    }
+    .one-time.first {
+      border-left: 1px solid var(--mat-sys-outline-variant);
+    }
+    .no-plan {
+      color: var(--mat-sys-on-surface-variant);
+    }
     tbody tr {
       cursor: pointer;
     }
-    tbody tr:not(:last-child) {
+    tbody tr.plan-row:not(:nth-last-child(2)) {
       border-bottom: 1px solid var(--mat-sys-outline-variant);
     }
     tbody tr:hover {
       background: var(--mat-sys-surface-container-high);
+    }
+    .one-time-row {
+      display: none;
     }
     tbody th a {
       font: var(--mat-sys-title-medium);
@@ -255,6 +340,26 @@ import { YearChange } from './ui/year-change';
       td {
         padding: 8px 4px;
       }
+      /* A row of its own for the one-time totals instead of three more columns (EP-18) */
+      .one-time,
+      .group-head {
+        display: none;
+      }
+      .one-time-row {
+        display: table-row;
+        font: var(--mat-sys-body-small);
+        background: var(--mat-sys-surface-container-low);
+      }
+      tbody tr.plan-row {
+        border-bottom: none !important;
+      }
+      tbody tr.one-time-row:not(:last-child) {
+        border-bottom: 1px solid var(--mat-sys-outline-variant);
+      }
+      .one-time-label {
+        font: var(--mat-sys-label-small);
+        color: var(--mat-sys-on-surface-variant);
+      }
       /* The buttons on top of each other, so the four columns of amounts fit on a phone (MA-4) */
       .actions {
         width: 48px;
@@ -274,17 +379,23 @@ export class YearlyOverviewPage implements OnInit {
 
   protected readonly creating = signal(false);
   protected readonly periods = AMOUNT_PERIODS;
+  protected readonly hasPlan = hasPlan;
+  /** The columns of a plan, shown as "–" in a year without plan (EP-12). */
+  protected readonly planColumns = ['income', 'expense', 'balance'];
 
-  /** The amounts of the chosen period; the backend works out both (JM-2, JM-3, JM-6). */
-  protected income(entry: YearlyOverviewEntry): string {
+  /**
+   * The amounts of the plan in the chosen period; the backend works out both (JM-2, JM-3, JM-6).
+   * `null` only in a year without plan, which shows none (EP-12).
+   */
+  protected income(entry: YearlyOverviewEntry): string | null {
     return this.monthly() ? entry.monthlyTotalIncome : entry.totalIncome;
   }
 
-  protected expense(entry: YearlyOverviewEntry): string {
+  protected expense(entry: YearlyOverviewEntry): string | null {
     return this.monthly() ? entry.monthlyTotalExpense : entry.totalExpense;
   }
 
-  protected balance(entry: YearlyOverviewEntry): string {
+  protected balance(entry: YearlyOverviewEntry): string | null {
     return this.monthly() ? entry.monthlyBalance : entry.balance;
   }
 

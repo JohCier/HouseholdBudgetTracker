@@ -37,6 +37,7 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 | Bilanz | Gesamteinnahmen, Gesamtausgaben und Saldo in einem Kasten, je Monat und je Jahr nebeneinander | [bilanz.md](specs/bilanz.md) | BI-… |
 | Posten markieren | Posten in den Einträgen als wichtig hervorheben; bei Ausgaben ein monatliches Sparpotential festhalten, in der Bilanz summiert | [posten-markierungen.md](specs/posten-markierungen.md) | PM-… |
 | Sparpotential je Unterkategorie | Links neben der Bilanz die Summe des Sparpotentials je Unterkategorie, je Monat und Jahr, das größte oben; je Gruppe auch in ihrer Summenzeile der Einträge | [sparpotential-unterkategorie.md](specs/sparpotential-unterkategorie.md) | SU-… |
+| Einmalposten | Einmalige Einnahmen und Ausgaben mit Datum außerhalb des Haushaltsplans erfassen, auch ohne Plan; in der Planansicht als eigener Abschnitt, in der Jahresübersicht als eigene Spalten | [einmalposten.md](specs/einmalposten.md) | EP-… |
 | Fehlermeldungen | Alle Meldungen auf Deutsch, auch die der API | [fehlermeldungen.md](specs/fehlermeldungen.md) | FM-… |
 | Auswertung | Summen, Saldo, Warnung bei Defizit, Anteil und Zielerreichung je 50/30/20-Kategorie | [auswertung-50-30-20.md](specs/auswertung-50-30-20.md) | AW-… |
 | Tortendiagramm | Die 50/30/20-Auswertung wahlweise als Balken oder als Tortendiagramm ansehen | [tortendiagramm.md](specs/tortendiagramm.md) | TD-… |
@@ -52,7 +53,8 @@ Werte und Berechnungen gehen deshalb vom Monatsbetrag aus, Jahreswerte sind dara
 ## Nicht-Ziele
 
 - Keine einzelnen Buchungen mit Datum, keine Ansicht je Kalendermonat: Ein Posten gilt ohne eigenes Datum für das
-  ganze Jahr, als Monats- oder Jahresbetrag.
+  ganze Jahr, als Monats- oder Jahresbetrag. Ein Datum haben nur Einmalposten ([einmalposten.md](specs/einmalposten.md));
+  sie zählen nicht zum Haushaltsplan.
 - Keine Anbindung an Bankkonten, kein Import von Kontoauszügen.
 - Keine gemeinsamen Pläne mehrerer Benutzer, keine Freigaben.
 - Keine anderen Budgetregeln als 50/30/20, keine eigenen Kategorien, keine anderen Währungen.

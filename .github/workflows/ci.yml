@@ -63,6 +63,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Least privilege for the GITHUB_TOKEN: jobs that need more (changes, docker, deploy) widen it themselves
+permissions:
+  contents: read
+
 jobs:
   changes:
     name: Detect changed apps

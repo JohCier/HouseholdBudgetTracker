@@ -116,6 +116,69 @@ class YearlyOverviewTest {
         assertThat(entry.expensesExceedIncome()).isTrue();
     }
 
+    // docs/specs/einmalposten.md
+    @Test
+    void eachYearHasTheTotalsOfItsOneTimeItems() { // EP-13
+        YearlyOverviewEntry entry = YearlyOverview.of(List.of(plan(2026, summary("36000.00", "0.00"))),
+                List.of(oneTime(2026, "800.00", "1200.00"))).years().getFirst();
+
+        assertThat(entry.totalIncome()).isEqualTo(money("36000.00"));
+        assertThat(entry.balance()).isEqualTo(money("36000.00"));
+        assertThat(entry.oneTimeIncome()).isEqualTo(money("800.00"));
+        assertThat(entry.oneTimeExpense()).isEqualTo(money("1200.00"));
+        assertThat(entry.oneTimeBalance()).isEqualTo(money("-400.00"));
+        assertThat(entry.oneTimeExpensesExceedIncome()).isTrue();
+    }
+
+    @Test
+    void aYearWithoutOneTimeItemsHasZeroOneTimeTotals() { // EP-13
+        YearlyOverviewEntry entry = YearlyOverview.of(List.of(plan(2026, summary("1000.00", "0.00")))).years().getFirst();
+
+        assertThat(entry.oneTimeIncome()).isEqualTo(Money.ZERO);
+        assertThat(entry.oneTimeExpense()).isEqualTo(Money.ZERO);
+        assertThat(entry.oneTimeBalance()).isEqualTo(Money.ZERO);
+        assertThat(entry.oneTimeExpensesExceedIncome()).isFalse();
+    }
+
+    @Test
+    void listsAYearWithOnlyOneTimeItemsWithoutPlanFigures() { // EP-12
+        YearlyOverview overview = YearlyOverview.of(List.of(plan(2026, summary("1000.00", "0.00"))),
+                List.of(oneTime(2027, "2000.00", "0.00")));
+
+        assertThat(overview.years()).extracting(YearlyOverviewEntry::year).containsExactly(Year.of(2027), Year.of(2026));
+        YearlyOverviewEntry entry = overview.years().getFirst();
+        assertThat(entry.hasPlan()).isFalse();
+        assertThat(entry.planId()).isNull();
+        assertThat(entry.totalIncome()).isNull();
+        assertThat(entry.monthlyTotalIncome()).isNull();
+        assertThat(entry.monthlyBalance()).isNull();
+        assertThat(entry.incomeChange()).isNull();
+        assertThat(entry.expensesExceedIncome()).isFalse();
+        assertThat(entry.oneTimeBalance()).isEqualTo(money("2000.00"));
+    }
+
+    @Test
+    void aYearWithOnlyOneTimeItemsIsNoPreviousYear() { // JU-4, EP-15
+        YearlyOverviewEntry entry = YearlyOverview.of(List.of(plan(2026, summary("1000.00", "500.00"))),
+                List.of(oneTime(2025, "300.00", "0.00"))).years().getFirst();
+
+        assertThat(entry.incomeChange()).isNull();
+        assertThat(entry.balanceChange()).isNull();
+    }
+
+    @Test
+    void oneTimeTotalsAreNotSpreadOverTheMonths() { // EP-14
+        YearlyOverviewEntry entry = YearlyOverview.of(List.of(plan(2026, summary("1200.00", "0.00"))),
+                List.of(oneTime(2026, "1200.00", "0.00"))).years().getFirst();
+
+        assertThat(entry.monthlyTotalIncome()).isEqualTo(money("100.00"));
+        assertThat(entry.oneTimeIncome()).isEqualTo(money("1200.00"));
+    }
+
+    private static YearlyOverview.OneTimeSummary oneTime(int year, String income, String expense) {
+        return new YearlyOverview.OneTimeSummary(Year.of(year), money(income), money(expense));
+    }
+
     private static YearlyOverview.PlanSummary plan(int year, BudgetSummary summary) {
         return new YearlyOverview.PlanSummary(HouseholdPlanId.generate(), Year.of(year), summary);
     }

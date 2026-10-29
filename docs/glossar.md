@@ -58,6 +58,10 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Vorjahr | `YearlyOverviewEntry.of(…, previousYear)` | Der Plan des unmittelbar vorhergehenden Kalenderjahres, falls es ihn gibt |
 | Veränderung zum Vorjahr | `Percentage.changeFrom`, `incomeChange`, `expenseChange`, `balanceChange` | (Wert − Wert des Vorjahres) ÷ \|Wert des Vorjahres\| × 100, in Prozent mit zwei Nachkommastellen; fehlt ohne Vorjahr oder bei 0,00 € im Vorjahr |
 | Aufteilung je Kategorie | `CategoryBreakdown` | Teil der Übersicht: Summe, Anteil, Zielanteil und Zielerreichung einer Kategorie |
+| Einmalposten | `OneTimeItem` (Aggregate Root) | Eine einzelne Einnahme oder Ausgabe mit Datum, z. B. eine Nachzahlung; gehört dem Benutzer, nicht zu einem Plan, und zählt weder zum Haushaltsplan noch zur 50/30/20-Regel |
+| Datum eines Einmalpostens | `OneTimeItem.date` | Der Tag des Einmalpostens (01.01.1900 bis 31.12.2200); sein Jahr bestimmt, zu welchem Jahr der Einmalposten gehört. Nur Einmalposten haben ein Datum |
+| Einmalposten eines Jahres | `OneTimeItemOverview` (Read Model) | Alle Einmalposten eines Benutzers in einem Jahr, nach Datum, mit einmaligen Einnahmen, Ausgaben und Saldo |
+| Einmalige Einnahmen, Ausgaben, Saldo | `oneTimeIncome`, `oneTimeExpense`, `oneTimeBalance` | Summen der Einmalposten eines Jahres; immer Jahreswerte, in der Jahresübersicht in eigenen Spalten „Einmalig (Jahr)"
 | Darstellung (Balken, Torte) | `BreakdownView` (`bars`, `pie`), nur im Frontend | Wie die Karte „50/30/20-Regel" die Aufteilung zeigt: als Balken je Kategorie oder als Tortendiagramm |
 | Ausschnitt der Torte | `PieSelection` (`rule`, `category`, `group`), nur im Frontend | Was die Torte zeigt: die 50/30/20-Regel, eine Kategorie aufgeteilt nach Unterkategorien oder eine Unterkategorie einer Kategorie aufgeteilt nach Posten |
 | Sortierung der Torte | `PieSort` (`entries`, `amount`, `name`, `descending`), nur im Frontend | Reihenfolge der Stücke einer Kategorie oder Unterkategorie in Torte und Legende: wie die Einträge, nach Betrag je Monat oder nach Name |
