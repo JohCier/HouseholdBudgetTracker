@@ -3,7 +3,9 @@
 #   JWT_SECRET    secret for session tokens, at least 32 bytes, e.g. from `openssl rand -base64 48`
 # Optional:
 #   IMAGE_TAG     image version, defaults to latest
-#   SECURE_COOKIE set to true once the app is served over HTTPS
+#   DOMAIN        domain of the app, e.g. budget.example.de; its DNS A record must point to the server. Caddy then
+#                 fetches and renews a Let's Encrypt certificate and redirects HTTP to HTTPS. Unset: plain HTTP on :80
+#   SECURE_COOKIE set to true once the app is served over HTTPS (DOMAIN set)
 services:
   postgres:
     image: postgres:18-alpine
@@ -29,7 +31,7 @@ services:
       SPRING_DATASOURCE_USERNAME: hbt
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
-      # Der Server ist bisher nur per HTTP erreichbar; mit HTTPS SECURE_COOKIE=true setzen.
+      # Mit HTTPS (DOMAIN gesetzt) SECURE_COOKIE=true setzen, sonst sendet der Browser das Cookie per HTTP nicht.
       HBT_AUTH_SECURE_COOKIE: ${SECURE_COOKIE:-false}
     depends_on:
       postgres:
@@ -47,13 +49,28 @@ services:
   frontend:
     image: ghcr.io/johcier/householdbudgettracker/frontend:${IMAGE_TAG:-latest}
     restart: unless-stopped
-    ports:
-      - "80:80"
     depends_on:
       backend:
         condition: service_healthy
       users:
         condition: service_healthy
+    # kein "ports:" -> nur über Caddy erreichbar
+
+  # Single public entry point: terminates TLS and forwards everything to the frontend (nginx).
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    command: caddy reverse-proxy --from ${DOMAIN:-:80} --to frontend:80
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    volumes:
+      # certificates and ACME account; must survive restarts, otherwise Let's Encrypt rate limits apply
+      - caddy-data:/data
+    depends_on:
+      - frontend
 
 volumes:
   postgres-data:
+  caddy-data:
