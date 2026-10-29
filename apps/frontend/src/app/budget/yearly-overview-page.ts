@@ -12,12 +12,14 @@ import { AMOUNT_PERIODS, Year, YearlyOverviewEntry } from './budget.model';
 import { YearlyOverviewStore } from './data-access/yearly-overview-store';
 import { copiedMessage, openCopyPlanDialog } from './ui/copy-plan-dialog';
 import { deletedMessage, openDeletePlanDialog } from './ui/delete-plan-dialog';
+import { NetWorthCard } from '../net-worth/ui/net-worth-card';
 import { YearChange } from './ui/year-change';
 
 /**
  * The start page after signing in: all plans of the user with their income, expenses and
  * balance and how these changed from the previous year (JU-1 to JU-13). A row opens the plan
  * of its year. The amounts are shown per month or per year, as the user chooses (JM-1 to JM-7).
+ * Below the plans, the card "Vermögen" shows the net worth of all years (VS-18).
  */
 @Component({
   selector: 'app-yearly-overview-page',
@@ -28,6 +30,7 @@ import { YearChange } from './ui/year-change';
     MatCardModule,
     MatIconModule,
     MatProgressBarModule,
+    NetWorthCard,
     RouterLink,
     YearChange,
   ],
@@ -138,6 +141,9 @@ import { YearChange } from './ui/year-change';
         </table>
       </mat-card>
     }
+
+    <!-- Independent of the plans: shown also without any, never in monthly amounts (VS-18, VS-19) -->
+    <app-net-worth-card />
   `,
   styles: `
     :host {

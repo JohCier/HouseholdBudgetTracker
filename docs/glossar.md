@@ -63,6 +63,20 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Anteil am Ausschnitt | `percentageOfSection`, `percentageOfGroup`, `unplannedPercentageOfTotal` | Anteil einer Gruppe an ihrer Kategorie bzw. eines Postens an seiner Gruppe, aus den Monatsbeträgen; bei Sparen & Investieren einschließlich des Überschusses |
 | Protokoll | `audit_log`, `AuditLogListener` | Jedes Domain Event wird nach erfolgreichem Speichern protokolliert |
 
+## Vermögen und Schulden (`apps/backend`)
+
+| Begriff | Im Code | Bedeutung |
+|---|---|---|
+| Vermögensstand | `NetWorthStatement` (Aggregate Root) | Alle Vermögenswerte und Schulden eines Benutzers am Ende eines Jahres; höchstens einer pro Benutzer und Jahr, besteht, solange er Werte hat; unabhängig vom Haushaltsplan |
+| Wert | `NetWorthEntry` (Entity) | Ein Vermögenswert oder eine Schuld mit Bezeichnung und Betrag |
+| Vermögenswert | `NetWorthEntryType.ASSET` | Was dem Benutzer gehört, z. B. „Girokonto"; erhöht das Nettovermögen |
+| Schuld | `NetWorthEntryType.LIABILITY` | Was der Benutzer schuldet, z. B. „Autokredit"; mit positivem Betrag erfasst, verringert das Nettovermögen |
+| Bezeichnung | `NetWorthEntryName` | Wofür der Wert steht; 1 bis 255 Zeichen, nicht nur Leerzeichen |
+| Vermögen, Schulden | `totalAssets`, `totalLiabilities` | Summe der Vermögenswerte bzw. der Schulden eines Jahres |
+| Nettovermögen | `netWorth`, `NetWorthTotals` | Vermögen minus Schulden; negativ heißt überschuldet (`overindebted`) |
+| Veränderung des Nettovermögens | `NetWorthChange` | Unterschied zum Nettovermögen des unmittelbar vorhergehenden Jahres in Euro und in Prozent wie `Percentage.changeFrom` |
+| Verlauf | `NetWorthHistory` (Read Model), `app-net-worth-chart` | Alle Jahre mit Vermögensstand mit Nettovermögen und Veränderung; Karte „Vermögen" der Jahresübersicht mit Verlaufsdiagramm |
+
 ## Benutzer (`apps/users`)
 
 | Begriff | Im Code | Bedeutung |
@@ -91,5 +105,10 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | `BudgetItemMarked` | Ein Posten wurde als wichtig markiert oder bekam ein Sparpotential, oder die Markierung wurde entfernt |
 | `BudgetItemsReordered` | Die Posten einer Unterkategorie-Gruppe wurden umsortiert |
 | `SubcategoriesReordered` | Die Unterkategorie-Gruppen der Einnahmen oder einer Kategorie wurden umsortiert |
+| `NetWorthStatementCreated` | Für ein Jahr wurde der erste Vermögenswert oder die erste Schuld erfasst |
+| `NetWorthEntryAdded` | Ein Vermögenswert oder eine Schuld wurde erfasst |
+| `NetWorthEntryChanged` | Art, Bezeichnung oder Betrag eines Werts wurden geändert |
+| `NetWorthEntryRemoved` | Ein Wert wurde gelöscht |
+| `NetWorthStatementCopied` | Der Vermögensstand eines Jahres wurde in ein anderes übernommen, ggf. unter Überschreiben |
 | `UserRegistered` | Ein Benutzer hat sich registriert |
 | `PasswordChanged` | Ein Benutzer hat sein Passwort geändert |

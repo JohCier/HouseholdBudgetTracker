@@ -80,7 +80,8 @@ Benutzer den Plan eines Jahres.
 ## Nicht im Umfang
 
 - Veränderung der einzelnen Kategorien der 50/30/20-Regel zum Vorjahr
-- Diagramme über mehrere Jahre
+- Diagramme über mehrere Jahre, außer dem Verlauf des Nettovermögens in der Karte „Vermögen": siehe
+  [vermoegen.md](vermoegen.md)
 - Vergleich mit einem frei gewählten Jahr statt dem Vorjahr
 - Pläne aus der Jahresübersicht löschen und kopieren: siehe [plan-loeschen.md](plan-loeschen.md) und
   [plan-uebernehmen.md](plan-uebernehmen.md)
