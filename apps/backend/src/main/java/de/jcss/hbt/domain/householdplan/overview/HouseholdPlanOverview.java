@@ -19,6 +19,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Read model of the household plan of one year: its items, total income, total expenses,
@@ -30,7 +31,8 @@ import java.util.Objects;
  * expenses by category and subcategory, each with its sum (UK-9 to UK-13) and its share per month
  * of the section, as the pie of a category or subcategory shows it (TK-6, TK-8). The saving potential of
  * the plan is the one exception to yearly figures: it is the sum of the monthly saving potentials of
- * its expenses, and twelve times that for the year (PM-13), also per subcategory (SU-1).
+ * its expenses, and twelve times that for the year (PM-13), also per subcategory (SU-1). The expenses with the
+ * highest saving potential and the highest expenses come as top 5 lists (TP-1, TP-2).
  * <p>
  * Contains no business logic of its own: all figures are worked out by the value object
  * {@link BudgetSummary}, which the read model only fills with the items; the order of the groups
@@ -144,6 +146,35 @@ public record HouseholdPlanOverview(
         return sums.stream()
                 .sorted(Comparator.comparing(SubcategorySavingPotential::monthly).reversed()
                         .thenComparing(sum -> sum.subcategory().value(), String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
+
+    /**
+     * The expenses with the highest saving potential, across all categories (TP-1): at most five, the largest
+     * first, equal ones alphabetically by description (TP-4). The yearly value is twelve times the monthly one.
+     */
+    public List<TopItem> topSavingPotentials() {
+        return top(items.stream()
+                .filter(item -> item.savingPotential() != null)
+                .map(item -> new TopItem(item, item.savingPotential().monthly(), item.savingPotential().annual())));
+    }
+
+    /**
+     * The expenses with the highest monthly amount in living costs and leisure (TP-2, TP-3): at most five, the
+     * largest first, equal ones alphabetically by description (TP-4). The yearly value is the yearly amount the
+     * entries show (MJ-8).
+     */
+    public List<TopItem> topExpenses() {
+        return top(items.stream()
+                .filter(item -> item.type() == ItemType.EXPENSE && item.category() != ExpenseCategory.SPAREN_INVESTIEREN)
+                .map(item -> new TopItem(item, item.amount().monthly(), item.amount().annual())));
+    }
+
+    private static List<TopItem> top(Stream<TopItem> rows) {
+        return rows
+                .sorted(Comparator.comparing(TopItem::monthly).reversed()
+                        .thenComparing(row -> row.item().description().value(), String.CASE_INSENSITIVE_ORDER))
+                .limit(TopItem.LIMIT)
                 .toList();
     }
 

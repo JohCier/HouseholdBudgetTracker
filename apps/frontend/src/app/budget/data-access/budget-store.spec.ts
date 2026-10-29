@@ -38,6 +38,8 @@ const overview = (year: number, items = [item]): HouseholdPlanOverview => ({
 
   savingPotential: '0.00',
   savingPotentialsBySubcategory: [],
+  topSavingPotentials: [],
+  topExpenses: [],
   expensesExceedIncome: false,
   categoryBreakdowns: [],
   items,

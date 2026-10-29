@@ -36,6 +36,11 @@ public record HouseholdPlanOverviewResponse(
         BigDecimal savingPotential,
         @Schema(description = "The subcategories with a saving potential, the largest first (SU-3, SU-4)")
         List<SubcategorySavingPotentialResponse> savingPotentialsBySubcategory,
+        @Schema(description = "At most five expenses with the highest saving potential, the largest first (TP-1, TP-4)")
+        List<TopItemResponse> topSavingPotentials,
+        @Schema(description = "At most five expenses of living costs and leisure with the highest monthly amount, "
+                + "the largest first (TP-2, TP-4)")
+        List<TopItemResponse> topExpenses,
         boolean expensesExceedIncome,
         List<CategoryBreakdownResponse> categoryBreakdowns,
         @Schema(description = "In display order, the topmost first") List<BudgetItemResponse> items,
@@ -57,6 +62,8 @@ public record HouseholdPlanOverviewResponse(
                 overview.monthlySavingPotential().value(),
                 overview.savingPotential().value(),
                 overview.savingPotentialsBySubcategory().stream().map(SubcategorySavingPotentialResponse::from).toList(),
+                overview.topSavingPotentials().stream().map(TopItemResponse::from).toList(),
+                overview.topExpenses().stream().map(TopItemResponse::from).toList(),
                 overview.expensesExceedIncome(),
                 overview.categoryBreakdowns().stream().map(CategoryBreakdownResponse::from).toList(),
                 overview.items().stream().map(BudgetItemResponse::from).toList(),

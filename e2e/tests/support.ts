@@ -98,7 +98,7 @@ export async function addExpense(
   subcategory?: string,
   period: Period = 'Jährlich',
 ): Promise<void> {
-  await page.getByRole('radio', { name: 'Ausgabe' }).click();
+  await page.getByRole('radio', { name: 'Ausgabe', exact: true }).click();
   await page.getByLabel('Beschreibung').fill(description);
   await page.getByLabel('Betrag').fill(amount);
   await choosePeriod(page, period);
@@ -401,4 +401,16 @@ export function oneTimeTotal(page: Page, label: 'Einnahmen' | 'Ausgaben' | 'Sald
 export function oneTimeCells(page: Page, year: number) {
   const cells = yearRow(page, year).locator('td.one-time');
   return { income: cells.nth(0), expense: cells.nth(1), balance: cells.nth(2) };
+}
+
+/** Switches the card "Top 5" between "Sparpotential" and "Ausgaben" (TP-7). */
+export async function showTopItems(page: Page, list: 'Sparpotential' | 'Ausgaben'): Promise<void> {
+  const toggle = page.getByRole('radiogroup', { name: 'Liste' }).getByRole('radio', { name: list });
+  await toggle.click();
+  await expect(toggle).toBeChecked();
+}
+
+/** The rows of the list the card "Top 5" shows (TP-8). */
+export function topItemRows(page: Page) {
+  return page.getByRole('table', { name: 'Top 5' }).locator('tbody tr');
 }
