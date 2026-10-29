@@ -30,6 +30,9 @@
 #              Unchanged apps keep their previous image and get no new sha-<commit> tag.
 #   deploy     copies compose.prod.yaml to the server via SCP and starts the new images via SSH (master only)
 #              (incl. Caddy, the HTTPS entry point; the domain comes from DOMAIN in /opt/hbt/.env on the server)
+#              Only one deploy runs at a time (concurrency group "deploy"): parallel "docker compose up" on the
+#              server collide on the container names. A deploy waiting behind a running one is replaced by a newer
+#              one (shown as cancelled); the newest deploy brings all images of master anyway.
 #
 # Variables:
 #   steps.filter.outputs.changes   origin: dorny/paths-filter; JSON list of the filters with changed files,
@@ -266,6 +269,10 @@ jobs:
     # not after a failed job. Unchanged apps keep their image, so their containers are not restarted.
     if: >-
       !failure() && !cancelled() && github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    # A running deploy is not cancelled, so the server is never left half updated
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
