@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.onetimeitem.event;
 
-import de.jcss.hbt.domain.onetimeitem.OneTimeItemId;
+import de.jcss.hbt.domain.onetimeitem.valueobject.OneTimeItemId;
 
 import java.time.Instant;
 import java.time.LocalDate;

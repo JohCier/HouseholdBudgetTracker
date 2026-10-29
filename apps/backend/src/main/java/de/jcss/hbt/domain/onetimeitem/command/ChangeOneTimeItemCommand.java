@@ -1,11 +1,11 @@
 package de.jcss.hbt.domain.onetimeitem.command;
 
-import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
-import de.jcss.hbt.domain.householdplan.BudgetItemNote;
-import de.jcss.hbt.domain.householdplan.ItemType;
-import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.householdplan.OwnerId;
-import de.jcss.hbt.domain.onetimeitem.OneTimeItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemNote;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemType;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
+import de.jcss.hbt.domain.onetimeitem.valueobject.OneTimeItemId;
 import org.jmolecules.architecture.cqrs.Command;
 
 import java.time.LocalDate;

@@ -5,10 +5,10 @@ import de.jcss.hbt.application.householdplan.CreatedHouseholdPlan;
 import de.jcss.hbt.domain.exception.DomainValidationException;
 import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
 import de.jcss.hbt.domain.exception.HouseholdPlanNotFoundException;
-import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.command.CopyHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.CreateHouseholdPlanCommand;
 import de.jcss.hbt.domain.householdplan.command.DeleteHouseholdPlanCommand;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 

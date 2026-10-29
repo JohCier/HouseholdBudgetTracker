@@ -5,7 +5,7 @@
 #   push to master       tests, CVE scan, build & push of the changed apps, deploy
 #   push of a tag v*     tests, CVE scan, build & push of all apps (every image gets the semver tag)
 #   pull_request         tests, CVE scan, build without push of the changed apps; Dependabot PRs only run the tests and
-#                        the CVE scan
+#                        the CVE scan. No E2E tests, they run in e2e.yml only if the PR has the label "e2e".
 #   workflow_dispatch    like a push on the selected branch, but builds all apps (e.g. to repeat a failed image build,
 #                        which the next push would skip because the app counts as unchanged then)
 #
@@ -19,10 +19,9 @@
 #   java       Maven (./mvnw verify) for the changed Java apps, incl. Testcontainers and the OpenAPI contract check;
 #              skipped if no Java app changed
 #   frontend   npm: tests and Angular build of the frontend; skipped if the frontend did not change
-#   e2e        Playwright (e2e/) drives Chromium through the whole stack from compose.yaml (nginx with the Angular app,
-#              backend, users, PostgreSQL), built from the checked-out code. Runs only if the frontend or the E2E tests
-#              changed (backend-only changes are not E2E-tested). On failure the Playwright report (with
-#              traces and screenshots) is uploaded as the artifact "playwright-report" and the container logs are printed.
+#   e2e        calls the workflow e2e.yml (Playwright against the whole stack from compose.yaml). Not for pull requests,
+#              there e2e.yml runs on its own only with the label "e2e". Otherwise runs only if the frontend or the E2E
+#              tests changed (backend-only changes are not E2E-tested).
 #   cve-scan   Trivy scans the dependencies (pom.xml, package-lock.json) for known vulnerabilities (CVEs). Fails on
 #              CRITICAL/HIGH findings that already have a fix, but does not block docker/deploy (informative only).
 #              Accepted findings go into .trivyignore in the repository root (one CVE ID per line, with a reason).
@@ -30,6 +29,7 @@
 #              waits for java, frontend and e2e, so a failed E2E test stops the image push and the deploy.
 #              Unchanged apps keep their previous image and get no new sha-<commit> tag.
 #   deploy     copies compose.prod.yaml to the server via SCP and starts the new images via SSH (master only)
+#              (incl. Caddy, the HTTPS entry point; the domain comes from DOMAIN in /opt/hbt/.env on the server)
 #
 # Variables:
 #   steps.filter.outputs.changes   origin: dorny/paths-filter; JSON list of the filters with changed files,
@@ -37,11 +37,10 @@
 #   needs.changes.outputs.apps     origin: job "changes"; steps.filter.outputs.changes, for tags and manual runs
 #                                  (filter skipped) all apps; matrix of the jobs "java" (without frontend) and "docker",
 #                                  condition of the jobs "frontend" and "e2e"
-#   steps.e2e-filter.outputs.e2e   origin: dorny/paths-filter; 'true' if files under e2e/ changed
+#   steps.e2e-filter.outputs.e2e   origin: dorny/paths-filter; 'true' if files under e2e/ or e2e.yml changed
 #   needs.changes.outputs.e2e      origin: job "changes"; steps.e2e-filter.outputs.e2e, for tags and manual runs
 #                                  (filter skipped) 'true'; condition of the job "e2e"
 #   matrix.app                     origin: job matrix; app name = directory under apps/ and image name
-#   CI                             origin: set by the runner; makes Playwright forbid test.only and write the HTML report
 #   steps.node.outputs.version     origin: apps/frontend/.nvmrc; Node version as build arg NODE_VERSION of the
 #                                  frontend image
 #   steps.meta.outputs.tags        origin: docker/metadata-action; image tags (latest, sha-<commit>, semver)
@@ -63,6 +62,10 @@ on:
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+
+# Least privilege for the GITHUB_TOKEN: jobs that need more (changes, docker, deploy) widen it themselves
+permissions:
+  contents: read
 
 jobs:
   changes:
@@ -111,6 +114,7 @@ jobs:
           filters: |
             e2e:
               - 'e2e/**'
+              - '.github/workflows/e2e.yml'
 
   java:
     name: ${{ matrix.app }} (build & test)
@@ -161,37 +165,12 @@ jobs:
   e2e:
     name: E2E tests (Playwright)
     needs: [changes]
-    # Job-level condition: a skipped job reports success, so a required check "E2E tests (Playwright)" does not hang
+    # Job-level condition: a skipped job reports success, so a required check does not hang. Pull requests run the E2E
+    # tests in e2e.yml (label "e2e") instead.
     if: >-
-      contains(fromJSON(needs.changes.outputs.apps), 'frontend') || needs.changes.outputs.e2e == 'true'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: e2e
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: apps/frontend/.nvmrc
-          cache: npm
-          cache-dependency-path: e2e/package-lock.json
-      # Builds the images from the checked-out code and waits until every container is healthy; the app is then
-      # reachable at http://localhost:8080 (default JWT_SECRET from compose.yaml)
-      - name: Stack starten
-        run: docker compose --profile app up --build --detach --wait
-      - run: npm ci
-      - name: Chromium installieren
-        run: npx playwright install --with-deps chromium
-      - run: npx playwright test
-      - name: Container-Logs
-        if: failure()
-        run: docker compose --profile app logs
-      - uses: actions/upload-artifact@v7
-        if: failure()
-        with:
-          name: playwright-report
-          path: e2e/playwright-report/
-          retention-days: 14
+      github.event_name != 'pull_request' &&
+      (contains(fromJSON(needs.changes.outputs.apps), 'frontend') || needs.changes.outputs.e2e == 'true')
+    uses: ./.github/workflows/e2e.yml
 
   cve-scan:
     name: CVE scan (Trivy)
@@ -312,7 +291,7 @@ jobs:
           script: |
             set -e
             cd /opt/hbt
-            docker compose -f compose.prod.yaml pull backend users frontend
+            docker compose -f compose.prod.yaml pull backend users frontend caddy
             # --remove-orphans: drops containers of services that no longer exist (e.g. the former "app")
             docker compose -f compose.prod.yaml up -d --remove-orphans
             docker image prune -f

@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.onetimeitem.event;
 
-import de.jcss.hbt.domain.onetimeitem.OneTimeItemId;
+import de.jcss.hbt.domain.onetimeitem.valueobject.OneTimeItemId;
 import de.jcss.hbt.domain.shared.TimestampedDomainEvent;
 
 /** A domain event about a change to one one-time item. */

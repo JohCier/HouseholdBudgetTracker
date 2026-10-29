@@ -117,8 +117,8 @@ es ausschließlich bei Einmalposten, Posten des Haushaltsplans bleiben ohne Datu
 
 ## Umsetzung
 
-- Domäne: Aggregate `OneTimeItem` in `domain/onetimeitem/` mit `OneTimeItemId` und `OneTimeItemRepository`; nutzt
-  `OwnerId`, `ItemType`, `BudgetItemDescription`, `BudgetItemNote` und `Money` aus `domain/householdplan/`, kennt aber
+- Domäne: Aggregate `OneTimeItem` in `domain/onetimeitem/` mit `OneTimeItemRepository` und `valueobject/OneTimeItemId`;
+  nutzt `OwnerId`, `ItemType`, `BudgetItemDescription`, `BudgetItemNote` und `Money` aus `domain/householdplan/valueobject/`, kennt aber
   keinen Plan (EP-5). `create`/`change` prüfen Betrag > 0 (EP-1) und Datum 01.01.1900 bis 31.12.2200 (EP-3); `change`
   liefert den geänderten Einmalposten, `year()` ist das Jahr des Datums (EP-7). Commands `Create…`, `Change…`,
   `DeleteOneTimeItemCommand`, Events `OneTimeItemCreated`, `…Changed`, `…Deleted` (im Audit-Log ohne Plan),

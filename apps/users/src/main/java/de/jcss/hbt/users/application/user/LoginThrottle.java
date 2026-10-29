@@ -1,6 +1,6 @@
 package de.jcss.hbt.users.application.user;
 
-import de.jcss.hbt.users.domain.user.EmailAddress;
+import de.jcss.hbt.users.domain.user.valueobject.EmailAddress;
 
 /**
  * Counts failed sign-ins per e-mail address and locks an address after too many of them

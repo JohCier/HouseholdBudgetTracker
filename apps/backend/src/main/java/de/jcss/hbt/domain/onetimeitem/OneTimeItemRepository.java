@@ -1,5 +1,6 @@
 package de.jcss.hbt.domain.onetimeitem;
 
+import de.jcss.hbt.domain.onetimeitem.valueobject.OneTimeItemId;
 import java.util.Optional;
 
 /**

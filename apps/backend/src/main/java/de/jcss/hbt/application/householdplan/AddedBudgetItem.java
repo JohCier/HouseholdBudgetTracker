@@ -1,7 +1,7 @@
 package de.jcss.hbt.application.householdplan;
 
-import de.jcss.hbt.domain.householdplan.BudgetItemId;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
 
 import java.util.Objects;
 

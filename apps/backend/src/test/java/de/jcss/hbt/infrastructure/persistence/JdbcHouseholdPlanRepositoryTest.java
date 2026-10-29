@@ -3,20 +3,19 @@ package de.jcss.hbt.infrastructure.persistence;
 import de.jcss.hbt.IntegrationTest;
 import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
 import de.jcss.hbt.domain.householdplan.BudgetItem;
-import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
-import de.jcss.hbt.domain.householdplan.BudgetItemId;
-import de.jcss.hbt.domain.householdplan.BudgetItemNote;
-import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
-import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
-import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
-import de.jcss.hbt.domain.householdplan.ItemAmount;
-import de.jcss.hbt.domain.householdplan.ItemMarks;
-import de.jcss.hbt.domain.householdplan.ItemSection;
-import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.householdplan.OwnerId;
-import de.jcss.hbt.domain.householdplan.SavingPotential;
-import de.jcss.hbt.domain.householdplan.SubcategoryOrder;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemNote;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemSubcategory;
+import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemSection;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
+import de.jcss.hbt.domain.householdplan.valueobject.SavingPotential;
+import de.jcss.hbt.domain.householdplan.valueobject.SubcategoryOrder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +46,7 @@ import java.util.function.BiFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 @IntegrationTest
 class JdbcHouseholdPlanRepositoryTest {
@@ -103,15 +103,16 @@ class JdbcHouseholdPlanRepositoryTest {
         repository.save(loaded);
 
         HouseholdPlan restored = repository.findById(plan.id()).orElseThrow();
-        assertThat(restored.items()).extracting(BudgetItem::marks).containsExactly(
-                new ItemMarks(true, null),
-                new ItemMarks(false, SavingPotential.monthly(Money.of(new BigDecimal("25.50")))));
+        assertThat(restored.items()).extracting(BudgetItem::isImportant, BudgetItem::savingPotential).containsExactly(
+                tuple(true, Optional.empty()),
+                tuple(false, Optional.of(SavingPotential.monthly(Money.of(new BigDecimal("25.50"))))));
 
         restored.changeSavingPotential(rent, null);
         repository.save(restored);
 
         assertThat(repository.findById(plan.id()).orElseThrow().items())
-                .extracting(BudgetItem::marks).containsExactly(new ItemMarks(true, null), ItemMarks.NONE);
+                .extracting(BudgetItem::isImportant, BudgetItem::savingPotential)
+                .containsExactly(tuple(true, Optional.empty()), tuple(false, Optional.empty()));
     }
 
     @Test

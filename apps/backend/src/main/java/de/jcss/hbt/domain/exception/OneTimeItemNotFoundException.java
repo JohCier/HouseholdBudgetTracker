@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.exception;
 
-import de.jcss.hbt.domain.onetimeitem.OneTimeItemId;
+import de.jcss.hbt.domain.onetimeitem.valueobject.OneTimeItemId;
 
 /**
  * Thrown when a {@code OneTimeItem} is referenced by an id that does not exist, or belongs to someone else (EP-4).

@@ -1,9 +1,9 @@
 package de.jcss.hbt.application.onetimeitem;
 
 import de.jcss.hbt.domain.exception.OneTimeItemNotFoundException;
-import de.jcss.hbt.domain.householdplan.OwnerId;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
 import de.jcss.hbt.domain.onetimeitem.OneTimeItem;
-import de.jcss.hbt.domain.onetimeitem.OneTimeItemId;
+import de.jcss.hbt.domain.onetimeitem.valueobject.OneTimeItemId;
 import de.jcss.hbt.domain.onetimeitem.OneTimeItemRepository;
 import de.jcss.hbt.domain.onetimeitem.command.ChangeOneTimeItemCommand;
 import de.jcss.hbt.domain.onetimeitem.command.CreateOneTimeItemCommand;

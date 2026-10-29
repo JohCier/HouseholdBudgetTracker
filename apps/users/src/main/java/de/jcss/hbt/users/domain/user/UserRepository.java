@@ -1,6 +1,8 @@
 package de.jcss.hbt.users.domain.user;
 
 import de.jcss.hbt.users.domain.exception.EmailAddressAlreadyRegisteredException;
+import de.jcss.hbt.users.domain.user.valueobject.EmailAddress;
+import de.jcss.hbt.users.domain.user.valueobject.UserId;
 
 import java.util.Optional;
 

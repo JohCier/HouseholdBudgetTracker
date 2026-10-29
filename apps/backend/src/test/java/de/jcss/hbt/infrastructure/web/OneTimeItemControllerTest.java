@@ -2,12 +2,12 @@ package de.jcss.hbt.infrastructure.web;
 
 import de.jcss.hbt.application.onetimeitem.OneTimeItemApplicationService;
 import de.jcss.hbt.domain.exception.OneTimeItemNotFoundException;
-import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
-import de.jcss.hbt.domain.householdplan.BudgetItemNote;
-import de.jcss.hbt.domain.householdplan.ItemType;
-import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.householdplan.OwnerId;
-import de.jcss.hbt.domain.onetimeitem.OneTimeItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemNote;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemType;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
+import de.jcss.hbt.domain.onetimeitem.valueobject.OneTimeItemId;
 import de.jcss.hbt.domain.onetimeitem.command.ChangeOneTimeItemCommand;
 import de.jcss.hbt.domain.onetimeitem.command.CreateOneTimeItemCommand;
 import de.jcss.hbt.domain.onetimeitem.command.DeleteOneTimeItemCommand;

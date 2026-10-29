@@ -1,8 +1,8 @@
 package de.jcss.hbt.users.infrastructure.security;
 
-import de.jcss.hbt.users.domain.user.Password;
-import de.jcss.hbt.users.domain.user.PasswordHash;
 import de.jcss.hbt.users.domain.user.PasswordHasher;
+import de.jcss.hbt.users.domain.user.valueobject.Password;
+import de.jcss.hbt.users.domain.user.valueobject.PasswordHash;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 

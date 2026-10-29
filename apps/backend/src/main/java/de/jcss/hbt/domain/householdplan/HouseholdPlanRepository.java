@@ -1,6 +1,8 @@
 package de.jcss.hbt.domain.householdplan;
 
 import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
 
 import java.time.Year;
 import java.util.Optional;

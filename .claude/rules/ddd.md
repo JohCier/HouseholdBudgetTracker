@@ -21,7 +21,11 @@ jMolecules) in beiden Apps maschinell. Schlägt `ArchitectureTest` fehl, wird de
   dann nicht auf
 
 - Pakete (Beispiel Backend, `users` entsprechend unter `de.jcss.hbt.users`):
-  - `domain/<aggregat>/`: Aggregate Root, Entities, Value Objects, typisierte IDs, Repository-Interface, Domain-Ports
+  - `domain/<aggregat>/`: Aggregate Root, ihre Entities, Repository-Interface, Domain-Ports. Entities liegen im Paket
+    ihrer Root, damit ihre verändernden Methoden package-private bleiben können (ArchUnit)
+  - `domain/<aggregat>/valueobject/`: alle Value Objects des Aggregates einschließlich der typisierten IDs und Enums,
+    und nur diese (ArchUnit). Value Objects kennen weder Aggregate Root noch Entities (ArchUnit); ein Verweis im
+    Javadoc ist erlaubt
   - `domain/<aggregat>/command/`: Domain Commands (ArchUnit)
   - `domain/<aggregat>/event/`: Domain Events
   - `domain/<aggregat>/overview/`: Read Models und Query-Handler-Interfaces (ArchUnit)
@@ -42,6 +46,15 @@ jMolecules) in beiden Apps maschinell. Schlägt `ArchitectureTest` fehl, wird de
 
 - Value Objects sind Records oder Enums (ArchUnit); fachliche Regeln stehen im kompakten Konstruktor, enthaltene
   Collections werden mit `List.copyOf`/`Map.copyOf` kopiert
+
+- Value Objects nur mit fachlicher Regel: Ein Typ wird nur dann Value Object, wenn er eine Invariante im Konstruktor
+  hat, die eine Spec-Regel umsetzt (z. B. `BudgetItemNote`: getrimmt, höchstens 1000 Zeichen, PN-2, PN-3), oder
+  fachliches Verhalten (rechnen, vergleichen, umrechnen, z. B. `ItemAmount.monthly()`); der Javadoc nennt die
+  Regel-ID. Ausnahmen sind typisierte IDs und Enums für eine geschlossene Wertemenge aus dem Glossar (`ItemType`,
+  `AmountPeriod`). Kein Value Object sind reine Bündel von Feldern ohne eigene Regel: Ihre Felder stehen direkt in
+  der Entity, dem Command oder dem Read Model (`BudgetItem.important` und `savingPotential` statt eines `ItemMarks`).
+  Ein Enum, das nur ein Event näher beschreibt, wird im Event verschachtelt (`BudgetItemMarked.Mark`). Texte und
+  Zahlen ohne Regel bleiben `String` bzw. `int`. ArchUnit kann das nicht prüfen; es ist eine Review-Regel
 
 - Aggregates und Entities sind finale Klassen; ihre Felder sind final (ArchUnit), equals/hashCode
   vergleichen nur die ID (ArchUnit)
