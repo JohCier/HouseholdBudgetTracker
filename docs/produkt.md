@@ -38,6 +38,7 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 | Posten markieren | Posten in den Einträgen als wichtig hervorheben; bei Ausgaben ein monatliches Sparpotential festhalten, in der Bilanz summiert | [posten-markierungen.md](specs/posten-markierungen.md) | PM-… |
 | Sparpotential je Unterkategorie | Links neben der Bilanz die Summe des Sparpotentials je Unterkategorie, je Monat und Jahr, das größte oben; je Gruppe auch in ihrer Summenzeile der Einträge | [sparpotential-unterkategorie.md](specs/sparpotential-unterkategorie.md) | SU-… |
 | Einmalposten | Einmalige Einnahmen und Ausgaben mit Datum außerhalb des Haushaltsplans erfassen, auch ohne Plan; in der Planansicht als eigener Abschnitt, in der Jahresübersicht als eigene Spalten | [einmalposten.md](specs/einmalposten.md) | EP-… |
+| Vermögen und Schulden | Je Jahr Vermögenswerte und Schulden mit Bezeichnung und Betrag erfassen, das Nettovermögen mit Veränderung zum Vorjahr sehen, in ein anderes Jahr übernehmen; in der Jahresübersicht eine Karte mit Verlaufsdiagramm | [vermoegen.md](specs/vermoegen.md) | VS-… |
 | Top 5 | Unter der 50/30/20-Karte die fünf Ausgaben mit dem höchsten Sparpotential oder die fünf höchsten Ausgaben aus Lebensunterhalt und Freizeit & Spaß, umschaltbar, je Monat und Jahr | [top-5.md](specs/top-5.md) | TP-… |
 | Fehlermeldungen | Alle Meldungen auf Deutsch, auch die der API | [fehlermeldungen.md](specs/fehlermeldungen.md) | FM-… |
 | Auswertung | Summen, Saldo, Warnung bei Defizit, Anteil und Zielerreichung je 50/30/20-Kategorie | [auswertung-50-30-20.md](specs/auswertung-50-30-20.md) | AW-… |
@@ -49,7 +50,8 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 Alle Beträge sind in Euro. Die Oberfläche ist deutschsprachig.
 
 Maßgebliche Kenngröße ist der Monat: Entscheidend ist, was man im Monat mehr oder weniger zur Verfügung hat. Neue
-Werte und Berechnungen gehen deshalb vom Monatsbetrag aus, Jahreswerte sind daraus abgeleitet.
+Werte und Berechnungen gehen deshalb vom Monatsbetrag aus, Jahreswerte sind daraus abgeleitet. Ausgenommen sind
+Vermögen und Schulden: Sie sind Bestände am Jahresende, keine Zahlungen ([vermoegen.md](specs/vermoegen.md)).
 
 ## Nicht-Ziele
 

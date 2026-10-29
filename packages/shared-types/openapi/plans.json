@@ -9,6 +9,231 @@
     "description" : "Generated server url"
   } ],
   "paths" : {
+    "/api/net-worth/years" : {
+      "get" : {
+        "operationId" : "history",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NetWorthHistoryResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "net-worth" ]
+      }
+    },
+    "/api/net-worth/{year}" : {
+      "get" : {
+        "operationId" : "overview_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "maximum" : 2200,
+            "minimum" : 1900,
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NetWorthOverviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "net-worth" ]
+      }
+    },
+    "/api/net-worth/{year}/copies" : {
+      "post" : {
+        "operationId" : "copy",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "maximum" : 2200,
+            "minimum" : 1900,
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CopyNetWorthRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NetWorthOverviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "net-worth" ]
+      }
+    },
+    "/api/net-worth/{year}/entries" : {
+      "post" : {
+        "operationId" : "addEntry",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "maximum" : 2200,
+            "minimum" : 1900,
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NetWorthEntryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NetWorthOverviewResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "net-worth" ]
+      }
+    },
+    "/api/net-worth/{year}/entries/{entryId}" : {
+      "delete" : {
+        "operationId" : "removeEntry",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "maximum" : 2200,
+            "minimum" : 1900,
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "in" : "path",
+          "name" : "entryId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NetWorthOverviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "net-worth" ]
+      },
+      "put" : {
+        "operationId" : "changeEntry",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "year",
+          "required" : true,
+          "schema" : {
+            "maximum" : 2200,
+            "minimum" : 1900,
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "in" : "path",
+          "name" : "entryId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NetWorthEntryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NetWorthOverviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "net-worth" ]
+      }
+    },
     "/api/one-time-items" : {
       "get" : {
         "operationId" : "oneTimeItemOverview",
@@ -962,6 +1187,22 @@
           }
         }
       },
+      "CopyNetWorthRequest" : {
+        "required" : [ "targetYear" ],
+        "type" : "object",
+        "properties" : {
+          "overwrite" : {
+            "type" : "boolean"
+          },
+          "targetYear" : {
+            "maximum" : 2200,
+            "minimum" : 1900,
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 2027
+          }
+        }
+      },
       "CreateHouseholdPlanRequest" : {
         "required" : [ "year" ],
         "type" : "object",
@@ -1163,6 +1404,170 @@
         "properties" : {
           "important" : {
             "type" : "boolean"
+          }
+        }
+      },
+      "NetWorthChangeResponse" : {
+        "required" : [ "amount", "percentage" ],
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "string",
+            "description" : "Positive if the net worth grew",
+            "format" : "decimal",
+            "example" : "3400.0"
+          },
+          "percentage" : {
+            "type" : "number",
+            "description" : "Change in percent of the amount of the previous net worth; null if that was zero",
+            "nullable" : true,
+            "example" : 32.38
+          }
+        },
+        "description" : "null if this or the previous year has no assets or liabilities recorded",
+        "nullable" : true
+      },
+      "NetWorthEntryRequest" : {
+        "required" : [ "amount", "name", "type" ],
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "string",
+            "description" : "Positive for liabilities as well",
+            "format" : "decimal",
+            "example" : "3200.0"
+          },
+          "name" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string",
+            "example" : "Girokonto"
+          },
+          "type" : {
+            "$ref" : "#/components/schemas/NetWorthEntryType"
+          }
+        }
+      },
+      "NetWorthEntryResponse" : {
+        "required" : [ "amount", "id", "name", "type" ],
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "3200.0"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string",
+            "example" : "Girokonto"
+          },
+          "type" : {
+            "$ref" : "#/components/schemas/NetWorthEntryType"
+          }
+        }
+      },
+      "NetWorthEntryType" : {
+        "type" : "string",
+        "enum" : [ "ASSET", "LIABILITY" ]
+      },
+      "NetWorthHistoryEntryResponse" : {
+        "required" : [ "change", "netWorth", "overindebted", "totalAssets", "totalLiabilities", "year" ],
+        "type" : "object",
+        "properties" : {
+          "change" : {
+            "description" : "null if the previous year has no assets or liabilities recorded",
+            "nullable" : true,
+            "allOf" : [ {
+              "$ref" : "#/components/schemas/NetWorthChangeResponse"
+            } ]
+          },
+          "netWorth" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "13900.0"
+          },
+          "overindebted" : {
+            "type" : "boolean"
+          },
+          "totalAssets" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "21700.0"
+          },
+          "totalLiabilities" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "7800.0"
+          },
+          "year" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 2026
+          }
+        }
+      },
+      "NetWorthHistoryResponse" : {
+        "required" : [ "years" ],
+        "type" : "object",
+        "properties" : {
+          "years" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/NetWorthHistoryEntryResponse"
+            }
+          }
+        }
+      },
+      "NetWorthOverviewResponse" : {
+        "required" : [ "assets", "change", "liabilities", "netWorth", "overindebted", "totalAssets", "totalLiabilities", "year" ],
+        "type" : "object",
+        "properties" : {
+          "assets" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/NetWorthEntryResponse"
+            }
+          },
+          "change" : {
+            "description" : "null if this or the previous year has no assets or liabilities recorded",
+            "nullable" : true,
+            "allOf" : [ {
+              "$ref" : "#/components/schemas/NetWorthChangeResponse"
+            } ]
+          },
+          "liabilities" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/NetWorthEntryResponse"
+            }
+          },
+          "netWorth" : {
+            "type" : "string",
+            "description" : "Assets minus liabilities; negative if overindebted",
+            "format" : "decimal",
+            "example" : "13900.0"
+          },
+          "overindebted" : {
+            "type" : "boolean"
+          },
+          "totalAssets" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "21700.0"
+          },
+          "totalLiabilities" : {
+            "type" : "string",
+            "format" : "decimal",
+            "example" : "7800.0"
+          },
+          "year" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 2026
           }
         }
       },
