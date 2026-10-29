@@ -96,8 +96,27 @@ public class JdbcHouseholdPlanOverviewQueryHandler implements HouseholdPlanOverv
                     summaries.put(planId, summary);
                 });
         return YearlyOverview.of(years.entrySet().stream()
-                .map(plan -> new YearlyOverview.PlanSummary(plan.getKey(), plan.getValue(), summaries.get(plan.getKey())))
-                .toList());
+                        .map(plan -> new YearlyOverview.PlanSummary(plan.getKey(), plan.getValue(), summaries.get(plan.getKey())))
+                        .toList(),
+                oneTimeSummariesOf(owner, firstYear, lastYear));
+    }
+
+    /** The totals of the one-time items per year, only years that have some (EP-12, EP-13). */
+    private List<YearlyOverview.OneTimeSummary> oneTimeSummariesOf(OwnerId owner, Year firstYear, Year lastYear) {
+        return jdbcClient.sql("""
+                        SELECT CAST(EXTRACT(YEAR FROM item_date) AS INTEGER) AS year,
+                               COALESCE(SUM(amount) FILTER (WHERE type = 'INCOME'), 0) AS income,
+                               COALESCE(SUM(amount) FILTER (WHERE type = 'EXPENSE'), 0) AS expense
+                        FROM one_time_item
+                        WHERE owner_id = :owner AND item_date BETWEEN :first AND :last
+                        GROUP BY 1
+                        """)
+                .param("owner", owner.value())
+                .param("first", firstYear.atDay(1))
+                .param("last", lastYear.atMonth(12).atEndOfMonth())
+                .query((rs, rowNum) -> new YearlyOverview.OneTimeSummary(Year.of(rs.getInt("year")),
+                        Money.of(rs.getBigDecimal("income")), Money.of(rs.getBigDecimal("expense"))))
+                .list();
     }
 
     private List<OverviewItem> itemsOf(HouseholdPlanId planId) {

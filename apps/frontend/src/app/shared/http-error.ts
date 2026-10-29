@@ -10,6 +10,7 @@ const MESSAGES: Readonly<Record<string, string>> = {
   'urn:hbt:plan-not-found': 'Diesen Haushaltsplan gibt es nicht (mehr).',
   'urn:hbt:item-not-found': 'Diesen Eintrag gibt es nicht (mehr).',
   'urn:hbt:plan-already-exists': 'Für dieses Jahr gibt es bereits einen Haushaltsplan.',
+  'urn:hbt:one-time-item-not-found': 'Diesen Einmalposten gibt es nicht (mehr).',
   'urn:hbt:email-already-registered': 'Für diese E-Mail-Adresse gibt es bereits ein Konto.',
   'urn:hbt:invalid-credentials': 'E-Mail-Adresse oder Passwort ist falsch.',
   'urn:hbt:too-many-login-attempts':

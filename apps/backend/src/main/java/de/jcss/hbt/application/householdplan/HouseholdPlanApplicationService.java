@@ -186,7 +186,10 @@ public class HouseholdPlanApplicationService {
                 .orElseThrow(() -> new HouseholdPlanNotFoundException(year));
     }
 
-    /** All plans of the owner with their totals and changes from the previous year; only reachable years (HP-1, JU-1). */
+    /**
+     * All plans of the owner with their totals and changes from the previous year, and the totals of their
+     * one-time items, also of years without a plan; only reachable years (HP-1, JU-1, EP-12, EP-13).
+     */
     @Transactional(readOnly = true)
     public YearlyOverview getYearlyOverview(OwnerId owner) {
         return overviewQueryHandler.findYearlyOverviewByOwner(owner,
