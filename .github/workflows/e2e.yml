@@ -41,6 +41,10 @@ on:
   workflow_dispatch:
   workflow_call:
 
+# Least privilege for the GITHUB_TOKEN; called from ci.yml it gets at most the permissions of the caller
+permissions:
+  contents: read
+
 jobs:
   e2e:
     name: E2E tests (Playwright)
