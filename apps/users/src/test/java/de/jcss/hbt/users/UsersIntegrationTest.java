@@ -1,7 +1,7 @@
 package de.jcss.hbt.users;
 
 import de.jcss.hbt.users.application.user.LoginThrottle;
-import de.jcss.hbt.users.domain.user.EmailAddress;
+import de.jcss.hbt.users.domain.user.valueobject.EmailAddress;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

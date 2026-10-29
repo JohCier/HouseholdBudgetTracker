@@ -1,27 +1,26 @@
 package de.jcss.hbt.infrastructure.persistence;
 
 import de.jcss.hbt.IntegrationTest;
-import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
-import de.jcss.hbt.domain.householdplan.BudgetItemId;
-import de.jcss.hbt.domain.householdplan.BudgetItemNote;
-import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
-import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
-import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanRepository;
-import de.jcss.hbt.domain.householdplan.ItemAmount;
-import de.jcss.hbt.domain.householdplan.ItemMarks;
-import de.jcss.hbt.domain.householdplan.ItemSection;
-import de.jcss.hbt.domain.householdplan.ItemType;
-import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.householdplan.OwnerId;
-import de.jcss.hbt.domain.householdplan.SavingPotential;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
 import de.jcss.hbt.domain.householdplan.overview.OverviewCategoryItems;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItemGroup;
 import de.jcss.hbt.domain.householdplan.overview.YearlyOverview;
 import de.jcss.hbt.domain.householdplan.overview.YearlyOverviewEntry;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemNote;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemSubcategory;
+import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemSection;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemType;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
+import de.jcss.hbt.domain.householdplan.valueobject.SavingPotential;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -103,11 +102,13 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
 
         HouseholdPlanOverview overview = queryHandler.findByOwnerAndYear(OWNER, Year.of(2026)).orElseThrow();
 
-        assertThat(overview.items()).extracting(OverviewItem::id, OverviewItem::marks).containsExactly(
-                tuple(streaming, new ItemMarks(false, SavingPotential.monthly(money("5.00")))),
-                tuple(gym, new ItemMarks(false, SavingPotential.monthly(money("30.00")))),
-                tuple(salary, new ItemMarks(true, null)),
-                tuple(BudgetItemId.of(older), ItemMarks.NONE));
+        assertThat(overview.items())
+                .extracting(OverviewItem::id, OverviewItem::important, OverviewItem::savingPotential)
+                .containsExactly(
+                        tuple(streaming, false, SavingPotential.monthly(money("5.00"))),
+                        tuple(gym, false, SavingPotential.monthly(money("30.00"))),
+                        tuple(salary, true, null),
+                        tuple(BudgetItemId.of(older), false, null));
         assertThat(overview.monthlySavingPotential()).isEqualTo(money("35.00"));
         assertThat(overview.savingPotential()).isEqualTo(money("420.00"));
         assertThat(overview.balance()).isEqualTo(money("34460.00"));

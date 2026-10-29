@@ -1,7 +1,7 @@
 package de.jcss.hbt.users.domain.user.command;
 
-import de.jcss.hbt.users.domain.user.EmailAddress;
-import de.jcss.hbt.users.domain.user.Password;
+import de.jcss.hbt.users.domain.user.valueobject.EmailAddress;
+import de.jcss.hbt.users.domain.user.valueobject.Password;
 import org.jmolecules.architecture.cqrs.Command;
 
 import java.util.Objects;

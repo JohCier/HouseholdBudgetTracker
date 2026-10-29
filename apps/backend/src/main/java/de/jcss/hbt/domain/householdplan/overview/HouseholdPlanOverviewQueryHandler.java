@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.householdplan.overview;
 
-import de.jcss.hbt.domain.householdplan.OwnerId;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
 import de.jcss.hbt.domain.shared.QueryHandler;
 
 import java.time.Year;

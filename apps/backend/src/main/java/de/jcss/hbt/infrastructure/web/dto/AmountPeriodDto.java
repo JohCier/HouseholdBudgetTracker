@@ -1,6 +1,6 @@
 package de.jcss.hbt.infrastructure.web.dto;
 
-import de.jcss.hbt.domain.householdplan.AmountPeriod;
+import de.jcss.hbt.domain.householdplan.valueobject.AmountPeriod;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /** API representation of {@link AmountPeriod}. */

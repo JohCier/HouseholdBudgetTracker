@@ -43,8 +43,8 @@ de.jcss.hbt
 ├── domain                  reines Java, ohne Frameworks
 │   ├── shared              @QueryHandler (die übrigen DDD-Bausteine kommen aus jMolecules, s. u.)
 │   └── householdplan       HouseholdPlan (Aggregate Root, ein Plan pro Besitzer und Jahr) mit BudgetItems (Entities),
-│                           Value Objects (Money, OwnerId, BudgetSummary, ExpenseCategory, …), HouseholdPlanRepository,
-│                           Commands in .command, Events in .event
+│                           HouseholdPlanRepository; Value Objects (Money, OwnerId, BudgetSummary, ExpenseCategory, …)
+│                           in .valueobject, Commands in .command, Events in .event
 │                           Leseseite (.overview): Read Model HouseholdPlanOverview und HouseholdPlanOverviewQueryHandler
 ├── application/householdplan  HouseholdPlanApplicationService
 └── infrastructure
@@ -77,8 +77,8 @@ liest direkt per SQL, ohne Aggregat oder Repository.
 ```
 de.jcss.hbt.users
 ├── domain
-│   └── user                User (Aggregate Root), Value Objects (UserId, EmailAddress, Password, PasswordHash),
-│                           PasswordHasher (Port), UserRepository, RegisterUserCommand, Event UserRegistered
+│   └── user                User (Aggregate Root), PasswordHasher (Port), UserRepository; Value Objects (UserId,
+│                           EmailAddress, Password, PasswordHash) in .valueobject, Commands in .command, Events in .event
 ├── application/user        UserApplicationService (register, authenticate)
 └── infrastructure
     ├── web                 AuthController (/api/auth/register, /login, /logout, /me)
@@ -97,7 +97,8 @@ deklariert (`package-info.java` mit `@DomainRing`, `@ApplicationRing`, `@Infrast
 In beiden Apps prüft `ArchitectureTest` (ArchUnit) die Abhängigkeitsregeln (Infrastructure → Application → Domain
 über jMolecules' `ensureOnionSimple`, Domain ohne Frameworks außer jMolecules), die DDD-Regeln von jMolecules (u. a.
 Referenzen auf andere Aggregates nur über deren ID) sowie Lage und Form der Bausteine (keine Setter, nur finale Felder,
-Value Objects als Records/Enums, Events als Records mit `timestamp`, Gleichheit von Entities über ihre ID).
+Value Objects als Records/Enums im Paket `valueobject`, Entities im Paket ihrer Aggregate Root, Events als Records mit
+`timestamp`, Gleichheit von Entities über ihre ID).
 
 ## Lokale Entwicklung
 
@@ -138,9 +139,18 @@ cd e2e && npm ci && npx playwright install chromium
 npx playwright test                              # andere Adresse: E2E_BASE_URL=http://localhost:4200 npx playwright test
 ```
 
-In der CI laufen sie im Job „E2E tests“, wenn sich das Frontend (siehe Pfadfilter unten) oder die E2E-Tests selbst
-geändert haben; reine Backend-Änderungen laufen ohne E2E-Tests. Schlägt einer fehl, werden keine Images gebaut und
-nichts deployt. Der Playwright-Bericht mit Traces und Screenshots hängt dann als Artefakt `playwright-report` am Lauf.
+In der CI laufen sie im Workflow `.github/workflows/e2e.yml`, weil sie mehrere Minuten dauern, nur bei Bedarf:
+
+- **Pull Request:** nur mit dem Label `e2e`. Das Setzen des Labels startet den Lauf, danach läuft jeder weitere Push
+  auf den PR ebenfalls mit E2E-Tests. Ohne Label wird der Job übersprungen.
+- **Manuell:** „Run workflow“ beim Workflow „E2E“ im Actions-Tab, für einen beliebigen Branch.
+- **Push auf master und Tags:** `ci.yml` ruft den Workflow vor dem Image-Build auf, wenn sich das Frontend (siehe
+  Pfadfilter unten) oder die E2E-Tests geändert haben; reine Backend-Änderungen laufen ohne E2E-Tests. Schlägt einer
+  fehl, werden keine Images gebaut und nichts deployt.
+
+Die Images des Stacks nutzen den Layer-Cache, den der Image-Build in `ci.yml` schreibt, Chromium kommt aus dem
+Actions-Cache, und Playwright läuft in der CI mit 4 Workern. Schlägt ein Test fehl, hängt der Playwright-Bericht mit
+Traces und Screenshots als Artefakt `playwright-report` am Lauf.
 
 ## API-Verträge ändern
 
@@ -219,7 +229,19 @@ akzeptierte Funde kommen mit Begründung in eine `.trivyignore` im Repository-Ro
 Trivy-Version (`version` in `ci.yml`) aktualisiert Dependabot nicht, sie ist von Hand nachzuziehen.
 
 Für das Deployment (`compose.prod.yaml`) braucht der Server in `/opt/hbt/.env` neben `DB_PASSWORD` auch ein
-`JWT_SECRET` (z. B. `openssl rand -base64 48`). Optional schaltet `SECURE_COOKIE=true` das `Secure`-Flag ein, sobald
-der Server per HTTPS erreichbar ist.
+`JWT_SECRET` (z. B. `openssl rand -base64 48`). In Produktion steht vor dem Frontend ein [Caddy](https://caddyserver.com)
+als einziger nach außen erreichbarer Container (Ports 80 und 443). Ohne weitere Angaben liefert er die App wie bisher
+per HTTP auf Port 80 aus.
+
+HTTPS einschalten:
+
+1. Für die Domain einen DNS-A-Eintrag (bei IPv6 zusätzlich AAAA) auf die IP des Servers setzen.
+2. In der Firewall des Servers die Ports 80 und 443 (TCP, für HTTP/3 auch UDP) öffnen; Let's Encrypt prüft die
+   Domain über Port 80.
+3. In `/opt/hbt/.env` `DOMAIN=budget.example.de` und `SECURE_COOKIE=true` eintragen und
+   `docker compose -f compose.prod.yaml up -d` ausführen (oder den nächsten Deploy abwarten).
+
+Caddy holt dann ein Zertifikat von Let's Encrypt, verlängert es selbst und leitet HTTP auf HTTPS um. Zertifikate liegen
+im Volume `caddy-data`, damit sie Neustarts überdauern.
 
 Die Node-Version steht ausschließlich in `apps/frontend/.nvmrc`.

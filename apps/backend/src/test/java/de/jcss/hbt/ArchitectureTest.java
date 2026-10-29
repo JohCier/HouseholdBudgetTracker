@@ -54,6 +54,17 @@ class ArchitectureTest {
                 }
             };
 
+    private static final ArchCondition<JavaClass> RESIDE_NEXT_TO_AN_AGGREGATE_ROOT =
+            new ArchCondition<>("reside in the package of an aggregate root") {
+                @Override
+                public void check(JavaClass javaClass, ConditionEvents events) {
+                    boolean nextToRoot = javaClass.getPackage().getClasses().stream()
+                            .anyMatch(other -> other.isAnnotatedWith(AggregateRoot.class));
+                    events.add(new SimpleConditionEvent(javaClass, nextToRoot,
+                            javaClass.getName() + " does not reside in the package of an aggregate root"));
+                }
+            };
+
     /** The rings are declared on the top-level packages (package-info), so sub-packages inherit them. */
     @ArchTest
     static final ArchRule layersOnlyDependInwards = JMoleculesArchitectureRules.ensureOnionSimple(
@@ -74,6 +85,29 @@ class ArchitectureTest {
             .or().areAnnotatedWith(ValueObject.class)
             .or().implement(DomainEvent.class)
             .should().resideInAPackage("de.jcss.hbt.domain..");
+
+    @ArchTest
+    static final ArchRule valueObjectsLiveInTheValueObjectPackage = classes()
+            .that().areAnnotatedWith(ValueObject.class)
+            .should().resideInAPackage("de.jcss.hbt.domain.*.valueobject");
+
+    @ArchTest
+    static final ArchRule valueObjectPackagesOnlyContainValueObjects = classes()
+            .that().resideInAPackage("de.jcss.hbt.domain..valueobject..")
+            .and().areTopLevelClasses()
+            .should().beAnnotatedWith(ValueObject.class);
+
+    /** Keeps the package-private methods of an entity out of reach of everything but its root. */
+    @ArchTest
+    static final ArchRule entitiesLiveNextToTheirAggregateRoot = classes()
+            .that().areAnnotatedWith(Entity.class)
+            .should(RESIDE_NEXT_TO_AN_AGGREGATE_ROOT);
+
+    @ArchTest
+    static final ArchRule valueObjectsDoNotKnowAggregatesOrEntities = noClasses()
+            .that().areAnnotatedWith(ValueObject.class)
+            .should().dependOnClassesThat().areAnnotatedWith(AggregateRoot.class)
+            .orShould().dependOnClassesThat().areAnnotatedWith(Entity.class);
 
     @ArchTest
     static final ArchRule domainObjectsHaveNoPublicSetters = methods()

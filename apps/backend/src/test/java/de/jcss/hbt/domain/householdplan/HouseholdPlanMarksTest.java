@@ -3,16 +3,27 @@ package de.jcss.hbt.domain.householdplan;
 import de.jcss.hbt.domain.exception.BudgetItemNotFoundException;
 import de.jcss.hbt.domain.exception.DomainValidationException;
 import de.jcss.hbt.domain.householdplan.event.BudgetItemMarked;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetSummary;
+import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
+import de.jcss.hbt.domain.householdplan.valueobject.SavingPotential;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.Year;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 /** Marking items as important and with a saving potential (PM-1 to PM-8, PM-13). */
 class HouseholdPlanMarksTest {
@@ -34,7 +45,8 @@ class HouseholdPlanMarksTest {
     /** PM-1, PM-2 */
     @Test
     void newItemsHaveNoMarks() {
-        assertThat(plan.items()).extracting(BudgetItem::marks).containsOnly(ItemMarks.NONE);
+        assertThat(plan.items()).extracting(BudgetItem::isImportant, BudgetItem::savingPotential)
+                .containsOnly(tuple(false, Optional.empty()));
     }
 
     /** PM-1, PM-4a, PM-7 */
@@ -42,17 +54,17 @@ class HouseholdPlanMarksTest {
     void marksAnItemAsImportantAndBackAndRecordsIt() {
         plan.markImportant(salaryId, true);
 
-        assertThat(item(salaryId).marks().important()).isTrue();
+        assertThat(item(salaryId).isImportant()).isTrue();
         assertThat(plan.pullDomainEvents())
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
-                .containsExactly(new BudgetItemMarked(plan.id(), salaryId, ItemMark.IMPORTANT, true, Instant.now()));
+                .containsExactly(new BudgetItemMarked(plan.id(), salaryId, BudgetItemMarked.Mark.IMPORTANT, true, Instant.now()));
 
         plan.markImportant(salaryId, false);
 
-        assertThat(item(salaryId).marks().important()).isFalse();
+        assertThat(item(salaryId).isImportant()).isFalse();
         assertThat(plan.pullDomainEvents())
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
-                .containsExactly(new BudgetItemMarked(plan.id(), salaryId, ItemMark.IMPORTANT, false, Instant.now()));
+                .containsExactly(new BudgetItemMarked(plan.id(), salaryId, BudgetItemMarked.Mark.IMPORTANT, false, Instant.now()));
     }
 
     @Test
@@ -75,20 +87,20 @@ class HouseholdPlanMarksTest {
     @Test
     void setsChangesAndRemovesTheSavingPotentialOfAnExpense() {
         plan.changeSavingPotential(streamingId, potential("5.00"));
-        assertThat(item(streamingId).marks().savingPotential()).isEqualTo(potential("5.00"));
+        assertThat(item(streamingId).savingPotential()).contains(potential("5.00"));
 
         plan.changeSavingPotential(streamingId, potential("15.00"));
-        assertThat(item(streamingId).marks().savingPotential()).isEqualTo(potential("15.00"));
+        assertThat(item(streamingId).savingPotential()).contains(potential("15.00"));
 
         plan.changeSavingPotential(streamingId, null);
-        assertThat(item(streamingId).marks().savingPotential()).isNull();
+        assertThat(item(streamingId).savingPotential()).isEmpty();
 
         assertThat(plan.pullDomainEvents())
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
                 .containsExactly(
-                        new BudgetItemMarked(plan.id(), streamingId, ItemMark.SAVING_POTENTIAL, true, Instant.now()),
-                        new BudgetItemMarked(plan.id(), streamingId, ItemMark.SAVING_POTENTIAL, true, Instant.now()),
-                        new BudgetItemMarked(plan.id(), streamingId, ItemMark.SAVING_POTENTIAL, false, Instant.now()));
+                        new BudgetItemMarked(plan.id(), streamingId, BudgetItemMarked.Mark.SAVING_POTENTIAL, true, Instant.now()),
+                        new BudgetItemMarked(plan.id(), streamingId, BudgetItemMarked.Mark.SAVING_POTENTIAL, true, Instant.now()),
+                        new BudgetItemMarked(plan.id(), streamingId, BudgetItemMarked.Mark.SAVING_POTENTIAL, false, Instant.now()));
     }
 
     @Test
@@ -107,7 +119,7 @@ class HouseholdPlanMarksTest {
         assertThatThrownBy(() -> plan.changeSavingPotential(salaryId, potential("5.00")))
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessage("income items must not have a saving potential");
-        assertThat(item(salaryId).marks()).isEqualTo(ItemMarks.NONE);
+        assertThat(item(salaryId).savingPotential()).isEmpty();
         assertThat(plan.pullDomainEvents()).isEmpty();
     }
 
@@ -117,7 +129,7 @@ class HouseholdPlanMarksTest {
         assertThatThrownBy(() -> plan.changeSavingPotential(streamingId, potential("15.01")))
                 .isInstanceOf(DomainValidationException.class)
                 .hasMessage("saving potential must not exceed the monthly amount of the expense, 15.00");
-        assertThat(item(streamingId).marks()).isEqualTo(ItemMarks.NONE);
+        assertThat(item(streamingId).savingPotential()).isEmpty();
     }
 
     /** PM-2a: an expense of 360.00 a year has 30.00 a month */
@@ -128,7 +140,7 @@ class HouseholdPlanMarksTest {
 
         plan.changeSavingPotential(gymId, potential("30.00"));
 
-        assertThat(item(gymId).marks().savingPotential()).isEqualTo(potential("30.00"));
+        assertThat(item(gymId).savingPotential()).contains(potential("30.00"));
         assertThatThrownBy(() -> plan.changeSavingPotential(gymId, potential("30.01")))
                 .isInstanceOf(DomainValidationException.class);
     }
@@ -140,7 +152,8 @@ class HouseholdPlanMarksTest {
         plan.changeSavingPotential(streamingId, potential("5.00"));
         plan.markImportant(streamingId, false);
 
-        assertThat(item(streamingId).marks()).isEqualTo(new ItemMarks(false, potential("5.00")));
+        assertThat(item(streamingId).isImportant()).isFalse();
+        assertThat(item(streamingId).savingPotential()).contains(potential("5.00"));
     }
 
     /** PM-5 */
@@ -151,7 +164,8 @@ class HouseholdPlanMarksTest {
 
         plan.changeItem(streamingId, STREAMING, monthly("20.00"), ExpenseCategory.FREIZEIT_SPASS, null, null);
 
-        assertThat(item(streamingId).marks()).isEqualTo(new ItemMarks(true, potential("5.00")));
+        assertThat(item(streamingId).isImportant()).isTrue();
+        assertThat(item(streamingId).savingPotential()).contains(potential("5.00"));
     }
 
     /** PM-5 */
@@ -161,28 +175,24 @@ class HouseholdPlanMarksTest {
 
         plan.changeItem(streamingId, STREAMING, yearly("36.00"), ExpenseCategory.FREIZEIT_SPASS, null, null);
 
-        assertThat(item(streamingId).marks().savingPotential()).isEqualTo(potential("3.00"));
+        assertThat(item(streamingId).savingPotential()).contains(potential("3.00"));
     }
 
     /** PM-6 */
     @Test
     void addsARestoredItemWithItsMarks() {
-        ItemMarks marks = new ItemMarks(true, potential("5.00"));
-
         BudgetItemId restoredId = plan.addExpense(STREAMING, monthly("15.00"), ExpenseCategory.FREIZEIT_SPASS,
-                null, null, marks);
+                null, null, true, potential("5.00"));
 
-        assertThat(item(restoredId).marks()).isEqualTo(marks);
+        assertThat(item(restoredId).isImportant()).isTrue();
+        assertThat(item(restoredId).savingPotential()).contains(potential("5.00"));
     }
 
-    /** PM-2, PM-2a */
+    /** PM-2a; an income cannot even be given a saving potential when it is restored (PM-2) */
     @Test
-    void rejectsARestoredItemWithMarksThatDoNotFit() {
-        assertThatThrownBy(() -> plan.addIncome(BudgetItemDescription.of("Bonus"), monthly("100.00"), null, null,
-                new ItemMarks(false, potential("5.00"))))
-                .isInstanceOf(DomainValidationException.class);
+    void rejectsARestoredExpenseWithASavingPotentialAboveItsMonthlyAmount() {
         assertThatThrownBy(() -> plan.addExpense(STREAMING, monthly("15.00"), ExpenseCategory.FREIZEIT_SPASS,
-                null, null, new ItemMarks(false, potential("20.00"))))
+                null, null, false, potential("20.00")))
                 .isInstanceOf(DomainValidationException.class);
         assertThat(plan.items()).hasSize(2);
     }
@@ -195,8 +205,8 @@ class HouseholdPlanMarksTest {
 
         HouseholdPlan copy = HouseholdPlan.createFrom(plan, HouseholdPlanId.generate(), Year.of(2027));
 
-        assertThat(copy.items()).extracting(BudgetItem::marks)
-                .containsExactly(new ItemMarks(true, null), new ItemMarks(false, potential("5.00")));
+        assertThat(copy.items()).extracting(BudgetItem::isImportant, BudgetItem::savingPotential)
+                .containsExactly(tuple(true, Optional.empty()), tuple(false, Optional.of(potential("5.00"))));
     }
 
     /** PM-8 */

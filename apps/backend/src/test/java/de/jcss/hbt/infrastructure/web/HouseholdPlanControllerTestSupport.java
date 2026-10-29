@@ -2,12 +2,12 @@ package de.jcss.hbt.infrastructure.web;
 
 import de.jcss.hbt.application.householdplan.AddedBudgetItem;
 import de.jcss.hbt.application.householdplan.HouseholdPlanApplicationService;
-import de.jcss.hbt.domain.householdplan.BudgetItemId;
-import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
-import de.jcss.hbt.domain.householdplan.ItemAmount;
-import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.householdplan.OwnerId;
 import de.jcss.hbt.domain.householdplan.overview.HouseholdPlanOverview;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
 import de.jcss.hbt.infrastructure.security.SecurityConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;

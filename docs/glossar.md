@@ -21,9 +21,9 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Ausgabe | `ItemType.EXPENSE` | Posten mit genau einer Kategorie |
 | Beschreibung | `BudgetItemDescription` | Wofür der Posten steht, z. B. „Miete". 1 bis 255 Zeichen, nicht nur Leerzeichen |
 | Notiz | `BudgetItemNote` | Optionaler Freitext zum Posten, höchstens 1000 Zeichen; ohne Einfluss auf die Auswertung |
-| Markierungen | `ItemMarks` | Wie der Benutzer einen Posten in den Einträgen markiert hat: wichtig und, bei Ausgaben, Sparpotential; ohne Einfluss auf die Auswertung |
-| Wichtig | `ItemMarks.important`, `ItemMark.IMPORTANT` | Markierung eines Postens, den der Benutzer hervorgehoben sehen will; die Zeile ist farblich abgesetzt |
-| Sparpotential | `SavingPotential`, `ItemMark.SAVING_POTENTIAL` | Der Teil einer Ausgabe, den der Benutzer für einsparbar hält; immer ein Monatsbetrag, höchstens der Monatsbetrag der Ausgabe. In der Bilanz als Summe je Monat und Jahr (`monthlySavingPotential`, `savingPotential`) |
+| Markierungen | `BudgetItem.isImportant()`, `BudgetItem.savingPotential()` | Wie der Benutzer einen Posten in den Einträgen markiert hat: wichtig und, bei Ausgaben, Sparpotential; ohne Einfluss auf die Auswertung |
+| Wichtig | `BudgetItem.isImportant()`, `BudgetItemMarked.Mark.IMPORTANT` | Markierung eines Postens, den der Benutzer hervorgehoben sehen will; die Zeile ist farblich abgesetzt |
+| Sparpotential | `SavingPotential`, `BudgetItemMarked.Mark.SAVING_POTENTIAL` | Der Teil einer Ausgabe, den der Benutzer für einsparbar hält; immer ein Monatsbetrag, höchstens der Monatsbetrag der Ausgabe. In der Bilanz als Summe je Monat und Jahr (`monthlySavingPotential`, `savingPotential`) |
 | Sparpotential je Unterkategorie | `SubcategorySavingPotential`, `savingPotentialsBySubcategory`, `app-saving-potential-summary` | Summe der Sparpotentiale aller Ausgaben einer Unterkategorie über alle Kategorien, je Monat und Jahr; Kasten links neben der Bilanz. Je Gruppe als `OverviewItemGroup.monthlySavingPotential` in der Summenzeile der Einträge |
 | Unterkategorie | `BudgetItemSubcategory` | Optionaler, frei wählbarer Name zur weiteren Gruppierung von Posten, z. B. „Auto"; 1 bis 50 Zeichen, unabhängig von der Kategorie und ohne Einfluss auf die Auswertung |
 | Sonstiges | `BudgetItemSubcategory.OTHER` | Gruppe der Posten ohne Unterkategorie oder mit der Unterkategorie „Sonstiges"; steht am Ende, solange der Benutzer sie nicht verschiebt |

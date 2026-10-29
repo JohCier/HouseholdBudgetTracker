@@ -1,0 +1,101 @@
+# E2E tests: Playwright (e2e/) drives Chromium through the whole stack from compose.yaml (nginx with the Angular app,
+# backend, users, PostgreSQL), built from the checked-out code. The tests take several minutes, so they only run where
+# they are worth it.
+#
+# Triggers:
+#   pull_request        only if the PR has the label "e2e"; adding the label starts the run, every later push to the
+#                       PR runs the tests again. Without the label the job is skipped (counts as successful).
+#   workflow_dispatch   manual run on the selected branch ("Run workflow" in the Actions tab)
+#   workflow_call       from ci.yml before the image build on master and on tags, if the frontend or the E2E tests
+#                       changed; a failed test stops the image push and the deploy there
+#
+# Steps:
+#   Images bauen        docker/bake-action builds the images of compose.yaml with Buildx and loads them into Docker.
+#                       It reads the layer cache that the job "docker" in ci.yml writes per app (scopes backend, users,
+#                       frontend), so unchanged layers (Maven and npm dependencies) are not built again.
+#   Stack starten       docker compose starts the loaded images and waits until every container is healthy; the app is
+#                       then reachable at http://localhost:8080 (default JWT_SECRET from compose.yaml)
+#   Chromium            actions/cache keeps the browser downloaded by Playwright, keyed by e2e/package-lock.json
+#                       (Playwright version). On a hit only the system libraries are installed.
+#   Tests               npx playwright test; on failure the Playwright report (with traces and screenshots) is uploaded
+#                       as the artifact "playwright-report" and the container logs are printed.
+#
+# Variables:
+#   github.event_name                   origin: GitHub Actions context; trigger of the run (for workflow_call the one
+#                                       of ci.yml); condition of the job
+#   github.event.action                 origin: GitHub Actions context; activity of the pull_request event (opened,
+#                                       synchronize, reopened, labeled); condition of the job
+#   github.event.label.name             origin: GitHub Actions context; label added by a "labeled" event; adding
+#                                       another label to a PR with "e2e" does not run the tests again
+#   github.event.pull_request.labels    origin: GitHub Actions context; labels of the PR; condition of the job
+#   runner.os                           origin: GitHub Actions context; part of the cache key of Chromium
+#   steps.browser-cache.outputs.cache-hit
+#                                       origin: actions/cache; 'true' if Chromium came from the cache
+#   CI                                  origin: set by the runner; makes Playwright forbid test.only, write the HTML
+#                                       report and use 4 workers (e2e/playwright.config.ts)
+name: E2E
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
+  workflow_call:
+
+# Least privilege for the GITHUB_TOKEN; called from ci.yml it gets at most the permissions of the caller
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: E2E tests (Playwright)
+    if: >-
+      github.event_name != 'pull_request' ||
+      (contains(github.event.pull_request.labels.*.name, 'e2e') &&
+       (github.event.action != 'labeled' || github.event.label.name == 'e2e'))
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: apps/frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - uses: docker/setup-buildx-action@v4
+      # Only reads the cache (no cache-to), the job "docker" in ci.yml keeps it up to date
+      - name: Images bauen
+        uses: docker/bake-action@v7
+        with:
+          source: .
+          files: compose.yaml
+          load: true
+          set: |
+            backend.cache-from=type=gha,scope=backend
+            users.cache-from=type=gha,scope=users
+            frontend.cache-from=type=gha,scope=frontend
+      - name: Stack starten
+        run: docker compose --profile app up --detach --wait
+      - run: npm ci
+      - id: browser-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/package-lock.json') }}
+      - name: Chromium installieren
+        if: steps.browser-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - name: Systembibliotheken für Chromium
+        if: steps.browser-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+      - run: npx playwright test
+      - name: Container-Logs
+        if: failure()
+        run: docker compose --profile app logs
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 14

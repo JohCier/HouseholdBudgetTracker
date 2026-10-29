@@ -1,25 +1,26 @@
 package de.jcss.hbt.domain.householdplan.overview;
 
-import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
-import de.jcss.hbt.domain.householdplan.BudgetItemId;
-import de.jcss.hbt.domain.householdplan.BudgetItemNote;
-import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
-import de.jcss.hbt.domain.householdplan.ExpenseCategory;
-import de.jcss.hbt.domain.householdplan.ItemAmount;
-import de.jcss.hbt.domain.householdplan.ItemMarks;
-import de.jcss.hbt.domain.householdplan.ItemSection;
-import de.jcss.hbt.domain.householdplan.ItemType;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemNote;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemSubcategory;
+import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemSection;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemType;
+import de.jcss.hbt.domain.householdplan.valueobject.SavingPotential;
 import org.jmolecules.architecture.cqrs.QueryModel;
 
 /**
  * Part of the {@link HouseholdPlanOverview} read model: a single position of the plan, as
  * shown in the item list.
  *
- * @param amount      as the user entered it, monthly or yearly (MJ-2)
- * @param category    only set for expenses, otherwise {@code null}
- * @param subcategory {@code null} if the item has no subcategory
- * @param note        {@code null} if the item has no note
- * @param marks       whether it is important and its saving potential, if any (PM-1, PM-2)
+ * @param amount          as the user entered it, monthly or yearly (MJ-2)
+ * @param category        only set for expenses, otherwise {@code null}
+ * @param subcategory     {@code null} if the item has no subcategory
+ * @param note            {@code null} if the item has no note
+ * @param important       whether the user marked it as important (PM-1)
+ * @param savingPotential {@code null} if the item has none (PM-2)
  */
 @QueryModel
 public record OverviewItem(
@@ -30,13 +31,14 @@ public record OverviewItem(
         ExpenseCategory category,
         BudgetItemSubcategory subcategory,
         BudgetItemNote note,
-        ItemMarks marks
+        boolean important,
+        SavingPotential savingPotential
 ) {
 
     /** An item without marks. */
     public OverviewItem(BudgetItemId id, BudgetItemDescription description, ItemAmount amount, ItemType type,
                         ExpenseCategory category, BudgetItemSubcategory subcategory, BudgetItemNote note) {
-        this(id, description, amount, type, category, subcategory, note, ItemMarks.NONE);
+        this(id, description, amount, type, category, subcategory, note, false, null);
     }
 
     /** The section the item is listed in (UK-9, UK-10). */

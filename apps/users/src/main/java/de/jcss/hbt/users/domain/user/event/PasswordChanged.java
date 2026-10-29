@@ -1,6 +1,6 @@
 package de.jcss.hbt.users.domain.user.event;
 
-import de.jcss.hbt.users.domain.user.UserId;
+import de.jcss.hbt.users.domain.user.valueobject.UserId;
 import org.jmolecules.event.types.DomainEvent;
 
 import java.time.Instant;
