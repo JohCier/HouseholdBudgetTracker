@@ -21,6 +21,17 @@
   max-width: 320px;
 }
 
+.sort {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sort-field {
+  width: 150px;
+}
+
 // The groups of a category, indented below it (TK-2)
 .nested-option {
   padding-left: 32px;

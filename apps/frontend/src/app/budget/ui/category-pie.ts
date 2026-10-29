@@ -6,6 +6,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import {
   CategoryBreakdown,
+  ENTRIES_SORT,
+  PieSort,
+  PieSortKey,
   CategoryItems,
   ExpenseCategory,
   ItemGroup,
@@ -105,6 +108,29 @@ const LIGHTEST_SHADE = 40;
           <mat-icon svgIcon="arrow_back" />
           Zurück
         </button>
+        <div class="sort">
+          <mat-form-field class="sort-field" subscriptSizing="dynamic">
+            <mat-label>Sortierung</mat-label>
+            <mat-select [value]="sort().key" (selectionChange)="sortBy($event.value)">
+              <mat-option value="entries">Einträge</mat-option>
+              <mat-option value="amount">Betrag</mat-option>
+              <mat-option value="name">Name</mat-option>
+            </mat-select>
+          </mat-form-field>
+          @if (sort().key !== 'entries') {
+            @let direction = sort().descending ? 'absteigend' : 'aufsteigend';
+            <button
+              mat-icon-button
+              type="button"
+              class="direction"
+              [attr.aria-label]="'Richtung: ' + direction"
+              [attr.title]="'Richtung: ' + direction"
+              (click)="reverse()"
+            >
+              <mat-icon [svgIcon]="sort().descending ? 'arrow_downward' : 'arrow_upward'" />
+            </button>
+          }
+        </div>
       }
     </div>
     <svg viewBox="-100 -100 200 200" class="pie" role="group" aria-label="Tortendiagramm">
@@ -244,6 +270,8 @@ export class CategoryPieChart {
   readonly expenseCategories = input<CategoryItems[]>([]);
   /** Selected part of the plan; the parent keeps it, so it survives switching the year (TK-5). */
   readonly selection = model<PieSelection>(RULE_SELECTION);
+  /** Order of the slices of a category or group; the parent keeps it like the selection (TS-6). */
+  readonly sort = model<PieSort>(ENTRIES_SORT);
 
   protected readonly radius = RADIUS;
 
@@ -339,6 +367,15 @@ export class CategoryPieChart {
     }
   }
 
+  /** Amount starts with the largest, name with A (TS-2). */
+  protected sortBy(key: PieSortKey): void {
+    this.sort.set({ key, descending: key === 'amount' });
+  }
+
+  protected reverse(): void {
+    this.sort.update((sort) => ({ ...sort, descending: !sort.descending }));
+  }
+
   /** One level up: from a group to its category, from a category to the rule (TK-4). */
   protected back(): void {
     const shown = this.shown();
@@ -403,9 +440,14 @@ export class CategoryPieChart {
     }));
   }
 
-  /** One slice per group, and one for the unplanned income of leisure (TK-6, TK-9). */
+  /** One slice per group in the chosen order, and one for the unplanned income of leisure last (TK-6, TK-9, TS-5). */
   private categoryEntries(category: ExpenseCategory): PieEntry[] {
-    const groups = this.categoryItemsOf(category)?.groups ?? [];
+    const groups = sorted(
+      this.categoryItemsOf(category)?.groups ?? [],
+      this.sort(),
+      (group) => group.monthlyTotal,
+      (group) => group.subcategory,
+    );
     const fills = shades(CATEGORY_COLORS[category], groups.length);
     const entries = groups.map<PieEntry>((group, index) =>
       entry(
@@ -433,9 +475,14 @@ export class CategoryPieChart {
     return entries;
   }
 
-  /** One slice per item of the group, sized by its amount per month (TK-6). */
+  /** One slice per item of the group in the chosen order, sized by its amount per month (TK-6, TS-1). */
   private groupEntries(category: ExpenseCategory, subcategory: string): PieEntry[] {
-    const items = this.groupOf(category, subcategory)?.items ?? [];
+    const items = sorted(
+      this.groupOf(category, subcategory)?.items ?? [],
+      this.sort(),
+      (item) => item.monthlyAmount,
+      (item) => item.description,
+    );
     const fills = shades(CATEGORY_COLORS[category], items.length);
     return items.map((item, index) =>
       entry(
@@ -511,6 +558,29 @@ function selectionLabel(selection: PieSelection): string {
     case 'group':
       return `${categoryLabel(selection.category)} › ${selection.subcategory}`;
   }
+}
+
+const NAME_COLLATOR = new Intl.Collator('de', { sensitivity: 'base' });
+
+/**
+ * The slices in the chosen order (TS-1 to TS-3); the shades follow it (TS-4). Ties keep the order
+ * of the entries, since the sort is stable.
+ */
+function sorted<T>(
+  values: readonly T[],
+  sort: PieSort,
+  monthly: (value: T) => string,
+  name: (value: T) => string,
+): T[] {
+  if (sort.key === 'entries') {
+    return [...values];
+  }
+  const direction = sort.descending ? -1 : 1;
+  const compare =
+    sort.key === 'amount'
+      ? (a: T, b: T) => Number(monthly(a)) - Number(monthly(b))
+      : (a: T, b: T) => NAME_COLLATOR.compare(name(a), name(b));
+  return [...values].sort((a, b) => direction * compare(a, b));
 }
 
 /** Shades of a color from full strength down to the lightest, mixed into the surface (TK-10). */
