@@ -35,7 +35,7 @@ test.describe('Posten', () => {
     await expect(form.getByLabel('Beschreibung')).toHaveValue('');
     await expect(form.getByLabel('Betrag')).toHaveValue('');
     await expect(form.locator('mat-error')).toHaveCount(0);
-    await expect(page.getByRole('radio', { name: 'Ausgabe' })).toBeChecked();
+    await expect(page.getByRole('radio', { name: 'Ausgabe', exact: true })).toBeChecked();
   });
 
   test('der neueste Posten steht unten in seiner Gruppe (PO-10, EG-1)', async ({ page }) => {

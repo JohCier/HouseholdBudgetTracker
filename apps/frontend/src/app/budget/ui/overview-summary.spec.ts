@@ -20,6 +20,8 @@ function overview(changes: Partial<HouseholdPlanOverview>): HouseholdPlanOvervie
 
     savingPotential: '0.00',
     savingPotentialsBySubcategory: [],
+    topSavingPotentials: [],
+    topExpenses: [],
     expensesExceedIncome: false,
     items: [],
     incomeGroups: [],

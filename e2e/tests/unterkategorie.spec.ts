@@ -175,7 +175,7 @@ test.describe('Unterkategorie', () => {
   test('das Feld schlägt Unterkategorien vor und übernimmt eigene Namen (UK-6, UK-7)', async ({
     page,
   }) => {
-    await page.getByRole('radio', { name: 'Ausgabe' }).click();
+    await page.getByRole('radio', { name: 'Ausgabe', exact: true }).click();
     await page.getByRole('combobox', { name: 'Unterkategorie (optional)' }).fill('Au');
     await expect(page.getByRole('option', { name: 'Auto', exact: true })).toBeVisible();
     await page.getByRole('combobox', { name: 'Unterkategorie (optional)' }).fill('');
