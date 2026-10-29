@@ -12,6 +12,7 @@ import { AMOUNT_PERIODS, Year, YearlyOverviewEntry } from './budget.model';
 import { YearlyOverviewStore, hasPlan } from './data-access/yearly-overview-store';
 import { copiedMessage, openCopyPlanDialog } from './ui/copy-plan-dialog';
 import { deletedMessage, openDeletePlanDialog } from './ui/delete-plan-dialog';
+import { NetWorthCard } from '../net-worth/ui/net-worth-card';
 import { YearChange } from './ui/year-change';
 
 /**
@@ -20,6 +21,7 @@ import { YearChange } from './ui/year-change';
  * of its year. The amounts are shown per month or per year, as the user chooses (JM-1 to JM-7).
  * Next to them stand the yearly totals of the one-time items, also for years with only those
  * (EP-12 to EP-15); on a phone they move to a row of their own below (EP-18).
+ * Below the plans, the card "Vermögen" shows the net worth of all years (VS-18).
  */
 @Component({
   selector: 'app-yearly-overview-page',
@@ -30,6 +32,7 @@ import { YearChange } from './ui/year-change';
     MatCardModule,
     MatIconModule,
     MatProgressBarModule,
+    NetWorthCard,
     NgTemplateOutlet,
     RouterLink,
     YearChange,
@@ -195,6 +198,8 @@ import { YearChange } from './ui/year-change';
       </mat-card>
     }
 
+    <!-- Independent of the plans: shown also without any, never in monthly amounts (VS-18, VS-19) -->
+    <app-net-worth-card />
     <ng-template #oneTimeBalance let-entry>
       <span class="value" [class.deficit]="entry.oneTimeExpensesExceedIncome">
         {{ entry.oneTimeBalance | currency: 'EUR' }}

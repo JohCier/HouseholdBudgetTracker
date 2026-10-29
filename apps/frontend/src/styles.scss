@@ -33,6 +33,10 @@ body {
   // and a faint tint of it behind the row; readable in light and dark mode.
   --app-important-color: light-dark(#7b3fa8, #d3a8f0);
   --app-important-background: light-dark(#f5edfb, #33283d);
+  // Growth and loss of the net worth in its chart (VS-20): bars, not text, hence lighter than the
+  // income color; the direction of the bar and the sign in the table tell the same without colour.
+  --app-gain-color: light-dark(#2e8f50, #5cc97f);
+  --app-loss-color: light-dark(#d64545, #ff8a80);
 
   // Set a default background, font and text colors for the application using
   // Angular Material's system-level CSS variables. Learn more about these
