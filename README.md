@@ -139,9 +139,18 @@ cd e2e && npm ci && npx playwright install chromium
 npx playwright test                              # andere Adresse: E2E_BASE_URL=http://localhost:4200 npx playwright test
 ```
 
-In der CI laufen sie im Job „E2E tests“, wenn sich das Frontend (siehe Pfadfilter unten) oder die E2E-Tests selbst
-geändert haben; reine Backend-Änderungen laufen ohne E2E-Tests. Schlägt einer fehl, werden keine Images gebaut und
-nichts deployt. Der Playwright-Bericht mit Traces und Screenshots hängt dann als Artefakt `playwright-report` am Lauf.
+In der CI laufen sie im Workflow `.github/workflows/e2e.yml`, weil sie mehrere Minuten dauern, nur bei Bedarf:
+
+- **Pull Request:** nur mit dem Label `e2e`. Das Setzen des Labels startet den Lauf, danach läuft jeder weitere Push
+  auf den PR ebenfalls mit E2E-Tests. Ohne Label wird der Job übersprungen.
+- **Manuell:** „Run workflow“ beim Workflow „E2E“ im Actions-Tab, für einen beliebigen Branch.
+- **Push auf master und Tags:** `ci.yml` ruft den Workflow vor dem Image-Build auf, wenn sich das Frontend (siehe
+  Pfadfilter unten) oder die E2E-Tests geändert haben; reine Backend-Änderungen laufen ohne E2E-Tests. Schlägt einer
+  fehl, werden keine Images gebaut und nichts deployt.
+
+Die Images des Stacks nutzen den Layer-Cache, den der Image-Build in `ci.yml` schreibt, Chromium kommt aus dem
+Actions-Cache, und Playwright läuft in der CI mit 4 Workern. Schlägt ein Test fehl, hängt der Playwright-Bericht mit
+Traces und Screenshots als Artefakt `playwright-report` am Lauf.
 
 ## API-Verträge ändern
 
