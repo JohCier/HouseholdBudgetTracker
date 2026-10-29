@@ -89,6 +89,18 @@ export type PieSelection =
 
 export const RULE_SELECTION: PieSelection = { level: 'rule' };
 
+/** What the slices of a category or group are sorted by (TS-1). */
+export type PieSortKey = 'entries' | 'amount' | 'name';
+
+/** Order of the slices of a category or group; `descending` only matters for amount and name (TS-2). */
+export interface PieSort {
+  key: PieSortKey;
+  descending: boolean;
+}
+
+/** The order of the entries, as before sorting existed (TS-1). */
+export const ENTRIES_SORT: PieSort = { key: 'entries', descending: false };
+
 /** Whether two subcategory names denote the same group, ignoring case (UK-5). */
 export function isSameSubcategory(a: string, b: string): boolean {
   return a.toLocaleLowerCase('de') === b.toLocaleLowerCase('de');

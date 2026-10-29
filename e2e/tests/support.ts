@@ -271,6 +271,21 @@ export function pieSummary(page: Page) {
   return page.locator('app-category-pie .selection-summary');
 }
 
+/** Sorts the slices of a category or group in the pie by entries, amount or name (TS-1). */
+export async function sortPie(page: Page, by: 'Einträge' | 'Betrag' | 'Name') {
+  const sort = page.getByRole('combobox', { name: 'Sortierung' });
+  await sort.click();
+  await page.getByRole('option', { name: by, exact: true }).click();
+  await expect(sort).toContainText(by);
+  // Until the list has closed, a click on the field does not open it again
+  await expect(page.getByRole('listbox')).toBeHidden();
+}
+
+/** Names in the legend of a category or group, top to bottom (TK-8). */
+export function pieNames(page: Page) {
+  return page.locator('app-category-pie .legend-item .name');
+}
+
 /** A one-time item as entered in its dialog (EP-1). */
 export interface OneTimeItemInput {
   type: 'Einnahme' | 'Ausgabe';

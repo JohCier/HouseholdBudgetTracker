@@ -42,6 +42,7 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 | Auswertung | Summen, Saldo, Warnung bei Defizit, Anteil und Zielerreichung je 50/30/20-Kategorie | [auswertung-50-30-20.md](specs/auswertung-50-30-20.md) | AW-… |
 | Tortendiagramm | Die 50/30/20-Auswertung wahlweise als Balken oder als Tortendiagramm ansehen | [tortendiagramm.md](specs/tortendiagramm.md) | TD-… |
 | Ausschnitt der Torte | Die Torte auf eine Kategorie (nach Unterkategorien) oder eine Unterkategorie (nach Posten) eingrenzen; das Stück unter der Maus hebt seine Zeile in der Legende hervor | [torte-ausschnitt.md](specs/torte-ausschnitt.md) | TK-… |
+| Sortierung der Torte | Die Stücke einer Kategorie oder Unterkategorie in Torte und Legende nach Einträgen, Betrag oder Name sortieren, Richtung umkehrbar | [torte-sortierung.md](specs/torte-sortierung.md) | TS-… |
 | Übersicht als Antwort | Nach jeder Änderung liefert die API die neue Übersicht mit, die Oberfläche lädt nicht erneut | [antwort-mit-uebersicht.md](specs/antwort-mit-uebersicht.md) | AU-… |
 
 Alle Beträge sind in Euro. Die Oberfläche ist deutschsprachig.
