@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.householdplan.event;
 
-import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
 import de.jcss.hbt.domain.shared.TimestampedDomainEvent;
 
 /** A domain event about a change to one household plan. */

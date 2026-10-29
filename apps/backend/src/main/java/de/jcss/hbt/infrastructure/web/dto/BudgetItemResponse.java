@@ -1,8 +1,8 @@
 package de.jcss.hbt.infrastructure.web.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import de.jcss.hbt.domain.householdplan.Percentage;
 import de.jcss.hbt.domain.householdplan.overview.OverviewItem;
+import de.jcss.hbt.domain.householdplan.valueobject.Percentage;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
@@ -53,8 +53,8 @@ public record BudgetItemResponse(
                 item.category() == null ? null : ExpenseCategoryDto.from(item.category()),
                 item.subcategory() == null ? null : item.subcategory().value(),
                 item.note() == null ? null : item.note().value(),
-                item.marks().important(),
-                item.marks().savingPotential() == null ? null : item.marks().savingPotential().monthly().value(),
+                item.important(),
+                item.savingPotential() == null ? null : item.savingPotential().monthly().value(),
                 percentageOfGroup == null ? null : percentageOfGroup.value()
         );
     }

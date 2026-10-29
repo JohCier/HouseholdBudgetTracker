@@ -1,22 +1,22 @@
 package de.jcss.hbt.infrastructure.persistence;
 
 import de.jcss.hbt.domain.exception.HouseholdPlanAlreadyExistsException;
-import de.jcss.hbt.domain.householdplan.AmountPeriod;
 import de.jcss.hbt.domain.householdplan.BudgetItem;
-import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
-import de.jcss.hbt.domain.householdplan.BudgetItemId;
-import de.jcss.hbt.domain.householdplan.BudgetItemNote;
-import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
-import de.jcss.hbt.domain.householdplan.ExpenseCategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
-import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
 import de.jcss.hbt.domain.householdplan.HouseholdPlanRepository;
-import de.jcss.hbt.domain.householdplan.ItemAmount;
-import de.jcss.hbt.domain.householdplan.ItemSection;
-import de.jcss.hbt.domain.householdplan.ItemType;
-import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.householdplan.OwnerId;
-import de.jcss.hbt.domain.householdplan.SubcategoryOrder;
+import de.jcss.hbt.domain.householdplan.valueobject.AmountPeriod;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemNote;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemSubcategory;
+import de.jcss.hbt.domain.householdplan.valueobject.ExpenseCategory;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemSection;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemType;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
+import de.jcss.hbt.domain.householdplan.valueobject.SubcategoryOrder;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -59,7 +59,8 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                 category == null ? null : ExpenseCategory.valueOf(category),
                 BudgetItemSubcategory.ofNullable(rs.getString("subcategory")),
                 BudgetItemNote.ofNullable(rs.getString("note")),
-                ItemMarksColumns.of(rs));
+                rs.getBoolean("important"),
+                SavingPotentialColumn.of(rs));
     };
 
     private final JdbcClient jdbcClient;
@@ -201,7 +202,8 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
     private static boolean sameValues(BudgetItem item, BudgetItem other) {
         return item.description().equals(other.description()) && item.amount().equals(other.amount())
                 && item.category().equals(other.category()) && item.subcategory().equals(other.subcategory())
-                && item.note().equals(other.note()) && item.marks().equals(other.marks());
+                && item.note().equals(other.note()) && item.isImportant() == other.isImportant()
+                && item.savingPotential().equals(other.savingPotential());
     }
 
     private void insertItem(HouseholdPlanId planId, BudgetItem item, int position) {
@@ -220,8 +222,8 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                 .param("category", categoryOf(item))
                 .param("subcategory", subcategoryOf(item))
                 .param("note", noteOf(item))
-                .param("important", item.marks().important())
-                .param("savingPotential", ItemMarksColumns.savingPotentialOf(item.marks()))
+                .param("important", item.isImportant())
+                .param("savingPotential", SavingPotentialColumn.valueOf(item))
                 .param("position", position)
                 .update();
     }
@@ -242,8 +244,8 @@ public class JdbcHouseholdPlanRepository implements HouseholdPlanRepository {
                 .param("category", categoryOf(item))
                 .param("subcategory", subcategoryOf(item))
                 .param("note", noteOf(item))
-                .param("important", item.marks().important())
-                .param("savingPotential", ItemMarksColumns.savingPotentialOf(item.marks()))
+                .param("important", item.isImportant())
+                .param("savingPotential", SavingPotentialColumn.valueOf(item))
                 .param("position", position)
                 .update();
     }

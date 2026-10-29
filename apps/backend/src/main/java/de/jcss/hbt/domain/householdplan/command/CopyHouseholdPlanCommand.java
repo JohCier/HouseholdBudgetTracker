@@ -1,7 +1,7 @@
 package de.jcss.hbt.domain.householdplan.command;
 
-import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
-import de.jcss.hbt.domain.householdplan.OwnerId;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
 import org.jmolecules.architecture.cqrs.Command;
 
 import java.time.Year;

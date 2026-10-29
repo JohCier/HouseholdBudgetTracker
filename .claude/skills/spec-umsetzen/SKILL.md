@@ -20,8 +20,8 @@ Reihenfolge von innen nach außen; die DDD-Regeln lädt Claude Code automatisch 
 
 | Schicht | Typische Dateien |
 |---|---|
-| Domäne | Value Object bzw. Methode in `domain/householdplan/` (`HouseholdPlan`, `BudgetItem`), Command in `command/`, Event in `event/`, Read Model in `overview/` |
-| Tests Domäne | `HouseholdPlan<Thema>Test` bzw. `<ValueObject>Test` unter `src/test/.../domain/householdplan/` |
+| Domäne | Methode in `domain/householdplan/` (`HouseholdPlan`, `BudgetItem`), Value Object in `valueobject/`, Command in `command/`, Event in `event/`, Read Model in `overview/` |
+| Tests Domäne | `HouseholdPlan<Thema>Test` unter `src/test/.../domain/householdplan/`, `<ValueObject>Test` unter `…/householdplan/valueobject/` |
 | Application | `HouseholdPlanApplicationService` (laden, Fachmethode, `save`, Events) und `HouseholdPlanApplicationServiceTest` |
 | Persistenz | Flyway-Migration `src/main/resources/db/migration/V<n+1>__<thema>.sql` (nächste freie Nummer), `JdbcHouseholdPlanRepository`, `JdbcHouseholdPlanOverviewQueryHandler` und ihre Tests (`@IntegrationTest`) |
 | Web | `HouseholdPlanController`, DTOs in `infrastructure/web/dto/`; Test in der passenden Klasse unter `infrastructure/web/` (`HouseholdPlanControllerTest`, `HouseholdPlanOverviewControllerTest`, `BudgetItem*ControllerTest`) |

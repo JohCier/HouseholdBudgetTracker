@@ -1,11 +1,11 @@
 package de.jcss.hbt.users.infrastructure.persistence;
 
 import de.jcss.hbt.users.domain.exception.EmailAddressAlreadyRegisteredException;
-import de.jcss.hbt.users.domain.user.EmailAddress;
-import de.jcss.hbt.users.domain.user.PasswordHash;
 import de.jcss.hbt.users.domain.user.User;
-import de.jcss.hbt.users.domain.user.UserId;
 import de.jcss.hbt.users.domain.user.UserRepository;
+import de.jcss.hbt.users.domain.user.valueobject.EmailAddress;
+import de.jcss.hbt.users.domain.user.valueobject.PasswordHash;
+import de.jcss.hbt.users.domain.user.valueobject.UserId;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;

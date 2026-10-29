@@ -3,18 +3,7 @@ package de.jcss.hbt.infrastructure.web;
 import de.jcss.hbt.application.householdplan.AddedBudgetItem;
 import de.jcss.hbt.application.householdplan.CopiedHouseholdPlan;
 import de.jcss.hbt.application.householdplan.HouseholdPlanApplicationService;
-import de.jcss.hbt.domain.householdplan.BudgetItemDescription;
-import de.jcss.hbt.domain.householdplan.BudgetItemId;
-import de.jcss.hbt.domain.householdplan.BudgetItemNote;
-import de.jcss.hbt.domain.householdplan.BudgetItemSubcategory;
 import de.jcss.hbt.domain.householdplan.HouseholdPlan;
-import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
-import de.jcss.hbt.domain.householdplan.ItemAmount;
-import de.jcss.hbt.domain.householdplan.ItemMarks;
-import de.jcss.hbt.domain.householdplan.ItemSection;
-import de.jcss.hbt.domain.householdplan.Money;
-import de.jcss.hbt.domain.householdplan.OwnerId;
-import de.jcss.hbt.domain.householdplan.SavingPotential;
 import de.jcss.hbt.domain.householdplan.command.AddExpenseCommand;
 import de.jcss.hbt.domain.householdplan.command.AddIncomeCommand;
 import de.jcss.hbt.domain.householdplan.command.ChangeBudgetItemCommand;
@@ -26,6 +15,16 @@ import de.jcss.hbt.domain.householdplan.command.MarkBudgetItemImportantCommand;
 import de.jcss.hbt.domain.householdplan.command.RemoveBudgetItemCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderBudgetItemsCommand;
 import de.jcss.hbt.domain.householdplan.command.ReorderSubcategoriesCommand;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemNote;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemSubcategory;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemAmount;
+import de.jcss.hbt.domain.householdplan.valueobject.ItemSection;
+import de.jcss.hbt.domain.householdplan.valueobject.Money;
+import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
+import de.jcss.hbt.domain.householdplan.valueobject.SavingPotential;
 import de.jcss.hbt.infrastructure.web.dto.AddExpenseRequest;
 import de.jcss.hbt.infrastructure.web.dto.AddIncomeRequest;
 import de.jcss.hbt.infrastructure.web.dto.AddedBudgetItemResponse;
@@ -134,7 +133,7 @@ public class HouseholdPlanController {
         AddedBudgetItem added = plans.addIncome(new AddIncomeCommand(owner(user), HouseholdPlanId.of(planId),
                 BudgetItemDescription.of(request.description()), new ItemAmount(Money.of(request.amount()), request.period().toDomain()),
                 BudgetItemSubcategory.ofNullable(request.subcategory()), BudgetItemNote.ofNullable(request.note()),
-                marks(request.important(), null)));
+                Boolean.TRUE.equals(request.important())));
         return AddedBudgetItemResponse.from(added);
     }
 
@@ -145,7 +144,8 @@ public class HouseholdPlanController {
         AddedBudgetItem added = plans.addExpense(new AddExpenseCommand(owner(user), HouseholdPlanId.of(planId),
                 BudgetItemDescription.of(request.description()), new ItemAmount(Money.of(request.amount()), request.period().toDomain()),
                 request.category().toDomain(), BudgetItemSubcategory.ofNullable(request.subcategory()),
-                BudgetItemNote.ofNullable(request.note()), marks(request.important(), request.savingPotential())));
+                BudgetItemNote.ofNullable(request.note()), Boolean.TRUE.equals(request.important()),
+                savingPotential(request.savingPotential())));
         return AddedBudgetItemResponse.from(added);
     }
 
@@ -215,10 +215,9 @@ public class HouseholdPlanController {
                 new RemoveBudgetItemCommand(owner(user), HouseholdPlanId.of(planId), BudgetItemId.of(itemId))));
     }
 
-    /** The marks of an item to restore (PM-6); absent values mean none. */
-    private static ItemMarks marks(Boolean important, BigDecimal savingPotential) {
-        return new ItemMarks(Boolean.TRUE.equals(important),
-                savingPotential == null ? null : SavingPotential.monthly(Money.of(savingPotential)));
+    /** The saving potential of an expense to restore (PM-6); {@code null} if it has none. */
+    private static SavingPotential savingPotential(BigDecimal savingPotential) {
+        return savingPotential == null ? null : SavingPotential.monthly(Money.of(savingPotential));
     }
 
     /** The signed-in user; the subject of their session token is their user id. */

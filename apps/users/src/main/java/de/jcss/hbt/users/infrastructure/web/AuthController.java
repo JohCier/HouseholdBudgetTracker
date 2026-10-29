@@ -1,11 +1,11 @@
 package de.jcss.hbt.users.infrastructure.web;
 
 import de.jcss.hbt.users.application.user.UserApplicationService;
-import de.jcss.hbt.users.domain.user.EmailAddress;
-import de.jcss.hbt.users.domain.user.Password;
-import de.jcss.hbt.users.domain.user.UserId;
 import de.jcss.hbt.users.domain.user.command.ChangePasswordCommand;
 import de.jcss.hbt.users.domain.user.command.RegisterUserCommand;
+import de.jcss.hbt.users.domain.user.valueobject.EmailAddress;
+import de.jcss.hbt.users.domain.user.valueobject.Password;
+import de.jcss.hbt.users.domain.user.valueobject.UserId;
 import de.jcss.hbt.users.infrastructure.security.SessionCookies;
 import de.jcss.hbt.users.infrastructure.web.dto.ChangePasswordRequest;
 import de.jcss.hbt.users.infrastructure.web.dto.LoginRequest;

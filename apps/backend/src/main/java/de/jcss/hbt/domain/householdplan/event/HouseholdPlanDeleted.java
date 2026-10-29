@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.householdplan.event;
 
-import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
 
 import java.time.Instant;
 import java.time.Year;

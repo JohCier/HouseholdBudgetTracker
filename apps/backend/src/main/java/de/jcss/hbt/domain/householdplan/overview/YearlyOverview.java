@@ -1,7 +1,7 @@
 package de.jcss.hbt.domain.householdplan.overview;
 
-import de.jcss.hbt.domain.householdplan.BudgetSummary;
-import de.jcss.hbt.domain.householdplan.HouseholdPlanId;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetSummary;
+import de.jcss.hbt.domain.householdplan.valueobject.HouseholdPlanId;
 import org.jmolecules.architecture.cqrs.QueryModel;
 
 import java.time.Year;
@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 /**
  * Read model of all plans of a user, the newest year first (JU-1), each with its totals and their
  * change from the plan of the immediately preceding year (JU-4, JU-5). The figures come from
- * {@link BudgetSummary} and {@link de.jcss.hbt.domain.householdplan.Percentage#changeFrom}.
+ * {@link BudgetSummary} and {@link de.jcss.hbt.domain.householdplan.valueobject.Percentage#changeFrom}.
  */
 @QueryModel
 public record YearlyOverview(List<YearlyOverviewEntry> years) {

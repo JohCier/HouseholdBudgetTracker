@@ -1,6 +1,6 @@
 package de.jcss.hbt.domain.exception;
 
-import de.jcss.hbt.domain.householdplan.BudgetItemId;
+import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemId;
 
 /**
  * Thrown when a {@code BudgetItem} is referenced by an id that does not exist in the household plan.

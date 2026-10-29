@@ -1,11 +1,11 @@
 package de.jcss.hbt.users;
 
 import de.jcss.hbt.users.application.user.UserApplicationService;
-import de.jcss.hbt.users.domain.user.EmailAddress;
-import de.jcss.hbt.users.domain.user.Password;
-import de.jcss.hbt.users.domain.user.PasswordHash;
 import de.jcss.hbt.users.domain.user.PasswordHasher;
 import de.jcss.hbt.users.domain.user.command.RegisterUserCommand;
+import de.jcss.hbt.users.domain.user.valueobject.EmailAddress;
+import de.jcss.hbt.users.domain.user.valueobject.Password;
+import de.jcss.hbt.users.domain.user.valueobject.PasswordHash;
 import de.jcss.hbt.users.infrastructure.security.BCryptPasswordHasher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

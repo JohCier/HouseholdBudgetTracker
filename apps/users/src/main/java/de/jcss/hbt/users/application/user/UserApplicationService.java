@@ -2,17 +2,17 @@ package de.jcss.hbt.users.application.user;
 
 import de.jcss.hbt.users.domain.exception.EmailAddressAlreadyRegisteredException;
 import de.jcss.hbt.users.domain.exception.InvalidCredentialsException;
-import de.jcss.hbt.users.domain.user.EmailAddress;
-import de.jcss.hbt.users.domain.user.Password;
-import de.jcss.hbt.users.domain.user.PasswordHash;
-import de.jcss.hbt.users.domain.user.PasswordHasher;
-import de.jcss.hbt.users.domain.user.User;
-import de.jcss.hbt.users.domain.user.UserId;
-import de.jcss.hbt.users.domain.user.UserRepository;
 import de.jcss.hbt.users.domain.exception.PasswordUnchangedException;
 import de.jcss.hbt.users.domain.exception.WrongCurrentPasswordException;
+import de.jcss.hbt.users.domain.user.PasswordHasher;
+import de.jcss.hbt.users.domain.user.User;
+import de.jcss.hbt.users.domain.user.UserRepository;
 import de.jcss.hbt.users.domain.user.command.ChangePasswordCommand;
 import de.jcss.hbt.users.domain.user.command.RegisterUserCommand;
+import de.jcss.hbt.users.domain.user.valueobject.EmailAddress;
+import de.jcss.hbt.users.domain.user.valueobject.Password;
+import de.jcss.hbt.users.domain.user.valueobject.PasswordHash;
+import de.jcss.hbt.users.domain.user.valueobject.UserId;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 

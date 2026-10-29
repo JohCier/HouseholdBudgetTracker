@@ -109,17 +109,17 @@ Jahr.
 
 ## Umsetzung
 
-- Domäne: Value Objects `ItemMarks` (wichtig, Sparpotential) und `SavingPotential` (Monatsbetrag, positiv;
-  `exceeds`, `cappedTo`, `annual`) sowie `ItemMark` für das Protokoll. `BudgetItem` trägt die Markierungen und prüft
+- Domäne: Value Object `SavingPotential` (Monatsbetrag, positiv; `exceeds`, `cappedTo`, `annual`) und
+  `BudgetItemMarked.Mark` für das Protokoll. `BudgetItem` trägt die Markierungen (`important`, `savingPotential`) und prüft
   PM-2 und PM-2a; `changedTo` behält sie und senkt das Sparpotential (PM-5), `copy` übernimmt sie (PM-6).
   `HouseholdPlan.markImportant` und `changeSavingPotential` ändern sie und zeichnen `BudgetItemMarked` auf, ohne die
   Reihenfolge anzutasten (PM-4, PM-7); `addIncome`/`addExpense` nehmen Markierungen für „Rückgängig" entgegen (PM-6).
   `BudgetSummary` kennt sie nicht (PM-8)
 - Commands: `MarkBudgetItemImportantCommand`, `ChangeSavingPotentialCommand`; `AddIncomeCommand` und
-  `AddExpenseCommand` mit optionalen `ItemMarks`
+  `AddExpenseCommand` mit `important` bzw. `important` und `savingPotential` für „Rückgängig"
 - Persistenz: Spalten `budget_item.important` und `budget_item.saving_potential` (Migration
-  `V9__budget_item_marks.sql`, nur für Ausgaben), gelesen und geschrieben über `ItemMarksColumns`
-- Read Model: `OverviewItem.marks`, `HouseholdPlanOverview.monthlySavingPotential()` und `savingPotential()` (PM-13)
+  `V9__budget_item_marks.sql`, nur für Ausgaben), Sparpotential gelesen und geschrieben über `SavingPotentialColumn`
+- Read Model: `OverviewItem.important` und `savingPotential`, `HouseholdPlanOverview.monthlySavingPotential()` und `savingPotential()` (PM-13)
 - API: `PUT /api/plans/{planId}/items/{itemId}/important` (`{"important": true}`),
   `PUT …/saving-potential` (`{"monthlyAmount": "5.00"}`, 400 bei Einnahmen oder zu großem Betrag) und
   `DELETE …/saving-potential`, jeweils mit der Übersicht als Antwort. `BudgetItemResponse` liefert `important` und
