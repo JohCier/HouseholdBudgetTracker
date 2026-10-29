@@ -11,7 +11,9 @@ import {
   BreakdownView,
   BudgetItem,
   NewItemPreset,
+  ENTRIES_SORT,
   PieSelection,
+  PieSort,
   RULE_SELECTION,
   Year,
 } from './budget.model';
@@ -114,6 +116,7 @@ import { parseYear } from './year';
               [expenseCategories]="overview.expenseCategories"
               [(view)]="breakdownView"
               [(pieSelection)]="pieSelection"
+              [(pieSort)]="pieSort"
             />
           }
         </div>
@@ -248,6 +251,8 @@ export class BudgetDashboard {
   protected readonly breakdownView = signal<BreakdownView>('bars');
   /** Part of the plan the pie shows, kept like the view (TK-5). */
   protected readonly pieSelection = signal<PieSelection>(RULE_SELECTION);
+  /** Order of the slices in the pie; kept here like the selection (TS-6). */
+  protected readonly pieSort = signal<PieSort>(ENTRIES_SORT);
   /** The years the user has plans for, other than the one shown; looked up for a year without plan (PU-12). */
   protected readonly otherPlanYears = signal<Year[]>([]);
 
