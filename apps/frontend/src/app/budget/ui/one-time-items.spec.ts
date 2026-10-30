@@ -115,7 +115,7 @@ describe('OneTimeItems', () => {
   });
 
   // EP-10
-  it('says so if the year has no one-time items and offers to enter one', async () => {
+  it('says so if the year has no one-time items; entering is left to the dashboard (AP-18)', async () => {
     await render({
       ...overview,
       items: [],
@@ -127,12 +127,12 @@ describe('OneTimeItems', () => {
 
     expect(element.textContent).toContain('Keine Einmalposten.');
     expect(element.querySelector('section.area')).toBeNull();
-    expect(element.textContent).toContain('Einmalposten erfassen');
+    expect(element.textContent).not.toContain('Einmalposten erfassen');
   });
 
   it('shows nothing of the items while they load, and why loading failed', async () => {
     await render(null);
-    expect(element.textContent).not.toContain('Einmalposten erfassen');
+    expect(element.querySelector('[role="list"]')).toBeNull();
 
     await render(null, 'Server nicht erreichbar.');
     expect(element.querySelector('[role="alert"]')!.textContent).toContain(
@@ -141,22 +141,16 @@ describe('OneTimeItems', () => {
   });
 
   // EP-7, ES-10
-  it('asks the dashboard to enter, change or delete an item', async () => {
+  it('asks the dashboard to change or delete an item', async () => {
     await render(overview);
-    const add = vi.fn();
     const edit = vi.fn();
     const remove = vi.fn();
-    fixture.componentInstance.add.subscribe(add);
     fixture.componentInstance.edit.subscribe(edit);
     fixture.componentInstance.remove.subscribe(remove);
 
-    [...element.querySelectorAll<HTMLButtonElement>('button')]
-      .find((b) => b.textContent!.includes('Einmalposten erfassen'))!
-      .click();
     button('Einmalposten Steuererstattung bearbeiten').click();
     button('Einmalposten Nebenkostennachzahlung löschen').click();
 
-    expect(add).toHaveBeenCalled();
     expect(edit).toHaveBeenCalledWith(overview.items[1]);
     expect(remove).toHaveBeenCalledWith(overview.items[0]);
   });

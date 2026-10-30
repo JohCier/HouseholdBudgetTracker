@@ -186,10 +186,15 @@ import { parseYear } from './year';
         <!-- With and without a plan; one-time items do not belong to it (EP-5, AP-8) -->
         <mat-tab label="Einmalposten">
           <div class="tab-body">
+            @if (oneTimeItems.overview()) {
+              <button matButton="filled" type="button" class="add-item" (click)="addOneTimeItem()">
+                <mat-icon svgIcon="add" />
+                Einmalposten erfassen
+              </button>
+            }
             <app-one-time-items
               [overview]="oneTimeItems.overview()"
               [loadError]="oneTimeItems.loadError()"
-              (add)="addOneTimeItem()"
               (edit)="editOneTimeItem($event)"
               (move)="moveOneTimeItem($event)"
               (remove)="removeOneTimeItem($event)"

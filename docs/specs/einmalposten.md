@@ -51,7 +51,7 @@ es ausschließlich bei Einmalposten, Posten des Haushaltsplans bleiben ohne Datu
 - **EP-9**: Jeder Bereich endet mit der Summe seiner Einmalposten („Summe Einnahmen“, „Summe Ausgaben“); unter beiden
   steht der einmalige Saldo (Einnahmen − Ausgaben) des Jahres (ES-1). Ein negativer Saldo steht in der Fehlerfarbe.
 - **EP-10**: Der Abschnitt ist auch in einem Jahr ohne Haushaltsplan da, im Tab „Einmalposten“ neben dem Hinweis „Für
-  <Jahr> gibt es noch keinen Haushaltsplan.“ (AP-13). Ohne Einmalposten zeigt er „Keine Einmalposten." und „Einmalposten erfassen".
+  <Jahr> gibt es noch keinen Haushaltsplan.“ (AP-13). Ohne Einmalposten zeigt er „Keine Einmalposten."; „Einmalposten erfassen" steht oben im Tab (AP-18).
 - **EP-11**: Beim Erfassen ist das Datum mit dem heutigen Tag vorbelegt, wenn er im angezeigten Jahr liegt, sonst mit
   dem 01.01. des angezeigten Jahres.
 

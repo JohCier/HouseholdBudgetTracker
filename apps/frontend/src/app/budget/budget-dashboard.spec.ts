@@ -154,6 +154,10 @@ describe('BudgetDashboard', () => {
     await fixture.whenStable();
     expect(element.querySelector('app-one-time-items')).not.toBeNull();
     expect(element.querySelector('app-budget-entries')).toBeNull();
+    // AP-18: the same button as "Posten erfassen", above the one-time items
+    const addOneTime = element.querySelector<HTMLButtonElement>('.tab-body > button.add-item')!;
+    expect(addOneTime.textContent).toContain('Einmalposten erfassen');
+    expect(addOneTime.nextElementSibling!.tagName).toBe('APP-ONE-TIME-ITEMS');
 
     tab(element, 'Detailansicht').click();
     await fixture.whenStable();

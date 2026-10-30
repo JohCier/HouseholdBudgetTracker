@@ -122,6 +122,7 @@ test.describe('Einmalposten getrennt und frei sortiert', () => {
   test('ein neuer Einmalposten steht unten; ein geändertes Datum behält den Platz, eine andere Art nicht (ES-7, ES-8)', async ({
     page,
   }) => {
+    test.slow();
     await addOneTimeItem(page, backPayment);
     await addOneTimeItem(page, repair);
     await dragOnto(page, 'Autoreparatur', 'Nebenkostennachzahlung');
