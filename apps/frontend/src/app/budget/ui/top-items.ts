@@ -1,46 +1,30 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, computed, input, model } from '@angular/core';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { Component, computed, input } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
-import { TopItem, TopItemsView } from '../budget.model';
+import { TopItem, TopItemsList } from '../budget.model';
 
 /**
- * The card "Top 5": the expenses with the highest saving potential or the highest expenses, as the
- * backend selects and orders them (TP-1 to TP-5). A toggle switches between both lists (TP-7). Each
+ * The card "Top 5 Sparpotential" or "Top 5 Ausgaben": the expenses with the highest saving
+ * potential or the highest expenses, as the backend selects and orders them (TP-1 to TP-5); each
+ * list is a card of its own in the tab "Sparhebel" (AP-11). Each
  * row shows its rank, the description with the subcategory below it and the amounts per month and
  * per year (TP-8); for the saving potential also the monthly amount of the expense (TP-9). In a
  * narrow card the description stands above the amounts (TP-11).
  */
 @Component({
   selector: 'app-top-items',
-  imports: [CurrencyPipe, MatButtonToggleModule, MatCardModule],
+  imports: [CurrencyPipe, MatCardModule],
   template: `
     <mat-card appearance="outlined">
       <mat-card-header>
-        <mat-card-title id="top-items-title">Top 5</mat-card-title>
-        <mat-card-subtitle>Die größten Hebel im Plan</mat-card-subtitle>
+        <mat-card-title [id]="titleId()">{{ texts().title }}</mat-card-title>
+        <mat-card-subtitle>{{ texts().subtitle }}</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
-        <mat-button-toggle-group
-          class="view-toggle"
-          hideSingleSelectionIndicator
-          aria-label="Liste"
-          [value]="view()"
-          (change)="view.set($event.value)"
-        >
-          <mat-button-toggle value="savingPotential">Sparpotential</mat-button-toggle>
-          <mat-button-toggle value="expenses">Ausgaben</mat-button-toggle>
-        </mat-button-toggle-group>
-        @if (rows().length === 0) {
-          <p class="empty">
-            {{
-              view() === 'savingPotential'
-                ? 'Noch kein Sparpotential markiert'
-                : 'Noch keine Ausgaben'
-            }}
-          </p>
+        @if (items().length === 0) {
+          <p class="empty">{{ texts().empty }}</p>
         } @else {
-          <table aria-labelledby="top-items-title">
+          <table [attr.aria-labelledby]="titleId()">
             <thead>
               <tr>
                 <td></td>
@@ -49,7 +33,7 @@ import { TopItem, TopItemsView } from '../budget.model';
               </tr>
             </thead>
             <tbody>
-              @for (row of rows(); track row.id; let rank = $index) {
+              @for (row of items(); track row.id; let rank = $index) {
                 <tr>
                   <th scope="row">
                     <span class="rank">{{ rank + 1 }}.</span>
@@ -57,7 +41,7 @@ import { TopItem, TopItemsView } from '../budget.model';
                       <span class="description">{{ row.description }}</span>
                       <span class="detail">
                         {{ row.subcategory }}
-                        @if (view() === 'savingPotential') {
+                        @if (list() === 'savingPotential') {
                           · von {{ row.itemMonthlyAmount | currency: 'EUR' }}
                         }
                       </span>
@@ -77,8 +61,8 @@ import { TopItem, TopItemsView } from '../budget.model';
     mat-card-content {
       container-type: inline-size;
     }
-    .view-toggle {
-      margin: 8px 0 12px;
+    :host {
+      display: block;
     }
     .empty {
       color: var(--mat-sys-on-surface-variant);
@@ -164,11 +148,22 @@ import { TopItem, TopItemsView } from '../budget.model';
   `,
 })
 export class TopItems {
-  readonly savingPotentials = input.required<TopItem[]>();
-  readonly expenses = input.required<TopItem[]>();
-  readonly view = model<TopItemsView>('savingPotential');
+  readonly list = input.required<TopItemsList>();
+  readonly items = input.required<TopItem[]>();
 
-  protected readonly rows = computed(() =>
-    this.view() === 'savingPotential' ? this.savingPotentials() : this.expenses(),
-  );
+  protected readonly texts = computed(() => TEXTS[this.list()]);
+  protected readonly titleId = computed(() => `top-items-${this.list()}`);
 }
+
+const TEXTS: Record<TopItemsList, { title: string; subtitle: string; empty: string }> = {
+  savingPotential: {
+    title: 'Top 5 Sparpotential',
+    subtitle: 'Die größten Hebel beim Sparpotential',
+    empty: 'Noch kein Sparpotential markiert',
+  },
+  expenses: {
+    title: 'Top 5 Ausgaben',
+    subtitle: 'Die größten Ausgaben im Plan',
+    empty: 'Noch keine Ausgaben',
+  },
+};

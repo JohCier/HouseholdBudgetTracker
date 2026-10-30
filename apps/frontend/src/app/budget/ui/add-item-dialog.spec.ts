@@ -13,7 +13,7 @@ const car: NewItemPreset = {
   subcategory: 'Auto',
 };
 
-// EG-10, EG-11
+// EG-10, EG-11, AP-14, AP-15
 describe('AddItemDialog', () => {
   let store: {
     addIncome: ReturnType<typeof vi.fn>;
@@ -24,7 +24,7 @@ describe('AddItemDialog', () => {
   let fixture: ComponentFixture<AddItemDialog>;
   let element: HTMLElement;
 
-  async function open(preset: NewItemPreset) {
+  async function open(preset: NewItemPreset | null) {
     store = {
       addIncome: vi.fn(async () => undefined),
       addExpense: vi.fn(async () => undefined),
@@ -82,6 +82,35 @@ describe('AddItemDialog', () => {
     expect(store.addExpense).toHaveBeenCalledWith({
       description: 'Sprit',
       amount: '100',
+      period: 'MONTHLY',
+      category: 'LEBENSUNTERHALT',
+      subcategory: 'Auto',
+    });
+    expect(dialogRef.close).toHaveBeenCalledWith(true);
+  });
+
+  // AP-14
+  it('starts as an empty expense when opened from "Posten erfassen"', async () => {
+    await open(null);
+    const select = await TestbedHarnessEnvironment.loader(fixture).getHarness(MatSelectHarness);
+
+    expect(element.querySelector('h2')?.textContent?.trim()).toBe('Posten erfassen');
+    expect(checked('Art des Eintrags')).toBe('Ausgabe');
+    expect(checked('Angabe monatlich oder jährlich')).toBe('Monatlich');
+    expect(await select.getValueText()).toBe('');
+    expect(input('subcategory').value).toBe('');
+    expect(input('description').value).toBe('');
+
+    await type('description', 'Sprit');
+    await type('amount', '120');
+    await select.open();
+    await select.clickOptions({ text: 'Lebensunterhalt' });
+    await type('subcategory', 'Auto');
+    await add();
+
+    expect(store.addExpense).toHaveBeenCalledWith({
+      description: 'Sprit',
+      amount: '120',
       period: 'MONTHLY',
       category: 'LEBENSUNTERHALT',
       subcategory: 'Auto',

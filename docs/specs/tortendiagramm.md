@@ -11,8 +11,8 @@ und jederzeit zwischen beiden Darstellungen wechseln.
 
 ## Fachliche Regeln
 
-- **TD-1**: Die Karte „50/30/20-Regel" hat zwei Darstellungen: „Balken" (die bisherige Ansicht mit Prozentangaben) und
-  „Torte". Ein Umschalter in der Karte wechselt zwischen beiden. Beim Öffnen der Übersicht ist „Balken" gewählt.
+- **TD-1**: Die Karte „50/30/20-Regel" zeigt die Balken mit Prozentangaben, die Torte steht im Tab „Detailansicht"
+  (AP-2, AP-9; bis zu [planansicht-aufbau.md](planansicht-aufbau.md) ein Umschalter „Balken | Torte" in der Karte).
 - **TD-2**: Die Torte hat je Kategorie ein Stück: Lebensunterhalt, Freizeit & Spaß, Sparen & Investieren. Jede Kategorie
   hat eine feste Farbe, die in Torte und Legende gleich ist.
 - **TD-3**: Die Größe eines Stücks entspricht der Summe der Kategorie aus der Auswertung, bei Freizeit & Spaß

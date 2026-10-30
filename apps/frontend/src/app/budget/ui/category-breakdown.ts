@@ -1,39 +1,18 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
-import { Component, input, model } from '@angular/core';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { Component, input } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import {
-  BreakdownView,
-  CategoryBreakdown,
-  CategoryItems,
-  ENTRIES_SORT,
-  PieSelection,
-  PieSort,
-  RULE_SELECTION,
-  categoryLabel,
-  missedTargetLabel,
-  targetLabel,
-} from '../budget.model';
-import { CategoryPieChart } from './category-pie';
+import { CategoryBreakdown, categoryLabel, missedTargetLabel, targetLabel } from '../budget.model';
 
 /**
- * Visualizes actual spend per category against its 50/30/20 target share of income.
- * Living costs and leisure have a ceiling, savings a floor. Income that no expense uses up
- * counts towards leisure and is shown there as unplanned (AW-10). A toggle switches between
- * the bars and a pie chart (TD-1), which can also show one category or subcategory (TK-1). Both
- * show the amounts per month (MJ-14).
+ * Visualizes actual spend per category against its 50/30/20 target share of income, as one bar
+ * per category with the amounts per month (MJ-14). Living costs and leisure have a ceiling,
+ * savings a floor. Income that no expense uses up counts towards leisure and is shown there as
+ * unplanned (AW-10). The pie chart has a tab of its own (AP-2, AP-9).
  */
 @Component({
   selector: 'app-category-breakdown',
-  imports: [
-    CurrencyPipe,
-    DecimalPipe,
-    MatButtonToggleModule,
-    MatCardModule,
-    MatProgressBarModule,
-    CategoryPieChart,
-  ],
+  imports: [CurrencyPipe, DecimalPipe, MatCardModule, MatProgressBarModule],
   template: `
     <mat-card appearance="outlined">
       <mat-card-header>
@@ -41,49 +20,30 @@ import { CategoryPieChart } from './category-pie';
         <mat-card-subtitle>Beträge je Monat, Anteil am Einkommen je Kategorie</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
-        <mat-button-toggle-group
-          class="view-toggle"
-          hideSingleSelectionIndicator
-          aria-label="Darstellung"
-          [value]="view()"
-          (change)="view.set($event.value)"
-        >
-          <mat-button-toggle value="bars">Balken</mat-button-toggle>
-          <mat-button-toggle value="pie">Torte</mat-button-toggle>
-        </mat-button-toggle-group>
-        @if (view() === 'pie') {
-          <app-category-pie
-            [breakdowns]="breakdowns()"
-            [expenseCategories]="expenseCategories()"
-            [(selection)]="pieSelection"
-            [(sort)]="pieSort"
-          />
-        } @else {
-          @for (breakdown of breakdowns(); track breakdown.category) {
-            <div class="row" [class.missed]="!breakdown.targetMet">
-              <div class="row-header">
-                <span class="name">{{ label(breakdown) }}</span>
-                <span class="total">{{ breakdown.monthlyTotal | currency: 'EUR' }}</span>
-              </div>
-              @if (hasUnplanned(breakdown)) {
-                <span class="unplanned">
-                  davon nicht verplant: {{ breakdown.monthlyUnplanned | currency: 'EUR' }}
-                </span>
-              }
-              <mat-progress-bar
-                mode="determinate"
-                [value]="progress(breakdown)"
-                [attr.aria-label]="label(breakdown)"
-              />
-              <span class="ratio">
-                {{ breakdown.actualPercentageOfIncome | number: '1.0-2' }} % von
-                {{ target(breakdown) }} %
-                @if (!breakdown.targetMet) {
-                  · {{ missed(breakdown) }}
-                }
-              </span>
+        @for (breakdown of breakdowns(); track breakdown.category) {
+          <div class="row" [class.missed]="!breakdown.targetMet">
+            <div class="row-header">
+              <span class="name">{{ label(breakdown) }}</span>
+              <span class="total">{{ breakdown.monthlyTotal | currency: 'EUR' }}</span>
             </div>
-          }
+            @if (hasUnplanned(breakdown)) {
+              <span class="unplanned">
+                davon nicht verplant: {{ breakdown.monthlyUnplanned | currency: 'EUR' }}
+              </span>
+            }
+            <mat-progress-bar
+              mode="determinate"
+              [value]="progress(breakdown)"
+              [attr.aria-label]="label(breakdown)"
+            />
+            <span class="ratio">
+              {{ breakdown.actualPercentageOfIncome | number: '1.0-2' }} % von
+              {{ target(breakdown) }} %
+              @if (!breakdown.targetMet) {
+                · {{ missed(breakdown) }}
+              }
+            </span>
+          </div>
         }
       </mat-card-content>
     </mat-card>
@@ -92,14 +52,6 @@ import { CategoryPieChart } from './category-pie';
 })
 export class CategoryBreakdownCard {
   readonly breakdowns = input.required<CategoryBreakdown[]>();
-  /** The expenses grouped as the entries show them, for the pie of a category or group (TK-1). */
-  readonly expenseCategories = input<CategoryItems[]>([]);
-  /** Selected view; the parent keeps it, so it survives switching the year (TD-1). */
-  readonly view = model<BreakdownView>('bars');
-  /** Selected part of the plan in the pie; kept by the parent like the view (TK-5). */
-  readonly pieSelection = model<PieSelection>(RULE_SELECTION);
-  /** Order of the slices in the pie; kept by the parent like the selection (TS-6). */
-  readonly pieSort = model<PieSort>(ENTRIES_SORT);
 
   protected label(breakdown: CategoryBreakdown): string {
     return categoryLabel(breakdown.category);

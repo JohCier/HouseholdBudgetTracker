@@ -34,10 +34,10 @@ const expenses: TopItem[] = [
   },
 ];
 
-async function render(saving: TopItem[], expense: TopItem[]) {
+async function render(list: 'savingPotential' | 'expenses', items: TopItem[]) {
   const fixture = TestBed.createComponent(TopItems);
-  fixture.componentRef.setInput('savingPotentials', saving);
-  fixture.componentRef.setInput('expenses', expense);
+  fixture.componentRef.setInput('list', list);
+  fixture.componentRef.setInput('items', items);
   await fixture.whenStable();
   return fixture;
 }
@@ -48,20 +48,14 @@ function rows(element: HTMLElement) {
   );
 }
 
-function toggle(element: HTMLElement, label: string) {
-  return [...element.querySelectorAll<HTMLButtonElement>('mat-button-toggle button')].find(
-    (button) => text(button) === label,
-  )!;
-}
-
 describe('TopItems', () => {
-  // TP-7, TP-8, TP-9
-  it('shows the saving potentials first, with rank, subcategory and the amount of the expense', async () => {
-    const fixture = await render(savingPotentials, expenses);
+  // AP-11, TP-8, TP-9
+  it('shows the saving potentials with rank, subcategory and the amount of the expense', async () => {
+    const fixture = await render('savingPotential', savingPotentials);
     const element = fixture.nativeElement as HTMLElement;
 
-    expect(element.querySelector('mat-card-title')?.textContent).toBe('Top 5');
-    expect(toggle(element, 'Sparpotential').getAttribute('aria-checked')).toBe('true');
+    expect(text(element.querySelector('mat-card-title')!)).toBe('Top 5 Sparpotential');
+    expect(element.querySelector('mat-button-toggle')).toBeNull();
     expect([...element.querySelectorAll('thead th')].map(text)).toEqual(['Monat', 'Jahr']);
     expect(rows(element)).toEqual([
       ['1.Fitnessstudio Hobbys · von €30.00', '€30.00', '€360.00'],
@@ -69,29 +63,22 @@ describe('TopItems', () => {
     ]);
   });
 
-  // TP-7, TP-8
-  it('switches to the highest expenses without the amount of the expense', async () => {
-    const fixture = await render(savingPotentials, expenses);
+  // AP-11, TP-8
+  it('shows the highest expenses without the amount of the expense', async () => {
+    const fixture = await render('expenses', expenses);
     const element = fixture.nativeElement as HTMLElement;
 
-    toggle(element, 'Ausgaben').click();
-    await fixture.whenStable();
-
-    expect(fixture.componentInstance.view()).toBe('expenses');
+    expect(text(element.querySelector('mat-card-title')!)).toBe('Top 5 Ausgaben');
     expect(rows(element)).toEqual([['1.Miete Sonstiges', '€1,000.00', '€12,000.00']]);
   });
 
   // TP-10
   it('shows a hint instead of an empty list', async () => {
-    const fixture = await render([], []);
-    const element = fixture.nativeElement as HTMLElement;
+    const saving = (await render('savingPotential', [])).nativeElement as HTMLElement;
+    expect(saving.querySelector('table')).toBeNull();
+    expect(text(saving.querySelector('.empty')!)).toBe('Noch kein Sparpotential markiert');
 
-    expect(element.querySelector('table')).toBeNull();
-    expect(text(element.querySelector('.empty')!)).toBe('Noch kein Sparpotential markiert');
-
-    fixture.componentRef.setInput('view', 'expenses');
-    await fixture.whenStable();
-
-    expect(text(element.querySelector('.empty')!)).toBe('Noch keine Ausgaben');
+    const expense = (await render('expenses', [])).nativeElement as HTMLElement;
+    expect(text(expense.querySelector('.empty')!)).toBe('Noch keine Ausgaben');
   });
 });

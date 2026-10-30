@@ -33,7 +33,7 @@ bleiben unverändert.
 - **TK-4**: Ein Klick auf ein Stück (oder Enter auf dem fokussierten Stück) wählt den nächsttieferen Ausschnitt: in
   der 50/30/20-Regel die Kategorie, in einer Kategorie die Unterkategorie. Ein Stück eines Postens und das Stück
   „nicht verplant" (TK-9) wählen nichts aus. Ein Knopf „Zurück" neben der Auswahl führt eine Ebene nach oben.
-- **TK-5**: Der gewählte Ausschnitt bleibt erhalten, wenn der Benutzer zwischen Balken und Torte wechselt, Posten
+- **TK-5**: Der gewählte Ausschnitt bleibt erhalten, wenn der Benutzer die Tabs wechselt (AP-10), Posten
   erfasst, ändert oder löscht und wenn er das Jahr wechselt (wie TD-1). Gibt es den gewählten Ausschnitt nicht mehr
   (die Gruppe hat keine Posten mehr, UK-18, oder der andere Plan hat sie nicht), springt die Auswahl auf die
   Kategorie. Über das Neuladen der Seite hinaus wird nichts gespeichert.

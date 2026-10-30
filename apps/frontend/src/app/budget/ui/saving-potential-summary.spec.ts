@@ -29,4 +29,27 @@ describe('SavingPotentialSummary', () => {
       ['Sonstiges', '€4.00', '€48.00'],
     ]);
   });
+
+  // AP-12
+  it('scrolls a long list within the box and shows a hint instead of an empty one', async () => {
+    const fixture = TestBed.createComponent(SavingPotentialSummary);
+    fixture.componentRef.setInput(
+      'sums',
+      Array.from({ length: 12 }, (_, i) => ({
+        subcategory: `Gruppe ${i + 1}`,
+        monthlyAmount: '10.00',
+        amount: '120.00',
+      })),
+    );
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+    const scroll = element.querySelector<HTMLElement>('.scroll')!;
+    expect(getComputedStyle(scroll).overflowY).toBe('auto');
+    expect(getComputedStyle(scroll).maxHeight).toBe('320px');
+
+    fixture.componentRef.setInput('sums', []);
+    await fixture.whenStable();
+    expect(element.querySelector('table')).toBeNull();
+    expect(text(element.querySelector('.empty')!)).toBe('Noch kein Sparpotential markiert');
+  });
 });

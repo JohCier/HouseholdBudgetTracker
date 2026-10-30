@@ -6,7 +6,8 @@ import {
   pieLegendItem,
   pieSlices,
   registerWithPlan,
-  showBreakdownAs,
+  showPie,
+  showTab,
 } from './support';
 
 // docs/specs/tortendiagramm.md
@@ -15,24 +16,21 @@ test.describe('Tortendiagramm der 50/30/20-Regel', () => {
     await registerWithPlan(page);
   });
 
-  test('die Übersicht zeigt zuerst die Balken, umschalten führt zur Torte und zurück (TD-1)', async ({
+  test('die Balken stehen oben ohne Umschalter, die Torte im Tab „Detailansicht" (AP-2, AP-9)', async ({
     page,
   }) => {
     await addIncome(page, 'Gehalt', '2000');
 
-    const view = page.getByRole('radiogroup', { name: 'Darstellung' });
-    await expect(view.getByRole('radio', { name: 'Balken' })).toBeChecked();
+    await expect(page.getByRole('radiogroup', { name: 'Darstellung' })).toHaveCount(0);
     await expect(categoryRow(page, 'Lebensunterhalt')).toBeVisible();
-    await expect(page.locator('app-category-pie')).toBeHidden();
+    await expect(page.locator('app-category-pie')).toHaveCount(0);
 
-    await showBreakdownAs(page, 'Torte');
-    await expect(view.getByRole('radio', { name: 'Torte' })).toBeChecked();
+    await showPie(page);
     await expect(pieLegendItem(page, 'Lebensunterhalt')).toBeVisible();
-    await expect(categoryRow(page, 'Lebensunterhalt')).toBeHidden();
-
-    await showBreakdownAs(page, 'Balken');
     await expect(categoryRow(page, 'Lebensunterhalt')).toBeVisible();
-    await expect(page.locator('app-category-pie')).toBeHidden();
+
+    await showTab(page, 'Regelmäßige Posten');
+    await expect(page.locator('app-category-pie')).toHaveCount(0);
   });
 
   test('ein ausgeglichener Plan hat drei Stücke und eine Legende ohne Zielhinweis (TD-2, TD-3, TD-5, TD-9)', async ({
@@ -43,7 +41,7 @@ test.describe('Tortendiagramm der 50/30/20-Regel', () => {
     await addExpense(page, 'Urlaub', '600', 'Freizeit & Spaß', undefined, 'Monatlich');
     await addExpense(page, 'ETF-Sparplan', '900', 'Sparen & Investieren', undefined, 'Monatlich');
 
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
 
     await expect(pieSlices(page)).toHaveCount(3);
     await expect(
@@ -63,7 +61,7 @@ test.describe('Tortendiagramm der 50/30/20-Regel', () => {
     await addIncome(page, 'Gehalt', '2000', undefined, 'Monatlich');
     await addExpense(page, 'Miete', '1200', 'Lebensunterhalt', undefined, 'Monatlich');
 
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
 
     await expect(pieLegendItem(page, 'Lebensunterhalt')).toContainText(
       '60 % von max. 50 % · Ziel überschritten',
@@ -76,15 +74,13 @@ test.describe('Tortendiagramm der 50/30/20-Regel', () => {
     await expect(page.getByRole('button', { name: /^Sparen & Investieren:/ })).toHaveCount(0);
   });
 
-  test('die Torte bleibt gewählt, wenn ein Eintrag hinzukommt (TD-1, TD-3)', async ({ page }) => {
+  test('die Torte zeigt einen neu erfassten Eintrag (TD-3)', async ({ page }) => {
     await addIncome(page, 'Gehalt', '2000', undefined, 'Monatlich');
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
 
     await addExpense(page, 'Miete', '1000', 'Lebensunterhalt', undefined, 'Monatlich');
+    await showPie(page);
 
-    await expect(
-      page.getByRole('radiogroup', { name: 'Darstellung' }).getByRole('radio', { name: 'Torte' }),
-    ).toBeChecked();
     await expect(pieLegendItem(page, 'Lebensunterhalt')).toContainText('1.000,00 €');
     await expect(pieLegendItem(page, 'Lebensunterhalt')).toContainText('50 % von max. 50 %');
   });
@@ -92,7 +88,7 @@ test.describe('Tortendiagramm der 50/30/20-Regel', () => {
   test('bei einem Defizit zeigt die Torte die Aufteilung der Ausgaben (TD-4)', async ({ page }) => {
     await addExpense(page, 'Miete', '100', 'Lebensunterhalt', undefined, 'Monatlich');
 
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
 
     await expect(pieSlices(page)).toHaveCount(1);
     await expect(
@@ -105,7 +101,7 @@ test.describe('Tortendiagramm der 50/30/20-Regel', () => {
   test('ein leerer Plan zeigt einen leeren Kreis und alle Kategorien mit 0,00 € (TD-7)', async ({
     page,
   }) => {
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
 
     await expect(page.getByText('Noch keine Ausgaben oder Einnahmen')).toBeVisible();
     await expect(pieSlices(page)).toHaveCount(0);

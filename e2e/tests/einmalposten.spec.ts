@@ -8,6 +8,7 @@ import {
   oneTimeItemRow,
   oneTimeTotal,
   openYear,
+  showOneTimeItems,
   register,
   registerWithPlan,
   showAmounts,
@@ -97,6 +98,7 @@ test.describe('Einmalposten', () => {
     await registerWithPlan(page);
     await openYear(page, year + 1);
     await expect(page.getByText(`Für ${year + 1} gibt es noch keinen Haushaltsplan.`)).toBeVisible();
+    await showOneTimeItems(page);
     await expect(page.locator('app-one-time-items')).toContainText('Keine Einmalposten.');
 
     await addOneTimeItem(page, {
@@ -121,6 +123,7 @@ test.describe('Einmalposten', () => {
 
     await row.click();
     await expect(page).toHaveURL(`/jahre/${year + 1}`);
+    await showOneTimeItems(page);
     await expect(oneTimeItemRow(page, 'Bonus')).toBeVisible();
   });
 
@@ -131,6 +134,7 @@ test.describe('Einmalposten', () => {
     await page.getByRole('button', { name: 'Als Vorlage übernehmen' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Übernehmen' }).click();
     await expect(page).toHaveURL(`/jahre/${year + 1}`);
+    await showOneTimeItems(page);
     await expect(page.locator('app-one-time-items')).toContainText('Keine Einmalposten.');
 
     await openYear(page, year);
@@ -140,6 +144,7 @@ test.describe('Einmalposten', () => {
     await openYear(page, year);
 
     await expect(page.getByText(`Für ${year} gibt es noch keinen Haushaltsplan.`)).toBeVisible();
+    await showOneTimeItems(page);
     await expect(oneTimeItemRow(page, 'Nebenkostennachzahlung')).toBeVisible();
   });
 
@@ -161,6 +166,7 @@ test.describe('Einmalposten', () => {
     await expect(page.locator('app-one-time-items')).toContainText('Keine Einmalposten.');
 
     await openYear(page, year + 1);
+    await showOneTimeItems(page);
     await expect(oneTimeItemRow(page, 'Steuererstattung')).toContainText(`05.01.${year + 1}`);
   });
 
@@ -171,11 +177,13 @@ test.describe('Einmalposten', () => {
     const today = new Date();
     const iso = `${year}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
+    await showOneTimeItems(page);
     await page.getByRole('button', { name: 'Einmalposten erfassen' }).click();
     await expect(page.getByRole('dialog').getByLabel('Datum')).toHaveValue(iso);
     await page.getByRole('dialog').getByRole('button', { name: 'Abbrechen' }).click();
 
     await openYear(page, year - 3);
+    await showOneTimeItems(page);
     await page.getByRole('button', { name: 'Einmalposten erfassen' }).click();
     await expect(page.getByRole('dialog').getByLabel('Datum')).toHaveValue(`${year - 3}-01-01`);
   });
@@ -200,6 +208,7 @@ test.describe('Einmalposten', () => {
   test('lehnt einen Betrag von 0,00 € und ein Datum vor 1900 ab (EP-1, EP-3)', async ({ page }) => {
     await register(page);
     await openYear(page, year);
+    await showOneTimeItems(page);
     await page.getByRole('button', { name: 'Einmalposten erfassen' }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Beschreibung').fill('Null');

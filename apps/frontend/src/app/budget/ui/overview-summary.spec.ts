@@ -112,28 +112,29 @@ describe('OverviewSummary', () => {
     expect(element.querySelector('[role="alert"]')?.textContent).toContain(
       'Deine Ausgaben übersteigen deine Einnahmen.',
     );
+    expect(element.querySelector('[role="status"]')).toBeNull();
   });
 
-  // SU-6, SU-7
-  it('shows the saving potential per subcategory beside the box only if there is any', async () => {
-    const without = await render(overview({}));
-    expect(without.querySelector('app-saving-potential-summary')).toBeNull();
+  // AP-17
+  it('confirms what is left each month when income covers the expenses', async () => {
+    const element = await render(overview({}));
 
+    expect(element.querySelector('[role="alert"]')).toBeNull();
+    expect(text(element.querySelector('[role="status"]')!)).toBe(
+      'Deine Einnahmen decken deine Ausgaben. Im Monat bleiben dir €83.33 übrig.',
+    );
+  });
+
+  // AP-3
+  it('no longer shows the saving potential per subcategory beside the box', async () => {
     const element = await render(
       overview({
-        monthlySavingPotential: '45.00',
-        savingPotential: '540.00',
         savingPotentialsBySubcategory: [
           { subcategory: 'Hobbys', monthlyAmount: '30.00', amount: '360.00' },
-          { subcategory: 'Abonnements', monthlyAmount: '15.00', amount: '180.00' },
         ],
       }),
     );
 
-    const sums = element.querySelector('app-saving-potential-summary table')!;
-    expect(rows(sums)).toEqual([
-      ['Hobbys', '€30.00', '€360.00'],
-      ['Abonnements', '€15.00', '€180.00'],
-    ]);
+    expect(element.querySelector('app-saving-potential-summary')).toBeNull();
   });
 });

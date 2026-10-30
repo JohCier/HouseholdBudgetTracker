@@ -87,7 +87,99 @@ function oneTimeItemStore() {
   };
 }
 
+const tabLabels = (element: HTMLElement) =>
+  [...element.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent?.trim());
+
+const tab = (element: HTMLElement, label: string) =>
+  [...element.querySelectorAll<HTMLElement>('[role="tab"]')].find(
+    (candidate) => candidate.textContent?.trim() === label,
+  )!;
+
 describe('BudgetDashboard', () => {
+  // AP-1, AP-5, AP-7 to AP-11, AP-14
+  it('shows the overview above the tabs and one tab at a time', async () => {
+    const store = {
+      year: signal(2026),
+      hasPreviousYear: signal(true),
+      hasNextYear: signal(true),
+      planId: signal<string | null>('plan-2026'),
+      planMissing: signal(false),
+      items: signal([item]),
+      overview: signal<HouseholdPlanOverview | null>(overview),
+      subcategorySuggestions: vi.fn(() => []),
+      loading: signal(false),
+      loadError: signal(null),
+      load: vi.fn(async () => undefined),
+      selectYear: vi.fn(async () => undefined),
+    };
+    const dialog = { open: vi.fn(() => ({ afterClosed: () => of(false) })) };
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), { provide: MatSnackBar, useValue: { open: vi.fn() } }],
+    });
+    TestBed.overrideComponent(BudgetDashboard, {
+      set: {
+        providers: [
+          { provide: BudgetStore, useValue: store },
+          oneTimeItemStore(),
+          { provide: MatDialog, useValue: dialog },
+        ],
+      },
+    });
+    const fixture = TestBed.createComponent(BudgetDashboard);
+    fixture.componentRef.setInput('year', '2026');
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('.overview app-overview-summary')).not.toBeNull();
+    expect(element.querySelector('.overview app-category-breakdown')).not.toBeNull();
+    expect(tabLabels(element)).toEqual([
+      'Regelmäßige Posten',
+      'Einmalposten',
+      'Detailansicht',
+      'Sparhebel',
+    ]);
+    expect(tab(element, 'Regelmäßige Posten').getAttribute('aria-selected')).toBe('true');
+    expect(element.querySelector('app-budget-entries')).not.toBeNull();
+    expect(element.querySelector('app-one-time-items')).toBeNull();
+
+    [...element.querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) => button.textContent?.includes('Posten erfassen'))!
+      .click();
+    expect(dialog.open).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ data: null }),
+    );
+
+    tab(element, 'Einmalposten').click();
+    await fixture.whenStable();
+    expect(element.querySelector('app-one-time-items')).not.toBeNull();
+    expect(element.querySelector('app-budget-entries')).toBeNull();
+
+    tab(element, 'Detailansicht').click();
+    await fixture.whenStable();
+    expect(element.querySelector('app-category-pie')).not.toBeNull();
+
+    tab(element, 'Sparhebel').click();
+    await fixture.whenStable();
+    expect(element.querySelector('app-saving-potential-summary')).not.toBeNull();
+    expect(element.querySelectorAll('app-top-items').length).toBe(2);
+
+    // AP-13: a year without a plan has only the first two tabs and falls back to the first
+    store.planId.set(null);
+    store.planMissing.set(true);
+    store.overview.set(null);
+    await fixture.whenStable();
+    expect(tabLabels(element)).toEqual(['Regelmäßige Posten', 'Einmalposten']);
+    expect(tab(element, 'Regelmäßige Posten').getAttribute('aria-selected')).toBe('true');
+
+    // ...and stays there when a year with a plan follows
+    store.planId.set('plan-2026');
+    store.planMissing.set(false);
+    store.overview.set(overview);
+    await fixture.whenStable();
+    expect(tab(element, 'Regelmäßige Posten').getAttribute('aria-selected')).toBe('true');
+  });
+
   it('offers to undo a deletion', async () => {
     const undo = new Subject<void>();
     const snackBar = { open: vi.fn(() => ({ onAction: () => undo })) };
@@ -284,8 +376,10 @@ describe('BudgetDashboard', () => {
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
 
+    // AP-13
     expect(element.textContent).toContain('Für 2030 gibt es noch keinen Haushaltsplan.');
-    expect(element.querySelector('app-add-item-form')).toBeNull();
+    expect(element.querySelector('app-overview-summary')).toBeNull();
+    expect(tabLabels(element)).toEqual(['Regelmäßige Posten', 'Einmalposten']);
 
     [...element.querySelectorAll<HTMLButtonElement>('button')]
       .find((button) => button.textContent?.includes('Haushaltsplan anlegen'))!

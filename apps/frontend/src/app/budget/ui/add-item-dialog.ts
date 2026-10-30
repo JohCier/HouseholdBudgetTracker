@@ -27,9 +27,9 @@ import {
 import { SubcategoryField } from './subcategory-field';
 
 /**
- * Adds an item right from one of the groups of the entries: the same fields as the form "Neuer
- * Eintrag", with type, category and subcategory of the group filled in and the focus on the
- * description (EG-10). Every field can still be changed; the item then goes to the group its
+ * Adds an item, either from the button "Posten erfassen" as an expense with all fields empty
+ * (AP-14) or right from one of the groups of the entries, with type, category and subcategory of
+ * the group filled in (EG-10). The focus is on the description. Every field can still be changed; the item then goes to the group its
  * values belong to. Closes with `true` once the item is added; on an error it stays open and
  * shows the message, so nothing typed is lost (EG-11).
  * Needs the dashboard's {@link BudgetStore}, so it is opened with the dashboard's injector.
@@ -48,7 +48,9 @@ import { SubcategoryField } from './subcategory-field';
     SubcategoryField,
   ],
   template: `
-    <h2 mat-dialog-title>Neuer Eintrag in {{ preset.group }}</h2>
+    <h2 mat-dialog-title>
+      {{ preset ? 'Neuer Eintrag in ' + preset.group : 'Posten erfassen' }}
+    </h2>
     <form [formGroup]="form" (ngSubmit)="add()">
       <mat-dialog-content>
         <mat-button-toggle-group formControlName="type" aria-label="Art des Eintrags">
@@ -176,7 +178,8 @@ import { SubcategoryField } from './subcategory-field';
 export class AddItemDialog {
   private readonly store = inject(BudgetStore);
   private readonly dialogRef = inject<MatDialogRef<AddItemDialog, boolean>>(MatDialogRef);
-  protected readonly preset = inject<NewItemPreset>(MAT_DIALOG_DATA);
+  /** The group the item is added to; `null` for an item from "Posten erfassen" (AP-14). */
+  protected readonly preset = inject<NewItemPreset | null>(MAT_DIALOG_DATA);
 
   protected readonly categories = EXPENSE_CATEGORIES;
   protected readonly periods = AMOUNT_PERIODS;
@@ -187,7 +190,7 @@ export class AddItemDialog {
   private readonly fb = inject(FormBuilder).nonNullable;
 
   protected readonly form = this.fb.group({
-    type: this.fb.control<ItemType>(this.preset.type),
+    type: this.fb.control<ItemType>(this.preset?.type ?? 'EXPENSE'),
     description: this.fb.control('', [Validators.required, Validators.pattern(/\S/)]),
     amount: this.fb.control<number | null>(null, [
       Validators.required,
@@ -196,11 +199,11 @@ export class AddItemDialog {
     ]),
     period: this.fb.control<AmountPeriod>('MONTHLY'),
     category: this.fb.control<ExpenseCategory | null>(
-      { value: this.preset.category, disabled: this.preset.type === 'INCOME' },
+      { value: this.preset?.category ?? null, disabled: this.preset?.type === 'INCOME' },
       Validators.required,
     ),
     subcategory: this.fb.control(
-      this.preset.subcategory,
+      this.preset?.subcategory ?? '',
       Validators.maxLength(SUBCATEGORY_MAX_LENGTH),
     ),
     note: this.fb.control('', Validators.maxLength(NOTE_MAX_LENGTH)),

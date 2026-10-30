@@ -52,7 +52,8 @@ PB-4 in [posten-bearbeiten.md](posten-bearbeiten.md) und die Anordnung der Summe
 - **EG-11**: „Hinzufügen" prüft die Felder wie das Formular (PO-3 bis PO-5, UK-2), legt den Posten an, schließt den
   Dialog und zeigt den Posten unten in seiner Gruppe (EG-1). „Abbrechen" und die Escape-Taste schließen den Dialog,
   ohne etwas anzulegen. Schlägt das Speichern fehl, bleibt der Dialog mit den Eingaben offen und zeigt den Fehler.
-- **EG-12**: Das Formular „Neuer Eintrag" neben den Einträgen bleibt unverändert; der Dialog ist ein zusätzlicher Weg.
+- **EG-12**: Neben dem Dialog in der Gruppe gibt es den Dialog „Posten erfassen" über den Einträgen (AP-14; bis zu
+  [planansicht-aufbau.md](planansicht-aufbau.md) das Formular „Neuer Eintrag" neben den Einträgen).
 
 ## Akzeptanzkriterien
 

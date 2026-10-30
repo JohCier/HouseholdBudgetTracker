@@ -45,9 +45,9 @@ Plans, lässt sich aber als Monatsbetrag angeben und so anzeigen.
 
 ### Anzeige
 
-- **MJ-11**: Im Formular „Neuer Eintrag" und im Dialog „Bearbeiten" wählt der Benutzer die Angabe neben dem Betrag mit
-  einem Umschalter „Monatlich | Jährlich". Beim Erfassen ist „Monatlich" vorausgewählt; nach dem Erfassen bleibt die
-  gewählte Angabe wie die Art (PO-1). Der Dialog „Bearbeiten" zeigt den eingegebenen Betrag mit seiner Angabe.
+- **MJ-11**: In den Dialogen zum Erfassen (AP-14, EG-10) und im Dialog „Bearbeiten" wählt der Benutzer die Angabe
+  neben dem Betrag mit einem Umschalter „Monatlich | Jährlich". Beim Erfassen ist „Monatlich" vorausgewählt (bis zu
+  [planansicht-aufbau.md](planansicht-aufbau.md) blieb die Angabe im Formular „Neuer Eintrag" nach dem Erfassen). Der Dialog „Bearbeiten" zeigt den eingegebenen Betrag mit seiner Angabe.
 - **MJ-12**: Die Karte „Einträge" zeigt bei jedem Posten und bei jeder Summe (Bereich, Kategorie, Gruppe; als Zeile
   unter den Posten nach [EG-5, EG-6](eintraege-gruppen.md)) zwei Spalten: „Monat" und „Jahr". Der vom Benutzer
   eingegebene Betrag ist hervorgehoben, der abgeleitete schwächer dargestellt.

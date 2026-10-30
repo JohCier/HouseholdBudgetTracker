@@ -36,8 +36,7 @@ test.describe("Plan als Vorlage übernehmen", () => {
     await registerWithPlan(page);
     await addIncome(page, "Gehalt", "3000");
     await addExpense(page, "Miete", "900", "Lebensunterhalt", "Wohnen");
-    await page.getByLabel("Notiz (optional)").fill("Inspektion im Mai");
-    await addExpense(page, "Wartung", "400", "Lebensunterhalt", "Auto");
+    await addExpense(page, "Wartung", "400", "Lebensunterhalt", "Auto", "Jährlich", "Inspektion im Mai");
     await page
       .getByRole("button", { name: "Unterkategorie Auto verschieben" })
       .focus();
