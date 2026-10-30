@@ -325,8 +325,8 @@ class JdbcHouseholdPlanOverviewQueryHandlerTest {
 
     private void oneTimeItem(OwnerId owner, String type, String amount, String date) {
         jdbcClient.sql("""
-                        INSERT INTO one_time_item (id, owner_id, type, description, amount, item_date)
-                        VALUES (:id, :owner, :type, 'Einmalig', CAST(:amount AS NUMERIC), CAST(:date AS DATE))
+                        INSERT INTO one_time_item (id, owner_id, type, description, amount, item_date, item_rank)
+                        VALUES (:id, :owner, :type, 'Einmalig', CAST(:amount AS NUMERIC), CAST(:date AS DATE), 1)
                         """)
                 .param("id", UUID.randomUUID())
                 .param("owner", owner.value())
