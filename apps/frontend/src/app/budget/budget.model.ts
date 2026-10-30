@@ -38,6 +38,7 @@ export type OneTimeItem = Schemas['OneTimeItemResponse'];
 export type OneTimeItemOverview = Schemas['OneTimeItemOverviewResponse'];
 export type OneTimeItemRequest = Schemas['OneTimeItemRequest'];
 export type CreatedOneTimeItemResponse = Schemas['CreatedOneTimeItemResponse'];
+export type MoveOneTimeItemRequest = Schemas['MoveOneTimeItemRequest'];
 
 /** A calendar year, e.g. 2026. */
 export type Year = number;

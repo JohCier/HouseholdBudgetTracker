@@ -42,10 +42,9 @@ import { CategoryBreakdownCard } from './ui/category-breakdown';
 import { CategoryPieChart } from './ui/category-pie';
 import { TopItems } from './ui/top-items';
 import { DELETED_PLAN_STATE, openDeletePlanDialog } from './ui/delete-plan-dialog';
-import { openDeleteOneTimeItemDialog } from './ui/delete-one-time-item-dialog';
 import { EditItemDialog } from './ui/edit-item-dialog';
 import { openOneTimeItemDialog } from './ui/one-time-item-dialog';
-import { OneTimeItems } from './ui/one-time-items';
+import { OneTimeItemMove, OneTimeItems } from './ui/one-time-items';
 import { SavingPotentialDialog } from './ui/saving-potential-dialog';
 import { SavingPotentialSummary } from './ui/saving-potential-summary';
 import { OverviewSummary } from './ui/overview-summary';
@@ -192,6 +191,7 @@ import { parseYear } from './year';
               [loadError]="oneTimeItems.loadError()"
               (add)="addOneTimeItem()"
               (edit)="editOneTimeItem($event)"
+              (move)="moveOneTimeItem($event)"
               (remove)="removeOneTimeItem($event)"
               (retry)="oneTimeItems.load()"
             />
@@ -471,13 +471,35 @@ export class BudgetDashboard {
     );
   }
 
-  /** Deletes a one-time item after asking; there is no undo (EP-17). */
-  protected removeOneTimeItem(item: OneTimeItem): void {
-    openDeleteOneTimeItemDialog(this.dialog, this.injector, item).subscribe((deleted) => {
-      if (deleted) {
-        this.snackBar.open(`„${item.description}" gelöscht`, undefined, { duration: 3000 });
-      }
+  /** Saves the new place of a one-time item; on failure the stored order shows again (ES-4, ES-9). */
+  protected async moveOneTimeItem(move: OneTimeItemMove): Promise<void> {
+    try {
+      await this.oneTimeItems.moveItem(move.item, move.from, move.to);
+    } catch (error) {
+      this.snackBar.open((error as Error).message, 'OK', { duration: 6000 });
+    }
+  }
+
+  /** Deletes a one-time item right away and offers to undo it, as for items (ES-10, ES-11). */
+  protected async removeOneTimeItem(item: OneTimeItem): Promise<void> {
+    try {
+      await this.oneTimeItems.deleteItem(item.id);
+    } catch (error) {
+      this.snackBar.open((error as Error).message, 'OK', { duration: 6000 });
+      return;
+    }
+    const undo = this.snackBar.open(`„${item.description}" gelöscht`, 'Rückgängig', {
+      duration: 6000,
     });
+    undo.onAction().subscribe(() => void this.restoreOneTimeItem(item));
+  }
+
+  private async restoreOneTimeItem(item: OneTimeItem): Promise<void> {
+    try {
+      await this.oneTimeItems.restoreItem(item);
+    } catch (error) {
+      this.snackBar.open((error as Error).message, 'OK', { duration: 6000 });
+    }
   }
 
   protected edit(item: BudgetItem): void {

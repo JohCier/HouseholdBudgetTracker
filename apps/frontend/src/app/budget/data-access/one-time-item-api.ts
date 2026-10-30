@@ -3,13 +3,14 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   CreatedOneTimeItemResponse,
+  MoveOneTimeItemRequest,
   OneTimeItemOverview,
   OneTimeItemRequest,
   Year,
 } from '../budget.model';
 
 /**
- * Thin HTTP adapter for the backend's /api/one-time-items endpoints (EP-1 to EP-17). Changes
+ * Thin HTTP adapter for the backend's /api/one-time-items endpoints (EP-1 to EP-17, ES-4). Changes
  * answer without the items; the caller reads the items of the year it shows again, since a
  * changed date may move an item to another year (EP-7).
  */
@@ -29,6 +30,11 @@ export class OneTimeItemApi {
 
   changeItem(itemId: string, request: OneTimeItemRequest): Observable<void> {
     return this.http.put<void>(this.itemUrl(itemId), request);
+  }
+
+  /** Moves an item between two neighbors of its area, the incomes or the expenses (ES-4). */
+  moveItem(itemId: string, request: MoveOneTimeItemRequest): Observable<void> {
+    return this.http.put<void>(`${this.itemUrl(itemId)}/position`, request);
   }
 
   deleteItem(itemId: string): Observable<void> {

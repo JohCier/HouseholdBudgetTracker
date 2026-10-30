@@ -10,7 +10,9 @@ import de.jcss.hbt.domain.onetimeitem.valueobject.OneTimeItemId;
 import de.jcss.hbt.domain.onetimeitem.command.ChangeOneTimeItemCommand;
 import de.jcss.hbt.domain.onetimeitem.command.CreateOneTimeItemCommand;
 import de.jcss.hbt.domain.onetimeitem.command.DeleteOneTimeItemCommand;
+import de.jcss.hbt.domain.onetimeitem.command.MoveOneTimeItemCommand;
 import de.jcss.hbt.infrastructure.web.dto.CreatedOneTimeItemResponse;
+import de.jcss.hbt.infrastructure.web.dto.MoveOneTimeItemRequest;
 import de.jcss.hbt.infrastructure.web.dto.OneTimeItemOverviewResponse;
 import de.jcss.hbt.infrastructure.web.dto.OneTimeItemRequest;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -37,7 +39,7 @@ import java.time.Year;
 import java.util.UUID;
 
 /**
- * Exposes the one-time items of the signed-in user as a REST API (EP-1 to EP-17). Contains no
+ * Exposes the one-time items of the signed-in user as a REST API (EP-1 to EP-17, ES-1 to ES-11). Contains no
  * business logic: changes become commands for the {@link OneTimeItemApplicationService}, the
  * items of a year are read through it as well. Changes answer without content; clients read the
  * items of the year they show again, since a changed date may move an item to another year (EP-7).
@@ -82,7 +84,20 @@ public class OneTimeItemController {
                 BudgetItemNote.ofNullable(request.note())));
     }
 
-    /** Deletes a one-time item for good (EP-17): 204, or 404 if it is not an item of the user (EP-4). */
+    /**
+     * Moves a one-time item between two neighbors in its area (ES-4): 204, 400 without a neighbor or with a
+     * neighbor of another type or year, or 404 if the item or a neighbor is not an item of the user (EP-4).
+     */
+    @PutMapping("/{itemId}/position")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void moveOneTimeItem(@AuthenticationPrincipal Jwt user, @PathVariable UUID itemId,
+                                @RequestBody MoveOneTimeItemRequest request) {
+        items.moveItem(new MoveOneTimeItemCommand(owner(user), OneTimeItemId.of(itemId),
+                request.previousItemId() == null ? null : OneTimeItemId.of(request.previousItemId()),
+                request.nextItemId() == null ? null : OneTimeItemId.of(request.nextItemId())));
+    }
+
+    /** Deletes a one-time item for good (ES-10): 204, or 404 if it is not an item of the user (EP-4). */
     @DeleteMapping("/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteOneTimeItem(@AuthenticationPrincipal Jwt user, @PathVariable UUID itemId) {

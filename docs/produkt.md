@@ -42,6 +42,7 @@ Jeder Benutzer verwaltet nur seine eigenen Pläne. (bitte bestätigen)
 | Vermögen und Schulden | Je Jahr Vermögenswerte und Schulden mit Bezeichnung und Betrag erfassen, das Nettovermögen mit Veränderung zum Vorjahr sehen, in ein anderes Jahr übernehmen; in der Jahresübersicht eine Karte mit Verlaufsdiagramm | [vermoegen.md](specs/vermoegen.md) | VS-… |
 | Top 5 | Im Tab „Sparhebel" die fünf Ausgaben mit dem höchsten Sparpotential und die fünf höchsten Ausgaben aus Lebensunterhalt und Freizeit & Spaß, je Monat und Jahr | [top-5.md](specs/top-5.md) | TP-… |
 | Aufbau der Planansicht | Oben Bilanz (mit Meldung, ob der Plan aufgeht) und 50/30/20-Regel, darunter Tabs „Regelmäßige Posten", „Einmalposten", „Detailansicht" (Torte) und „Sparhebel"; Posten über den Dialog „Posten erfassen" | [planansicht-aufbau.md](specs/planansicht-aufbau.md) | AP-… |
+| Einmalposten getrennt und frei sortiert | Im Tab „Einmalposten“ Einnahmen oben und Ausgaben unten in eigenen Bereichen mit Summe, per Ziehen sortiert, Löschen mit „Rückgängig“ | [einmalposten-sortierung.md](specs/einmalposten-sortierung.md) | ES-… |
 | Fehlermeldungen | Alle Meldungen auf Deutsch, auch die der API | [fehlermeldungen.md](specs/fehlermeldungen.md) | FM-… |
 | Auswertung | Summen, Saldo, Warnung bei Defizit, Anteil und Zielerreichung je 50/30/20-Kategorie | [auswertung-50-30-20.md](specs/auswertung-50-30-20.md) | AW-… |
 | Tortendiagramm | Die 50/30/20-Auswertung wahlweise als Balken oder als Tortendiagramm ansehen | [tortendiagramm.md](specs/tortendiagramm.md) | TD-… |

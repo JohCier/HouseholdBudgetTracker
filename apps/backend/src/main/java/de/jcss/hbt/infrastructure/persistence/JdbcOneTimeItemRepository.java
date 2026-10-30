@@ -7,6 +7,7 @@ import de.jcss.hbt.domain.householdplan.valueobject.Money;
 import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
 import de.jcss.hbt.domain.onetimeitem.OneTimeItem;
 import de.jcss.hbt.domain.onetimeitem.valueobject.OneTimeItemId;
+import de.jcss.hbt.domain.onetimeitem.valueobject.OneTimeItemRank;
 import de.jcss.hbt.domain.onetimeitem.OneTimeItemRepository;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -33,7 +34,7 @@ public class JdbcOneTimeItemRepository implements OneTimeItemRepository {
     @Override
     public Optional<OneTimeItem> findById(OneTimeItemId id) {
         return jdbcClient.sql("""
-                        SELECT owner_id, type, description, amount, item_date, note
+                        SELECT owner_id, type, description, amount, item_date, note, item_rank
                         FROM one_time_item
                         WHERE id = :id
                         FOR UPDATE
@@ -45,15 +46,16 @@ public class JdbcOneTimeItemRepository implements OneTimeItemRepository {
                         BudgetItemDescription.of(rs.getString("description")),
                         Money.of(rs.getBigDecimal("amount")),
                         rs.getObject("item_date", LocalDate.class),
-                        BudgetItemNote.ofNullable(rs.getString("note"))))
+                        BudgetItemNote.ofNullable(rs.getString("note")),
+                        OneTimeItemRank.of(rs.getBigDecimal("item_rank"))))
                 .optional();
     }
 
     @Override
     public void add(OneTimeItem item) {
         jdbcClient.sql("""
-                        INSERT INTO one_time_item (id, owner_id, type, description, amount, item_date, note)
-                        VALUES (:id, :owner, :type, :description, :amount, :date, :note)
+                        INSERT INTO one_time_item (id, owner_id, type, description, amount, item_date, note, item_rank)
+                        VALUES (:id, :owner, :type, :description, :amount, :date, :note, :rank)
                         """)
                 .param("id", item.id().value())
                 .param("owner", item.owner().value())
@@ -62,6 +64,7 @@ public class JdbcOneTimeItemRepository implements OneTimeItemRepository {
                 .param("amount", item.amount().value())
                 .param("date", item.date())
                 .param("note", item.note() == null ? null : item.note().value())
+                .param("rank", item.rank().value())
                 .update();
     }
 
@@ -69,7 +72,8 @@ public class JdbcOneTimeItemRepository implements OneTimeItemRepository {
     public void save(OneTimeItem item) {
         jdbcClient.sql("""
                         UPDATE one_time_item
-                        SET type = :type, description = :description, amount = :amount, item_date = :date, note = :note
+                        SET type = :type, description = :description, amount = :amount, item_date = :date, note = :note,
+                            item_rank = :rank
                         WHERE id = :id
                         """)
                 .param("id", item.id().value())
@@ -78,6 +82,7 @@ public class JdbcOneTimeItemRepository implements OneTimeItemRepository {
                 .param("amount", item.amount().value())
                 .param("date", item.date())
                 .param("note", item.note() == null ? null : item.note().value())
+                .param("rank", item.rank().value())
                 .update();
     }
 

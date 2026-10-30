@@ -349,6 +349,39 @@
         "tags" : [ "one-time-items" ]
       }
     },
+    "/api/one-time-items/{itemId}/position" : {
+      "put" : {
+        "operationId" : "moveOneTimeItem",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "itemId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MoveOneTimeItemRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "security" : [ {
+          "session" : [ ]
+        } ],
+        "tags" : [ "one-time-items" ]
+      }
+    },
     "/api/plans" : {
       "get" : {
         "operationId" : "overview",
@@ -1554,6 +1587,21 @@
         "properties" : {
           "important" : {
             "type" : "boolean"
+          }
+        }
+      },
+      "MoveOneTimeItemRequest" : {
+        "type" : "object",
+        "properties" : {
+          "nextItemId" : {
+            "type" : "string",
+            "description" : "The item that is to come right after; missing to move the item to the end",
+            "format" : "uuid"
+          },
+          "previousItemId" : {
+            "type" : "string",
+            "description" : "The item that is to come right before; missing to move the item to the start",
+            "format" : "uuid"
           }
         }
       },

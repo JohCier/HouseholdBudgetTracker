@@ -11,6 +11,7 @@ import de.jcss.hbt.domain.onetimeitem.valueobject.OneTimeItemId;
 import de.jcss.hbt.domain.onetimeitem.command.ChangeOneTimeItemCommand;
 import de.jcss.hbt.domain.onetimeitem.command.CreateOneTimeItemCommand;
 import de.jcss.hbt.domain.onetimeitem.command.DeleteOneTimeItemCommand;
+import de.jcss.hbt.domain.onetimeitem.command.MoveOneTimeItemCommand;
 import de.jcss.hbt.domain.onetimeitem.overview.OneTimeItemOverview;
 import de.jcss.hbt.domain.onetimeitem.overview.OneTimeOverviewItem;
 import de.jcss.hbt.infrastructure.security.SecurityConfig;
@@ -167,7 +168,20 @@ class OneTimeItemControllerTest {
                 new BudgetItemNote("Abrechnung 2025")));
     }
 
-    /** EP-17 */
+    /** ES-4 */
+    @Test
+    void moveItemPassesTheNeighborsOn() throws Exception {
+        OneTimeItemId next = OneTimeItemId.generate();
+
+        mockMvc.perform(put("/api/one-time-items/{id}/position", ITEM_ID.value())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nextItemId\":\"" + next.value() + "\"}"))
+                .andExpect(status().isNoContent());
+
+        verify(items).moveItem(new MoveOneTimeItemCommand(OWNER, ITEM_ID, null, next));
+    }
+
+    /** ES-10 */
     @Test
     void deleteItemAnswersWithoutContent() throws Exception {
         mockMvc.perform(delete("/api/one-time-items/{id}", ITEM_ID.value())).andExpect(status().isNoContent());

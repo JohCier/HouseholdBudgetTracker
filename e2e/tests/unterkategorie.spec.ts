@@ -14,52 +14,12 @@ import {
   showPie,
   sumRow,
   openAddItemDialog,
+  drag,
 } from './support';
 
 /** Yearly sum shown below a subcategory group (EG-5). */
 function groupTotal(page: Page, section: Parameters<typeof itemGroup>[1], subcategory: string) {
   return sumRow(page, section, subcategory).locator('.total.yearly');
-}
-
-/**
- * Drags an entry by what it is grabbed at onto the place of another one, in small steps, as the drag and
- * drop of the page only starts after the pointer has moved a bit (UK-14). Waits until the new
- * order has been saved. On a slow machine the page may not pick up the gesture; as long as no
- * new order has been sent, the gesture is repeated, so a lost gesture does not fail the test but
- * a drag that never saves still does.
- */
-async function drag(page: Page, handle: Locator, target: Locator): Promise<void> {
-  const isOrder = (request: Request) => request.method() === 'PUT' && /-order$/.test(request.url());
-  let sent: Request | undefined;
-  await expect(async () => {
-    // The mouse only reaches what is in view; the page may have scrolled while entries were added
-    await handle.scrollIntoViewIfNeeded();
-    const from = (await handle.boundingBox())!;
-    const to = (await target.boundingBox())!;
-    const x = from.x + from.width / 2;
-    const request = page.waitForRequest(isOrder, { timeout: 3000 });
-    request.catch(() => undefined);
-    const y = from.y + from.height / 2;
-    // Names what the pointer grabs, so a gesture the page ignores can be told apart from one aimed wrong
-    const grabbed = await page.evaluate(
-      ([px, py]) => document.elementFromPoint(px, py)?.outerHTML.slice(0, 300) ?? 'nothing',
-      [x, y],
-    );
-    await page.mouse.move(x, y);
-    await page.mouse.down();
-    try {
-      await page.mouse.move(x, y + 10, { steps: 5 });
-      await expect(
-        page.locator('.cdk-drag-preview'),
-        `drag preview after grabbing ${grabbed} at ${Math.round(x)}, ${Math.round(y)}`,
-      ).toBeVisible({ timeout: 2000 });
-      await page.mouse.move(x, to.y + 4, { steps: 20 });
-    } finally {
-      await page.mouse.up();
-    }
-    sent = await request;
-  }).toPass({ timeout: 20000 });
-  expect((await sent!.response())!.ok()).toBe(true);
 }
 
 // docs/specs/unterkategorie.md
@@ -127,7 +87,9 @@ test.describe('Unterkategorie', () => {
     await addIncome(page, 'Gehalt', '3000', 'Gehalt');
 
     const sections = page.locator('app-budget-entries section[aria-label]');
-    expect(await sections.evaluateAll((all) => all.map((s) => s.getAttribute('aria-label')))).toEqual([
+    expect(
+      await sections.evaluateAll((all) => all.map((s) => s.getAttribute('aria-label'))),
+    ).toEqual([
       'Einnahmen',
       'Ausgaben',
       'Lebensunterhalt',
@@ -136,7 +98,7 @@ test.describe('Unterkategorie', () => {
     ]);
 
     const colors = {
-      'Lebensunterhalt': 'rgb(160, 122, 90)',
+      Lebensunterhalt: 'rgb(160, 122, 90)',
       'Freizeit & Spaß': 'rgb(224, 160, 32)',
       'Sparen & Investieren': 'rgb(42, 120, 214)',
     } as const;
@@ -195,7 +157,9 @@ test.describe('Unterkategorie', () => {
     await addExpense(page, 'Tank', '80', 'Lebensunterhalt', 'Auto');
 
     let dialog = await openEditDialog(page, 'Tank');
-    await expect(dialog.getByRole('combobox', { name: 'Unterkategorie (optional)' })).toHaveValue('Auto');
+    await expect(dialog.getByRole('combobox', { name: 'Unterkategorie (optional)' })).toHaveValue(
+      'Auto',
+    );
     await dialog.getByRole('combobox', { name: 'Unterkategorie (optional)' }).fill('Mobilität');
     await dialog.getByLabel('Betrag').click();
     await dialog.getByRole('button', { name: 'Speichern' }).click();

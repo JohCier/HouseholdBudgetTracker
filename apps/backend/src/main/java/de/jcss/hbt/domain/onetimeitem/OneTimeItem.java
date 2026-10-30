@@ -11,6 +11,8 @@ import de.jcss.hbt.domain.onetimeitem.event.OneTimeItemChanged;
 import de.jcss.hbt.domain.onetimeitem.event.OneTimeItemCreated;
 import de.jcss.hbt.domain.onetimeitem.event.OneTimeItemDeleted;
 import de.jcss.hbt.domain.onetimeitem.event.OneTimeItemEvent;
+import de.jcss.hbt.domain.onetimeitem.event.OneTimeItemMoved;
+import de.jcss.hbt.domain.onetimeitem.valueobject.OneTimeItemRank;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 
@@ -27,6 +29,9 @@ import java.util.Objects;
  * belongs to its owner directly and exists for a year whether or not the owner has a plan for
  * it (EP-5). Its amount is the amount of this one event, never spread over months (EP-2). The
  * year it counts for is the year of its date (EP-3).
+ * <p>
+ * Within its area, the incomes or the expenses of its year, it has a {@link OneTimeItemRank rank}
+ * that the user sets by moving it (ES-4); a new item comes last (ES-7).
  * <p>
  * Only its {@link OwnerId owner} may see, change or delete it, see {@link #isOwnedBy} (EP-4).
  * All changes are recorded as {@link OneTimeItemEvent}s, which the application layer takes via
@@ -50,10 +55,11 @@ public final class OneTimeItem {
     private final Money amount;
     private final LocalDate date;
     private final BudgetItemNote note;
+    private final OneTimeItemRank rank;
     private final List<OneTimeItemEvent> domainEvents = new ArrayList<>();
 
     private OneTimeItem(OneTimeItemId id, OwnerId owner, ItemType type, BudgetItemDescription description,
-                        Money amount, LocalDate date, BudgetItemNote note) {
+                        Money amount, LocalDate date, BudgetItemNote note, OneTimeItemRank rank) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.owner = Objects.requireNonNull(owner, "owner must not be null");
         this.type = Objects.requireNonNull(type, "type must not be null");
@@ -61,6 +67,7 @@ public final class OneTimeItem {
         this.amount = Objects.requireNonNull(amount, "amount must not be null");
         this.date = Objects.requireNonNull(date, "date must not be null");
         this.note = note;
+        this.rank = Objects.requireNonNull(rank, "rank must not be null");
         if (!amount.isPositive()) {
             throw new DomainValidationException("amount must be positive");
         }
@@ -71,7 +78,7 @@ public final class OneTimeItem {
     }
 
     /**
-     * Enters a new one-time item of the owner.
+     * Enters a new one-time item of the owner, last in its area (ES-7).
      *
      * @param note {@code null} if the item has no note
      * @throws DomainValidationException if the amount is not positive or the date out of range (EP-1, EP-3)
@@ -79,16 +86,18 @@ public final class OneTimeItem {
     public static OneTimeItem create(OneTimeItemId id, OwnerId owner, ItemType type,
                                      BudgetItemDescription description, Money amount, LocalDate date,
                                      BudgetItemNote note) {
-        OneTimeItem item = new OneTimeItem(id, owner, type, description, amount, date, note);
-        item.record(new OneTimeItemCreated(id, owner, date, Instant.now()));
+        Instant now = Instant.now();
+        OneTimeItem item = new OneTimeItem(id, owner, type, description, amount, date, note,
+                OneTimeItemRank.last(now));
+        item.record(new OneTimeItemCreated(id, owner, date, now));
         return item;
     }
 
     /** Rebuilds a stored item, e.g. in a repository; checks the same rules, records no events. */
     public static OneTimeItem reconstitute(OneTimeItemId id, OwnerId owner, ItemType type,
                                            BudgetItemDescription description, Money amount, LocalDate date,
-                                           BudgetItemNote note) {
-        return new OneTimeItem(id, owner, type, description, amount, date, note);
+                                           BudgetItemNote note, OneTimeItemRank rank) {
+        return new OneTimeItem(id, owner, type, description, amount, date, note, rank);
     }
 
     /** Whether the item belongs to the given user, i.e. whether they may see and change it (EP-4). */
@@ -99,17 +108,53 @@ public final class OneTimeItem {
     /**
      * Replaces everything the user entered (EP-7). Returns this item with the new values, which
      * is to be saved, since all fields are final; pending events are carried over. With a date in
-     * another year, the item counts for that year from now on.
+     * another year, the item counts for that year from now on. Within the same area the item keeps
+     * its place; with another type or year it comes last in its new area (ES-8).
      *
      * @param note {@code null} if the item has no note any more
      * @throws DomainValidationException if the amount is not positive or the date out of range (EP-1, EP-3)
      */
     public OneTimeItem change(ItemType type, BudgetItemDescription description, Money amount, LocalDate date,
                               BudgetItemNote note) {
-        OneTimeItem changed = new OneTimeItem(id, owner, type, description, amount, date, note);
+        Instant now = Instant.now();
+        boolean sameArea = type == this.type && date.getYear() == this.date.getYear();
+        OneTimeItem changed = new OneTimeItem(id, owner, type, description, amount, date, note,
+                sameArea ? rank : OneTimeItemRank.last(now));
         changed.domainEvents.addAll(domainEvents);
-        changed.record(new OneTimeItemChanged(id, date, Instant.now()));
+        changed.record(new OneTimeItemChanged(id, date, now));
         return changed;
+    }
+
+    /**
+     * Moves the item between two neighbors in its area (ES-4). Returns this item at its new place,
+     * which is to be saved, since all fields are final; pending events are carried over.
+     *
+     * @param previous the item that is to come right before, {@code null} to move it to the start
+     * @param next     the item that is to come right after, {@code null} to move it to the end
+     * @throws DomainValidationException if both neighbors are missing, a neighbor is the item itself
+     *                                   or lies in another area (ES-4)
+     */
+    public OneTimeItem moveBetween(OneTimeItem previous, OneTimeItem next) {
+        requireNeighbor(previous);
+        requireNeighbor(next);
+        OneTimeItem moved = new OneTimeItem(id, owner, type, description, amount, date, note,
+                OneTimeItemRank.between(previous == null ? null : previous.rank, next == null ? null : next.rank));
+        moved.domainEvents.addAll(domainEvents);
+        moved.record(new OneTimeItemMoved(id, Instant.now()));
+        return moved;
+    }
+
+    private void requireNeighbor(OneTimeItem neighbor) {
+        if (neighbor == null) {
+            return;
+        }
+        if (neighbor.equals(this)) {
+            throw new DomainValidationException("a one-time item cannot be its own neighbor (ES-4)");
+        }
+        if (neighbor.type != type || !neighbor.year().equals(year()) || !neighbor.owner.equals(owner)) {
+            throw new DomainValidationException(
+                    "a one-time item can only be moved within the items of the same type and year (ES-4)");
+        }
     }
 
     /** Marks the item as deleted (EP-17); removing it from its repository is up to the caller. */
@@ -163,6 +208,11 @@ public final class OneTimeItem {
     /** {@code null} if the item has no note. */
     public BudgetItemNote note() {
         return note;
+    }
+
+    /** Its place within its area: items with a lower rank come first (ES-4). */
+    public OneTimeItemRank rank() {
+        return rank;
     }
 
     @Override

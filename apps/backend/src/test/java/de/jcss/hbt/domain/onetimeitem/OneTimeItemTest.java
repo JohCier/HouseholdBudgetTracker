@@ -10,6 +10,8 @@ import de.jcss.hbt.domain.householdplan.valueobject.OwnerId;
 import de.jcss.hbt.domain.onetimeitem.event.OneTimeItemChanged;
 import de.jcss.hbt.domain.onetimeitem.event.OneTimeItemCreated;
 import de.jcss.hbt.domain.onetimeitem.event.OneTimeItemDeleted;
+import de.jcss.hbt.domain.onetimeitem.event.OneTimeItemMoved;
+import de.jcss.hbt.domain.onetimeitem.valueobject.OneTimeItemRank;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -26,6 +28,8 @@ class OneTimeItemTest {
     private static final OwnerId OWNER = OwnerId.of(UUID.randomUUID());
     private static final LocalDate MARCH_15 = LocalDate.of(2026, 3, 15);
     private static final BudgetItemDescription BACK_PAYMENT = BudgetItemDescription.of("Nebenkostennachzahlung");
+
+    private static final OneTimeItemRank RANK = OneTimeItemRank.of(BigDecimal.ONE);
 
     private final OneTimeItemId id = OneTimeItemId.generate();
 
@@ -133,7 +137,7 @@ class OneTimeItemTest {
                 .containsExactly(OneTimeItemCreated.class, OneTimeItemChanged.class);
     }
 
-    /** EP-17 */
+    /** ES-10 */
     @Test
     void deleteRecordsIt() {
         OneTimeItem item = item();
@@ -146,27 +150,120 @@ class OneTimeItemTest {
                 .containsExactly(new OneTimeItemDeleted(id, Instant.now()));
     }
 
+    /** ES-7 */
+    @Test
+    void aNewItemComesAfterTheItemsEnteredBefore() {
+        OneTimeItem earlier = item(ItemType.EXPENSE, MARCH_15);
+
+        assertThat(item(ItemType.EXPENSE, LocalDate.of(2026, 1, 1)).rank()).isGreaterThanOrEqualTo(earlier.rank());
+        assertThat(earlier.rank()).isGreaterThan(OneTimeItemRank.of(BigDecimal.valueOf(1_000_000)));
+    }
+
+    /** ES-8 */
+    @Test
+    void changeKeepsThePlaceWithinTheSameTypeAndYear() {
+        OneTimeItem item = stored(ItemType.EXPENSE, MARCH_15, "5");
+
+        OneTimeItem changed = item.change(ItemType.EXPENSE, BudgetItemDescription.of("Nachzahlung"),
+                money("99.00"), LocalDate.of(2026, 12, 31), BudgetItemNote.ofNullable("neu"));
+
+        assertThat(changed.rank()).isEqualTo(OneTimeItemRank.of(new BigDecimal("5")));
+    }
+
+    /** ES-8 */
+    @Test
+    void changeOfTheTypeOrTheYearPutsTheItemLastInItsNewArea() {
+        OneTimeItem item = stored(ItemType.EXPENSE, MARCH_15, "5");
+        OneTimeItemRank last = OneTimeItemRank.last(Instant.now());
+
+        assertThat(item.change(ItemType.INCOME, BACK_PAYMENT, money("1.00"), MARCH_15, null).rank())
+                .isGreaterThanOrEqualTo(last);
+        assertThat(item.change(ItemType.EXPENSE, BACK_PAYMENT, money("1.00"), LocalDate.of(2027, 3, 15), null)
+                .rank()).isGreaterThanOrEqualTo(last);
+    }
+
+    /** ES-4 */
+    @Test
+    void moveBetweenPutsTheItemBetweenItsNeighbors() {
+        OneTimeItem first = stored(ItemType.EXPENSE, MARCH_15, "1");
+        OneTimeItem second = stored(ItemType.EXPENSE, MARCH_15, "2");
+        OneTimeItem moved = stored(ItemType.EXPENSE, LocalDate.of(2026, 9, 22), "3");
+
+        OneTimeItem between = moved.moveBetween(first, second);
+        OneTimeItem atStart = moved.moveBetween(null, first);
+        OneTimeItem atEnd = first.moveBetween(moved, null);
+
+        assertThat(between.rank()).isGreaterThan(first.rank()).isLessThan(second.rank());
+        assertThat(between.date()).isEqualTo(LocalDate.of(2026, 9, 22));
+        assertThat(atStart.rank()).isLessThan(first.rank());
+        assertThat(atEnd.rank()).isGreaterThan(moved.rank());
+        assertThat(between.pullDomainEvents())
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+                .containsExactly(new OneTimeItemMoved(moved.id(), Instant.now()));
+    }
+
+    /** ES-4 */
+    @Test
+    void moveBetweenFindsAPlaceBetweenNeighborsAgainAndAgain() {
+        OneTimeItem first = stored(ItemType.EXPENSE, MARCH_15, "1");
+        OneTimeItem next = stored(ItemType.EXPENSE, MARCH_15, "2");
+        OneTimeItem moved = stored(ItemType.EXPENSE, MARCH_15, "3");
+
+        for (int i = 0; i < 200; i++) {
+            moved = moved.moveBetween(first, next);
+            assertThat(moved.rank()).isGreaterThan(first.rank()).isLessThan(next.rank());
+            next = moved;
+            moved = stored(ItemType.EXPENSE, MARCH_15, "3");
+        }
+    }
+
+    /** ES-4 */
+    @Test
+    void moveBetweenStaysWithinTheItemsOfTheSameTypeAndYear() {
+        OneTimeItem item = stored(ItemType.EXPENSE, MARCH_15, "1");
+
+        assertThatThrownBy(() -> item.moveBetween(null, null))
+                .isInstanceOf(DomainValidationException.class)
+                .hasMessageContaining("ES-4");
+        assertThatThrownBy(() -> item.moveBetween(stored(ItemType.INCOME, MARCH_15, "2"), null))
+                .isInstanceOf(DomainValidationException.class)
+                .hasMessageContaining("ES-4");
+        assertThatThrownBy(() -> item.moveBetween(null, stored(ItemType.EXPENSE, LocalDate.of(2027, 1, 1), "2")))
+                .isInstanceOf(DomainValidationException.class);
+        assertThatThrownBy(() -> item.moveBetween(item, null))
+                .isInstanceOf(DomainValidationException.class);
+    }
+
     @Test
     void reconstituteRecordsNoEventsButChecksTheRules() {
-        assertThat(OneTimeItem.reconstitute(id, OWNER, ItemType.EXPENSE, BACK_PAYMENT, money("1.00"), MARCH_15, null)
-                .pullDomainEvents()).isEmpty();
+        assertThat(OneTimeItem.reconstitute(id, OWNER, ItemType.EXPENSE, BACK_PAYMENT, money("1.00"), MARCH_15, null,
+                RANK).pullDomainEvents()).isEmpty();
         assertThatThrownBy(() -> OneTimeItem.reconstitute(id, OWNER, ItemType.EXPENSE, BACK_PAYMENT, Money.ZERO,
-                MARCH_15, null)).isInstanceOf(DomainValidationException.class);
+                MARCH_15, null, RANK)).isInstanceOf(DomainValidationException.class);
     }
 
     @Test
     void equalityIsBasedOnTheIdOnly() {
         OneTimeItem item = item();
         OneTimeItem other = OneTimeItem.reconstitute(id, OWNER, ItemType.INCOME, BudgetItemDescription.of("Bonus"),
-                money("1.00"), LocalDate.of(2027, 1, 1), null);
+                money("1.00"), LocalDate.of(2027, 1, 1), null, RANK);
 
         assertThat(item).isEqualTo(other).hasSameHashCodeAs(other);
         assertThat(item).isNotEqualTo(OneTimeItem.reconstitute(OneTimeItemId.generate(), OWNER, ItemType.EXPENSE,
-                BACK_PAYMENT, money("1200.00"), MARCH_15, null));
+                BACK_PAYMENT, money("1200.00"), MARCH_15, null, RANK));
     }
 
     private OneTimeItem item() {
         return OneTimeItem.create(id, OWNER, ItemType.EXPENSE, BACK_PAYMENT, money("1200.00"), MARCH_15, null);
+    }
+
+    private static OneTimeItem item(ItemType type, LocalDate date) {
+        return OneTimeItem.create(OneTimeItemId.generate(), OWNER, type, BACK_PAYMENT, money("1.00"), date, null);
+    }
+
+    private static OneTimeItem stored(ItemType type, LocalDate date, String rank) {
+        return OneTimeItem.reconstitute(OneTimeItemId.generate(), OWNER, type, BACK_PAYMENT, money("1.00"), date, null,
+                OneTimeItemRank.of(new BigDecimal(rank)));
     }
 
     private static Money money(String value) {

@@ -18,8 +18,8 @@ import java.util.UUID;
 
 /**
  * Reads the one-time items of a year straight from the {@code one_time_item} table, without
- * reconstituting the {@code OneTimeItem} aggregate; by date, on the same date in the order they
- * were entered (EP-8).
+ * reconstituting the {@code OneTimeItem} aggregate; by their rank, the order the user set within
+ * the incomes and the expenses (ES-4).
  */
 @Component
 public class JdbcOneTimeItemOverviewQueryHandler implements OneTimeItemOverviewQueryHandler {
@@ -36,7 +36,7 @@ public class JdbcOneTimeItemOverviewQueryHandler implements OneTimeItemOverviewQ
                         SELECT id, type, description, amount, item_date, note
                         FROM one_time_item
                         WHERE owner_id = :owner AND item_date BETWEEN :first AND :last
-                        ORDER BY item_date, created_at, id
+                        ORDER BY item_rank, created_at, id
                         """)
                 .param("owner", owner.value())
                 .param("first", year.atDay(1))

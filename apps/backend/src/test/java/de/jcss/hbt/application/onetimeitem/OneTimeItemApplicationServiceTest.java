@@ -13,9 +13,11 @@ import de.jcss.hbt.domain.onetimeitem.OneTimeItemRepository;
 import de.jcss.hbt.domain.onetimeitem.command.ChangeOneTimeItemCommand;
 import de.jcss.hbt.domain.onetimeitem.command.CreateOneTimeItemCommand;
 import de.jcss.hbt.domain.onetimeitem.command.DeleteOneTimeItemCommand;
+import de.jcss.hbt.domain.onetimeitem.command.MoveOneTimeItemCommand;
 import de.jcss.hbt.domain.onetimeitem.event.OneTimeItemChanged;
 import de.jcss.hbt.domain.onetimeitem.event.OneTimeItemCreated;
 import de.jcss.hbt.domain.onetimeitem.event.OneTimeItemDeleted;
+import de.jcss.hbt.domain.onetimeitem.event.OneTimeItemMoved;
 import de.jcss.hbt.domain.onetimeitem.overview.OneTimeItemOverview;
 import de.jcss.hbt.domain.onetimeitem.overview.OneTimeItemOverviewQueryHandler;
 import de.jcss.hbt.domain.onetimeitem.overview.OneTimeOverviewItem;
@@ -103,7 +105,39 @@ class OneTimeItemApplicationServiceTest {
         assertThat(repository.items.get(id).date()).isEqualTo(MARCH_15);
     }
 
-    /** EP-17 */
+    /** ES-4 */
+    @Test
+    void moveItemChangesOnlyTheMovedItemAndPublishesIt() {
+        OneTimeItemId first = create(OWNER, MARCH_15);
+        OneTimeItemId second = create(OWNER, MARCH_15);
+        OneTimeItemId moved = create(OWNER, MARCH_15);
+        OneTimeItem firstBefore = repository.items.get(first);
+        OneTimeItem secondBefore = repository.items.get(second);
+        publishedEvents.clear();
+
+        service.moveItem(new MoveOneTimeItemCommand(OWNER, moved, null, first));
+
+        assertThat(repository.items.get(moved).rank()).isLessThan(repository.items.get(first).rank());
+        assertThat(repository.items.get(first).rank()).isEqualTo(firstBefore.rank());
+        assertThat(repository.items.get(second).rank()).isEqualTo(secondBefore.rank());
+        assertThat(publishedEvents).singleElement().isInstanceOf(OneTimeItemMoved.class);
+    }
+
+    /** ES-4, EP-4 */
+    @Test
+    void anItemCannotBeMovedNextToAnItemOfSomeoneElse() {
+        OneTimeItemId own = create(OWNER, MARCH_15);
+        OneTimeItemId foreign = create(SOMEONE_ELSE, MARCH_15);
+        OneTimeItem before = repository.items.get(own);
+
+        assertThatThrownBy(() -> service.moveItem(new MoveOneTimeItemCommand(OWNER, own, foreign, null)))
+                .isInstanceOf(OneTimeItemNotFoundException.class);
+        assertThatThrownBy(() -> service.moveItem(new MoveOneTimeItemCommand(OWNER, foreign, null, own)))
+                .isInstanceOf(OneTimeItemNotFoundException.class);
+        assertThat(repository.items.get(own).rank()).isEqualTo(before.rank());
+    }
+
+    /** ES-10 */
     @Test
     void deleteItemRemovesItAndPublishesIt() {
         OneTimeItemId id = create(OWNER, MARCH_15);
@@ -169,13 +203,13 @@ class OneTimeItemApplicationServiceTest {
 
         private static OneTimeItem copyOf(OneTimeItem item) {
             return OneTimeItem.reconstitute(item.id(), item.owner(), item.type(), item.description(), item.amount(),
-                    item.date(), item.note());
+                    item.date(), item.note(), item.rank());
         }
 
         OneTimeItemOverviewQueryHandler queryHandler() {
             return (owner, year) -> new OneTimeItemOverview(year, items.values().stream()
                     .filter(item -> item.isOwnedBy(owner) && item.year().equals(year))
-                    .sorted(Comparator.comparing(OneTimeItem::date))
+                    .sorted(Comparator.comparing(OneTimeItem::rank))
                     .map(item -> new OneTimeOverviewItem(item.id(), item.type(), item.description(), item.amount(),
                             item.date(), item.note()))
                     .toList());

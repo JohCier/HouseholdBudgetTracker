@@ -65,7 +65,8 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Aufteilung je Kategorie | `CategoryBreakdown` | Teil der Übersicht: Summe, Anteil, Zielanteil und Zielerreichung einer Kategorie |
 | Einmalposten | `OneTimeItem` (Aggregate Root) | Eine einzelne Einnahme oder Ausgabe mit Datum, z. B. eine Nachzahlung; gehört dem Benutzer, nicht zu einem Plan, und zählt weder zum Haushaltsplan noch zur 50/30/20-Regel |
 | Datum eines Einmalpostens | `OneTimeItem.date` | Der Tag des Einmalpostens (01.01.1900 bis 31.12.2200); sein Jahr bestimmt, zu welchem Jahr der Einmalposten gehört. Nur Einmalposten haben ein Datum |
-| Einmalposten eines Jahres | `OneTimeItemOverview` (Read Model) | Alle Einmalposten eines Benutzers in einem Jahr, nach Datum, mit einmaligen Einnahmen, Ausgaben und Saldo |
+| Einmalposten eines Jahres | `OneTimeItemOverview` (Read Model) | Alle Einmalposten eines Benutzers in einem Jahr in der vom Benutzer festgelegten Reihenfolge, mit einmaligen Einnahmen, Ausgaben und Saldo |
+| Platz eines Einmalpostens | `OneTimeItemRank` | Wo ein Einmalposten unter den einmaligen Einnahmen bzw. Ausgaben seines Jahres steht; ein neuer steht unten, Verschieben ändert nur den verschobenen |
 | Einmalige Einnahmen, Ausgaben, Saldo | `oneTimeIncome`, `oneTimeExpense`, `oneTimeBalance` | Summen der Einmalposten eines Jahres; immer Jahreswerte, in der Jahresübersicht in eigenen Spalten „Einmalig (Jahr)"
 | Tabs der Planansicht | `PLAN_TABS` (`items`, `oneTime`, `details`, `levers`), nur im Frontend | Die Bereiche unter Bilanz und 50/30/20-Regel: „Regelmäßige Posten" (die Einträge), „Einmalposten", „Detailansicht" (die Torte) und „Sparhebel" |
 | Detailansicht | Tab `details`, `app-category-pie`, nur im Frontend | Der Tab mit der Torte, ihrem Ausschnitt und ihrer Sortierung |

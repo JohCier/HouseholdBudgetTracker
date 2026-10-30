@@ -38,7 +38,7 @@ async function showAllYears(page: Page): Promise<void> {
 
 // docs/specs/einmalposten.md
 test.describe('Einmalposten', () => {
-  test('erfasst Einmalposten im eigenen Abschnitt nach Datum, mit Summen, ohne den Plan zu ändern (EP-1, EP-2, EP-6, EP-8, EP-9)', async ({
+  test('erfasst Einmalposten im eigenen Abschnitt, Einnahmen und Ausgaben getrennt, mit Summen, ohne den Plan zu ändern (EP-1, EP-2, EP-6, EP-8, EP-9, ES-1)', async ({
     page,
   }) => {
     await registerWithPlan(page);
@@ -49,12 +49,12 @@ test.describe('Einmalposten', () => {
 
     const items = page.locator('app-one-time-items [role="listitem"]');
     await expect(items).toHaveCount(2);
-    await expect(items.nth(0)).toContainText('15.03.' + year);
-    await expect(items.nth(0)).toContainText('Nebenkostennachzahlung');
-    await expect(items.nth(0)).toContainText('Abrechnung Vorjahr');
-    await expect(items.nth(0)).toContainText('−1.200,00 €');
-    await expect(items.nth(1)).toContainText('Steuererstattung');
-    await expect(items.nth(1)).toContainText('+800,00 €');
+    await expect(items.nth(0)).toContainText('Steuererstattung');
+    await expect(items.nth(0)).toContainText('+800,00 €');
+    await expect(items.nth(1)).toContainText('15.03.' + year);
+    await expect(items.nth(1)).toContainText('Nebenkostennachzahlung');
+    await expect(items.nth(1)).toContainText('Abrechnung Vorjahr');
+    await expect(items.nth(1)).toContainText('−1.200,00 €');
     await expect(oneTimeTotal(page, 'Einnahmen')).toHaveText('+800,00 €');
     await expect(oneTimeTotal(page, 'Ausgaben')).toHaveText('−1.200,00 €');
     await expect(oneTimeTotal(page, 'Saldo')).toHaveText('-400,00 €');
@@ -97,7 +97,9 @@ test.describe('Einmalposten', () => {
   }) => {
     await registerWithPlan(page);
     await openYear(page, year + 1);
-    await expect(page.getByText(`Für ${year + 1} gibt es noch keinen Haushaltsplan.`)).toBeVisible();
+    await expect(
+      page.getByText(`Für ${year + 1} gibt es noch keinen Haushaltsplan.`),
+    ).toBeVisible();
     await showOneTimeItems(page);
     await expect(page.locator('app-one-time-items')).toContainText('Keine Einmalposten.');
 
@@ -127,7 +129,9 @@ test.describe('Einmalposten', () => {
     await expect(oneTimeItemRow(page, 'Bonus')).toBeVisible();
   });
 
-  test('löschen und übernehmen des Plans lässt die Einmalposten, wie sie sind (EP-5)', async ({ page }) => {
+  test('löschen und übernehmen des Plans lässt die Einmalposten, wie sie sind (EP-5)', async ({
+    page,
+  }) => {
     await registerWithPlan(page);
     await addOneTimeItem(page, backPayment);
 
@@ -156,12 +160,19 @@ test.describe('Einmalposten', () => {
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByLabel('Beschreibung')).toHaveValue('Steuererstattung');
     await expect(dialog.getByLabel('Datum')).toHaveValue(`${year}-07-10`);
-    await fillOneTimeItemDialog(page, { ...taxRefund, amount: '950', note: 'Bescheid' });
+    await fillOneTimeItemDialog(page, {
+      ...taxRefund,
+      amount: '950',
+      note: 'Bescheid',
+    });
     await expect(oneTimeItemRow(page, 'Steuererstattung')).toContainText('+950,00 €');
     await expect(oneTimeItemRow(page, 'Steuererstattung')).toContainText('Bescheid');
 
     await page.getByRole('button', { name: 'Einmalposten Steuererstattung bearbeiten' }).click();
-    await fillOneTimeItemDialog(page, { ...taxRefund, date: `${year + 1}-01-05` });
+    await fillOneTimeItemDialog(page, {
+      ...taxRefund,
+      date: `${year + 1}-01-05`,
+    });
     await expect(oneTimeItemRow(page, 'Steuererstattung')).toBeHidden();
     await expect(page.locator('app-one-time-items')).toContainText('Keine Einmalposten.');
 
@@ -186,23 +197,6 @@ test.describe('Einmalposten', () => {
     await showOneTimeItems(page);
     await page.getByRole('button', { name: 'Einmalposten erfassen' }).click();
     await expect(page.getByRole('dialog').getByLabel('Datum')).toHaveValue(`${year - 3}-01-01`);
-  });
-
-  test('löscht einen Einmalposten erst nach Rückfrage (EP-17)', async ({ page }) => {
-    await registerWithPlan(page);
-    await addOneTimeItem(page, backPayment);
-    await addOneTimeItem(page, taxRefund);
-
-    await page.getByRole('button', { name: 'Einmalposten Nebenkostennachzahlung löschen' }).click();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toContainText('Einmalposten „Nebenkostennachzahlung" löschen?');
-    await dialog.getByRole('button', { name: 'Abbrechen' }).click();
-    await expect(oneTimeItemRow(page, 'Nebenkostennachzahlung')).toBeVisible();
-
-    await page.getByRole('button', { name: 'Einmalposten Nebenkostennachzahlung löschen' }).click();
-    await dialog.getByRole('button', { name: 'Löschen' }).click();
-    await expect(oneTimeItemRow(page, 'Nebenkostennachzahlung')).toBeHidden();
-    await expect(oneTimeTotal(page, 'Saldo')).toHaveText('800,00 €');
   });
 
   test('lehnt einen Betrag von 0,00 € und ein Datum vor 1900 ab (EP-1, EP-3)', async ({ page }) => {
@@ -233,6 +227,8 @@ test.describe('Einmalposten', () => {
     await expect(oneTimeRow).toContainText('Einmalig (Jahr)');
     await expect(oneTimeRow).toContainText('800,00 €');
     await expect(oneTimeCells(page, year).income).toBeHidden();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      390,
+    );
   });
 });
