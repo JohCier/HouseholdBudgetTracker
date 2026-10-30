@@ -44,14 +44,14 @@ es ausschließlich bei Einmalposten, Posten des Haushaltsplans bleiben ohne Datu
 
 ### Abschnitt in der Planansicht
 
-- **EP-8**: Die Planansicht eines Jahres (`/jahre/<Jahr>`) zeigt unter den Einträgen einen eigenen Abschnitt
+- **EP-8**: Die Planansicht eines Jahres (`/jahre/<Jahr>`) zeigt im Tab „Einmalposten“ (AP-8) einen eigenen Abschnitt
   „Einmalposten" mit allen Einmalposten dieses Jahres, nach Datum aufsteigend sortiert, bei gleichem Datum in der
   Reihenfolge des Erfassens. Je Zeile stehen Datum, Beschreibung, Art und Betrag; eine Notiz steht wie bei Posten unter
   der Beschreibung.
 - **EP-9**: Unter den Einmalposten stehen die Summe der einmaligen Einnahmen, die Summe der einmaligen Ausgaben und
   der einmalige Saldo (Einnahmen − Ausgaben) des Jahres. Ein negativer Saldo steht in der Fehlerfarbe.
-- **EP-10**: Der Abschnitt ist auch in einem Jahr ohne Haushaltsplan sichtbar, unter dem Hinweis „Für <Jahr> gibt es
-  noch keinen Haushaltsplan.". Ohne Einmalposten zeigt er „Keine Einmalposten." und „Einmalposten erfassen".
+- **EP-10**: Der Abschnitt ist auch in einem Jahr ohne Haushaltsplan da, im Tab „Einmalposten“ neben dem Hinweis „Für
+  <Jahr> gibt es noch keinen Haushaltsplan.“ (AP-13). Ohne Einmalposten zeigt er „Keine Einmalposten." und „Einmalposten erfassen".
 - **EP-11**: Beim Erfassen ist das Datum mit dem heutigen Tag vorbelegt, wenn er im angezeigten Jahr liegt, sonst mit
   dem 01.01. des angezeigten Jahres.
 

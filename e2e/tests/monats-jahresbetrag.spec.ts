@@ -7,9 +7,10 @@ import {
   openEditDialog,
   pieLegendItem,
   registerWithPlan,
-  showBreakdownAs,
+  showPie,
   sumRow,
   balanceSheet,
+  openAddItemDialog,
 } from './support';
 
 /** The amount of an item per month or per year in the card "Einträge" (MJ-12). */
@@ -80,15 +81,17 @@ test.describe('Monats- und Jahresbetrag', () => {
     await expect(sum.locator('.total.yearly')).toHaveText('300,00 €');
   });
 
-  test('das Formular beginnt mit „Monatlich" und behält die gewählte Angabe (MJ-1, MJ-11)', async ({
+  test('der Dialog „Posten erfassen" beginnt immer mit „Monatlich" (MJ-1, MJ-11, AP-14)', async ({
     page,
   }) => {
-    const toggle = periodToggle(page);
-    await expect(toggle.getByRole('radio', { name: 'Monatlich' })).toBeChecked();
+    let dialog = await openAddItemDialog(page);
+    await expect(periodToggle(dialog).getByRole('radio', { name: 'Monatlich' })).toBeChecked();
+    await dialog.getByRole('button', { name: 'Abbrechen' }).click();
 
     await addExpense(page, 'Versicherung', '1000', 'Lebensunterhalt', undefined, 'Jährlich');
 
-    await expect(toggle.getByRole('radio', { name: 'Jährlich' })).toBeChecked();
+    dialog = await openAddItemDialog(page);
+    await expect(periodToggle(dialog).getByRole('radio', { name: 'Monatlich' })).toBeChecked();
   });
 
   test('beim Bearbeiten wird die Angabe umgestellt, ohne den Betrag umzurechnen (MJ-4, MJ-5, MJ-11)', async ({
@@ -139,7 +142,7 @@ test.describe('Monats- und Jahresbetrag', () => {
       'davon nicht verplant: 1.500,00 €',
     );
 
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
     await expect(pieLegendItem(page, 'Lebensunterhalt')).toContainText('1.500,00 €');
     await expect(pieLegendItem(page, 'Freizeit & Spaß')).toContainText(
       'davon nicht verplant: 1.500,00 €',

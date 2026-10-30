@@ -34,13 +34,13 @@ neben der Bilanz bleibt als Überblick.
 
 ### Darstellung
 
-- **SU-6**: Die Liste ist ein eigener Kasten „Sparpotential je Unterkategorie" links neben dem Kasten „Bilanz" (BI-1),
-  oben bündig mit ihm. Jede Zeile zeigt links den Namen der Unterkategorie und rechtsbündig daneben den Monats- und den
+- **SU-6**: Die Liste ist ein eigener Kasten „Sparpotential je Unterkategorie" im Tab „Sparhebel" (AP-11; bis zu
+  [planansicht-aufbau.md](planansicht-aufbau.md) links neben dem Kasten „Bilanz"). Jede Zeile zeigt links den Namen der Unterkategorie und rechtsbündig daneben den Monats- und den
   Jahreswert, in den Spalten „Monat" und „Jahr" wie in der Bilanz (BI-2).
-- **SU-7**: Ohne Ausgaben mit Sparpotential entfällt der Kasten; die Bilanz steht dann allein wie bisher, mit der Zeile
-  „Sparpotential" 0,00 € (PM-14).
-- **SU-8**: Ist neben der Bilanz kein Platz für den Kasten (auf dem Handy, auch mit vergrößerter Schrift), steht er
-  unter der Bilanz. Ist der Kasten selbst zu schmal für Name, Monats- und Jahreswert nebeneinander, steht der Name
+- **SU-7**: Ohne Ausgaben mit Sparpotential zeigt der Kasten „Noch kein Sparpotential markiert" (AP-12); die Bilanz
+  zeigt die Zeile „Sparpotential" 0,00 € (PM-14).
+- **SU-8**: Auf schmalen Bildschirmen steht der Kasten über den Top-5-Listen (AP-11); eine lange Liste scrollt in ihm
+  (AP-12). Ist der Kasten selbst zu schmal für Name, Monats- und Jahreswert nebeneinander, steht der Name
   oben und die beiden Beträge darunter. Lange Namen brechen nur zwischen Wörtern um (MA-4), und die Seite ist ab 360 px
   nicht breiter als der Bildschirm (MA-1).
 - **SU-9**: Jede Änderung eines Sparpotentials oder einer Ausgabe (Betrag, Unterkategorie, Löschen, Rückgängig) zeigt

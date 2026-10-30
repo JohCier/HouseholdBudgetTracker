@@ -8,7 +8,8 @@ import {
   pieSlices,
   pieSummary,
   registerWithPlan,
-  showBreakdownAs,
+  showPie,
+  showTab,
   showInPie,
 } from './support';
 
@@ -23,7 +24,7 @@ test.describe('Ausschnitt der Torte', () => {
   test('die Torte zeigt zuerst die 50/30/20-Regel (TK-1)', async ({ page }) => {
     await addExpense(page, 'Miete', '1000', 'Lebensunterhalt', 'Miete', 'Monatlich');
 
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
 
     await expect(page.getByRole('combobox', { name: 'Ausschnitt' })).toContainText(
       '50/30/20-Regel',
@@ -39,12 +40,12 @@ test.describe('Ausschnitt der Torte', () => {
     await addExpense(page, 'Miete', '1000', 'Lebensunterhalt', 'Miete', 'Monatlich');
     await addExpense(page, 'Sprit', '200', 'Lebensunterhalt', 'Auto', 'Monatlich');
     await addExpense(page, 'Versicherung', '50', 'Lebensunterhalt', 'Auto', 'Monatlich');
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
 
     await showInPie(page, 'Lebensunterhalt');
 
     await expect(pieSlices(page)).toHaveCount(2);
-    await expect(page.locator('app-category-pie .legend-item .name')).toHaveText(['Auto', 'Miete']);
+    await expect(page.locator('app-category-pie .legend-item .name')).toHaveText(['Miete', 'Auto']);
     await expect(pieEntry(page, 'Auto')).toContainText('250,00 € · 20 %');
     await expect(pieEntry(page, 'Miete')).toContainText('1.000,00 € · 80 %');
     await expect(pieSummary(page)).toContainText('Lebensunterhalt');
@@ -56,7 +57,7 @@ test.describe('Ausschnitt der Torte', () => {
     await addExpense(page, 'Miete', '1000', 'Lebensunterhalt', 'Miete', 'Monatlich');
     await addExpense(page, 'Sprit', '200', 'Lebensunterhalt', 'Auto', 'Monatlich');
     await addExpense(page, 'Versicherung', '50', 'Lebensunterhalt', 'Auto', 'Monatlich');
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
 
     await showInPie(page, 'Lebensunterhalt', 'Auto');
 
@@ -69,7 +70,7 @@ test.describe('Ausschnitt der Torte', () => {
   test('jährliche Posten zählen mit ihrem Monatsbetrag (TK-6, TK-8)', async ({ page }) => {
     await addExpense(page, 'Kfz-Steuer', '120', 'Lebensunterhalt', 'Auto', 'Jährlich');
     await addExpense(page, 'Sprit', '30', 'Lebensunterhalt', 'Auto', 'Monatlich');
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
 
     await showInPie(page, 'Lebensunterhalt', 'Auto');
 
@@ -82,7 +83,7 @@ test.describe('Ausschnitt der Torte', () => {
   }) => {
     await addExpense(page, 'Miete', '1000', 'Lebensunterhalt', 'Miete', 'Monatlich');
     await addExpense(page, 'Sprit', '200', 'Lebensunterhalt', 'Auto', 'Monatlich');
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
     const selection = page.getByRole('combobox', { name: 'Ausschnitt' });
 
     await page.getByRole('button', { name: /Lebensunterhalt anzeigen$/ }).click();
@@ -102,7 +103,7 @@ test.describe('Ausschnitt der Torte', () => {
   }) => {
     await addExpense(page, 'Sprit', '200', 'Lebensunterhalt', 'Auto', 'Monatlich');
     await addExpense(page, 'Ausflug', '50', 'Freizeit & Spaß', 'Auto', 'Monatlich');
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
 
     await showInPie(page, 'Lebensunterhalt', 'Auto');
     await expect(pieEntry(page, 'Sprit')).toBeVisible();
@@ -118,7 +119,7 @@ test.describe('Ausschnitt der Torte', () => {
   }) => {
     await addIncome(page, 'Gehalt', '3000', undefined, 'Monatlich');
     await addExpense(page, 'Reise', '500', 'Freizeit & Spaß', 'Urlaub', 'Monatlich');
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
 
     await showInPie(page, 'Freizeit & Spaß');
 
@@ -133,18 +134,21 @@ test.describe('Ausschnitt der Torte', () => {
   }) => {
     await addExpense(page, 'Sprit', '200', 'Lebensunterhalt', 'Auto', 'Monatlich');
     await addExpense(page, 'Miete', '1000', 'Lebensunterhalt', 'Miete', 'Monatlich');
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
     await showInPie(page, 'Lebensunterhalt', 'Auto');
     await expect(pieSlices(page)).toHaveCount(1);
 
     await addExpense(page, 'Wartung', '40', 'Lebensunterhalt', 'Auto', 'Monatlich');
+    await showPie(page);
     await expect(pieSummary(page)).toContainText('Lebensunterhalt › Auto');
     await expect(pieSlices(page)).toHaveCount(2);
 
+    await showTab(page, 'Regelmäßige Posten');
     await page.getByRole('button', { name: 'Eintrag Sprit löschen' }).click();
     await expect(itemRow(page, 'Sprit')).toBeHidden();
     await page.getByRole('button', { name: 'Eintrag Wartung löschen' }).click();
     await expect(itemRow(page, 'Wartung')).toBeHidden();
+    await showPie(page);
 
     await expect(page.getByRole('combobox', { name: 'Ausschnitt' })).toHaveText(
       /^\s*Lebensunterhalt\s*$/,
@@ -156,11 +160,11 @@ test.describe('Ausschnitt der Torte', () => {
     page,
   }) => {
     await addExpense(page, 'Miete', '1000', 'Lebensunterhalt', 'Miete', 'Monatlich');
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
     await showInPie(page, 'Lebensunterhalt');
 
-    await showBreakdownAs(page, 'Balken');
-    await showBreakdownAs(page, 'Torte');
+    await showTab(page, 'Regelmäßige Posten');
+    await showPie(page);
     await expect(pieSummary(page)).toContainText('Lebensunterhalt');
 
     await page.getByRole('button', { name: 'Nächstes Jahr' }).click();
@@ -171,7 +175,7 @@ test.describe('Ausschnitt der Torte', () => {
 
   test('eine Kategorie ohne Ausgaben zeigt einen leeren Kreis (TK-11)', async ({ page }) => {
     await addExpense(page, 'Miete', '1000', 'Lebensunterhalt', 'Miete', 'Monatlich');
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
 
     await showInPie(page, 'Freizeit & Spaß');
 
@@ -189,7 +193,7 @@ test.describe('Ausschnitt der Torte', () => {
       'Monatlich',
     );
     await page.setViewportSize(PHONE);
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
 
     await showInPie(page, 'Lebensunterhalt', 'Auto');
 
@@ -206,7 +210,7 @@ test.describe('Ausschnitt der Torte', () => {
     await addExpense(page, 'Miete', '1000', 'Lebensunterhalt', 'Miete', 'Monatlich');
     await addExpense(page, 'Sprit', '200', 'Lebensunterhalt', 'Auto', 'Monatlich');
     await addExpense(page, 'Versicherung', '50', 'Lebensunterhalt', 'Auto', 'Monatlich');
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
     const highlighted = page.locator('app-category-pie .legend-item.highlighted');
 
     await page.getByRole('button', { name: /Lebensunterhalt anzeigen$/ }).hover();

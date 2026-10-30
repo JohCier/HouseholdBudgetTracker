@@ -79,11 +79,8 @@ export const ITEM_TYPES: readonly { value: ItemType; label: string }[] = [
   { value: 'EXPENSE', label: 'Ausgabe' },
 ];
 
-/** How the 50/30/20 card shows the breakdown: as one bar per category or as a pie chart. */
-export type BreakdownView = 'bars' | 'pie';
-
-/** Which list the card "Top 5" shows: the highest saving potentials or the highest expenses (TP-7). */
-export type TopItemsView = 'savingPotential' | 'expenses';
+/** The two top 5 lists: the highest saving potentials and the highest expenses (AP-11). */
+export type TopItemsList = 'savingPotential' | 'expenses';
 
 /**
  * Which part of the plan the pie shows (TK-1): the 50/30/20 rule, the subcategory groups of one
@@ -107,6 +104,9 @@ export interface PieSort {
 
 /** The order of the entries, as before sorting existed (TS-1). */
 export const ENTRIES_SORT: PieSort = { key: 'entries', descending: false };
+
+/** The largest slice first, as the detail view opens (AP-10). */
+export const AMOUNT_SORT: PieSort = { key: 'amount', descending: true };
 
 /** Whether two subcategory names denote the same group, ignoring case (UK-5). */
 export function isSameSubcategory(a: string, b: string): boolean {

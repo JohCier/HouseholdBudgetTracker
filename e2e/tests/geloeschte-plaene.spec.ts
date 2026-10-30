@@ -8,6 +8,7 @@ import {
   openDeletedPlans,
   oneTimeItemRow,
   openYear,
+  showOneTimeItems,
   registerWithPlan,
   yearRow,
 } from "./support";
@@ -228,6 +229,7 @@ test.describe("Gelöschte Pläne", () => {
     await deletedPlanRows(page).first().getByRole("button", { name: "Wiederherstellen" }).click();
     await expect(page.getByText(`Plan ${year} wiederhergestellt.`)).toBeVisible();
     await openYear(page, year);
+    await showOneTimeItems(page);
     await expect(oneTimeItemRow(page, "Nebenkostennachzahlung")).toBeVisible();
 
     await page.getByRole("button", { name: "Plan löschen" }).click();
@@ -240,6 +242,7 @@ test.describe("Gelöschte Pläne", () => {
 
     await openYear(page, year);
     await expect(page.getByText(`Für ${year} gibt es noch keinen Haushaltsplan.`)).toBeVisible();
+    await showOneTimeItems(page);
     await expect(oneTimeItemRow(page, "Nebenkostennachzahlung")).toBeVisible();
   });
 

@@ -105,8 +105,8 @@ test.describe('Ansicht auf schmalen Bildschirmen', () => {
   test('passt eine Summenzeile in eine Zeile, bleibt sie einzeilig, auch wenn die Posten zweizeilig stehen (MA-2, MA-3)', async ({
     page,
   }) => {
-    // Next to the form the card is narrow enough for two-line items, but "Summe Haus" fits on one line
-    await page.setViewportSize({ width: 900, height: 900 });
+    // Narrow enough for two-line items, but "Summe Haus" fits on one line
+    await page.setViewportSize({ width: 560, height: 900 });
     const item = itemRow(page, 'Darlehen');
     expect((await box(item.locator('.amount.monthly'))).y).toBeGreaterThanOrEqual(
       (await box(item.locator('.description'))).y +

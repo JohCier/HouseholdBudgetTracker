@@ -32,10 +32,9 @@ Mit dieser Spec steht unter der Karte „50/30/20-Regel" eine Karte „Top 5". E
 
 ### Darstellung
 
-- **TP-7**: Die Karte „Top 5" steht unter der Karte „50/30/20-Regel" und ist da, sobald es einen Plan gibt. Ein
-  Umschalter „Sparpotential | Ausgaben" im Stil von „Balken | Torte" wechselt die Liste. Beim Öffnen der Planansicht
-  ist „Sparpotential" gewählt; beim Wechsel des Jahres bleibt die Wahl erhalten, über das Neuladen der Seite hinaus
-  nicht (wie TD-1).
+- **TP-7**: Die Listen sind die Karten „Top 5 Sparpotential" und „Top 5 Ausgaben" im Tab „Sparhebel", da, sobald es
+  einen Plan gibt (AP-11; bis zu [planansicht-aufbau.md](planansicht-aufbau.md) eine Karte „Top 5" mit Umschalter „Sparpotential |
+  Ausgaben" unter der Karte „50/30/20-Regel").
 - **TP-8**: Jede Zeile zeigt links ihren Rang (1. bis 5.), die Beschreibung und klein darunter die Unterkategorie
   („Sonstiges" ohne Unterkategorie, UK-1), rechtsbündig daneben Monats- und Jahreswert in den Spalten „Monat" und
   „Jahr" wie in der Bilanz (BI-2).

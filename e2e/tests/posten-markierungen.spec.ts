@@ -8,6 +8,7 @@ import {
   openSavingPotential,
   registerWithPlan,
   setSavingPotential,
+  openAddItemDialog,
 } from './support';
 
 /** Marks an item as important or no longer with the star on its row (PM-4a). */
@@ -50,9 +51,10 @@ test.describe('Posten markieren: wichtig und Sparpotential', () => {
     await expect(itemRow(page, 'Miete')).not.toHaveClass(/important/);
   });
 
-  test('Formular und Dialoge haben keine Felder für die Markierungen (PM-4)', async ({ page }) => {
-    const form = page.locator('app-add-item-form');
+  test('die Dialoge haben keine Felder für die Markierungen (PM-4)', async ({ page }) => {
+    const form = await openAddItemDialog(page);
     await expect(form.getByText(/wichtig|Sparpotential/i)).toHaveCount(0);
+    await form.getByRole('button', { name: 'Abbrechen' }).click();
 
     await addExpense(page, 'Miete', '850', 'Lebensunterhalt', 'Wohnen');
     const edit = await openEditDialog(page, 'Miete');

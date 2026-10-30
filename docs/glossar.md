@@ -67,7 +67,10 @@ Neue Begriffe kommen hier hinein, bevor sie im Code verwendet werden.
 | Datum eines Einmalpostens | `OneTimeItem.date` | Der Tag des Einmalpostens (01.01.1900 bis 31.12.2200); sein Jahr bestimmt, zu welchem Jahr der Einmalposten gehört. Nur Einmalposten haben ein Datum |
 | Einmalposten eines Jahres | `OneTimeItemOverview` (Read Model) | Alle Einmalposten eines Benutzers in einem Jahr, nach Datum, mit einmaligen Einnahmen, Ausgaben und Saldo |
 | Einmalige Einnahmen, Ausgaben, Saldo | `oneTimeIncome`, `oneTimeExpense`, `oneTimeBalance` | Summen der Einmalposten eines Jahres; immer Jahreswerte, in der Jahresübersicht in eigenen Spalten „Einmalig (Jahr)"
-| Darstellung (Balken, Torte) | `BreakdownView` (`bars`, `pie`), nur im Frontend | Wie die Karte „50/30/20-Regel" die Aufteilung zeigt: als Balken je Kategorie oder als Tortendiagramm |
+| Tabs der Planansicht | `PLAN_TABS` (`items`, `oneTime`, `details`, `levers`), nur im Frontend | Die Bereiche unter Bilanz und 50/30/20-Regel: „Regelmäßige Posten" (die Einträge), „Einmalposten", „Detailansicht" (die Torte) und „Sparhebel" |
+| Detailansicht | Tab `details`, `app-category-pie`, nur im Frontend | Der Tab mit der Torte, ihrem Ausschnitt und ihrer Sortierung |
+| Sparhebel | Tab `levers`, nur im Frontend | Der Tab mit „Sparpotential je Unterkategorie", „Top 5 Sparpotential" und „Top 5 Ausgaben" (`TopItemsList`) |
+| Posten erfassen | `AddItemDialog` ohne `NewItemPreset`, nur im Frontend | Der Dialog über den Einträgen, der einen neuen Posten anlegt; ersetzt das Formular „Neuer Eintrag" |
 | Ausschnitt der Torte | `PieSelection` (`rule`, `category`, `group`), nur im Frontend | Was die Torte zeigt: die 50/30/20-Regel, eine Kategorie aufgeteilt nach Unterkategorien oder eine Unterkategorie einer Kategorie aufgeteilt nach Posten |
 | Sortierung der Torte | `PieSort` (`entries`, `amount`, `name`, `descending`), nur im Frontend | Reihenfolge der Stücke einer Kategorie oder Unterkategorie in Torte und Legende: wie die Einträge, nach Betrag je Monat oder nach Name |
 | Anteil am Ausschnitt | `percentageOfSection`, `percentageOfGroup`, `unplannedPercentageOfTotal` | Anteil einer Gruppe an ihrer Kategorie bzw. eines Postens an seiner Gruppe, aus den Monatsbeträgen; bei Sparen & Investieren einschließlich des Überschusses |

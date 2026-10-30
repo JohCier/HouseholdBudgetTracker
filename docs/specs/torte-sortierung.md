@@ -20,8 +20,8 @@ der Einträge zu ändern. Die Spec ersetzt das Nicht-Ziel „Umsortieren in der 
   - „Betrag“: nach dem Betrag je Monat (MJ-7, UK-12),
   - „Name“: nach dem Namen der Unterkategorie bzw. der Beschreibung des Postens.
 
-  Beim Öffnen der Übersicht ist „Einträge“ gewählt. Im Ausschnitt „50/30/20-Regel“ und in der Balkenansicht gibt es
-  die Auswahl nicht; die drei Kategorien behalten ihre feste Reihenfolge (TD-2).
+  Beim Öffnen der Übersicht ist „Betrag“ absteigend gewählt (AP-10; bis zu [planansicht-aufbau.md](planansicht-aufbau.md) „Einträge“). Im
+  Ausschnitt „50/30/20-Regel“ gibt es die Auswahl nicht; die drei Kategorien behalten ihre feste Reihenfolge (TD-2).
 - **TS-2**: Bei „Betrag“ und „Name“ steht neben der Auswahl ein Knopf, der die Richtung umkehrt. Nach dem Wählen gilt
   bei „Betrag“ absteigend (größter Betrag oben) und bei „Name“ aufsteigend (A–Z). Der Knopf zeigt die Richtung als Pfeil
   und nennt sie für Screenreader („absteigend“, „aufsteigend“). Bei „Einträge“ gibt es den Knopf nicht.
@@ -34,7 +34,7 @@ der Einträge zu ändern. Die Spec ersetzt das Nicht-Ziel „Umsortieren in der 
 - **TS-5**: Das Stück „nicht verplant“ (TK-9) wird nicht mitsortiert und steht immer als letztes Stück. Stücke mit
   0,00 € stehen in der Legende an der Stelle, die die Sortierung ergibt (bei „Betrag“ absteigend also am Ende).
 - **TS-6**: Die Sortierung gilt für alle Ausschnitte gleichermaßen und bleibt erhalten, wenn der Benutzer den
-  Ausschnitt wechselt, zwischen Balken und Torte wechselt, Posten erfasst, ändert oder löscht und wenn er das Jahr
+  Ausschnitt wechselt, die Tabs wechselt (AP-10), Posten erfasst, ändert oder löscht und wenn er das Jahr
   wechselt (wie TK-5). Über das Neuladen der Seite hinaus wird nichts gespeichert.
 - **TS-7**: Die Sortierung ändert nichts an der Reihenfolge der Karte „Einträge“ und nichts an der Reihenfolge der
   Unterkategorien in der Auswahl „Ausschnitt“ (TK-2).

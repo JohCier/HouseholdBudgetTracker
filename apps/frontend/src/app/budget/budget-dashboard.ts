@@ -1,30 +1,36 @@
-import { NgTemplateOutlet } from '@angular/common';
-import { Component, Injector, effect, inject, input, signal, untracked } from '@angular/core';
+import {
+  Component,
+  Injector,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  untracked,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTabsModule } from '@angular/material/tabs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
 import { Router, RouterLink } from '@angular/router';
 import {
-  BreakdownView,
   BudgetItem,
   NewItemPreset,
-  ENTRIES_SORT,
+  AMOUNT_SORT,
   OneTimeItem,
   PieSelection,
   PieSort,
   RULE_SELECTION,
-  TopItemsView,
   Year,
 } from './budget.model';
 import { BudgetApi } from './data-access/budget-api';
 import { BudgetStore } from './data-access/budget-store';
 import { OneTimeItemStore } from './data-access/one-time-item-store';
 import { AddItemDialog } from './ui/add-item-dialog';
-import { AddItemForm } from './ui/add-item-form';
 import { BudgetEntries, GroupOrder, ImportantMark } from './ui/budget-entries';
 import {
   CopiedPlan,
@@ -33,6 +39,7 @@ import {
   openCopyPlanDialog,
 } from './ui/copy-plan-dialog';
 import { CategoryBreakdownCard } from './ui/category-breakdown';
+import { CategoryPieChart } from './ui/category-pie';
 import { TopItems } from './ui/top-items';
 import { DELETED_PLAN_STATE, openDeletePlanDialog } from './ui/delete-plan-dialog';
 import { openDeleteOneTimeItemDialog } from './ui/delete-one-time-item-dialog';
@@ -40,6 +47,7 @@ import { EditItemDialog } from './ui/edit-item-dialog';
 import { openOneTimeItemDialog } from './ui/one-time-item-dialog';
 import { OneTimeItems } from './ui/one-time-items';
 import { SavingPotentialDialog } from './ui/saving-potential-dialog';
+import { SavingPotentialSummary } from './ui/saving-potential-summary';
 import { OverviewSummary } from './ui/overview-summary';
 import { parseYear } from './year';
 
@@ -48,15 +56,16 @@ import { parseYear } from './year';
   imports: [
     MatButtonModule,
     MatCardModule,
-    NgTemplateOutlet,
     MatIconModule,
     MatProgressBarModule,
-    AddItemForm,
+    MatTabsModule,
     BudgetEntries,
     CategoryBreakdownCard,
     TopItems,
     OverviewSummary,
     OneTimeItems,
+    SavingPotentialSummary,
+    CategoryPieChart,
     RouterLink,
   ],
   providers: [BudgetStore, OneTimeItemStore],
@@ -113,76 +122,110 @@ import { parseYear } from './year';
       </div>
     }
 
-    @if (store.overview(); as overview) {
-      <app-overview-summary [overview]="overview" />
+    <!-- The overview at a glance; everything else is in the tabs below (AP-1, AP-5) -->
+    @if (store.planId()) {
+      @if (store.overview(); as overview) {
+        <div class="row overview">
+          <app-overview-summary [overview]="overview" />
+          <app-category-breakdown [breakdowns]="overview.categoryBreakdowns" />
+        </div>
+      }
     }
 
-    @if (store.planId()) {
-      <div class="grid">
-        <div class="side">
-          <app-add-item-form />
-          @if (store.overview(); as overview) {
-            <app-category-breakdown
-              [breakdowns]="overview.categoryBreakdowns"
-              [expenseCategories]="overview.expenseCategories"
-              [(view)]="breakdownView"
-              [(pieSelection)]="pieSelection"
-              [(pieSort)]="pieSort"
-            />
-            <app-top-items
-              [savingPotentials]="overview.topSavingPotentials"
-              [expenses]="overview.topExpenses"
-              [(view)]="topItemsView"
-            />
-          }
-        </div>
-        <div class="main">
-          @if (store.overview(); as overview) {
-            <app-budget-entries
-              [overview]="overview"
-              (edit)="edit($event)"
-              (remove)="remove($event)"
-              (reorderItems)="reorderItems($event)"
-              (reorderGroups)="reorderGroups($event)"
-              (add)="addTo($event)"
-              (markImportant)="markImportant($event)"
-              (savingPotential)="editSavingPotential($event)"
-            />
-          }
-          <ng-container *ngTemplateOutlet="oneTimeSection" />
-        </div>
-      </div>
-    } @else if (store.planMissing() && !store.loadError()) {
-      <mat-card appearance="outlined" class="no-plan">
-        <mat-card-content>
-          <p>Für {{ store.year() }} gibt es noch keinen Haushaltsplan.</p>
-          <div class="actions">
-            <button matButton="filled" type="button" [disabled]="creating()" (click)="createPlan()">
-              Haushaltsplan anlegen
-            </button>
-            @if (otherPlanYears().length > 0) {
-              <button matButton="outlined" type="button" (click)="copyPlanHere()">
-                <mat-icon svgIcon="content_copy" />
-                Aus anderem Jahr übernehmen
+    @if (store.planId() || (store.planMissing() && !store.loadError())) {
+      <mat-tab-group
+        mat-stretch-tabs="false"
+        animationDuration="0ms"
+        [selectedIndex]="tabIndex()"
+        (selectedIndexChange)="selectTab($event)"
+      >
+        <mat-tab label="Regelmäßige Posten">
+          <div class="tab-body">
+            @if (store.planId()) {
+              <button matButton="filled" type="button" class="add-item" (click)="addItem()">
+                <mat-icon svgIcon="add" />
+                Posten erfassen
               </button>
+              @if (store.overview(); as overview) {
+                <app-budget-entries
+                  [overview]="overview"
+                  (edit)="edit($event)"
+                  (remove)="remove($event)"
+                  (reorderItems)="reorderItems($event)"
+                  (reorderGroups)="reorderGroups($event)"
+                  (add)="addTo($event)"
+                  (markImportant)="markImportant($event)"
+                  (savingPotential)="editSavingPotential($event)"
+                />
+              }
+            } @else {
+              <!-- A year without a plan has only this hint and the one-time items (AP-13) -->
+              <mat-card appearance="outlined" class="no-plan">
+                <mat-card-content>
+                  <p>Für {{ store.year() }} gibt es noch keinen Haushaltsplan.</p>
+                  <div class="actions">
+                    <button
+                      matButton="filled"
+                      type="button"
+                      [disabled]="creating()"
+                      (click)="createPlan()"
+                    >
+                      Haushaltsplan anlegen
+                    </button>
+                    @if (otherPlanYears().length > 0) {
+                      <button matButton="outlined" type="button" (click)="copyPlanHere()">
+                        <mat-icon svgIcon="content_copy" />
+                        Aus anderem Jahr übernehmen
+                      </button>
+                    }
+                  </div>
+                </mat-card-content>
+              </mat-card>
             }
           </div>
-        </mat-card-content>
-      </mat-card>
-      <ng-container *ngTemplateOutlet="oneTimeSection" />
+        </mat-tab>
+        <!-- With and without a plan; one-time items do not belong to it (EP-5, AP-8) -->
+        <mat-tab label="Einmalposten">
+          <div class="tab-body">
+            <app-one-time-items
+              [overview]="oneTimeItems.overview()"
+              [loadError]="oneTimeItems.loadError()"
+              (add)="addOneTimeItem()"
+              (edit)="editOneTimeItem($event)"
+              (remove)="removeOneTimeItem($event)"
+              (retry)="oneTimeItems.load()"
+            />
+          </div>
+        </mat-tab>
+        @if (store.planId()) {
+          @if (store.overview(); as overview) {
+            <mat-tab label="Detailansicht">
+              <div class="tab-body">
+                <mat-card appearance="outlined">
+                  <mat-card-content class="pie">
+                    <app-category-pie
+                      [breakdowns]="overview.categoryBreakdowns"
+                      [expenseCategories]="overview.expenseCategories"
+                      [(selection)]="pieSelection"
+                      [(sort)]="pieSort"
+                    />
+                  </mat-card-content>
+                </mat-card>
+              </div>
+            </mat-tab>
+            <mat-tab label="Sparhebel">
+              <div class="tab-body">
+                <div class="row levers">
+                  <app-saving-potential-summary [sums]="overview.savingPotentialsBySubcategory" />
+                  <app-top-items list="savingPotential" [items]="overview.topSavingPotentials" />
+                  <app-top-items list="expenses" [items]="overview.topExpenses" />
+                </div>
+              </div>
+            </mat-tab>
+          }
+        }
+      </mat-tab-group>
     }
-
-    <!-- Shown with and without a plan; one-time items do not belong to it (EP-5, EP-10) -->
-    <ng-template #oneTimeSection>
-      <app-one-time-items
-        [overview]="oneTimeItems.overview()"
-        [loadError]="oneTimeItems.loadError()"
-        (add)="addOneTimeItem()"
-        (edit)="editOneTimeItem($event)"
-        (remove)="removeOneTimeItem($event)"
-        (retry)="oneTimeItems.load()"
-      />
-    </ng-template>
   `,
   styles: `
     :host {
@@ -238,11 +281,43 @@ import { parseYear } from './year';
       background: var(--mat-sys-error-container);
       color: var(--mat-sys-on-error-container);
     }
-    .grid {
+    .row {
       display: grid;
-      grid-template-columns: minmax(280px, 380px) 1fr;
       gap: 24px;
+    }
+    /* Narrower than their content, so a wide card cannot push the page past the screen (MA-1) */
+    .row > * {
+      min-width: 0;
+    }
+    /* Both columns as high as the higher one (AP-1) */
+    .overview {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .levers {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       align-items: start;
+    }
+    .tab-body {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-top: 16px;
+    }
+    .add-item {
+      align-self: flex-start;
+    }
+    .pie {
+      padding-top: 16px;
+    }
+    @media (max-width: 1100px) {
+      .levers {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+    @media (max-width: 860px) {
+      .overview {
+        grid-template-columns: minmax(0, 1fr);
+      }
     }
     .no-plan mat-card-content {
       display: flex;
@@ -250,21 +325,6 @@ import { parseYear } from './year';
       align-items: flex-start;
       gap: 16px;
       padding-top: 16px;
-    }
-    /* Narrower than their content, so a wide card cannot push the page past the screen (MA-1) */
-    .grid > * {
-      min-width: 0;
-    }
-    .side,
-    .main {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-    @media (max-width: 860px) {
-      .grid {
-        grid-template-columns: minmax(0, 1fr);
-      }
     }
   `,
 })
@@ -281,14 +341,17 @@ export class BudgetDashboard {
   private readonly injector = inject(Injector);
 
   protected readonly creating = signal(false);
-  /** View of the 50/30/20 card, kept while the page is open (TD-1). */
-  protected readonly breakdownView = signal<BreakdownView>('bars');
-  /** Part of the plan the pie shows, kept like the view (TK-5). */
+  /** The tab chosen, kept while the page is open, also when the year changes (AP-5). */
+  protected readonly tab = signal<PlanTab>('items');
+  /** The tab shown: a year without a plan has only the first two, so it falls back to the first (AP-13). */
+  protected readonly tabIndex = computed(() => {
+    const index = PLAN_TABS.indexOf(this.tab());
+    return this.store.planId() || index < 2 ? index : 0;
+  });
+  /** Part of the plan the pie shows, kept while the page is open (TK-5, AP-10). */
   protected readonly pieSelection = signal<PieSelection>(RULE_SELECTION);
-  /** Order of the slices in the pie; kept here like the selection (TS-6). */
-  protected readonly pieSort = signal<PieSort>(ENTRIES_SORT);
-  /** Which top 5 list is shown; kept here so that it survives changing the year (TP-7). */
-  protected readonly topItemsView = signal<TopItemsView>('savingPotential');
+  /** Order of the slices in the pie; kept here like the selection (TS-6, AP-10). */
+  protected readonly pieSort = signal<PieSort>(AMOUNT_SORT);
   /** The years the user has plans for, other than the one shown; looked up for a year without plan (PU-12). */
   protected readonly otherPlanYears = signal<Year[]>([]);
 
@@ -431,10 +494,23 @@ export class BudgetDashboard {
       });
   }
 
+  protected selectTab(index: number): void {
+    this.tab.set(PLAN_TABS[index]);
+  }
+
+  /** Adds an item from the button above the entries, starting with an expense (AP-14, AP-15). */
+  protected addItem(): void {
+    this.openAddItemDialog(null);
+  }
+
   /** Adds an item right in one of the groups, its type, category and subcategory filled in (EG-9 to EG-11). */
   protected addTo(preset: NewItemPreset): void {
+    this.openAddItemDialog(preset);
+  }
+
+  private openAddItemDialog(preset: NewItemPreset | null): void {
     this.dialog
-      .open<AddItemDialog, NewItemPreset, boolean>(AddItemDialog, {
+      .open<AddItemDialog, NewItemPreset | null, boolean>(AddItemDialog, {
         data: preset,
         injector: this.injector,
       })
@@ -503,3 +579,7 @@ export class BudgetDashboard {
     }
   }
 }
+
+/** The tabs below the overview, in their order (AP-5). */
+const PLAN_TABS = ['items', 'oneTime', 'details', 'levers'] as const;
+type PlanTab = (typeof PLAN_TABS)[number];

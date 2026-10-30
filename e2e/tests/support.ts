@@ -66,9 +66,28 @@ export type Category = 'Lebensunterhalt' | 'Freizeit & Spaß' | 'Sparen & Invest
 /** Whether an amount is entered per month or per year (MJ-1). */
 export type Period = 'Monatlich' | 'Jährlich';
 
-/** Chooses the period of the amount; the tests take amounts as yearly unless they say otherwise. */
-async function choosePeriod(page: Page, period: Period): Promise<void> {
-  await page
+/** The tabs below the overview of a plan (AP-5). */
+export type PlanTab = 'Regelmäßige Posten' | 'Einmalposten' | 'Detailansicht' | 'Sparhebel';
+
+/** Shows one of the tabs of the plan view (AP-5). */
+export async function showTab(page: Page, name: PlanTab): Promise<void> {
+  const tab = page.getByRole('tab', { name, exact: true });
+  await tab.click();
+  await expect(tab).toHaveAttribute('aria-selected', 'true');
+}
+
+/** Opens the dialog "Posten erfassen" from the tab "Regelmäßige Posten" (AP-14). */
+export async function openAddItemDialog(page: Page) {
+  await showTab(page, 'Regelmäßige Posten');
+  await page.getByRole('button', { name: 'Posten erfassen', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByLabel('Beschreibung')).toBeFocused();
+  return dialog;
+}
+
+/** Chooses the period of the amount in a dialog; the tests take amounts as yearly unless they say otherwise. */
+async function choosePeriodIn(dialog: Locator, period: Period): Promise<void> {
+  await dialog
     .getByRole('radiogroup', { name: 'Angabe monatlich oder jährlich' })
     .getByRole('radio', { name: period })
     .click();
@@ -80,13 +99,17 @@ export async function addIncome(
   amount: string,
   subcategory?: string,
   period: Period = 'Jährlich',
+  note?: string,
 ): Promise<void> {
-  await page.getByRole('radio', { name: 'Einnahme' }).click();
-  await page.getByLabel('Beschreibung').fill(description);
-  await page.getByLabel('Betrag').fill(amount);
-  await choosePeriod(page, period);
+  const dialog = await openAddItemDialog(page);
+  await dialog.getByRole('radio', { name: 'Einnahme' }).click();
+  await dialog.getByLabel('Beschreibung').fill(description);
+  await dialog.getByLabel('Betrag').fill(amount);
+  await choosePeriodIn(dialog, period);
   await fillSubcategory(page, subcategory);
-  await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+  if (note !== undefined) await dialog.getByLabel('Notiz (optional)').fill(note);
+  await dialog.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+  await expect(dialog).toBeHidden();
   await expect(itemRow(page, description)).toBeVisible();
 }
 
@@ -97,15 +120,19 @@ export async function addExpense(
   category: Category,
   subcategory?: string,
   period: Period = 'Jährlich',
+  note?: string,
 ): Promise<void> {
-  await page.getByRole('radio', { name: 'Ausgabe', exact: true }).click();
-  await page.getByLabel('Beschreibung').fill(description);
-  await page.getByLabel('Betrag').fill(amount);
-  await choosePeriod(page, period);
-  await page.getByRole('combobox', { name: 'Kategorie', exact: true }).click();
+  const dialog = await openAddItemDialog(page);
+  await dialog.getByRole('radio', { name: 'Ausgabe', exact: true }).click();
+  await dialog.getByLabel('Beschreibung').fill(description);
+  await dialog.getByLabel('Betrag').fill(amount);
+  await choosePeriodIn(dialog, period);
+  await dialog.getByRole('combobox', { name: 'Kategorie', exact: true }).click();
   await page.getByRole('option', { name: category }).click();
   await fillSubcategory(page, subcategory);
-  await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+  if (note !== undefined) await dialog.getByLabel('Notiz (optional)').fill(note);
+  await dialog.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+  await expect(dialog).toBeHidden();
   await expect(itemRow(page, description)).toBeVisible();
 }
 
@@ -181,6 +208,7 @@ export function itemDescriptions(page: Page, section: 'Einnahmen' | Category, su
 
 /** Opens the dialog of the saving potential of an expense (PM-4b). */
 export async function openSavingPotential(page: Page, description: string) {
+  await showTab(page, 'Regelmäßige Posten');
   await page.getByRole('button', { name: `Sparpotential bei ${description}`, exact: true }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('heading')).toHaveText(`Sparpotential bei ${description}`);
@@ -209,7 +237,7 @@ export function balanceSheet(
     .locator(per === 'Jahr' ? '.value.yearly' : '.value.monthly');
 }
 
-/** Monthly or yearly saving potential of a subcategory in the box beside the balance sheet (SU-6). */
+/** Monthly or yearly saving potential of a subcategory in the tab "Sparhebel" (SU-6, AP-11). */
 export function savingPotentialOfSubcategory(
   page: Page,
   subcategory: string,
@@ -226,15 +254,12 @@ export function categoryRow(page: Page, category: Category) {
   return page.locator('app-category-breakdown .row').filter({ hasText: category });
 }
 
-/** Switches the 50/30/20 card between "Balken" and "Torte" (TD-1). */
-export async function showBreakdownAs(page: Page, view: 'Balken' | 'Torte'): Promise<void> {
-  await page
-    .getByRole('radiogroup', { name: 'Darstellung' })
-    .getByRole('radio', { name: view })
-    .click();
+/** Shows the pie chart in the tab "Detailansicht" (AP-9). */
+export async function showPie(page: Page): Promise<void> {
+  await showTab(page, 'Detailansicht');
 }
 
-/** Legend entry of a category in the pie chart of the 50/30/20 card. */
+/** Legend entry of a category in the pie chart of the tab "Detailansicht". */
 export function pieLegendItem(page: Page, category: Category) {
   return page.locator('app-category-pie .legend-item').filter({ hasText: category });
 }
@@ -377,8 +402,14 @@ export async function fillOneTimeItemDialog(page: Page, item: OneTimeItemInput):
   await expect(dialog).toBeHidden();
 }
 
-/** Enters a one-time item in the section "Einmalposten" of the year shown (EP-7). */
+/** Shows the tab "Einmalposten" of the year shown (AP-8). */
+export async function showOneTimeItems(page: Page): Promise<void> {
+  await showTab(page, 'Einmalposten');
+}
+
+/** Enters a one-time item in the tab "Einmalposten" of the year shown (EP-7, AP-8). */
 export async function addOneTimeItem(page: Page, item: OneTimeItemInput): Promise<void> {
+  await showTab(page, 'Einmalposten');
   await page.getByRole('button', { name: 'Einmalposten erfassen' }).click();
   await fillOneTimeItemDialog(page, item);
   await expect(oneTimeItemRow(page, item.description)).toBeVisible();
@@ -422,14 +453,12 @@ export async function deletePlanInOverview(page: Page, year: number): Promise<vo
   await expect(page.getByText(`Plan ${year} gelöscht.`)).toBeVisible();
 }
 
-/** Switches the card "Top 5" between "Sparpotential" and "Ausgaben" (TP-7). */
-export async function showTopItems(page: Page, list: 'Sparpotential' | 'Ausgaben'): Promise<void> {
-  const toggle = page.getByRole('radiogroup', { name: 'Liste' }).getByRole('radio', { name: list });
-  await toggle.click();
-  await expect(toggle).toBeChecked();
+/** The card "Top 5 Sparpotential" or "Top 5 Ausgaben" in the tab "Sparhebel" (AP-11). */
+export function topItemsCard(page: Page, list: 'Sparpotential' | 'Ausgaben') {
+  return page.locator('app-top-items').filter({ has: page.getByText(`Top 5 ${list}`, { exact: true }) });
 }
 
-/** The rows of the list the card "Top 5" shows (TP-8). */
-export function topItemRows(page: Page) {
-  return page.getByRole('table', { name: 'Top 5' }).locator('tbody tr');
+/** The rows of one of the top 5 lists (TP-8). */
+export function topItemRows(page: Page, list: 'Sparpotential' | 'Ausgaben') {
+  return page.getByRole('table', { name: `Top 5 ${list}`, exact: true }).locator('tbody tr');
 }

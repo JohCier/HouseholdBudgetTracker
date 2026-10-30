@@ -11,8 +11,9 @@ import {
   openEditDialog,
   pieLegendItem,
   registerWithPlan,
-  showBreakdownAs,
+  showPie,
   sumRow,
+  openAddItemDialog,
 } from './support';
 
 /** Yearly sum shown below a subcategory group (EG-5). */
@@ -150,7 +151,7 @@ test.describe('Unterkategorie', () => {
       );
     }
 
-    await showBreakdownAs(page, 'Torte');
+    await showPie(page);
     for (const [category, color] of Object.entries(colors)) {
       await expect(
         pieLegendItem(page, category as keyof typeof colors).locator('.swatch'),
@@ -175,16 +176,18 @@ test.describe('Unterkategorie', () => {
   test('das Feld schlägt Unterkategorien vor und übernimmt eigene Namen (UK-6, UK-7)', async ({
     page,
   }) => {
-    await page.getByRole('radio', { name: 'Ausgabe', exact: true }).click();
-    await page.getByRole('combobox', { name: 'Unterkategorie (optional)' }).fill('Au');
+    let dialog = await openAddItemDialog(page);
+    await dialog.getByRole('combobox', { name: 'Unterkategorie (optional)' }).fill('Au');
     await expect(page.getByRole('option', { name: 'Auto', exact: true })).toBeVisible();
-    await page.getByRole('combobox', { name: 'Unterkategorie (optional)' }).fill('');
-    await page.keyboard.press('Tab');
+    await page.keyboard.press('Escape');
+    await dialog.getByRole('button', { name: 'Abbrechen' }).click();
+    await expect(dialog).toBeHidden();
 
     await addExpense(page, 'Liegeplatz', '300', 'Freizeit & Spaß', 'Boot');
     await expect(itemDescriptions(page, 'Freizeit & Spaß', 'Boot')).toHaveText(['Liegeplatz']);
 
-    await page.getByRole('combobox', { name: 'Unterkategorie (optional)' }).fill('bo');
+    dialog = await openAddItemDialog(page);
+    await dialog.getByRole('combobox', { name: 'Unterkategorie (optional)' }).fill('bo');
     await expect(page.getByRole('option', { name: 'Boot', exact: true })).toBeVisible();
   });
 
@@ -224,12 +227,13 @@ test.describe('Unterkategorie', () => {
     page.on('request', (request) => {
       if (request.method() === 'POST') requests.push(request.url());
     });
-    await page.getByRole('radio', { name: 'Einnahme' }).click();
-    await page.getByLabel('Beschreibung').fill('Gehalt');
-    await page.getByLabel('Betrag').fill('3000');
-    await page.getByRole('combobox', { name: 'Unterkategorie (optional)' }).fill('x'.repeat(51));
+    const dialog = await openAddItemDialog(page);
+    await dialog.getByRole('radio', { name: 'Einnahme' }).click();
+    await dialog.getByLabel('Beschreibung').fill('Gehalt');
+    await dialog.getByLabel('Betrag').fill('3000');
+    await dialog.getByRole('combobox', { name: 'Unterkategorie (optional)' }).fill('x'.repeat(51));
     await page.keyboard.press('Tab');
-    await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
 
     await expect(page.getByText('Höchstens 50 Zeichen.')).toBeVisible();
     expect(requests).toEqual([]);

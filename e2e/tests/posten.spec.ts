@@ -6,6 +6,7 @@ import {
   itemDescriptions,
   itemRow,
   registerWithPlan,
+  openAddItemDialog,
 } from './support';
 
 // docs/specs/posten.md
@@ -26,16 +27,28 @@ test.describe('Posten', () => {
     await expect(itemRow(page, 'Gehalt')).toContainText('+3.000,00 €');
   });
 
-  test('nach dem Erfassen ist das Formular leer und zeigt keine Fehlermeldungen (PO-1)', async ({
+  test('„Posten erfassen" öffnet einen leeren Dialog für eine monatliche Ausgabe (PO-1, AP-14)', async ({
     page,
   }) => {
     await addExpense(page, 'Miete', '850', 'Lebensunterhalt');
 
-    const form = page.locator('app-add-item-form');
-    await expect(form.getByLabel('Beschreibung')).toHaveValue('');
-    await expect(form.getByLabel('Betrag')).toHaveValue('');
-    await expect(form.locator('mat-error')).toHaveCount(0);
-    await expect(page.getByRole('radio', { name: 'Ausgabe', exact: true })).toBeChecked();
+    await expect(page.locator('app-add-item-form')).toHaveCount(0);
+    const dialog = await openAddItemDialog(page);
+    await expect(dialog.getByRole('heading')).toHaveText('Posten erfassen');
+    await expect(dialog.getByLabel('Beschreibung')).toHaveValue('');
+    await expect(dialog.getByLabel('Betrag')).toHaveValue('');
+    await expect(dialog.locator('mat-error')).toHaveCount(0);
+    await expect(dialog.getByRole('radio', { name: 'Ausgabe', exact: true })).toBeChecked();
+    await expect(dialog.getByRole('radio', { name: 'Monatlich' })).toBeChecked();
+  });
+
+  test('„Abbrechen" im Dialog „Posten erfassen" legt nichts an (AP-15)', async ({ page }) => {
+    const dialog = await openAddItemDialog(page);
+    await dialog.getByLabel('Beschreibung').fill('Miete');
+    await dialog.getByRole('button', { name: 'Abbrechen' }).click();
+
+    await expect(dialog).toBeHidden();
+    await expect(page.getByText('Noch keine Einträge in diesem Haushaltsplan.')).toBeVisible();
   });
 
   test('der neueste Posten steht unten in seiner Gruppe (PO-10, EG-1)', async ({ page }) => {
@@ -57,17 +70,18 @@ test.describe('Posten', () => {
     page.on('request', (request) => {
       if (request.method() === 'POST') requests.push(request.url());
     });
-    await page.getByRole('radio', { name: 'Einnahme' }).click();
-    await page.getByLabel('Beschreibung').fill('Gehalt');
+    const dialog = await openAddItemDialog(page);
+    await dialog.getByRole('radio', { name: 'Einnahme' }).click();
+    await dialog.getByLabel('Beschreibung').fill('Gehalt');
 
     for (const amount of ['0', '-5']) {
-      await page.getByLabel('Betrag').fill(amount);
-      await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+      await dialog.getByLabel('Betrag').fill(amount);
+      await dialog.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
       await expect(page.getByText('Bitte einen positiven Betrag angeben.')).toBeVisible();
     }
 
-    await page.getByLabel('Betrag').fill('10.005');
-    await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+    await dialog.getByLabel('Betrag').fill('10.005');
+    await dialog.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
     await expect(page.getByText('Höchstens zwei Nachkommastellen.')).toBeVisible();
 
     expect(requests).toEqual([]);
@@ -75,9 +89,10 @@ test.describe('Posten', () => {
   });
 
   test('eine Ausgabe braucht eine Kategorie (PO-5)', async ({ page }) => {
-    await page.getByLabel('Beschreibung').fill('Miete');
-    await page.getByLabel('Betrag').fill('850');
-    await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+    const dialog = await openAddItemDialog(page);
+    await dialog.getByLabel('Beschreibung').fill('Miete');
+    await dialog.getByLabel('Betrag').fill('850');
+    await dialog.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
 
     await expect(page.getByText('Bitte eine Kategorie wählen.')).toBeVisible();
     await expect(page.getByText('Noch keine Einträge in diesem Haushaltsplan.')).toBeVisible();

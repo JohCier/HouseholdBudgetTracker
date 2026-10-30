@@ -3,99 +3,86 @@ import { Component, computed, input } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { HouseholdPlanOverview } from '../budget.model';
-import { SavingPotentialSummary } from './saving-potential-summary';
 
 /**
  * Income, expenses and balance of the plan in one box, per month and per year side by side (BI-1);
  * below them, apart from the balance, the saving potential of all expenses (PM-14). In a narrow box
- * the year stands below the month (BI-5). Left beside the box, the saving potential per subcategory, if
- * there is any (SU-6, SU-7); below the box where there is no room beside it (SU-8).
+ * the year stands below the month (BI-5). Below the box a warning on a deficit (BI-6), otherwise a
+ * confirmation with what is left each month (AP-17).
  */
 @Component({
   selector: 'app-overview-summary',
-  imports: [CurrencyPipe, NgTemplateOutlet, MatCardModule, MatIconModule, SavingPotentialSummary],
+  imports: [CurrencyPipe, NgTemplateOutlet, MatCardModule, MatIconModule],
   template: `
-    <!-- In reverse order, so the saving potentials stand left beside the box or below it (SU-6, SU-8) -->
-    <div class="boxes">
-      <mat-card appearance="outlined" class="balance-sheet">
-        <mat-card-header>
-          <mat-card-title id="balance-sheet-title">Bilanz</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <!-- Only one of both is displayed, depending on the width of the card (BI-5) -->
-          <div class="side-by-side">
-            <ng-container
-              *ngTemplateOutlet="sheet; context: { $implicit: ['monthly', 'yearly'] }"
-            />
-          </div>
-          <div class="stacked">
-            <ng-container *ngTemplateOutlet="sheet; context: { $implicit: ['monthly'] }" />
-            <ng-container *ngTemplateOutlet="sheet; context: { $implicit: ['yearly'] }" />
-          </div>
-          <ng-template #sheet let-periods>
-            <table aria-labelledby="balance-sheet-title">
-              <thead>
-                <tr>
-                  <td></td>
+    <mat-card appearance="outlined" class="balance-sheet">
+      <mat-card-header>
+        <mat-card-title id="balance-sheet-title">Bilanz</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <!-- Only one of both is displayed, depending on the width of the card (BI-5) -->
+        <div class="side-by-side">
+          <ng-container *ngTemplateOutlet="sheet; context: { $implicit: ['monthly', 'yearly'] }" />
+        </div>
+        <div class="stacked">
+          <ng-container *ngTemplateOutlet="sheet; context: { $implicit: ['monthly'] }" />
+          <ng-container *ngTemplateOutlet="sheet; context: { $implicit: ['yearly'] }" />
+        </div>
+        <ng-template #sheet let-periods>
+          <table aria-labelledby="balance-sheet-title">
+            <thead>
+              <tr>
+                <td></td>
+                @for (period of asPeriods(periods); track period) {
+                  <th scope="col">{{ periodLabels[period] }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track row.key) {
+                <tr [class]="row.key">
+                  <th scope="row">{{ row.label }}</th>
                   @for (period of asPeriods(periods); track period) {
-                    <th scope="col">{{ periodLabels[period] }}</th>
+                    <td
+                      class="value"
+                      [class]="period"
+                      [class.income]="row.key === 'total-income'"
+                      [class.expense]="
+                        row.key === 'total-expense' ||
+                        (row.key === 'balance' && row.amounts[period].startsWith('-'))
+                      "
+                    >
+                      {{ row.amounts[period] | currency: 'EUR' }}
+                    </td>
                   }
                 </tr>
-              </thead>
-              <tbody>
-                @for (row of rows(); track row.key) {
-                  <tr [class]="row.key">
-                    <th scope="row">{{ row.label }}</th>
-                    @for (period of asPeriods(periods); track period) {
-                      <td
-                        class="value"
-                        [class]="period"
-                        [class.income]="row.key === 'total-income'"
-                        [class.expense]="
-                          row.key === 'total-expense' ||
-                          (row.key === 'balance' && row.amounts[period].startsWith('-'))
-                        "
-                      >
-                        {{ row.amounts[period] | currency: 'EUR' }}
-                      </td>
-                    }
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </ng-template>
-        </mat-card-content>
-      </mat-card>
-      @if (overview().savingPotentialsBySubcategory.length) {
-        <app-saving-potential-summary
-          class="saving-potentials"
-          [sums]="overview().savingPotentialsBySubcategory"
-        />
-      }
-    </div>
+              }
+            </tbody>
+          </table>
+        </ng-template>
+      </mat-card-content>
+    </mat-card>
     @if (overview().expensesExceedIncome) {
       <div class="warning" role="alert">
         <mat-icon svgIcon="warning" />
         Deine Ausgaben übersteigen deine Einnahmen.
       </div>
+    } @else {
+      <div class="surplus" role="status">
+        <mat-icon svgIcon="check_circle" />
+        Deine Einnahmen decken deine Ausgaben. Im Monat bleiben dir
+        {{ overview().monthlyBalance | currency: 'EUR' }} übrig.
+      </div>
     }
   `,
   styles: `
-    .boxes {
+    /* The box fills the height left beside the 50/30/20 card (AP-1) */
+    :host {
       display: flex;
-      flex-flow: row-reverse wrap;
-      justify-content: flex-end;
-      align-items: flex-start;
+      flex-direction: column;
       gap: 16px;
     }
-    .balance-sheet,
-    .saving-potentials {
-      flex: 1 1 30rem;
-      min-width: 0;
-      max-width: 560px;
-    }
-    .saving-potentials {
-      flex-basis: 20rem;
+    .balance-sheet {
+      flex: 1 0 auto;
     }
     mat-card-content {
       container-type: inline-size;
@@ -166,15 +153,25 @@ import { SavingPotentialSummary } from './saving-potential-summary';
     .expense {
       color: var(--mat-sys-error);
     }
-    .warning {
+    .warning,
+    .surplus {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-top: 16px;
       padding: 12px 16px;
       border-radius: 12px;
+    }
+    .warning {
       background: var(--mat-sys-error-container);
       color: var(--mat-sys-on-error-container);
+    }
+    .surplus {
+      background: color-mix(in srgb, var(--app-income-color) 14%, var(--mat-sys-surface));
+      color: var(--mat-sys-on-surface);
+    }
+    .surplus mat-icon {
+      flex: none;
+      color: var(--app-income-color);
     }
   `,
 })

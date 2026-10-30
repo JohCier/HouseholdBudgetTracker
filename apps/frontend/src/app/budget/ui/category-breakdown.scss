@@ -1,14 +1,20 @@
 @use '@angular/material' as mat;
 
+// As high as the column of the balance sheet beside it (AP-1)
+:host {
+  display: block;
+}
+
+mat-card {
+  height: 100%;
+  box-sizing: border-box;
+}
+
 mat-card-content {
   display: flex;
   flex-direction: column;
   gap: 20px;
   padding-top: 16px;
-}
-
-.view-toggle {
-  align-self: flex-start;
 }
 
 .row {

@@ -163,3 +163,28 @@
 .missed .legend-text > .ratio {
   color: var(--mat-sys-error);
 }
+
+// In the tab "Detailansicht" the pie stands large on the left, the legend beside it (AP-9)
+@media (min-width: 861px) {
+  :host {
+    display: grid;
+    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+    align-items: start;
+    column-gap: 48px;
+    row-gap: 16px;
+  }
+
+  :host > * {
+    grid-column: 2;
+  }
+
+  .selection {
+    grid-column: 1 / -1;
+  }
+
+  .pie {
+    grid-column: 1;
+    grid-row: 2 / span 3;
+    max-width: 360px;
+  }
+}

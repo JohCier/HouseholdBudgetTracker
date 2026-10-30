@@ -27,7 +27,8 @@ AW-2, MJ-8, MJ-9), ändert sich nicht.
   vergrößerter Schrift), stehen die Spalten untereinander: oben „Monat" mit allen Zeilen, darunter „Jahr" mit
   denselben Zeilen. Linien, Hervorhebung und Farben (BI-3) gelten in beiden Teilen. Der Kasten ist nie breiter als der
   Bildschirm (ab 360 px Breite, MA-1 in [mobile-ansicht.md](mobile-ansicht.md)).
-- **BI-6**: Die Warnung „Deine Ausgaben übersteigen deine Einnahmen." (AW-6) steht unverändert unter dem Kasten.
+- **BI-6**: Die Warnung „Deine Ausgaben übersteigen deine Einnahmen." (AW-6) steht unverändert unter dem Kasten; ohne
+  Defizit steht dort die Meldung mit Haken aus AP-17.
 
 ## Akzeptanzkriterien
 

@@ -1,5 +1,12 @@
 import { expect, Page, test } from '@playwright/test';
-import { addExpense, addIncome, itemRow, openEditDialog, registerWithPlan } from './support';
+import {
+  addExpense,
+  addIncome,
+  itemRow,
+  openAddItemDialog,
+  openEditDialog,
+  registerWithPlan,
+} from './support';
 
 function note(page: Page, description: string) {
   return itemRow(page, description).locator('.note');
@@ -21,11 +28,9 @@ test.describe('Notiz zum Posten', () => {
   test('eine Ausgabe mit Notiz erfassen zeigt die Notiz unter der Beschreibung (PN-1, PN-4, PN-7)', async ({
     page,
   }) => {
-    await page.getByLabel('Notiz (optional)').fill('Warmmiete inkl. Nebenkosten');
-    await addExpense(page, 'Miete', '850', 'Lebensunterhalt');
+    await addExpense(page, 'Miete', '850', 'Lebensunterhalt', undefined, 'Jährlich', 'Warmmiete inkl. Nebenkosten');
 
     await expect(note(page, 'Miete')).toHaveText('Warmmiete inkl. Nebenkosten');
-    await expect(page.getByLabel('Notiz (optional)')).toHaveValue('');
 
     // Saved on the server
     await page.reload();
@@ -34,16 +39,14 @@ test.describe('Notiz zum Posten', () => {
 
   test('ein Posten ohne oder mit leerer Notiz zeigt keine Notiz (PN-1, PN-3)', async ({ page }) => {
     await addIncome(page, 'Gehalt', '3000');
-    await page.getByLabel('Notiz (optional)').fill('   ');
-    await addIncome(page, 'Zinsen', '20');
+    await addIncome(page, 'Zinsen', '20', undefined, 'Jährlich', '   ');
 
     await expect(note(page, 'Gehalt')).toHaveCount(0);
     await expect(note(page, 'Zinsen')).toHaveCount(0);
   });
 
   test('die Notiz beim Bearbeiten ändern und entfernen (PN-4, PN-7)', async ({ page }) => {
-    await page.getByLabel('Notiz (optional)').fill('netto');
-    await addIncome(page, 'Gehalt', '3000');
+    await addIncome(page, 'Gehalt', '3000', undefined, 'Jährlich', 'netto');
 
     const dialog = await openEditDialog(page, 'Gehalt');
     await expect(dialog.getByLabel('Notiz (optional)')).toHaveValue('netto');
@@ -69,12 +72,14 @@ test.describe('Notiz zum Posten', () => {
     });
     const tooLong = 'x'.repeat(1001);
 
-    await page.getByRole('radio', { name: 'Einnahme' }).click();
-    await page.getByLabel('Beschreibung').fill('Zinsen');
-    await page.getByLabel('Betrag').fill('20');
-    await page.getByLabel('Notiz (optional)').fill(tooLong);
-    await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
-    await expect(page.getByText('Höchstens 1000 Zeichen.')).toBeVisible();
+    const add = await openAddItemDialog(page);
+    await add.getByRole('radio', { name: 'Einnahme' }).click();
+    await add.getByLabel('Beschreibung').fill('Zinsen');
+    await add.getByLabel('Betrag').fill('20');
+    await add.getByLabel('Notiz (optional)').fill(tooLong);
+    await add.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+    await expect(add.getByText('Höchstens 1000 Zeichen.')).toBeVisible();
+    await add.getByRole('button', { name: 'Abbrechen' }).click();
 
     const dialog = await openEditDialog(page, 'Gehalt');
     await dialog.getByLabel('Notiz (optional)').fill(tooLong);
@@ -85,8 +90,7 @@ test.describe('Notiz zum Posten', () => {
   });
 
   test('Rückgängig nach dem Löschen stellt auch die Notiz wieder her (PN-8)', async ({ page }) => {
-    await page.getByLabel('Notiz (optional)').fill('Warmmiete');
-    await addExpense(page, 'Miete', '850', 'Lebensunterhalt');
+    await addExpense(page, 'Miete', '850', 'Lebensunterhalt', undefined, 'Jährlich', 'Warmmiete');
 
     await page.getByRole('button', { name: 'Eintrag Miete löschen' }).click();
     await expect(itemRow(page, 'Miete')).toBeHidden();

@@ -7,6 +7,7 @@ import {
   registerWithPlan,
   savingPotentialOfSubcategory,
   setSavingPotential,
+  showTab,
   sumRow,
 } from './support';
 
@@ -43,6 +44,7 @@ test.describe('Sparpotential je Unterkategorie', () => {
     await setSavingPotential(page, 'Streaming', '5');
     await setSavingPotential(page, 'Zeitung', '10');
     await setSavingPotential(page, 'Fitnessstudio');
+    await showTab(page, 'Sparhebel');
 
     const list = page.getByRole('table', { name: 'Sparpotential je Unterkategorie' });
     await expect(list.getByRole('columnheader')).toHaveText(['Monat', 'Jahr']);
@@ -59,6 +61,7 @@ test.describe('Sparpotential je Unterkategorie', () => {
     await addExpense(page, 'Ausflüge', '50', 'Freizeit & Spaß', 'Auto', 'Monatlich');
     await setSavingPotential(page, 'Tanken', '10');
     await setSavingPotential(page, 'Ausflüge', '10');
+    await showTab(page, 'Sparhebel');
 
     await expect(savingPotentials(page).getByRole('rowheader')).toHaveText(['Auto']);
     await expect(savingPotentialOfSubcategory(page, 'Auto', 'Monat')).toHaveText('20,00 €');
@@ -70,43 +73,71 @@ test.describe('Sparpotential je Unterkategorie', () => {
     await addExpense(page, 'Kleinkram', '10', 'Freizeit & Spaß', undefined, 'Monatlich');
     await addExpense(page, 'Miete', '850', 'Lebensunterhalt', 'Miete', 'Monatlich');
     await setSavingPotential(page, 'Kleinkram', '4');
+    await showTab(page, 'Sparhebel');
 
     await expect(savingPotentials(page).getByRole('rowheader')).toHaveText(['Sonstiges']);
     await expect(savingPotentialOfSubcategory(page, 'Sonstiges', 'Monat')).toHaveText('4,00 €');
   });
 
-  test('der Kasten erscheint mit dem ersten Sparpotential und verschwindet mit dem letzten (SU-7, SU-9)', async ({
+  test('ohne Sparpotential zeigt der Kasten einen Hinweis, das erste erscheint sofort (SU-7, SU-9, AP-12)', async ({
     page,
   }) => {
     await addExpense(page, 'Streaming', '15', 'Freizeit & Spaß', 'Abonnements', 'Monatlich');
-    await expect(page.locator('app-overview-summary .balance-sheet')).toBeVisible();
-    await expect(savingPotentials(page)).toHaveCount(0);
+    await showTab(page, 'Sparhebel');
+    await expect(savingPotentials(page)).toContainText('Noch kein Sparpotential markiert');
 
     await setSavingPotential(page, 'Streaming', '5');
+    await showTab(page, 'Sparhebel');
     await expect(savingPotentialOfSubcategory(page, 'Abonnements', 'Monat')).toHaveText('5,00 €');
 
+    await showTab(page, 'Regelmäßige Posten');
     const dialog = await openSavingPotential(page, 'Streaming');
     await dialog.getByRole('button', { name: 'Entfernen' }).click();
     await expect(dialog).toBeHidden();
-    await expect(savingPotentials(page)).toHaveCount(0);
+    await showTab(page, 'Sparhebel');
+    await expect(savingPotentials(page)).toContainText('Noch kein Sparpotential markiert');
   });
 
-  test('auf breitem Bildschirm steht der Kasten links neben der Bilanz, oben bündig (SU-6)', async ({
+  test('der Kasten steht im Tab „Sparhebel" neben den Top-5-Listen, nicht neben der Bilanz (AP-3, AP-11)', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await addExpense(page, 'Streaming', '15', 'Freizeit & Spaß', 'Abonnements', 'Monatlich');
     await setSavingPotential(page, 'Streaming', '5');
+    await expect(savingPotentials(page)).toHaveCount(0);
 
+    await showTab(page, 'Sparhebel');
     const list = await box(savingPotentials(page).locator('mat-card'));
-    const sheet = await box(page.locator('app-overview-summary .balance-sheet'));
-    expect(list.x + list.width).toBeLessThanOrEqual(sheet.x);
-    expect(Math.abs(list.y - sheet.y)).toBeLessThan(2);
+    const top = await box(page.locator('app-top-items').first().locator('mat-card'));
+    expect(list.x + list.width).toBeLessThanOrEqual(top.x);
+    expect(Math.abs(list.y - top.y)).toBeLessThan(2);
   });
 
-  test('auf dem Handy steht der Kasten unter der Bilanz und passt auf den Bildschirm (SU-8)', async ({
-    page,
-  }) => {
+  test('viele Unterkategorien scrollen im Kasten (AP-12)', async ({ page }) => {
+    // Straight through the API, entering twelve items one by one would take too long
+    const plans = await (await page.request.get('/api/plans/years')).json();
+    const id = plans.years.find((entry: { planId: string | null }) => entry.planId).planId;
+    for (let i = 1; i <= 12; i++) {
+      const response = await page.request.post(`/api/plans/${id}/expenses`, {
+        data: {
+          description: `Posten ${i}`,
+          amount: '10',
+          period: 'MONTHLY',
+          category: 'FREIZEIT_SPASS',
+          subcategory: `Gruppe ${i}`,
+          savingPotential: '1',
+        },
+      });
+      expect(response.status()).toBe(201);
+    }
+    await page.reload();
+    await showTab(page, 'Sparhebel');
+
+    const scroll = savingPotentials(page).locator('.scroll');
+    expect(await scroll.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+  });
+
+  test('auf dem Handy passt der Kasten auf den Bildschirm (SU-8)', async ({ page }) => {
     await addExpense(
       page,
       'Streaming',
@@ -117,10 +148,9 @@ test.describe('Sparpotential je Unterkategorie', () => {
     );
     await setSavingPotential(page, 'Streaming', '5');
     await page.setViewportSize({ width: 390, height: 844 });
+    await showTab(page, 'Sparhebel');
 
     const list = await box(savingPotentials(page).locator('mat-card'));
-    const sheet = await box(page.locator('app-overview-summary .balance-sheet'));
-    expect(list.y).toBeGreaterThanOrEqual(sheet.y + sheet.height);
     expect(list.x).toBeGreaterThanOrEqual(0);
     expect(list.x + list.width).toBeLessThanOrEqual(390);
     const yearly = await box(
@@ -165,7 +195,6 @@ test.describe('Sparpotential je Unterkategorie', () => {
     await expect(groupSavingPotential(sumRow(page, 'Freizeit & Spaß', 'Auto'))).toHaveText(
       /10,00\s€/,
     );
-    await expect(savingPotentialOfSubcategory(page, 'Auto', 'Monat')).toHaveText('20,00 €');
     await expect(groupSavingPotential(sumRow(page, 'Lebensunterhalt', 'Miete'))).toHaveCount(0);
     await expect(groupSavingPotential(sumRow(page, 'Einnahmen', 'Gehalt'))).toHaveCount(0);
     await expect(groupSavingPotential(sumRow(page, 'Lebensunterhalt'))).toHaveCount(0);
