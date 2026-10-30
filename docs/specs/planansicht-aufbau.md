@@ -49,8 +49,8 @@ aussehen und sortiert werden, regelt eine eigene Spec.
   selbst scrollt nicht waagerecht (MA-1).
 - **AP-7**: „Regelmäßige Posten“ zeigt oben den Knopf „Posten erfassen“ und darunter die Karte „Einträge“ unverändert
   (UK-…, EG-…, EF-…, PM-…).
-- **AP-8**: „Einmalposten“ zeigt den Abschnitt „Einmalposten“ (EP-8, EP-9, EP-11) mit dem Knopf „Einmalposten
-  erfassen“. Ändert „unter den Einträgen“ in EP-8.
+- **AP-8**: „Einmalposten“ zeigt oben den Knopf „Einmalposten erfassen“ (AP-18) und darunter den Abschnitt
+  „Einmalposten“ (EP-8, EP-9, EP-11). Ändert „unter den Einträgen“ in EP-8.
 - **AP-9**: „Detailansicht“ zeigt die Torte mit „Ausschnitt“, „Sortierung“ und Legende (TD-2 bis TD-9, TK-…, TS-…) in
   einer Karte über die ganze Breite. Auf breiten Bildschirmen steht die Torte links und bis zu 360 px groß, die Legende
   rechts daneben; auf schmalen Bildschirmen steht die Legende unter der Torte.
@@ -81,6 +81,9 @@ aussehen und sortiert werden, regelt eine eigene Spec.
   der Posten steht unten in seiner Gruppe (EG-1), die Meldung „Eintrag hinzugefügt“ erscheint. „Abbrechen“ und Escape
   legen nichts an; schlägt das Speichern fehl, bleibt der Dialog mit den Eingaben offen und zeigt den Fehler.
 - **AP-16**: Der Knopf „Posten hinzufügen“ in den Summenzeilen der Gruppen (EG-9, EG-10) bleibt unverändert.
+- **AP-18**: Der Knopf „Einmalposten erfassen“ sieht aus wie „Posten erfassen“ (gefüllt, mit Plus) und steht wie dieser
+  oben im Tab, über dem Abschnitt „Einmalposten“, auch ohne Einmalposten und in einem Jahr ohne Plan. Unten im
+  Abschnitt gibt es keinen eigenen Knopf mehr. Er öffnet wie bisher den Dialog für Einmalposten (EP-7, EP-11).
 
 ## Akzeptanzkriterien
 
@@ -107,6 +110,9 @@ aussehen und sortiert werden, regelt eine eigene Spec.
   Unterkategorie“ und „Top 5 Sparpotential“ „Noch kein Sparpotential markiert“ (AP-12, TP-10).
 - **Gegeben** ein Plan, **wenn** der Benutzer „Einmalposten“ wählt, **dann** sieht er die Einmalposten des Jahres und
   „Einmalposten erfassen“, aber nicht die Karte „Einträge“ (AP-8).
+- **Gegeben** der Tab „Einmalposten“, **dann** steht „Einmalposten erfassen“ oben wie „Posten erfassen“ im Tab
+  „Regelmäßige Posten“, gleich gestaltet und an derselben Stelle, und unter den Einmalposten gibt es keinen weiteren
+  Knopf zum Erfassen (AP-18).
 - **Gegeben** kein Plan für 2027, **wenn** der Benutzer `/jahre/2027` öffnet, **dann** gibt es keine Bilanz, nur die
   Tabs „Regelmäßige Posten“ mit „Für 2027 gibt es noch keinen Haushaltsplan.“ und „Einmalposten“ (AP-13).
 - **Gegeben** „Sparhebel“ ist im Plan 2026 gewählt, **wenn** der Benutzer zu 2027 ohne Plan wechselt, **dann** ist
@@ -136,7 +142,9 @@ aussehen und sortiert werden, regelt eine eigene Spec.
   `PLAN_TABS`, gewählt über das Signal `tab`, `tabIndex` fällt in einem Jahr ohne Plan auf den ersten Tab zurück
   (AP-5, AP-13). „Detailansicht“ zeigt `app-category-pie`, Sortierung beginnt mit `AMOUNT_SORT` (AP-9, AP-10);
   „Sparhebel“ zeigt `.levers` mit drei Karten, unter 1100 px untereinander (AP-11). „Posten erfassen“ öffnet
-  `AddItemDialog` ohne Preset (AP-14)
+  `AddItemDialog` ohne Preset (AP-14); „Einmalposten erfassen“ als `button.add-item` oben im Tab „Einmalposten“,
+  sobald die Einmalposten geladen sind; `ui/one-time-items.ts` hat keinen eigenen Knopf und keine Ausgabe `add` mehr
+  (AP-18)
 - `ui/overview-summary.ts`: ohne Kasten „Sparpotential je Unterkategorie“ (AP-3); Meldung mit Haken `check_circle`
   ohne Defizit (AP-17)
 - `ui/category-breakdown.ts`: nur noch Balken, ohne Umschalter (AP-2)
@@ -148,7 +156,7 @@ aussehen und sortiert werden, regelt eine eigene Spec.
 - `ui/category-pie.scss`: ab 861 px Torte bis 360 px links, Legende rechts (AP-9)
 - Tests: `budget-dashboard.spec.ts`, `add-item-dialog.spec.ts`, `overview-summary.spec.ts`,
   `category-breakdown.spec.ts`, `top-items.spec.ts`, `saving-potential-summary.spec.ts`
-- E2E: `e2e/tests/planansicht-aufbau.spec.ts` (AP-1, AP-4 bis AP-9, AP-11, AP-13, AP-17); AP-2 in
+- E2E: `e2e/tests/planansicht-aufbau.spec.ts` (AP-1, AP-4 bis AP-9, AP-11, AP-13, AP-17, AP-18); AP-2 in
   `tortendiagramm.spec.ts`, AP-3, AP-11 und AP-12 in `sparpotential-unterkategorie.spec.ts`, AP-10 in
   `torte-sortierung.spec.ts`, AP-14 und AP-15 in `posten.spec.ts` und `monats-jahresbetrag.spec.ts`, AP-16 in
   `eintraege-gruppen.spec.ts`; die übrigen E2E-Tests erfassen Posten über den Dialog (`openAddItemDialog`) und
@@ -159,4 +167,5 @@ aussehen und sortiert werden, regelt eine eigene Spec.
 Keine. Entschieden mit JC anhand der Screenshots: Bilanz und 50/30/20-Regel oben, die drei Hebel-Karten im Tab
 „Sparhebel“ statt oben (AP-3, AP-11), die Torte als „Detailansicht“ (AP-9), Standardsortierung der Torte „Betrag“
 (AP-10), im Jahr ohne Plan der Hinweis im Tab „Regelmäßige Posten“ (AP-13), der Dialog „Posten erfassen“ startet mit
-„Ausgabe“ (AP-14), eine Meldung mit Haken auch bei aufgehendem Plan (AP-17), Einmalposten in einer eigenen Spec.
+„Ausgabe“ (AP-14), eine Meldung mit Haken auch bei aufgehendem Plan (AP-17), Einmalposten in einer eigenen Spec,
+„Einmalposten erfassen“ als gleicher Knopf oben im Tab wie „Posten erfassen“ (AP-18).

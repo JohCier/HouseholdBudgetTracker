@@ -28,7 +28,8 @@ interface Area {
  * The section "Einmalposten" of the dashboard (EP-8 to EP-10, ES-1 to ES-4): the incomes above,
  * the expenses below, each in an area with its sum, and the balance under both. Within an area the
  * user moves the items by dragging their handle or with the arrow keys on it. Shown whether or not
- * the year has a plan. Entering, changing, moving and deleting are left to the dashboard.
+ * the year has a plan. Changing, moving and deleting are left to the dashboard, which also offers
+ * "Einmalposten erfassen" above the section, like "Posten erfassen" (AP-18).
  */
 @Component({
   selector: 'app-one-time-items',
@@ -154,10 +155,6 @@ interface Area {
               </span>
             </div>
           }
-          <button matButton="outlined" type="button" class="add" (click)="add.emit()">
-            <mat-icon svgIcon="add" />
-            Einmalposten erfassen
-          </button>
         }
       </mat-card-content>
     </mat-card>
@@ -271,9 +268,6 @@ interface Area {
       border-radius: 8px;
       background: var(--mat-sys-surface-container-high);
     }
-    .add {
-      align-self: flex-start;
-    }
     .cdk-drag-preview {
       background: var(--mat-sys-surface);
       box-shadow: var(--mat-sys-level3);
@@ -328,7 +322,6 @@ export class OneTimeItems {
   readonly overview = input.required<OneTimeItemOverview | null>();
   readonly loadError = input<string | null>(null);
 
-  readonly add = output<void>();
   readonly edit = output<OneTimeItem>();
   readonly move = output<OneTimeItemMove>();
   readonly remove = output<OneTimeItem>();

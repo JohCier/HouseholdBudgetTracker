@@ -69,6 +69,28 @@ test.describe('Aufbau der Planansicht', () => {
     await expect(page.locator('app-category-pie')).toHaveCount(0);
   });
 
+  test('„Einmalposten erfassen" steht oben im Tab wie „Posten erfassen", unten gibt es keinen Knopf mehr (AP-18)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await registerWithPlan(page);
+    const addItem = page.getByRole('button', { name: 'Posten erfassen', exact: true });
+    const itemsButton = await box(addItem);
+    const itemsClass = await addItem.getAttribute('class');
+
+    await showTab(page, 'Einmalposten');
+    const addOneTime = page.getByRole('button', { name: 'Einmalposten erfassen' });
+    await expect(addOneTime).toHaveCount(1);
+    const oneTimeButton = await box(addOneTime);
+    expect(Math.abs(oneTimeButton.x - itemsButton.x)).toBeLessThan(2);
+    expect(Math.abs(oneTimeButton.y - itemsButton.y)).toBeLessThan(2);
+    expect(await addOneTime.getAttribute('class')).toBe(itemsClass);
+    await expect(page.locator('app-one-time-items button', { hasText: 'erfassen' })).toHaveCount(0);
+
+    await addOneTime.click();
+    await expect(page.getByRole('dialog')).toContainText('Einmalposten');
+  });
+
   test('ohne Defizit steht unter der Bilanz eine Meldung mit Haken, bei Defizit die Warnung (AP-17, BI-6)', async ({
     page,
   }) => {
@@ -84,7 +106,9 @@ test.describe('Aufbau der Planansicht', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
 
     await addExpense(page, 'Auto', '3000', 'Lebensunterhalt', undefined, 'Monatlich');
-    await expect(page.getByRole('alert')).toContainText('Deine Ausgaben übersteigen deine Einnahmen.');
+    await expect(page.getByRole('alert')).toContainText(
+      'Deine Ausgaben übersteigen deine Einnahmen.',
+    );
     await expect(surplus).toHaveCount(0);
   });
 
@@ -108,7 +132,9 @@ test.describe('Aufbau der Planansicht', () => {
     await showTab(page, 'Sparhebel');
 
     await page.getByRole('button', { name: 'Nächstes Jahr' }).click();
-    await expect(page.getByText(`Für ${year + 1} gibt es noch keinen Haushaltsplan.`)).toBeVisible();
+    await expect(
+      page.getByText(`Für ${year + 1} gibt es noch keinen Haushaltsplan.`),
+    ).toBeVisible();
     await expect(page.locator('app-overview-summary')).toHaveCount(0);
     await expect(tabs(page)).toHaveText(['Regelmäßige Posten', 'Einmalposten']);
     await expect(tab(page, 'Regelmäßige Posten')).toHaveAttribute('aria-selected', 'true');
