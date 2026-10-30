@@ -39,17 +39,17 @@ es ausschließlich bei Einmalposten, Posten des Haushaltsplans bleiben ohne Datu
   Sparpotential und nicht in die 50/30/20-Auswertung (AW-1 bis AW-9) oder das Tortendiagramm.
 - **EP-7**: Der Benutzer kann einen Einmalposten erfassen, bearbeiten (Art, Beschreibung, Betrag, Datum, Notiz) und
   löschen. Ändert er das Datum in ein anderes Jahr, gehört der Einmalposten danach zu diesem Jahr.
-- **EP-17**: Vor dem Löschen fragt die Anwendung nach: „Einmalposten „<Beschreibung>" löschen?" mit „Löschen" und
-  „Abbrechen". Erst nach „Löschen" ist er endgültig entfernt; ein „Rückgängig" gibt es nicht.
+- **EP-17**: Gelöscht wird sofort, ohne Rückfrage; die Meldung bietet „Rückgängig“ wie bei Posten (ES-10, ES-11 in
+  [einmalposten-sortierung.md](einmalposten-sortierung.md)).
 
 ### Abschnitt in der Planansicht
 
 - **EP-8**: Die Planansicht eines Jahres (`/jahre/<Jahr>`) zeigt im Tab „Einmalposten“ (AP-8) einen eigenen Abschnitt
-  „Einmalposten" mit allen Einmalposten dieses Jahres, nach Datum aufsteigend sortiert, bei gleichem Datum in der
-  Reihenfolge des Erfassens. Je Zeile stehen Datum, Beschreibung, Art und Betrag; eine Notiz steht wie bei Posten unter
-  der Beschreibung.
-- **EP-9**: Unter den Einmalposten stehen die Summe der einmaligen Einnahmen, die Summe der einmaligen Ausgaben und
-  der einmalige Saldo (Einnahmen − Ausgaben) des Jahres. Ein negativer Saldo steht in der Fehlerfarbe.
+  „Einmalposten" mit allen Einmalposten dieses Jahres, oben die Einnahmen, darunter die Ausgaben, je in einem eigenen
+  Bereich und in der Reihenfolge, die der Benutzer festlegt (ES-1, ES-4 bis ES-8). Je Zeile stehen Datum,
+  Beschreibung und Betrag (ES-2); eine Notiz steht wie bei Posten unter der Beschreibung.
+- **EP-9**: Jeder Bereich endet mit der Summe seiner Einmalposten („Summe Einnahmen“, „Summe Ausgaben“); unter beiden
+  steht der einmalige Saldo (Einnahmen − Ausgaben) des Jahres (ES-1). Ein negativer Saldo steht in der Fehlerfarbe.
 - **EP-10**: Der Abschnitt ist auch in einem Jahr ohne Haushaltsplan da, im Tab „Einmalposten“ neben dem Hinweis „Für
   <Jahr> gibt es noch keinen Haushaltsplan.“ (AP-13). Ohne Einmalposten zeigt er „Keine Einmalposten." und „Einmalposten erfassen".
 - **EP-11**: Beim Erfassen ist das Datum mit dem heutigen Tag vorbelegt, wenn er im angezeigten Jahr liegt, sonst mit
@@ -97,8 +97,8 @@ es ausschließlich bei Einmalposten, Posten des Haushaltsplans bleiben ohne Datu
   ändert, **dann** steht er nicht mehr im Abschnitt von 2026, sondern in dem von 2027 (EP-7).
 - **Gegeben** der Einmalposten „Bonus" mit der Notiz „Jahresprämie", **dann** steht die Notiz unter der Beschreibung
   (EP-1, EP-8).
-- **Gegeben** der Einmalposten „Bonus", **wenn** der Benutzer „Löschen" wählt und in der Rückfrage „Abbrechen", **dann**
-  bleibt er erhalten; nach „Löschen" in der Rückfrage ist er entfernt, und die Summen sind angepasst (EP-17).
+- **Gegeben** der Einmalposten „Bonus", **wenn** der Benutzer „Löschen" wählt, **dann** ist er sofort entfernt, die
+  Summen sind angepasst, und die Meldung bietet „Rückgängig“ (EP-17, ES-10).
 - **Gegeben** die Jahresübersicht auf einem 390 px breiten Bildschirm, **dann** stehen die Werte „Einmalig" unter
   denen des Plans, und die Seite ist nicht breiter als der Bildschirm (EP-18).
 - **Gegeben** ein Einmalposten mit Betrag 0,00 € oder Datum 31.12.1899, **dann** wird er abgelehnt (EP-1, EP-3).
@@ -113,7 +113,6 @@ es ausschließlich bei Einmalposten, Posten des Haushaltsplans bleiben ohne Datu
 - Eine Spalte „Gesamt" (Überschuss + einmaliger Saldo) in der Jahresübersicht
 - Einmalposten in der Bilanz, der 50/30/20-Auswertung oder dem Tortendiagramm
 - Eine Ansicht je Kalendermonat
-- Rückgängig machen des Löschens; stattdessen die Rückfrage (EP-17)
 
 ## Umsetzung
 
@@ -135,21 +134,20 @@ es ausschließlich bei Einmalposten, Posten des Haushaltsplans bleiben ohne Datu
   sind ohne Plan `null`
 - Frontend: `data-access/one-time-item-api.ts`, `data-access/one-time-item-store.ts`; Abschnitt `ui/one-time-items.ts`
   in `budget-dashboard.ts` unter den Einträgen bzw. unter „Für <Jahr> gibt es noch keinen Haushaltsplan." (EP-8 bis
-  EP-10); Dialoge `ui/one-time-item-dialog.ts` (Datum vorbelegt mit `defaultDateIn`, EP-11) und
-  `ui/delete-one-time-item-dialog.ts` (EP-17). `yearly-overview-page.ts` mit Spaltengruppen „Haushaltsplan" und
+  EP-10); Dialog `ui/one-time-item-dialog.ts` (Datum vorbelegt mit `defaultDateIn`, EP-11); Bereiche, Reihenfolge
+  und Löschen mit „Rückgängig“ siehe [einmalposten-sortierung.md](einmalposten-sortierung.md). `yearly-overview-page.ts` mit Spaltengruppen „Haushaltsplan" und
   „Einmalig (Jahr)", „–" und ohne Knöpfe für Jahre ohne Plan, unter 600 px eine eigene Zeile `tr.one-time-row` (EP-12
   bis EP-18); „Haushaltsplan anlegen" und der Umschalter zählen nur Jahre mit Plan
 - Tests: `OneTimeItemTest`, `OneTimeItemOverviewTest`, `YearlyOverviewTest`, `OneTimeItemApplicationServiceTest`,
   `OneTimeItemControllerTest`, `HouseholdPlanOverviewControllerTest`, `JdbcOneTimeItemRepositoryTest`,
   `JdbcHouseholdPlanOverviewQueryHandlerTest`, `OneTimeItemIntegrationTest`; `one-time-item-store.spec.ts`,
-  `one-time-items.spec.ts`, `one-time-item-dialog.spec.ts`, `delete-one-time-item-dialog.spec.ts`,
-  `yearly-overview-page.spec.ts`, `year.spec.ts`
-- E2E: `e2e/tests/einmalposten.spec.ts` (EP-1 bis EP-3, EP-5 bis EP-15, EP-17, EP-18); EP-4 und EP-16 decken die
-  Backend-Tests ab
+  `one-time-items.spec.ts`, `one-time-item-dialog.spec.ts`, `yearly-overview-page.spec.ts`, `year.spec.ts`
+- E2E: `e2e/tests/einmalposten.spec.ts` (EP-1 bis EP-3, EP-5 bis EP-15, EP-18), EP-17 in
+  `einmalposten-sortierung.spec.ts`; EP-4 und EP-16 decken die Backend-Tests ab
 
 ## Offene Fragen
 
 Keine. Entschieden mit JC: einmalige Einnahmen, Ausgaben und Saldo als eigene Spalten ohne „Gesamt" (EP-13); Jahre nur
 mit Einmalposten erscheinen in der Jahresübersicht (EP-12); Datum als Tag ohne Uhrzeit (EP-1); optionale Notiz (EP-1);
-Löschen mit Rückfrage statt „Rückgängig" (EP-17); Überschrift „Haushaltsplan" über den Spalten des Plans (EP-13); eine
-Zeile ohne Plan hat keine Knöpfe für den Plan (EP-12).
+Löschen zunächst mit Rückfrage (EP-17, inzwischen durch ES-10 ersetzt); Überschrift „Haushaltsplan" über den Spalten
+des Plans (EP-13); eine Zeile ohne Plan hat keine Knöpfe für den Plan (EP-12).

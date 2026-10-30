@@ -22,7 +22,7 @@ const overview = (year: number, description = 'Nebenkostennachzahlung'): OneTime
   expensesExceedIncome: true,
 });
 
-// docs/specs/einmalposten.md
+// docs/specs/einmalposten.md, docs/specs/einmalposten-sortierung.md
 describe('OneTimeItemStore', () => {
   let store: OneTimeItemStore;
   let http: HttpTestingController;
@@ -118,5 +118,91 @@ describe('OneTimeItemStore', () => {
 
     await expect(deleted).rejects.toThrow('Diesen Einmalposten gibt es nicht (mehr).');
     expect(store.items()).toHaveLength(1);
+  });
+
+  /** Three expenses A, B, C and the income I, as the backend lists them. */
+  const areas = (): OneTimeItemOverview => ({
+    ...overview(2026),
+    items: ['A', 'I', 'B', 'C'].map((id) => ({
+      id,
+      type: id === 'I' ? ('INCOME' as const) : ('EXPENSE' as const),
+      description: id,
+      amount: '1.00',
+      date: '2026-03-15',
+      note: null,
+    })),
+  });
+
+  // ES-4, ES-5
+  it('moves an item within its area right away and saves its new neighbors', async () => {
+    const selected = store.selectYear(2026);
+    http.expectOne('/api/one-time-items?year=2026').flush(areas());
+    await selected;
+    const c = store.items().find((item) => item.id === 'C')!;
+
+    const moved = store.moveItem(c, 2, 0);
+    expect(store.items().map((item) => item.id)).toEqual(['I', 'C', 'A', 'B']);
+    const put = http.expectOne({ method: 'PUT', url: '/api/one-time-items/C/position' });
+    expect(put.request.body).toEqual({ nextItemId: 'A' });
+    put.flush(null);
+    await Promise.resolve();
+    http.expectOne('/api/one-time-items?year=2026').flush(areas());
+    await moved;
+  });
+
+  // ES-4
+  it('names both neighbors in the middle and only the previous one at the end', async () => {
+    const selected = store.selectYear(2026);
+    http.expectOne('/api/one-time-items?year=2026').flush(areas());
+    await selected;
+    const a = store.items().find((item) => item.id === 'A')!;
+
+    const moved = store.moveItem(a, 0, 1);
+    const put = http.expectOne('/api/one-time-items/A/position');
+    expect(put.request.body).toEqual({ previousItemId: 'B', nextItemId: 'C' });
+    put.flush(null);
+    await Promise.resolve();
+    http.expectOne('/api/one-time-items?year=2026').flush(areas());
+    await moved;
+  });
+
+  // ES-9
+  it('shows the stored order again if saving the move fails', async () => {
+    const selected = store.selectYear(2026);
+    http.expectOne('/api/one-time-items?year=2026').flush(areas());
+    await selected;
+    const c = store.items().find((item) => item.id === 'C')!;
+
+    const moved = store.moveItem(c, 2, 0);
+    http
+      .expectOne('/api/one-time-items/C/position')
+      .flush({ type: 'about:blank' }, { status: 500, statusText: 'Server Error' });
+
+    await expect(moved).rejects.toThrow();
+    http.expectOne('/api/one-time-items?year=2026').flush(areas());
+    await Promise.resolve();
+    expect(store.items().map((item) => item.id)).toEqual(['A', 'I', 'B', 'C']);
+  });
+
+  // ES-11
+  it('enters a deleted item again with everything it had', async () => {
+    const selected = store.selectYear(2026);
+    http.expectOne('/api/one-time-items?year=2026').flush(overview(2026));
+    await selected;
+    const item = { ...store.items()[0], note: 'Abrechnung 2025' };
+
+    const restored = store.restoreItem(item);
+    const post = http.expectOne({ method: 'POST', url: '/api/one-time-items' });
+    expect(post.request.body).toEqual({
+      type: 'EXPENSE',
+      description: 'Nebenkostennachzahlung',
+      amount: '1200.00',
+      date: '2026-03-15',
+      note: 'Abrechnung 2025',
+    });
+    post.flush({ id: '9' });
+    await Promise.resolve();
+    http.expectOne('/api/one-time-items?year=2026').flush(overview(2026));
+    await restored;
   });
 });

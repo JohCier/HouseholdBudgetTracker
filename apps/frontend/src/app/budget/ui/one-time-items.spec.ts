@@ -28,7 +28,7 @@ const overview: OneTimeItemOverview = {
   expensesExceedIncome: true,
 };
 
-// docs/specs/einmalposten.md; amounts use the default locale of the tests
+// docs/specs/einmalposten.md, docs/specs/einmalposten-sortierung.md; amounts use the default locale of the tests
 describe('OneTimeItems', () => {
   let fixture: ComponentFixture<OneTimeItems>;
   let element: HTMLElement;
@@ -45,26 +45,73 @@ describe('OneTimeItems', () => {
     return element.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!;
   }
 
-  // EP-8, EP-9
-  it('lists the items in the given order with day, note, type and signed amount, and their totals', async () => {
+  // ES-1, ES-2, EP-8, EP-9
+  it('shows the incomes above and the expenses below, each with its sum, and the balance under both', async () => {
     await render(overview);
 
-    const items = [...element.querySelectorAll('[role="listitem"]')];
-    expect(items.map((item) => item.querySelector('.date')!.textContent!.trim())).toEqual([
-      '15.03.2026',
-      '10.07.2026',
+    const areas = [...element.querySelectorAll('section.area')];
+    expect(areas.map((area) => area.querySelector('h3')!.textContent!.trim())).toEqual([
+      'Einnahmen',
+      'Ausgaben',
     ]);
-    expect(items[0].textContent).toContain('Nebenkostennachzahlung');
-    expect(items[0].querySelector('.note')!.textContent).toContain('Abrechnung 2025');
-    expect(items[0].textContent).toContain('Ausgabe');
-    expect(items[0].querySelector('.amount')!.textContent!.trim()).toBe('−€1,200.00');
-    expect(items[1].querySelector('.note')).toBeNull();
-    expect(items[1].querySelector('.amount')!.textContent!.trim()).toBe('+€800.00');
-    const totals = element.querySelector('.totals')!;
-    expect(totals.textContent).toContain('+€800.00');
-    expect(totals.textContent).toContain('−€1,200.00');
-    expect(totals.querySelector('.balance .amount')!.classList).toContain('negative');
-    expect(totals.querySelector('.balance')!.textContent).toContain('-€400.00');
+    const [income, expense] = areas.map((area) => [...area.querySelectorAll('[role="listitem"]')]);
+    expect(income[0].textContent).toContain('Steuererstattung');
+    expect(income[0].querySelector('.date')!.textContent!.trim()).toBe('10.07.2026');
+    expect(income[0].querySelector('.note')).toBeNull();
+    expect(income[0].querySelector('.amount')!.textContent!.trim()).toBe('+€800.00');
+    expect(expense[0].textContent).toContain('Nebenkostennachzahlung');
+    expect(expense[0].textContent).not.toContain('Ausgabe');
+    expect(expense[0].querySelector('.note')!.textContent).toContain('Abrechnung 2025');
+    expect(expense[0].querySelector('.amount')!.textContent!.trim()).toBe('−€1,200.00');
+    expect(areas[0].querySelector('.sum')!.textContent).toContain('Summe Einnahmen');
+    expect(areas[0].querySelector('.sum')!.textContent).toContain('+€800.00');
+    expect(areas[1].querySelector('.sum')!.textContent).toContain('Summe Ausgaben');
+    expect(areas[1].querySelector('.sum')!.textContent).toContain('−€1,200.00');
+    const balance = element.querySelector('.balance-row')!;
+    expect(balance.textContent).toContain('Saldo');
+    expect(balance.textContent).toContain('-€400.00');
+    expect(balance.querySelector('.amount')!.classList).toContain('negative');
+  });
+
+  // ES-3
+  it('says so if only one kind of item is missing, with a sum of 0', async () => {
+    await render({
+      ...overview,
+      items: [overview.items[1]],
+      totalExpense: '0.00',
+      balance: '800.00',
+      expensesExceedIncome: false,
+    });
+
+    const expense = element.querySelectorAll('section.area')[1];
+    expect(expense.textContent).toContain('Keine einmaligen Ausgaben.');
+    expect(expense.querySelector('.sum')!.textContent).toContain('€0.00');
+    expect(expense.querySelector('.sum')!.textContent).not.toContain('−');
+  });
+
+  // ES-4
+  it('has a handle only in an area with at least two items', async () => {
+    const second = { ...overview.items[0], id: '3', description: 'Autoreparatur' };
+    await render({ ...overview, items: [...overview.items, second] });
+
+    expect(button('Einmalposten Steuererstattung verschieben')).toBeNull();
+    expect(button('Einmalposten Nebenkostennachzahlung verschieben')).not.toBeNull();
+    expect(button('Einmalposten Autoreparatur verschieben')).not.toBeNull();
+  });
+
+  // ES-4
+  it('asks to move an item within its area with the arrow keys on its handle', async () => {
+    const second = { ...overview.items[0], id: '3', description: 'Autoreparatur' };
+    await render({ ...overview, items: [...overview.items, second] });
+    const move = vi.fn();
+    fixture.componentInstance.move.subscribe(move);
+
+    const handle = button('Einmalposten Autoreparatur verschieben');
+    handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
+    handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+
+    expect(move).toHaveBeenCalledTimes(1);
+    expect(move).toHaveBeenCalledWith({ item: second, from: 1, to: 0 });
   });
 
   // EP-10
@@ -79,7 +126,7 @@ describe('OneTimeItems', () => {
     });
 
     expect(element.textContent).toContain('Keine Einmalposten.');
-    expect(element.querySelector('.totals')).toBeNull();
+    expect(element.querySelector('section.area')).toBeNull();
     expect(element.textContent).toContain('Einmalposten erfassen');
   });
 
@@ -93,7 +140,7 @@ describe('OneTimeItems', () => {
     );
   });
 
-  // EP-7, EP-17
+  // EP-7, ES-10
   it('asks the dashboard to enter, change or delete an item', async () => {
     await render(overview);
     const add = vi.fn();

@@ -1,4 +1,4 @@
-import { expect, Locator, Page } from '@playwright/test';
+import { expect, Locator, Page, Request } from '@playwright/test';
 
 export const PASSWORD = 'geheim-1234';
 
@@ -209,7 +209,12 @@ export function itemDescriptions(page: Page, section: 'Einnahmen' | Category, su
 /** Opens the dialog of the saving potential of an expense (PM-4b). */
 export async function openSavingPotential(page: Page, description: string) {
   await showTab(page, 'Regelmäßige Posten');
-  await page.getByRole('button', { name: `Sparpotential bei ${description}`, exact: true }).click();
+  await page
+    .getByRole('button', {
+      name: `Sparpotential bei ${description}`,
+      exact: true,
+    })
+    .click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('heading')).toHaveText(`Sparpotential bei ${description}`);
   return dialog;
@@ -245,7 +250,9 @@ export function savingPotentialOfSubcategory(
 ) {
   return page
     .locator('app-saving-potential-summary tbody tr')
-    .filter({ has: page.getByRole('rowheader', { name: subcategory, exact: true }) })
+    .filter({
+      has: page.getByRole('rowheader', { name: subcategory, exact: true }),
+    })
     .locator(per === 'Jahr' ? '.value.yearly' : '.value.monthly');
 }
 
@@ -328,7 +335,9 @@ export async function recordNetWorth(
   entries: readonly (readonly [type: 'ASSET' | 'LIABILITY', name: string, amount: string])[],
 ): Promise<void> {
   for (const [type, name, amount] of entries) {
-    const response = await page.request.post(`/api/net-worth/${year}/entries`, { data: { type, name, amount } });
+    const response = await page.request.post(`/api/net-worth/${year}/entries`, {
+      data: { type, name, amount },
+    });
     expect(response.status()).toBe(201);
   }
 }
@@ -341,12 +350,16 @@ export async function openNetWorth(page: Page, year: number): Promise<void> {
 
 /** The list "Vermögen" or "Schulden" of the page "Vermögen" (VS-8). */
 export function netWorthList(page: Page, list: 'Vermögen' | 'Schulden') {
-  return page.locator(`app-net-worth-page .list[data-type="${list === 'Schulden' ? 'LIABILITY' : 'ASSET'}"]`);
+  return page.locator(
+    `app-net-worth-page .list[data-type="${list === 'Schulden' ? 'LIABILITY' : 'ASSET'}"]`,
+  );
 }
 
 /** The line of an asset or a liability on the page "Vermögen". */
 export function netWorthEntry(page: Page, name: string) {
-  return page.locator('app-net-worth-page li.entry').filter({ has: page.getByText(name, { exact: true }) });
+  return page
+    .locator('app-net-worth-page li.entry')
+    .filter({ has: page.getByText(name, { exact: true }) });
 }
 
 /** The box with the sums of the page "Vermögen" (VS-8). */
@@ -420,12 +433,23 @@ export function oneTimeItemRow(page: Page, description: string) {
   return page.locator('app-one-time-items [role="listitem"]').filter({ hasText: description });
 }
 
-/** One of the totals below the one-time items of the year shown (EP-9). */
+/** The sum of the incomes or of the expenses, or the balance below both (EP-9, ES-1). */
 export function oneTimeTotal(page: Page, label: 'Einnahmen' | 'Ausgaben' | 'Saldo') {
-  return page
-    .locator('app-one-time-items .total-row')
-    .filter({ has: page.getByText(label, { exact: true }) })
-    .locator('.amount');
+  const row =
+    label === 'Saldo'
+      ? page.locator('app-one-time-items .balance-row')
+      : oneTimeArea(page, label).locator('.sum');
+  return row.locator('.amount');
+}
+
+/** The area of the one-time incomes or expenses of the year shown (ES-1). */
+export function oneTimeArea(page: Page, label: 'Einnahmen' | 'Ausgaben') {
+  return page.locator('app-one-time-items').getByRole('region', { name: label, exact: true });
+}
+
+/** The descriptions of the one-time items of an area, from top to bottom (ES-4). */
+export function oneTimeDescriptions(page: Page, label: 'Einnahmen' | 'Ausgaben') {
+  return oneTimeArea(page, label).locator('[role="listitem"] .description');
 }
 
 /** The one-time income, expenses and balance of a year in the yearly overview (EP-13). */
@@ -448,17 +472,67 @@ export function deletedPlanRows(page: Page) {
 
 /** Deletes the plan of a year from its row in the yearly overview (PL-7). */
 export async function deletePlanInOverview(page: Page, year: number): Promise<void> {
-  await yearRow(page, year).getByRole('button', { name: `Plan ${year} löschen` }).click();
+  await yearRow(page, year)
+    .getByRole('button', { name: `Plan ${year} löschen` })
+    .click();
   await page.getByRole('dialog').getByRole('button', { name: 'Löschen' }).click();
   await expect(page.getByText(`Plan ${year} gelöscht.`)).toBeVisible();
 }
 
 /** The card "Top 5 Sparpotential" or "Top 5 Ausgaben" in the tab "Sparhebel" (AP-11). */
 export function topItemsCard(page: Page, list: 'Sparpotential' | 'Ausgaben') {
-  return page.locator('app-top-items').filter({ has: page.getByText(`Top 5 ${list}`, { exact: true }) });
+  return page
+    .locator('app-top-items')
+    .filter({ has: page.getByText(`Top 5 ${list}`, { exact: true }) });
 }
 
 /** The rows of one of the top 5 lists (TP-8). */
 export function topItemRows(page: Page, list: 'Sparpotential' | 'Ausgaben') {
   return page.getByRole('table', { name: `Top 5 ${list}`, exact: true }).locator('tbody tr');
+}
+
+/**
+ * Drags an entry by what it is grabbed at onto the place of another one, in small steps, as the drag and
+ * drop of the page only starts after the pointer has moved a bit (UK-14, ES-4). Waits until the new
+ * order has been saved, i.e. a PUT to a URL matching `saves` has succeeded. On a slow machine the page may not pick up the gesture; as long as no
+ * new order has been sent, the gesture is repeated, so a lost gesture does not fail the test but
+ * a drag that never saves still does.
+ */
+export async function drag(
+  page: Page,
+  handle: Locator,
+  target: Locator,
+  saves: RegExp = /-order$/,
+): Promise<void> {
+  const isOrder = (request: Request) => request.method() === 'PUT' && saves.test(request.url());
+  let sent: Request | undefined;
+  await expect(async () => {
+    // The mouse only reaches what is in view; the page may have scrolled while entries were added
+    await handle.scrollIntoViewIfNeeded();
+    const from = (await handle.boundingBox())!;
+    const to = (await target.boundingBox())!;
+    const x = from.x + from.width / 2;
+    const request = page.waitForRequest(isOrder, { timeout: 3000 });
+    request.catch(() => undefined);
+    const y = from.y + from.height / 2;
+    // Names what the pointer grabs, so a gesture the page ignores can be told apart from one aimed wrong
+    const grabbed = await page.evaluate(
+      ([px, py]) => document.elementFromPoint(px, py)?.outerHTML.slice(0, 300) ?? 'nothing',
+      [x, y],
+    );
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    try {
+      await page.mouse.move(x, y + 10, { steps: 5 });
+      await expect(
+        page.locator('.cdk-drag-preview'),
+        `drag preview after grabbing ${grabbed} at ${Math.round(x)}, ${Math.round(y)}`,
+      ).toBeVisible({ timeout: 2000 });
+      await page.mouse.move(x, to.y + 4, { steps: 20 });
+    } finally {
+      await page.mouse.up();
+    }
+    sent = await request;
+  }).toPass({ timeout: 20000 });
+  expect((await sent!.response())!.ok()).toBe(true);
 }

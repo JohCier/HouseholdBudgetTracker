@@ -8,6 +8,7 @@ import de.jcss.hbt.domain.onetimeitem.OneTimeItemRepository;
 import de.jcss.hbt.domain.onetimeitem.command.ChangeOneTimeItemCommand;
 import de.jcss.hbt.domain.onetimeitem.command.CreateOneTimeItemCommand;
 import de.jcss.hbt.domain.onetimeitem.command.DeleteOneTimeItemCommand;
+import de.jcss.hbt.domain.onetimeitem.command.MoveOneTimeItemCommand;
 import de.jcss.hbt.domain.onetimeitem.overview.OneTimeItemOverview;
 import de.jcss.hbt.domain.onetimeitem.overview.OneTimeItemOverviewQueryHandler;
 import org.springframework.context.ApplicationEventPublisher;
@@ -18,7 +19,7 @@ import java.time.Year;
 import java.util.Objects;
 
 /**
- * Entry point for all use cases of one-time items (EP-1 to EP-17).
+ * Entry point for all use cases of one-time items (EP-1 to EP-17, ES-1 to ES-11).
  * <p>
  * Every use case acts on behalf of the owner given in the command. An item of someone else is
  * treated exactly like one that does not exist (EP-4); whether it belongs to a user is decided by
@@ -67,7 +68,22 @@ public class OneTimeItemApplicationService {
     }
 
     /**
-     * Deletes a one-time item of the user for good (EP-7, EP-17).
+     * Moves a one-time item of the user between two neighbors in its area (ES-4). The neighbors are
+     * only read; the moved item is the only one that changes.
+     *
+     * @throws OneTimeItemNotFoundException if the item or a neighbor is not an item of the user
+     */
+    public void moveItem(MoveOneTimeItemCommand command) {
+        OneTimeItem item = load(command.itemId(), command.owner());
+        OneTimeItem previous = command.previousItemId() == null ? null : load(command.previousItemId(), command.owner());
+        OneTimeItem next = command.nextItemId() == null ? null : load(command.nextItemId(), command.owner());
+        OneTimeItem moved = item.moveBetween(previous, next);
+        repository.save(moved);
+        publishEvents(moved);
+    }
+
+    /**
+     * Deletes a one-time item of the user for good (EP-7, ES-10).
      *
      * @throws OneTimeItemNotFoundException if it is not an item of the user
      */

@@ -79,7 +79,7 @@ class JdbcOneTimeItemRepositoryTest {
     }
 
     @Test
-    void removesAnItem() { // EP-17
+    void removesAnItem() { // ES-10
         OneTimeItem item = item("Bonus", ItemType.INCOME, "2000.00", LocalDate.of(2026, 12, 1), null);
         repository.add(item);
 
@@ -94,7 +94,23 @@ class JdbcOneTimeItemRepositoryTest {
     }
 
     @Test
-    void overviewListsTheItemsOfTheYearByDateAndThenInTheOrderEntered() { // EP-8, EP-9
+    void savesTheNewPlaceOfAMovedItem() { // ES-4
+        OneTimeItem first = item("Nebenkostennachzahlung", ItemType.EXPENSE, "1200.00", LocalDate.of(2026, 3, 15), null);
+        OneTimeItem moved = item("Autoreparatur", ItemType.EXPENSE, "650.00", LocalDate.of(2026, 9, 22), null);
+        repository.add(first);
+        repository.add(moved);
+
+        repository.save(repository.findById(moved.id()).orElseThrow()
+                .moveBetween(null, repository.findById(first.id()).orElseThrow()));
+
+        assertThat(queryHandler.findByOwnerAndYear(OWNER, Year.of(2026)).items())
+                .extracting(item -> item.description().value())
+                .containsExactly("Autoreparatur", "Nebenkostennachzahlung");
+        assertThat(repository.findById(moved.id()).orElseThrow().rank()).isLessThan(first.rank());
+    }
+
+    @Test
+    void overviewListsTheItemsOfTheYearInTheOrderEntered() { // ES-6, ES-7, EP-8, EP-9
         repository.add(item("Später", ItemType.INCOME, "800.00", LocalDate.of(2026, 7, 10), null));
         repository.add(item("Zuerst erfasst", ItemType.EXPENSE, "1200.00", LocalDate.of(2026, 3, 15), "Notiz"));
         repository.add(item("Danach erfasst", ItemType.EXPENSE, "100.00", LocalDate.of(2026, 3, 15), null));
@@ -105,8 +121,8 @@ class JdbcOneTimeItemRepositoryTest {
         OneTimeItemOverview overview = queryHandler.findByOwnerAndYear(OWNER, Year.of(2026));
 
         assertThat(overview.items()).extracting(item -> item.description().value())
-                .containsExactly("Zuerst erfasst", "Danach erfasst", "Später");
-        assertThat(overview.items().getFirst().note()).isEqualTo(new BudgetItemNote("Notiz"));
+                .containsExactly("Später", "Zuerst erfasst", "Danach erfasst");
+        assertThat(overview.items().get(1).note()).isEqualTo(new BudgetItemNote("Notiz"));
         assertThat(overview.totalIncome()).isEqualTo(money("800.00"));
         assertThat(overview.totalExpense()).isEqualTo(money("1300.00"));
         assertThat(overview.balance()).isEqualTo(money("-500.00"));
