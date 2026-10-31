@@ -197,7 +197,9 @@ Jede App hat ihr eigenes Image (`apps/*/Dockerfile`). Das Frontend-Image (nginx,
 Wurzelverzeichnis) liefert die Angular-App aus und leitet `/api/auth/**` an `users:8081`, `/api/**` an
 `backend:8080` weiter; nur dieser Container ist nach außen erreichbar. Backend und Users erwarten die Datenbank über
 `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` und `SPRING_DATASOURCE_PASSWORD` sowie `JWT_SECRET`, und melden
-ihren Zustand über `/actuator/health/readiness` (Docker-`HEALTHCHECK`). Das Sitzungs-Cookie ist standardmäßig
+ihren Zustand über `/actuator/health/readiness` (Docker-`HEALTHCHECK`). Metriken für Prometheus (JVM, HTTP-Anfragen,
+Verbindungspool) liefern beide ohne Anmeldung unter `/actuator/prometheus`; wie die Health-Endpunkte ist er von außen
+nicht erreichbar, weil nginx nur `/api` und die API-Dokumentation an die Apps weiterleitet. Das Sitzungs-Cookie ist standardmäßig
 `Secure`; solange die App nur per HTTP (nicht localhost) erreichbar ist, muss `HBT_AUTH_SECURE_COOKIE=false` gesetzt
 sein.
 
