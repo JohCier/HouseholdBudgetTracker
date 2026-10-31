@@ -33,10 +33,10 @@ class PrometheusEndpointIntegrationTest {
     }
 
     @Test
-    void exposesJvmAndConnectionPoolMetricsWithoutSession() throws Exception {
+    void exposesJvmAndDataSourceMetricsWithoutSession() throws Exception {
         mockMvc.perform(get("/actuator/prometheus"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("jvm_memory_used_bytes")))
-                .andExpect(content().string(containsString("hikaricp_connections_active")));
+                .andExpect(content().string(containsString("jdbc_connections_max")));
     }
 }
