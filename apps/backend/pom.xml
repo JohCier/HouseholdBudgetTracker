@@ -2,162 +2,22 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+	<!-- Versions, shared dependencies and test configuration come from the parent in the repository root -->
 	<parent>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.1.2</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<groupId>de.jcss</groupId>
+		<artifactId>household-budget-tracker-parent</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+		<relativePath>../../pom.xml</relativePath>
 	</parent>
-	<groupId>de.jcss</groupId>
 	<artifactId>household-budget-tracker</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
 	<name>Household Budget Tracker</name>
 	<description>Haushaltsbuch nach der 50/30/20-Regel</description>
 
-	<properties>
-		<java.version>25</java.version>
-		<springdoc.version>3.2.0</springdoc.version>
-		<archunit.version>1.5.1</archunit.version>
-		<jmolecules.version>2025.0.2</jmolecules.version>
-		<!-- Overrides of the versions managed by Spring Boot 4.1.1, which still ships versions with known CVEs
-		     (CRITICAL/HIGH, found by Trivy). Remove once a Spring Boot release brings these versions or newer. -->
-		<tomcat.version>11.0.27</tomcat.version>
-		<jackson-bom.version>3.1.8</jackson-bom.version>
-		<jackson-2-bom.version>2.21.8</jackson-2-bom.version>
-		<!-- Secret for session tokens in local development and tests only, shared with apps/users;
-		     production gets its own via the JWT_SECRET environment variable. -->
-		<dev.jwt-secret>local-development-secret-do-not-use-in-production</dev.jwt-secret>
-	</properties>
-
-	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<groupId>org.jmolecules</groupId>
-				<artifactId>jmolecules-bom</artifactId>
-				<version>${jmolecules.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-			<!-- jmolecules-archunit brings an older ArchUnit along -->
-			<dependency>
-				<groupId>com.tngtech.archunit</groupId>
-				<artifactId>archunit</artifactId>
-				<version>${archunit.version}</version>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
-
 	<dependencies>
-		<!-- DDD building blocks (aggregates, entities, value objects, events, commands, query models, onion rings) -->
-		<dependency>
-			<groupId>org.jmolecules</groupId>
-			<artifactId>jmolecules-ddd</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.jmolecules</groupId>
-			<artifactId>jmolecules-events</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.jmolecules</groupId>
-			<artifactId>jmolecules-cqrs-architecture</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.jmolecules</groupId>
-			<artifactId>jmolecules-onion-architecture</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-validation</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-jdbc</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-flyway</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-actuator</artifactId>
-		</dependency>
-		<!-- Metrics in the Prometheus format at /actuator/prometheus, scraped inside the cluster -->
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-registry-prometheus</artifactId>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
-		</dependency>
+		<!-- OpenAPI document and Swagger UI -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>${springdoc.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.flywaydb</groupId>
-			<artifactId>flyway-database-postgresql</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<scope>runtime</scope>
-		</dependency>
-
-		<!-- Starts ../../compose.yaml (PostgreSQL) on spring-boot:run; not packaged into the jar. -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-docker-compose</artifactId>
-			<optional>true</optional>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-webmvc-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security-oauth2-resource-server-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-testcontainers</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>testcontainers-postgresql</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>testcontainers-junit-jupiter</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.tngtech.archunit</groupId>
-			<artifactId>archunit-junit5</artifactId>
-			<version>${archunit.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.jmolecules.integrations</groupId>
-			<artifactId>jmolecules-archunit</artifactId>
-			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
@@ -166,51 +26,6 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<environmentVariables>
-						<JWT_SECRET>${dev.jwt-secret}</JWT_SECRET>
-					</environmentVariables>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<configuration>
-					<!-- Fast tests without Docker; tests marked @IntegrationTest run via Failsafe -->
-					<excludedGroups>integration</excludedGroups>
-					<!-- Spring logs go to target/surefire-reports/*-output.txt, the console only shows the results -->
-					<redirectTestOutputToFile>true</redirectTestOutputToFile>
-					<trimStackTrace>true</trimStackTrace>
-					<environmentVariables>
-						<JWT_SECRET>${dev.jwt-secret}</JWT_SECRET>
-					</environmentVariables>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-failsafe-plugin</artifactId>
-				<configuration>
-					<!-- Tests marked @IntegrationTest (Testcontainers, needs Docker), run by ./mvnw verify -->
-					<groups>integration</groups>
-					<!-- Spring and Testcontainers logs go to target/failsafe-reports/*-output.txt -->
-					<redirectTestOutputToFile>true</redirectTestOutputToFile>
-					<trimStackTrace>true</trimStackTrace>
-					<includes>
-						<include>**/*Test.java</include>
-						<include>**/*Tests.java</include>
-					</includes>
-					<environmentVariables>
-						<JWT_SECRET>${dev.jwt-secret}</JWT_SECRET>
-					</environmentVariables>
-				</configuration>
-				<executions>
-					<execution>
-						<goals>
-							<goal>integration-test</goal>
-							<goal>verify</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 		</plugins>
 	</build>

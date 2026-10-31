@@ -9,13 +9,17 @@ Funktionsumfang, Nicht-Ziele und fachliche Regeln beschreiben [docs/produkt.md](
 
 | Ordner                   | Inhalt                                                                                      |
 |--------------------------|---------------------------------------------------------------------------------------------|
+| `pom.xml`                | Maven-Parent und Aggregator der Java-Apps: Versionen, gemeinsame Abhängigkeiten, Test-Konfiguration |
 | `apps/backend/`          | Spring Boot (Java 25, Maven) – Haushaltspläne, DDD mit getrennter Schreib-/Leseseite, REST-API unter `/api/plans` |
 | `apps/users/`            | Spring Boot (Java 25, Maven) – Registrierung und Anmeldung, REST-API unter `/api/auth`        |
 | `apps/frontend/`         | Angular 22 + Angular Material; im Container nginx als einziger Einstiegspunkt                 |
 | `packages/shared-types/` | REST-Verträge beider Dienste (`openapi/*.json`) und die daraus generierten TypeScript-Typen   |
 
 Das Repository ist ein npm-Workspace (`package.json` im Wurzelverzeichnis) aus `apps/frontend` und
-`packages/shared-types`; die Java-Apps sind eigenständige Maven-Projekte.
+`packages/shared-types`. Die Java-Apps sind Module eines Maven-Projekts: Die `pom.xml` im Wurzelverzeichnis erbt von
+`spring-boot-starter-parent` und legt Versionen (inkl. der CVE-Overrides), die Abhängigkeiten beider Apps und die
+Konfiguration von Surefire und Failsafe fest; die `pom.xml` einer App enthält nur, was nur sie braucht. Maven läuft
+im Wurzelverzeichnis: ohne `-pl` für beide Apps, mit `-pl apps/backend` bzw. `-pl apps/users` für eine.
 
 ## Architektur
 
@@ -106,20 +110,20 @@ Voraussetzung: Docker (für PostgreSQL und die Integrationstests).
 
 ```bash
 # Backend auf :8080 – startet PostgreSQL aus compose.yaml automatisch (spring-boot-docker-compose)
-cd apps/backend && ./mvnw spring-boot:run
+./mvnw spring-boot:run -pl apps/backend
 
 # Users auf :8081 – nutzt dieselbe PostgreSQL
-cd apps/users && ./mvnw spring-boot:run
+./mvnw spring-boot:run -pl apps/users
 
 # Frontend auf :4200, /api/auth wird per Proxy an :8081, /api an :8080 weitergeleitet
 npm ci && npm start --workspace=frontend
 ```
 
-`./mvnw spring-boot:run` und die Tests setzen ein Entwicklungs-Secret für `JWT_SECRET` (siehe `pom.xml` beider Apps).
+`./mvnw spring-boot:run` und die Tests setzen ein Entwicklungs-Secret für `JWT_SECRET` (siehe `pom.xml` im Wurzelverzeichnis).
 Wer die Apps anders startet, z. B. aus der IDE, muss `JWT_SECRET` selbst setzen – in beiden Apps auf denselben Wert,
 mindestens 32 Bytes; ohne startet keine der beiden.
 
-Tests (in `apps/backend` bzw. `apps/users`):
+Tests (im Wurzelverzeichnis; für nur eine App `-pl apps/backend` bzw. `-pl apps/users` anhängen):
 
 - `./mvnw test` – schnelle Tests ohne Docker (Domäne, Application Services, Controller per `@WebMvcTest`,
   `ArchitectureTest`), dauert Sekunden
@@ -179,7 +183,7 @@ Vorgehen bei einer Änderung, z. B. ein neues Feld in einem Request-DTO:
 3. Die JSON-Datei aus dem Java-Code neu erzeugen:
 
    ```bash
-   ./mvnw verify -Dit.test=OpenApiContractTest -Dopenapi.update=true
+   ./mvnw verify -pl apps/backend -Dit.test=OpenApiContractTest -Dopenapi.update=true   # bzw. -pl apps/users
    ```
 
 4. Frontend bauen oder testen – die TypeScript-Typen werden neu generiert, der Compiler zeigt die Stellen, die
@@ -193,8 +197,9 @@ Vorgehen bei einer Änderung, z. B. ein neues Feld in einem Request-DTO:
 docker compose --profile app up --build
 ```
 
-Jede App hat ihr eigenes Image (`apps/*/Dockerfile`). Das Frontend-Image (nginx, Build-Kontext ist das
-Wurzelverzeichnis) liefert die Angular-App aus und leitet `/api/auth/**` an `users:8081`, `/api/**` an
+Jede App hat ihr eigenes Image (`apps/*/Dockerfile`), Build-Kontext ist bei allen das Wurzelverzeichnis (das
+Frontend braucht den npm-Workspace, die Java-Apps die Parent-POM), z. B. `docker build -f apps/backend/Dockerfile .`;
+`.dockerignore` im Wurzelverzeichnis gilt für alle Images. Das Frontend-Image (nginx) liefert die Angular-App aus und leitet `/api/auth/**` an `users:8081`, `/api/**` an
 `backend:8080` weiter; nur dieser Container ist nach außen erreichbar. Backend und Users erwarten die Datenbank über
 `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` und `SPRING_DATASOURCE_PASSWORD` sowie `JWT_SECRET`, und melden
 ihren Zustand über `/actuator/health/readiness` (Docker-`HEALTHCHECK`). Metriken für Prometheus (JVM, HTTP-Anfragen,

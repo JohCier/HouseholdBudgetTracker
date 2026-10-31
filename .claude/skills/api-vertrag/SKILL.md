@@ -9,10 +9,10 @@ Richtung immer Java → JSON → TypeScript. `packages/shared-types/openapi/*.js
 auch nicht gelesen werden.
 
 1. Controller bzw. DTO ändern, Controller-Test anpassen.
-2. In der betroffenen App (`apps/backend` → `plans.json`, `apps/users` → `users.json`):
+2. Im Wurzelverzeichnis für die betroffene App (`apps/backend` → `plans.json`, `apps/users` → `users.json`):
 
    ```bash
-   ./mvnw -q verify -Dit.test=OpenApiContractTest -Dopenapi.update=true
+   ./mvnw -q verify -pl apps/backend -Dit.test=OpenApiContractTest -Dopenapi.update=true   # bzw. -pl apps/users
    ```
 
 3. Prüfen, ob nur das Erwartete geändert ist, ohne die ganze Datei zu lesen:
