@@ -20,7 +20,9 @@ services:
 
   backend:
     profiles: [app]
-    build: apps/backend
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
     image: household-budget-tracker-backend
     environment: &app-environment
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hbt
@@ -33,7 +35,9 @@ services:
 
   users:
     profiles: [app]
-    build: apps/users
+    build:
+      context: .
+      dockerfile: apps/users/Dockerfile
     image: household-budget-tracker-users
     environment: *app-environment
     depends_on:

@@ -1,15 +1,19 @@
 # syntax=docker/dockerfile:1
-# Build context: apps/users
+# Build context: repository root (the build needs the parent pom.xml and the Maven wrapper there)
 
 # --- Build: Spring-Boot-JAR bauen und in Schichten zerlegen -------------------
 FROM eclipse-temurin:25-jdk AS build
 WORKDIR /build
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
-RUN --mount=type=cache,target=/root/.m2 ./mvnw -B dependency:go-offline
-COPY src/ src/
+COPY apps/users/pom.xml apps/users/
+# Maven runs in the service directory and finds the parent via relativePath; from the root it would also need the
+# pom.xml of the other service (module list of the aggregator).
+WORKDIR /build/apps/users
+RUN --mount=type=cache,target=/root/.m2 ../../mvnw -B dependency:go-offline
+COPY apps/users/src/ src/
 # Tests laufen in der CI vor dem Image-Build (inkl. Testcontainers, das hier kein Docker hätte).
-RUN --mount=type=cache,target=/root/.m2 ./mvnw -B package -DskipTests \
+RUN --mount=type=cache,target=/root/.m2 ../../mvnw -B package -DskipTests \
     && java -Djarmode=tools -jar target/*.jar extract --layers --launcher --destination /build/extracted
 
 # --- Runtime -----------------------------------------------------------------

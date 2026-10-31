@@ -1,7 +1,8 @@
 version: 2
 updates:
   - package-ecosystem: maven
-    directories: [/apps/backend, /apps/users]
+    # Parent pom.xml in the root, includes the modules apps/backend and apps/users
+    directory: /
     schedule:
       interval: daily
   - package-ecosystem: npm

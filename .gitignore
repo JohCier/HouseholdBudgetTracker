@@ -12,3 +12,7 @@
 
 ### Node (npm workspaces) ###
 node_modules/
+
+### Maven ###
+target/
+.mvn/wrapper/maven-wrapper.jar

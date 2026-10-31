@@ -57,8 +57,5 @@ echo ". \"$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-env.sh\"" >> "$ENV_FILE"
 # npm workspace (frontend, shared-types); ci instead of install leaves package-lock.json untouched
 npm ci --no-audit --no-fund --no-update-notifier --loglevel=error
 
-# Maven dependencies and plugins of both Java apps
-for app in backend users; do
-  (cd "apps/$app" && ./mvnw -B -q dependency:go-offline >/dev/null) \
-    || echo "Could not prefetch Maven dependencies of $app" >&2
-done
+# Maven dependencies and plugins of both Java apps (aggregator in the repository root)
+./mvnw -B -q dependency:go-offline >/dev/null || echo "Could not prefetch Maven dependencies" >&2

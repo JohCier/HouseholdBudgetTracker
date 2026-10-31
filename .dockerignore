@@ -1,10 +1,8 @@
-# Build context of apps/frontend/Dockerfile (the Java apps use their own directory as context)
+# Build context of all images (apps/*/Dockerfile): repository root
 .git
 .github
 .idea
 .vscode
-apps/backend
-apps/users
 **/node_modules
 **/target
 apps/frontend/dist

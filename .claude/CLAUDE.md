@@ -33,6 +33,7 @@ Skill `api-vertrag`. Welche Spec zu einem Regel-Präfix (z. B. `PM-`) gehört, z
 
 | Ordner | Inhalt |
 |---|---|
+| `pom.xml`, `mvnw` | Maven-Parent der Java-Services (Versionen, gemeinsame Abhängigkeiten, Test-Konfiguration) und Aggregator; Maven läuft im Wurzelverzeichnis |
 | `apps/backend/` | Spring Boot, Haushaltspläne und Einmalposten, `/api/plans`, `/api/one-time-items`; Pakete `domain`, `application`, `infrastructure` unter `de.jcss.hbt` |
 | `apps/users/` | Spring Boot, Registrierung und Anmeldung, `/api/auth`; gleiche Schichten unter `de.jcss.hbt.users` |
 | `apps/frontend/` | Angular + Material; je Feature `data-access/` (API, Signal-Store) und `ui/` (Komponenten) |
@@ -43,17 +44,19 @@ Architektur, Sitzungs-Cookie, Docker und CI beschreibt das `README.md` ausführl
 
 ## Befehle
 
-- Schnelle Tests ohne Docker: `./mvnw -q test` in `apps/backend` bzw. `apps/users` (grün: keine Ausgabe)
+- Maven-Befehle im Wurzelverzeichnis; ohne `-pl` für beide Services, mit `-pl apps/backend` bzw. `-pl apps/users` für einen.
+  Versionen und gemeinsame Abhängigkeiten gehören in die Parent-POM `pom.xml`, in die Service-POM nur das Eigene
+- Schnelle Tests ohne Docker: `./mvnw -q test` (grün: keine Ausgabe)
 - Alle Tests inkl. Testcontainers: `./mvnw -q verify` (braucht Docker); neue Tests mit Datenbank bekommen `@IntegrationTest`
 - Frontend: `npm test -s --workspace=frontend`, `npm run build -s --workspace=frontend` (erzeugen vorher die API-Typen)
 - E2E-Tests: Stack mit `docker compose --profile app up --build --wait` starten, dann `npx playwright test` in `e2e`
-- Während der Arbeit nur betroffene Tests: `./mvnw -q test -Dtest=HouseholdPlanTest`,
+- Während der Arbeit nur betroffene Tests: `./mvnw -q test -pl apps/backend -Dtest=HouseholdPlanTest`,
   `npm test -s --workspace=frontend -- --include=src/app/budget/data-access/budget-store.spec.ts`,
   `npx playwright test tests/<spec>.spec.ts`; die ganzen Suiten erst vor dem Commit
 - Logs der Java-Tests stehen nicht in der Konsole, sondern in `target/surefire-reports/` bzw. `target/failsafe-reports/`
   (`<Testklasse>-output.txt`); nur bei Fehlschlägen gezielt lesen
 - API-Vertrag nach Änderung an Controller oder DTO neu schreiben:
-  `./mvnw -q verify -Dit.test=OpenApiContractTest -Dopenapi.update=true`; JSON, Java und Frontend gemeinsam committen.
+  `./mvnw -q verify -pl apps/backend -Dit.test=OpenApiContractTest -Dopenapi.update=true` (bzw. `-pl apps/users`); JSON, Java und Frontend gemeinsam committen.
   `packages/shared-types/openapi/*.json` nicht lesen, sondern mit `git diff --stat` prüfen; Typen stehen in
   `@hbt/shared-types`
 - Cloud-Sitzung: Zeigt `echo $JAVA_HOME` nicht JDK 25, Maven-Befehle mit `. .claude/hooks/cloud-env.sh &&` beginnen

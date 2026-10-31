@@ -45,8 +45,8 @@ Reihenfolge von innen nach außen; die DDD-Regeln lädt Claude Code automatisch 
 
 ## 5. Prüfen und abschließen
 
-- Während der Arbeit nur betroffene Tests (Befehle in `CLAUDE.md`), vor dem Commit: `./mvnw -q verify` in jeder
-  geänderten Java-App, `npm test -s --workspace=frontend`, `npm run build -s --workspace=frontend`, die E2E-Datei
+- Während der Arbeit nur betroffene Tests (Befehle in `CLAUDE.md`), vor dem Commit: `./mvnw -q verify` im
+  Wurzelverzeichnis (beide Java-Apps), `npm test -s --workspace=frontend`, `npm run build -s --workspace=frontend`, die E2E-Datei
 - Spec: Status „umgesetzt", Abschnitt „Umsetzung" mit Klassen, Tests und E2E-Abdeckung (knapp, Dateiliste statt
   Fließtext); neue Zeile in der Tabelle in `docs/produkt.md` mit Regel-Präfix
 - Commit und PR auf Deutsch, Titel mit Regel-IDs, z. B. `Posten markieren (PM-1 bis PM-14)`
