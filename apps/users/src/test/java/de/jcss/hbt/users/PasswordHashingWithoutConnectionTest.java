@@ -1,5 +1,6 @@
 package de.jcss.hbt.users;
 
+import de.jcss.hbt.test.IntegrationTest;
 import de.jcss.hbt.users.application.user.UserApplicationService;
 import de.jcss.hbt.users.domain.user.PasswordHasher;
 import de.jcss.hbt.users.domain.user.command.RegisterUserCommand;

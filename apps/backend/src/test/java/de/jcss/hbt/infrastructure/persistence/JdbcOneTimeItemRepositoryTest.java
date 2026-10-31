@@ -1,6 +1,6 @@
 package de.jcss.hbt.infrastructure.persistence;
 
-import de.jcss.hbt.IntegrationTest;
+import de.jcss.hbt.test.IntegrationTest;
 import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemDescription;
 import de.jcss.hbt.domain.householdplan.valueobject.BudgetItemNote;
 import de.jcss.hbt.domain.householdplan.valueobject.ItemType;

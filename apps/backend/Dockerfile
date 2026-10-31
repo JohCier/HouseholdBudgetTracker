@@ -12,8 +12,9 @@ COPY apps/backend/pom.xml apps/backend/
 WORKDIR /build/apps/backend
 RUN --mount=type=cache,target=/root/.m2 ../../mvnw -B dependency:go-offline
 COPY apps/backend/src/ src/
-# Tests laufen in der CI vor dem Image-Build (inkl. Testcontainers, das hier kein Docker hätte).
-RUN --mount=type=cache,target=/root/.m2 ../../mvnw -B package -DskipTests \
+# Tests laufen in der CI vor dem Image-Build (inkl. Testcontainers, das hier kein Docker hätte). maven.test.skip
+# übersetzt sie auch nicht, deshalb braucht das Image die gemeinsamen Test-Hilfen aus libs/test-support nicht.
+RUN --mount=type=cache,target=/root/.m2 ../../mvnw -B package -Dmaven.test.skip=true \
     && java -Djarmode=tools -jar target/*.jar extract --layers --launcher --destination /build/extracted
 
 # --- Runtime -----------------------------------------------------------------
