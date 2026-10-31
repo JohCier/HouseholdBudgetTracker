@@ -74,3 +74,5 @@ Diese Regeln lädt Claude Code automatisch, sobald Dateien im jeweiligen Bereich
 - `.claude/rules/ddd.md`: Aggregates, Entities, Value Objects, Repositorys, Commands, Services, Events, Read Models
   (Java-Code in `apps/backend` und `apps/users`)
 - `.claude/rules/ci-cd.md`: Regeln für die Pipelines (`.github/workflows/`)
+- `.claude/rules/struktur.md`: nichts zweimal pflegen (Code, Konfiguration, Versionen); gilt immer. Den ganzen Scan
+  macht der Skill `struktur-review`
