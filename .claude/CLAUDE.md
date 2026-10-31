@@ -34,6 +34,7 @@ Skill `api-vertrag`. Welche Spec zu einem Regel-Präfix (z. B. `PM-`) gehört, z
 | Ordner | Inhalt |
 |---|---|
 | `pom.xml`, `mvnw` | Maven-Parent der Java-Services (Versionen, gemeinsame Abhängigkeiten, Test-Konfiguration) und Aggregator; Maven läuft im Wurzelverzeichnis |
+| `libs/test-support/` | Gemeinsame Test-Hilfen der Java-Services (`@IntegrationTest`, Testcontainers, Basisklassen für Vertrags- und Prometheus-Test), Paket `de.jcss.hbt.test`; der Parent bindet sie als zusätzliche Testquellen ein |
 | `apps/backend/` | Spring Boot, Haushaltspläne und Einmalposten, `/api/plans`, `/api/one-time-items`; Pakete `domain`, `application`, `infrastructure` unter `de.jcss.hbt` |
 | `apps/users/` | Spring Boot, Registrierung und Anmeldung, `/api/auth`; gleiche Schichten unter `de.jcss.hbt.users` |
 | `apps/frontend/` | Angular + Material; je Feature `data-access/` (API, Signal-Store) und `ui/` (Komponenten) |

@@ -1,5 +1,6 @@
 package de.jcss.hbt.users;
 
+import de.jcss.hbt.test.IntegrationTest;
 import de.jcss.hbt.users.application.user.LoginThrottle;
 import de.jcss.hbt.users.domain.user.valueobject.EmailAddress;
 import jakarta.servlet.http.Cookie;

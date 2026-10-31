@@ -130,6 +130,8 @@ Tests (im Wurzelverzeichnis; für nur eine App `-pl apps/backend` bzw. `-pl apps
 - `./mvnw verify` – zusätzlich alle mit `@IntegrationTest` markierten Tests: Sie starten die ganze App gegen eine
   PostgreSQL per Testcontainers und brauchen Docker; Maven führt sie nach den schnellen Tests über das
   Failsafe-Plugin aus. Neue Tests mit Datenbank bekommen deshalb `@IntegrationTest` statt `@SpringBootTest`.
+  `@IntegrationTest` und die übrigen gemeinsamen Test-Hilfen beider Services liegen in `libs/test-support/java`
+  (Paket `de.jcss.hbt.test`); die Parent-POM bindet sie in jedem Service als zusätzliche Testquellen ein.
 
 Frontend: `npm test --workspace=frontend`. API-Dokumentation des Backends: http://localhost:8080/api/docs
 

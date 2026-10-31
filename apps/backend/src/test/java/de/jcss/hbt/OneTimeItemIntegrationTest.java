@@ -1,5 +1,6 @@
 package de.jcss.hbt;
 
+import de.jcss.hbt.test.IntegrationTest;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;

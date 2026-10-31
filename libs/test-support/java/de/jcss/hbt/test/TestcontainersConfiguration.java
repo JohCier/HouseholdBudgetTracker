@@ -1,4 +1,4 @@
-package de.jcss.hbt.users;
+package de.jcss.hbt.test;
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;

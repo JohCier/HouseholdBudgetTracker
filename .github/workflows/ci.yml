@@ -89,14 +89,16 @@ jobs:
         if: github.ref_type != 'tag' && github.event_name != 'workflow_dispatch'
         uses: dorny/paths-filter@v4
         with:
-          # backend/users: their directory, the OpenAPI contract their tests check and the shared Maven build in the
-          # repository root (parent pom.xml, Maven wrapper). frontend: its directory, the npm workspace in the
-          # repository root and packages/shared-types (API types generated from the contracts). .dockerignore belongs
-          # to the build context of every image. A change to this workflow rebuilds all apps.
+          # backend/users: their directory, the OpenAPI contract their tests check, the shared test helpers in
+          # libs/test-support and the shared Maven build in the repository root (parent pom.xml, Maven wrapper).
+          # frontend: its directory, the npm workspace in the repository root and packages/shared-types (API types
+          # generated from the contracts). .dockerignore belongs to the build context of every image. A change to this
+          # workflow rebuilds all apps.
           filters: |
             backend:
               - 'apps/backend/**'
               - 'packages/shared-types/openapi/plans.json'
+              - 'libs/test-support/**'
               - 'pom.xml'
               - '.mvn/**'
               - 'mvnw'
@@ -105,6 +107,7 @@ jobs:
             users:
               - 'apps/users/**'
               - 'packages/shared-types/openapi/users.json'
+              - 'libs/test-support/**'
               - 'pom.xml'
               - '.mvn/**'
               - 'mvnw'
