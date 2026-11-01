@@ -48,7 +48,7 @@ Architektur, Sitzungs-Cookie, Docker und CI beschreibt das `README.md` ausführl
   (`<Testklasse>-output.txt`); nur bei Fehlschlägen gezielt lesen
 - API-Vertrag nach Änderung an Controller oder DTO neu schreiben:
   `./mvnw -q verify -pl apps/backend -Dit.test=OpenApiContractTest -Dopenapi.update=true` (bzw. `-pl apps/users`); JSON, Java und Frontend gemeinsam committen.
-  `packages/shared-types/openapi/*.json` nicht lesen, sondern mit `git diff --stat` prüfen; Typen stehen in
+  `packages/shared-types/openapi/*.json` sind generiert: nie von Hand ändern, nicht lesen, sondern mit `git diff --stat` prüfen; Typen stehen in
   `@hbt/shared-types`
 - Cloud-Sitzung: Zeigt `echo $JAVA_HOME` nicht JDK 25, Maven-Befehle mit `. .claude/hooks/cloud-env.sh &&` beginnen
 
