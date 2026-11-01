@@ -29,17 +29,7 @@ Skill `api-vertrag`. Welche Spec zu einem Regel-Präfix (z. B. `PM-`) gehört, z
 
 „Setze alle geplanten Specs um" heißt: alle Specs mit Status „geplant" nacheinander, je Spec ein eigener PR.
 
-## Landkarte
-
-| Ordner | Inhalt |
-|---|---|
-| `pom.xml`, `mvnw` | Maven-Parent der Java-Services (Versionen, gemeinsame Abhängigkeiten, Test-Konfiguration) und Aggregator; Maven läuft im Wurzelverzeichnis |
-| `libs/test-support/` | Gemeinsame Test-Hilfen der Java-Services (`@IntegrationTest`, Testcontainers, Basisklassen für Vertrags- und Prometheus-Test, gemeinsame ArchUnit-Regeln `DddArchitectureRules`), Paket `de.jcss.hbt.test`; der Parent bindet sie als zusätzliche Testquellen ein |
-| `apps/backend/` | Spring Boot, Haushaltspläne und Einmalposten, `/api/plans`, `/api/one-time-items`; Pakete `domain`, `application`, `infrastructure` unter `de.jcss.hbt` |
-| `apps/users/` | Spring Boot, Registrierung und Anmeldung, `/api/auth`; gleiche Schichten unter `de.jcss.hbt.users` |
-| `apps/frontend/` | Angular + Material; je Feature `data-access/` (API, Signal-Store) und `ui/` (Komponenten), Gemeinsames in `shared/` |
-| `e2e/` | Playwright-Tests der Kernabläufe gegen den Compose-Stack; je Spec eine Datei unter `e2e/tests/` |
-| `packages/shared-types/` | OpenAPI-Verträge (`openapi/*.json`, generiert, nie von Hand ändern) und daraus erzeugte TypeScript-Typen |
+## Architektur
 
 Architektur, Sitzungs-Cookie, Docker und CI beschreibt das `README.md` ausführlich.
 
@@ -58,7 +48,7 @@ Architektur, Sitzungs-Cookie, Docker und CI beschreibt das `README.md` ausführl
   (`<Testklasse>-output.txt`); nur bei Fehlschlägen gezielt lesen
 - API-Vertrag nach Änderung an Controller oder DTO neu schreiben:
   `./mvnw -q verify -pl apps/backend -Dit.test=OpenApiContractTest -Dopenapi.update=true` (bzw. `-pl apps/users`); JSON, Java und Frontend gemeinsam committen.
-  `packages/shared-types/openapi/*.json` nicht lesen, sondern mit `git diff --stat` prüfen; Typen stehen in
+  `packages/shared-types/openapi/*.json` sind generiert: nie von Hand ändern, nicht lesen, sondern mit `git diff --stat` prüfen; Typen stehen in
   `@hbt/shared-types`
 - Cloud-Sitzung: Zeigt `echo $JAVA_HOME` nicht JDK 25, Maven-Befehle mit `. .claude/hooks/cloud-env.sh &&` beginnen
 
