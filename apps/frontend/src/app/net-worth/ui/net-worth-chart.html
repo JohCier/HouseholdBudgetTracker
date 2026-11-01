@@ -1,0 +1,115 @@
+<div class="legend" aria-hidden="true">
+  <span><i class="swatch-line"></i>Nettovermögen</span>
+  <span><i class="swatch-bar gain"></i>Wachstum zum Vorjahr</span>
+  <span><i class="swatch-bar loss"></i>Verlust zum Vorjahr</span>
+</div>
+<div class="scroll" #scroll>
+  <div class="plot" [style.width.px]="layout().width">
+    <svg
+      [attr.viewBox]="'0 0 ' + layout().width + ' ' + layout().height"
+      [attr.width]="layout().width"
+      [attr.height]="layout().height"
+      role="img"
+      [attr.aria-label]="description()"
+    >
+      @for (tick of layout().ticks; track tick.value) {
+        <line
+          [class]="tick.value === 0 ? 'zero' : 'grid'"
+          [attr.x1]="layout().left"
+          [attr.x2]="layout().width - layout().right"
+          [attr.y1]="tick.y"
+          [attr.y2]="tick.y"
+        />
+        <text class="axis" [attr.x]="layout().left - 8" [attr.y]="tick.y + 4" text-anchor="end">
+          {{ tick.label }}
+        </text>
+      }
+      @if (selected(); as year) {
+        @if (columnOf(year); as column) {
+          <rect
+            class="highlight"
+            [attr.x]="column.x - layout().step / 2"
+            [attr.y]="layout().top"
+            [attr.width]="layout().step"
+            [attr.height]="layout().height - layout().top - layout().bottom"
+            rx="4"
+          />
+        }
+      }
+      @for (bar of layout().bars; track bar.year) {
+        <path [class]="bar.gain ? 'bar gain' : 'bar loss'" [attr.d]="bar.path" />
+      }
+      @for (line of layout().lines; track $index) {
+        <polyline class="line" [attr.points]="line" />
+      }
+      @for (column of layout().columns; track column.year) {
+        @if (column.entry; as entry) {
+          <circle
+            class="point"
+            [attr.cx]="column.x"
+            [attr.cy]="layout().y(entry.netWorth)"
+            [attr.r]="selected() === column.year ? 6 : 4.5"
+          />
+        }
+        <text
+          class="axis"
+          [attr.x]="column.x"
+          [attr.y]="layout().height - 8"
+          text-anchor="middle"
+        >
+          {{
+            layout().compact
+              ? '’' + (column.year % 100).toString().padStart(2, '0')
+              : column.year
+          }}
+        </text>
+      }
+      @if (latest(); as entry) {
+        <text
+          class="label"
+          [attr.x]="columnOf(entry.year)?.x"
+          [attr.y]="layout().y(entry.netWorth) - 12"
+          text-anchor="middle"
+        >
+          {{ short(entry.netWorth) }}
+        </text>
+      }
+      @for (column of layout().columns; track column.year) {
+        @if (column.entry; as entry) {
+          <rect
+            class="hit"
+            tabindex="0"
+            [attr.x]="column.x - layout().step / 2"
+            [attr.y]="layout().top"
+            [attr.width]="layout().step"
+            [attr.height]="layout().height - layout().top - layout().bottom"
+            [attr.aria-label]="tooltipText(entry)"
+            [attr.data-year]="column.year"
+            (pointerenter)="selected.set(column.year)"
+            (pointerleave)="selected.set(null)"
+            (focus)="selected.set(column.year)"
+            (blur)="selected.set(null)"
+            (click)="selected.set(column.year)"
+          />
+        }
+      }
+    </svg>
+    @if (selectedEntry(); as entry) {
+      <div
+        class="tooltip"
+        role="status"
+        [style.left.px]="tooltipLeft()"
+        [style.top.px]="tooltipTop()"
+      >
+        <b>{{ entry.year }}</b>
+        <span>Nettovermögen {{ euroOf(entry.netWorth) }}</span>
+        <span>{{
+          entry.change ? changeOf(entry) + ' zum Vorjahr' : 'kein Vergleich mit dem Vorjahr'
+        }}</span>
+      </div>
+    }
+  </div>
+</div>
+@if (years().length === 1) {
+  <p class="hint">Ab zwei Jahren zeigt das Diagramm den Verlauf.</p>
+}

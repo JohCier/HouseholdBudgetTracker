@@ -1,0 +1,113 @@
+<mat-card appearance="outlined">
+  <mat-card-header>
+    <mat-card-title>Einmalposten</mat-card-title>
+    <mat-card-subtitle
+      >Einmalige Einnahmen und Ausgaben, nicht Teil des Haushaltsplans</mat-card-subtitle
+    >
+  </mat-card-header>
+  <mat-card-content>
+    @if (loadError(); as error) {
+      <div class="load-error" role="alert">
+        <span>Einmalposten konnten nicht geladen werden: {{ error }}</span>
+        <button matButton type="button" (click)="retry.emit()">Erneut versuchen</button>
+      </div>
+    } @else if (overview(); as overview) {
+      @if (overview.items.length === 0) {
+        <p class="empty">Keine Einmalposten.</p>
+      } @else {
+        @for (area of areas(); track area.type) {
+          <section
+            class="area"
+            [class.income-area]="area.type === 'INCOME'"
+            [attr.aria-labelledby]="'one-time-' + area.type"
+          >
+            <h3 [id]="'one-time-' + area.type">{{ area.label }}</h3>
+            @if (area.items.length === 0) {
+              <p class="empty">{{ area.empty }}</p>
+            } @else {
+              <div
+                class="list"
+                role="list"
+                [attr.aria-label]="area.label"
+                cdkDropList
+                cdkDropListLockAxis="y"
+                (cdkDropListDropped)="drop(area, $event)"
+              >
+                @for (item of area.items; track item.id; let index = $index) {
+                  <div class="item" role="listitem" cdkDrag>
+                    @if (area.items.length > 1) {
+                      <button
+                        matIconButton
+                        type="button"
+                        class="handle"
+                        cdkDragHandle
+                        matTooltip="Ziehen zum Verschieben"
+                        [attr.aria-label]="'Einmalposten ' + item.description + ' verschieben'"
+                        (keydown.arrowup)="moveBy(area, index, -1, $event)"
+                        (keydown.arrowdown)="moveBy(area, index, 1, $event)"
+                      >
+                        <mat-icon svgIcon="drag_indicator" />
+                      </button>
+                    } @else {
+                      <span class="handle-space"></span>
+                    }
+                    <span class="date">{{ item.date | date: 'dd.MM.yyyy' }}</span>
+                    <div class="description">
+                      {{ item.description }}
+                      @if (item.note) {
+                        <div class="note">{{ item.note }}</div>
+                      }
+                    </div>
+                    <span
+                      class="amount"
+                      [class.income]="item.type === 'INCOME'"
+                      [class.expense]="item.type === 'EXPENSE'"
+                    >
+                      {{ area.sign }}{{ item.amount | currency: 'EUR' }}
+                    </span>
+                    <span class="actions">
+                      <button
+                        matIconButton
+                        type="button"
+                        matTooltip="Bearbeiten"
+                        [attr.aria-label]="'Einmalposten ' + item.description + ' bearbeiten'"
+                        (click)="edit.emit(item)"
+                      >
+                        <mat-icon svgIcon="edit" />
+                      </button>
+                      <button
+                        matIconButton
+                        type="button"
+                        matTooltip="Löschen"
+                        [attr.aria-label]="'Einmalposten ' + item.description + ' löschen'"
+                        (click)="remove.emit(item)"
+                      >
+                        <mat-icon svgIcon="delete" />
+                      </button>
+                    </span>
+                  </div>
+                }
+              </div>
+            }
+            <div class="sum">
+              <span>Summe {{ area.label }}</span>
+              <span
+                class="amount"
+                [class.income]="area.type === 'INCOME'"
+                [class.expense]="area.type === 'EXPENSE'"
+              >
+                {{ signOf(area.total, area.sign) }}{{ area.total | currency: 'EUR' }}
+              </span>
+            </div>
+          </section>
+        }
+        <div class="balance-row">
+          <span>Saldo</span>
+          <span class="amount" [class.negative]="overview.expensesExceedIncome">
+            {{ overview.balance | currency: 'EUR' }}
+          </span>
+        </div>
+      }
+    }
+  </mat-card-content>
+</mat-card>

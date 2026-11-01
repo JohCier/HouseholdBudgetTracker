@@ -1,0 +1,32 @@
+mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: min(360px, 70vw);
+}
+/* On a low screen the content scrolls; its fields keep their height instead of being squeezed (MA-5) */
+mat-dialog-content > * {
+  flex-shrink: 0;
+}
+mat-button-toggle-group:first-child {
+  margin: 8px 0 16px;
+}
+.amount {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  column-gap: 12px;
+}
+.amount mat-form-field {
+  flex: 1 1 140px;
+}
+.amount mat-button-toggle-group {
+  margin: 4px 0 16px;
+}
+mat-button-toggle {
+  flex: 1;
+}
+.error {
+  color: var(--mat-sys-error);
+  margin: 0;
+}
