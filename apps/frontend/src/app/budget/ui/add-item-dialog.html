@@ -1,0 +1,91 @@
+<h2 mat-dialog-title>
+  {{ preset ? 'Neuer Eintrag in ' + preset.group : 'Posten erfassen' }}
+</h2>
+<form [formGroup]="form" (ngSubmit)="add()">
+  <mat-dialog-content>
+    <mat-button-toggle-group formControlName="type" aria-label="Art des Eintrags">
+      <mat-button-toggle value="EXPENSE">Ausgabe</mat-button-toggle>
+      <mat-button-toggle value="INCOME">Einnahme</mat-button-toggle>
+    </mat-button-toggle-group>
+
+    <mat-form-field>
+      <mat-label>Beschreibung</mat-label>
+      <input
+        matInput
+        formControlName="description"
+        autocomplete="off"
+        maxlength="255"
+        cdkFocusInitial
+      />
+      @if (form.controls.description.invalid) {
+        <mat-error>Bitte eine Beschreibung angeben.</mat-error>
+      }
+    </mat-form-field>
+
+    <div class="amount">
+      <mat-form-field>
+        <mat-label>Betrag</mat-label>
+        <input
+          matInput
+          type="number"
+          inputmode="decimal"
+          min="0.01"
+          step="0.01"
+          formControlName="amount"
+        />
+        <span matTextSuffix>€</span>
+        @if (form.controls.amount.hasError('decimals')) {
+          <mat-error>Höchstens zwei Nachkommastellen.</mat-error>
+        } @else if (form.controls.amount.invalid) {
+          <mat-error>Bitte einen positiven Betrag angeben.</mat-error>
+        }
+      </mat-form-field>
+      <mat-button-toggle-group
+        formControlName="period"
+        aria-label="Angabe monatlich oder jährlich"
+      >
+        @for (period of periods; track period.value) {
+          <mat-button-toggle [value]="period.value">{{ period.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+    </div>
+
+    @if (type() === 'EXPENSE') {
+      <mat-form-field>
+        <mat-label>Kategorie</mat-label>
+        <mat-select formControlName="category">
+          @for (category of categories; track category.value) {
+            <mat-option [value]="category.value">{{ category.label }}</mat-option>
+          }
+        </mat-select>
+        @if (form.controls.category.invalid) {
+          <mat-error>Bitte eine Kategorie wählen.</mat-error>
+        }
+      </mat-form-field>
+    }
+
+    <app-subcategory-field
+      [control]="form.controls.subcategory"
+      [suggestions]="subcategories()"
+    />
+
+    <mat-form-field>
+      <mat-label>Notiz (optional)</mat-label>
+      <textarea matInput formControlName="note" rows="2" cdkTextareaAutosize></textarea>
+      <mat-hint align="end"
+        >{{ form.controls.note.value.length }} / {{ noteMaxLength }}</mat-hint
+      >
+      @if (form.controls.note.invalid) {
+        <mat-error>Höchstens {{ noteMaxLength }} Zeichen.</mat-error>
+      }
+    </mat-form-field>
+
+    @if (error(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button matButton type="button" mat-dialog-close>Abbrechen</button>
+    <button matButton="filled" type="submit" [disabled]="saving()">Hinzufügen</button>
+  </mat-dialog-actions>
+</form>

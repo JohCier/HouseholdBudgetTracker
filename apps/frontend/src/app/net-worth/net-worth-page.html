@@ -1,0 +1,136 @@
+@if (store.loading()) {
+  <mat-progress-bar mode="indeterminate" class="loading" />
+}
+
+<a matButton routerLink="/" class="back">
+  <mat-icon svgIcon="arrow_back" />
+  Alle Jahre
+</a>
+
+<div class="toolbar">
+  <nav class="year" aria-label="Jahr wählen">
+    <button
+      matIconButton
+      type="button"
+      aria-label="Vorheriges Jahr"
+      [disabled]="!store.hasPreviousYear()"
+      (click)="showYear(store.year() - 1)"
+    >
+      <mat-icon svgIcon="chevron_left" />
+    </button>
+    <h1>Vermögen {{ store.year() }}</h1>
+    <button
+      matIconButton
+      type="button"
+      aria-label="Nächstes Jahr"
+      [disabled]="!store.hasNextYear()"
+      (click)="showYear(store.year() + 1)"
+    >
+      <mat-icon svgIcon="chevron_right" />
+    </button>
+  </nav>
+  @if (store.overview() && !store.empty()) {
+    <button matButton type="button" (click)="copy()">
+      <mat-icon svgIcon="content_copy" />
+      Vermögen übernehmen
+    </button>
+  }
+</div>
+
+@if (store.loadError(); as error) {
+  <div class="load-error" role="alert">
+    <span>Daten konnten nicht geladen werden: {{ error }}</span>
+    <button matButton type="button" (click)="store.load()">Erneut versuchen</button>
+  </div>
+}
+
+@if (store.empty()) {
+  <mat-card appearance="outlined" class="empty">
+    <mat-card-content>
+      <p>Für {{ store.year() }} ist noch kein Vermögen erfasst.</p>
+      <div class="actions">
+        <button matButton="filled" type="button" (click)="add('ASSET')">Wert erfassen</button>
+        @if (otherYears().length > 0) {
+          <button matButton="outlined" type="button" (click)="copyHere()">
+            <mat-icon svgIcon="content_copy" />
+            Aus anderem Jahr übernehmen
+          </button>
+        }
+      </div>
+    </mat-card-content>
+  </mat-card>
+} @else if (store.overview(); as overview) {
+  <mat-card appearance="outlined" class="sums" aria-label="Summen">
+    <div>
+      <span class="label">Vermögen</span>
+      <span class="value">{{ overview.totalAssets | currency: 'EUR' }}</span>
+    </div>
+    <div>
+      <span class="label">Schulden</span>
+      <span class="value">{{ overview.totalLiabilities | currency: 'EUR' }}</span>
+    </div>
+    <div class="net-worth">
+      <span class="label">Nettovermögen</span>
+      <span class="value" [class.overindebted]="overview.overindebted">
+        {{ overview.netWorth | currency: 'EUR' }}
+      </span>
+      @if (overview.overindebted) {
+        <span class="overindebted">Überschuldet</span>
+      }
+    </div>
+    <div class="change" [attr.aria-label]="changeText(overview)">
+      <span class="label">Zum Vorjahr ({{ overview.year - 1 }})</span>
+      @if (overview.change; as change) {
+        <span class="value" [class]="tone(overview)">{{ amountLabel(overview) }}</span>
+        <span class="percentage" [class]="tone(overview)">{{ percentageLabel(overview) }}</span>
+      } @else {
+        <span class="value none">–</span>
+      }
+    </div>
+  </mat-card>
+
+  <div class="lists">
+    @for (type of types; track type.value) {
+      <mat-card appearance="outlined" class="list" [attr.data-type]="type.value">
+        <h2>{{ type.label }}</h2>
+        <ul>
+          @for (entry of entriesOf(overview, type.value); track entry.id) {
+            <li class="entry">
+              <span class="name">{{ entry.name }}</span>
+              <span class="amount">{{ entry.amount | currency: 'EUR' }}</span>
+              <button
+                matIconButton
+                type="button"
+                [attr.aria-label]="entry.name + ' bearbeiten'"
+                title="Bearbeiten"
+                (click)="edit(entry)"
+              >
+                <mat-icon svgIcon="edit" />
+              </button>
+              <button
+                matIconButton
+                type="button"
+                class="remove"
+                [attr.aria-label]="entry.name + ' löschen'"
+                title="Löschen"
+                (click)="remove(entry)"
+              >
+                <mat-icon svgIcon="delete" />
+              </button>
+            </li>
+          }
+          <li class="add">
+            <button matButton type="button" (click)="add(type.value)">
+              <mat-icon svgIcon="add" />
+              Wert erfassen
+            </button>
+          </li>
+          <li class="sum">
+            <span class="name">Summe {{ type.label }}</span>
+            <span class="amount">{{ sumOf(overview, type.value) | currency: 'EUR' }}</span>
+          </li>
+        </ul>
+      </mat-card>
+    }
+  </div>
+}

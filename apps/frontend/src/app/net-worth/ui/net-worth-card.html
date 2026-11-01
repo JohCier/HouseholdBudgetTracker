@@ -1,0 +1,95 @@
+<mat-card appearance="outlined" class="card">
+  <div class="head">
+    <div>
+      <h2>Vermögen</h2>
+      <p class="subtitle">Nettovermögen (Vermögen − Schulden) am Jahresende</p>
+    </div>
+    @if (latest(); as entry) {
+      <div class="hero">
+        <span class="value" [class.overindebted]="entry.overindebted">
+          {{ entry.netWorth | currency: 'EUR' }}
+        </span>
+        @if (entry.change; as change) {
+          <span [class]="tone(entry)">{{ full(entry) }} zum Vorjahr</span>
+        }
+      </div>
+    }
+  </div>
+
+  @if (error(); as message) {
+    <p class="load-error" role="alert">Vermögen konnte nicht geladen werden: {{ message }}</p>
+  } @else if (years(); as years) {
+    @if (years.length === 0) {
+      <div class="empty">
+        <p>Noch kein Vermögen erfasst.</p>
+        <a matButton="filled" [routerLink]="['/vermoegen', currentYear]">Vermögen erfassen</a>
+      </div>
+    } @else {
+      <app-net-worth-chart class="chart" [years]="years" />
+      <div class="table">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Jahr</th>
+              <th scope="col" class="amount wide">Vermögen</th>
+              <th scope="col" class="amount wide">Schulden</th>
+              <th scope="col" class="amount">Nettovermögen</th>
+              <th scope="col" class="amount">Veränderung</th>
+              <th scope="col" class="actions"><span class="visually-hidden">Aktionen</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of years; track entry.year) {
+              <tr (click)="open(entry.year)" [attr.data-year]="entry.year">
+                <th scope="row">
+                  <a
+                    [routerLink]="['/vermoegen', entry.year]"
+                    (click)="$event.stopPropagation()"
+                    >{{ entry.year }}</a
+                  >
+                </th>
+                <td class="amount wide">{{ entry.totalAssets | currency: 'EUR' }}</td>
+                <td class="amount wide">{{ entry.totalLiabilities | currency: 'EUR' }}</td>
+                <td class="amount">
+                  <span class="value" [class.overindebted]="entry.overindebted">
+                    {{ entry.netWorth | currency: 'EUR' }}
+                  </span>
+                  @if (entry.overindebted) {
+                    <span class="small overindebted">Überschuldet</span>
+                  }
+                  <span class="small narrow">
+                    {{ entry.totalAssets | currency: 'EUR' }} −
+                    {{ entry.totalLiabilities | currency: 'EUR' }}
+                  </span>
+                </td>
+                <td
+                  class="amount change"
+                  [class]="tone(entry)"
+                  [attr.aria-label]="description(entry)"
+                >
+                  @if (entry.change) {
+                    <span class="value">{{ amount(entry) }}</span>
+                    <span class="small">{{ percentage(entry) }}</span>
+                  } @else {
+                    –
+                  }
+                </td>
+                <td class="actions">
+                  <button
+                    matIconButton
+                    type="button"
+                    [attr.aria-label]="'Vermögen ' + entry.year + ' übernehmen'"
+                    title="Vermögen übernehmen"
+                    (click)="$event.stopPropagation(); copy(entry.year)"
+                  >
+                    <mat-icon svgIcon="content_copy" />
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</mat-card>

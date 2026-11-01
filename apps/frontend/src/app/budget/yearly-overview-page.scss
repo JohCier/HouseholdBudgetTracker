@@ -1,0 +1,167 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+}
+h1 {
+  margin: 0;
+  font: var(--mat-sys-headline-small);
+}
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.load-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+.create mat-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding-top: 16px;
+}
+.create p {
+  margin: 0;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th,
+td {
+  padding: 12px 16px;
+  text-align: left;
+  vertical-align: top;
+}
+thead th {
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface-variant);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+.group-head > * {
+  padding-bottom: 0;
+  border-bottom: none;
+  text-align: center;
+  font: var(--mat-sys-label-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+/* The one-time totals are set apart from those of the plan (EP-13) */
+.one-time {
+  background: var(--mat-sys-surface-container-low);
+}
+.one-time.first {
+  border-left: 1px solid var(--mat-sys-outline-variant);
+}
+.no-plan {
+  color: var(--mat-sys-on-surface-variant);
+}
+tbody tr {
+  cursor: pointer;
+}
+tbody tr.plan-row:not(:nth-last-child(2)) {
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+tbody tr:hover {
+  background: var(--mat-sys-surface-container-high);
+}
+.one-time-row {
+  display: none;
+}
+tbody th a {
+  font: var(--mat-sys-title-medium);
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+}
+.amount {
+  text-align: right;
+}
+.actions {
+  width: 96px;
+  padding: 4px 8px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.delete-plan {
+  --mat-icon-button-icon-color: var(--mat-sys-error);
+  --mat-icon-button-state-layer-color: var(--mat-sys-error);
+}
+.deleted-plans {
+  align-self: flex-start;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+td.amount {
+  font-variant-numeric: tabular-nums;
+}
+.value,
+.deficit-label {
+  display: block;
+}
+.deficit-label {
+  font: var(--mat-sys-body-small);
+}
+.deficit,
+.deficit-label {
+  color: var(--mat-sys-error);
+}
+/* Scrolls inside the card rather than widening the page, should the amounts get very long (MA-1) */
+.years {
+  overflow-x: auto;
+}
+@media (max-width: 600px) {
+  th,
+  td {
+    padding: 8px 4px;
+  }
+  /* A row of its own for the one-time totals instead of three more columns (EP-18) */
+  .one-time,
+  .group-head {
+    display: none;
+  }
+  .one-time-row {
+    display: table-row;
+    font: var(--mat-sys-body-small);
+    background: var(--mat-sys-surface-container-low);
+  }
+  tbody tr.plan-row {
+    border-bottom: none !important;
+  }
+  tbody tr.one-time-row:not(:last-child) {
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+  .one-time-label {
+    font: var(--mat-sys-label-small);
+    color: var(--mat-sys-on-surface-variant);
+  }
+  /* The buttons on top of each other, so the four columns of amounts fit on a phone (MA-4) */
+  .actions {
+    width: 48px;
+    padding: 4px 0;
+  }
+  .actions button {
+    display: block;
+  }
+}

@@ -1,0 +1,176 @@
+@if (store.loading()) {
+  <mat-progress-bar mode="indeterminate" class="loading" />
+}
+
+<div class="heading">
+  <h1>Haushaltspläne</h1>
+  @if (store.hasPlans()) {
+    <mat-button-toggle-group
+      aria-label="Beträge monatlich oder jährlich"
+      [value]="store.period()"
+      (change)="store.setPeriod($event.value)"
+    >
+      @for (period of periods; track period.value) {
+        <mat-button-toggle [value]="period.value">{{ period.label }}</mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+  }
+</div>
+
+@if (store.loadError(); as error) {
+  <div class="load-error" role="alert">
+    <span>Daten konnten nicht geladen werden: {{ error }}</span>
+    <button matButton type="button" (click)="store.load()">Erneut versuchen</button>
+  </div>
+}
+
+@if (store.currentYearMissing()) {
+  <mat-card appearance="outlined" class="create">
+    <mat-card-content>
+      @if (store.empty()) {
+        <p>Noch keine Haushaltspläne.</p>
+      } @else {
+        <p>Für {{ store.currentYear }} gibt es noch keinen Haushaltsplan.</p>
+      }
+      <button matButton="filled" type="button" [disabled]="creating()" (click)="createPlan()">
+        Haushaltsplan anlegen
+      </button>
+    </mat-card-content>
+  </mat-card>
+}
+
+@if (store.years().length > 0) {
+  <mat-card appearance="outlined" class="years">
+    <table>
+      <thead>
+        <tr class="group-head">
+          <td></td>
+          <th scope="colgroup" colspan="3" class="group">Haushaltsplan</th>
+          <th scope="colgroup" colspan="3" class="group one-time first">Einmalig (Jahr)</th>
+          <td></td>
+        </tr>
+        <tr>
+          <th scope="col">Jahr</th>
+          <th scope="col" class="amount">Einnahmen</th>
+          <th scope="col" class="amount">Ausgaben</th>
+          <th scope="col" class="amount">Überschuss</th>
+          <th scope="col" class="amount one-time first">
+            <span class="visually-hidden">Einmalige </span>Einnahmen
+          </th>
+          <th scope="col" class="amount one-time">
+            <span class="visually-hidden">Einmalige </span>Ausgaben
+          </th>
+          <th scope="col" class="amount one-time">
+            <span class="visually-hidden">Einmaliger </span>Saldo
+          </th>
+          <th scope="col" class="actions"><span class="visually-hidden">Aktionen</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of store.years(); track entry.year) {
+          <tr (click)="open(entry.year)" [attr.data-year]="entry.year" class="plan-row">
+            <th scope="row">
+              <a [routerLink]="['/jahre', entry.year]" (click)="$event.stopPropagation()">{{
+                entry.year
+              }}</a>
+            </th>
+            @if (hasPlan(entry)) {
+              <td class="amount">
+                <span class="value">{{ income(entry) | currency: 'EUR' }}</span>
+                <app-year-change kind="income" [change]="entry.incomeChange" />
+              </td>
+              <td class="amount">
+                <span class="value">{{ expense(entry) | currency: 'EUR' }}</span>
+                <app-year-change kind="expense" [change]="entry.expenseChange" />
+              </td>
+              <td class="amount">
+                <span class="value" [class.deficit]="entry.expensesExceedIncome">
+                  {{ balance(entry) | currency: 'EUR' }}
+                </span>
+                @if (entry.expensesExceedIncome) {
+                  <span class="deficit-label">Defizit</span>
+                }
+                <app-year-change kind="balance" [change]="entry.balanceChange" />
+              </td>
+            } @else {
+              <!-- Only one-time items, no plan (EP-12) -->
+              @for (column of planColumns; track column) {
+                <td class="amount no-plan">
+                  <span class="value" [attr.aria-label]="'Kein Haushaltsplan'">–</span>
+                </td>
+              }
+            }
+            <td class="amount one-time first">
+              <span class="value">{{ entry.oneTimeIncome | currency: 'EUR' }}</span>
+            </td>
+            <td class="amount one-time">
+              <span class="value">{{ entry.oneTimeExpense | currency: 'EUR' }}</span>
+            </td>
+            <td class="amount one-time">
+              <ng-container *ngTemplateOutlet="oneTimeBalance; context: { $implicit: entry }" />
+            </td>
+            <td class="actions">
+              @if (hasPlan(entry)) {
+                <button
+                  matIconButton
+                  type="button"
+                  [attr.aria-label]="'Plan ' + entry.year + ' als Vorlage übernehmen'"
+                  title="Als Vorlage übernehmen"
+                  (click)="$event.stopPropagation(); copyPlan(entry.year)"
+                >
+                  <mat-icon svgIcon="content_copy" />
+                </button>
+                <button
+                  matIconButton
+                  type="button"
+                  class="delete-plan"
+                  [attr.aria-label]="'Plan ' + entry.year + ' löschen'"
+                  title="Plan löschen"
+                  (click)="$event.stopPropagation(); deletePlan(entry.year)"
+                >
+                  <mat-icon svgIcon="delete" />
+                </button>
+              }
+            </td>
+          </tr>
+          <!-- The one-time totals of the year on a phone, below those of the plan (EP-18) -->
+          <tr
+            class="one-time-row"
+            [attr.data-one-time-year]="entry.year"
+            (click)="open(entry.year)"
+          >
+            <th scope="row" class="one-time-label">Einmalig (Jahr)</th>
+            <td class="amount">
+              <span class="value">{{ entry.oneTimeIncome | currency: 'EUR' }}</span>
+            </td>
+            <td class="amount">
+              <span class="value">{{ entry.oneTimeExpense | currency: 'EUR' }}</span>
+            </td>
+            <td class="amount">
+              <ng-container *ngTemplateOutlet="oneTimeBalance; context: { $implicit: entry }" />
+            </td>
+            <td class="actions"></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </mat-card>
+}
+
+@if (store.deletedPlanCount() > 0) {
+  <a matButton routerLink="/geloeschte-plaene" class="deleted-plans">
+    <mat-icon svgIcon="delete" />
+    Gelöschte Pläne ({{ store.deletedPlanCount() }})
+  </a>
+}
+
+<!-- Independent of the plans: shown also without any, never in monthly amounts (VS-18, VS-19) -->
+<app-net-worth-card />
+<ng-template #oneTimeBalance let-entry>
+  <span class="value" [class.deficit]="entry.oneTimeExpensesExceedIncome">
+    {{ entry.oneTimeBalance | currency: 'EUR' }}
+  </span>
+  @if (entry.oneTimeExpensesExceedIncome) {
+    <span class="deficit-label">Defizit</span>
+  }
+</ng-template>

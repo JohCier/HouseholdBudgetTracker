@@ -1,0 +1,121 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.swatch-line {
+  position: relative;
+  width: 18px;
+  height: 2px;
+  background: var(--mat-sys-primary);
+}
+.swatch-line::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mat-sys-primary);
+}
+.swatch-bar {
+  width: 10px;
+  height: 12px;
+  border-radius: 2px;
+}
+.gain {
+  background: var(--app-gain-color);
+  fill: var(--app-gain-color);
+}
+.loss {
+  background: var(--app-loss-color);
+  fill: var(--app-loss-color);
+}
+/* Older years are reached by swiping within the chart, never by scrolling the page (VS-24) */
+.scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.plot {
+  position: relative;
+  min-width: 100%;
+}
+svg {
+  display: block;
+  overflow: visible;
+}
+text {
+  font:
+    12px Roboto,
+    sans-serif;
+  fill: var(--mat-sys-on-surface-variant);
+}
+text.label {
+  font-weight: 500;
+  fill: var(--mat-sys-on-surface);
+}
+.grid {
+  stroke: var(--mat-sys-outline-variant);
+}
+.zero {
+  stroke: var(--mat-sys-outline);
+}
+.line {
+  fill: none;
+  stroke: var(--mat-sys-primary);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.point {
+  fill: var(--mat-sys-primary);
+  stroke: var(--mat-sys-surface);
+  stroke-width: 2;
+}
+.highlight {
+  fill: var(--mat-sys-on-surface);
+  opacity: 0.06;
+}
+.hit {
+  fill: transparent;
+  cursor: pointer;
+  outline: none;
+}
+.hit:focus-visible {
+  stroke: var(--mat-sys-primary);
+  stroke-width: 2;
+}
+.tooltip {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--mat-sys-inverse-surface);
+  color: var(--mat-sys-inverse-on-surface);
+  font: var(--mat-sys-body-small);
+  box-sizing: border-box;
+  max-width: 240px;
+  pointer-events: none;
+  box-shadow: var(--mat-sys-level2);
+}
+.tooltip b {
+  font: var(--mat-sys-label-large);
+}
+.hint {
+  margin: 8px 0 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

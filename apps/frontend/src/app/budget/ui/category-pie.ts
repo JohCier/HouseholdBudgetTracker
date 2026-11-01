@@ -19,6 +19,7 @@ import {
   missedTargetLabel,
   targetLabel,
 } from '../budget.model';
+import { RADIUS, arc, shades, sorted } from './category-pie-drawing';
 
 /** One slice of the pie and its line in the legend. */
 interface PieEntry {
@@ -55,8 +56,6 @@ interface SelectionOption {
   nested: boolean;
 }
 
-const RADIUS = 80;
-
 const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   LEBENSUNTERHALT: 'var(--app-lebensunterhalt-color)',
   FREIZEIT_SPASS: 'var(--app-freizeit-spass-color)',
@@ -65,9 +64,6 @@ const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
 
 /** Color of the slice "nicht verplant" (TK-9, TK-10). */
 const UNPLANNED_FILL = 'var(--mat-sys-outline)';
-
-/** Lightest shade of a category color, in percent of the color mixed into the surface (TK-10). */
-const LIGHTEST_SHADE = 40;
 
 /**
  * Pie chart of the plan (TD-2 to TD-9, TK-1 to TK-14). By default it shows the 50/30/20 breakdown;
@@ -86,182 +82,7 @@ const LIGHTEST_SHADE = 40;
     MatIconModule,
     MatSelectModule,
   ],
-  template: `
-    <div class="selection">
-      <mat-form-field class="selection-field" subscriptSizing="dynamic">
-        <mat-label>Ausschnitt</mat-label>
-        <mat-select [value]="shownKey()" (selectionChange)="selectKey($event.value)">
-          <mat-select-trigger>{{ shownLabel() }}</mat-select-trigger>
-          @for (option of options(); track option.key) {
-            <mat-option
-              [value]="option.key"
-              [class.nested-option]="option.nested"
-              [attr.aria-label]="option.fullLabel"
-            >
-              {{ option.label }}
-            </mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-      @if (shown().level !== 'rule') {
-        <button mat-button type="button" class="back" (click)="back()">
-          <mat-icon svgIcon="arrow_back" />
-          Zurück
-        </button>
-        <div class="sort">
-          <mat-form-field class="sort-field" subscriptSizing="dynamic">
-            <mat-label>Sortierung</mat-label>
-            <mat-select [value]="sort().key" (selectionChange)="sortBy($event.value)">
-              <mat-option value="entries">Einträge</mat-option>
-              <mat-option value="amount">Betrag</mat-option>
-              <mat-option value="name">Name</mat-option>
-            </mat-select>
-          </mat-form-field>
-          @if (sort().key !== 'entries') {
-            @let direction = sort().descending ? 'absteigend' : 'aufsteigend';
-            <button
-              mat-icon-button
-              type="button"
-              class="direction"
-              [attr.aria-label]="'Richtung: ' + direction"
-              [attr.title]="'Richtung: ' + direction"
-              (click)="reverse()"
-            >
-              <mat-icon [svgIcon]="sort().descending ? 'arrow_downward' : 'arrow_upward'" />
-            </button>
-          }
-        </div>
-      }
-    </div>
-    <svg viewBox="-100 -100 200 200" class="pie" role="group" aria-label="Tortendiagramm">
-      @for (slice of slices(); track slice.entry.key) {
-        @let e = slice.entry;
-        @let description =
-          e.label +
-          ': ' +
-          (e.monthly | currency: 'EUR') +
-          ' im Monat, ' +
-          (e.percentage | number: '1.0-2') +
-          ' ' +
-          e.percentUnit;
-        @let ariaLabel =
-          e.target ? description + '; ' + targetLabel(e.target) + ' anzeigen' : description;
-        @if (slice.path; as path) {
-          <path
-            class="slice"
-            [class]="e.cssClass"
-            [class.selectable]="e.target"
-            [style.fill]="e.fill"
-            [attr.d]="path"
-            [attr.role]="e.target ? 'button' : 'img'"
-            [attr.tabindex]="e.target ? 0 : null"
-            [attr.aria-label]="ariaLabel"
-            [class.highlighted]="highlighted() === e.key"
-            (click)="open(e)"
-            (keydown.enter)="open(e)"
-            (mouseenter)="highlight(e)"
-            (mouseleave)="unhighlight(e)"
-            (focus)="highlight(e)"
-            (blur)="unhighlight(e)"
-          >
-            <title>{{ description }}</title>
-          </path>
-        } @else {
-          <circle
-            class="slice"
-            [class]="e.cssClass"
-            [class.selectable]="e.target"
-            [style.fill]="e.fill"
-            [attr.r]="radius"
-            [attr.role]="e.target ? 'button' : 'img'"
-            [attr.tabindex]="e.target ? 0 : null"
-            [attr.aria-label]="ariaLabel"
-            [class.highlighted]="highlighted() === e.key"
-            (click)="open(e)"
-            (keydown.enter)="open(e)"
-            (mouseenter)="highlight(e)"
-            (mouseleave)="unhighlight(e)"
-            (focus)="highlight(e)"
-            (blur)="unhighlight(e)"
-          >
-            <title>{{ description }}</title>
-          </circle>
-        }
-      } @empty {
-        <circle class="empty" [attr.r]="radius" />
-      }
-    </svg>
-    @if (slices().length === 0) {
-      <p class="empty-hint">{{ emptyHint() }}</p>
-    }
-    @let s = shown();
-    @if (s.level === 'rule') {
-      <ul class="legend">
-        @for (breakdown of breakdowns(); track breakdown.category) {
-          <li
-            class="legend-item"
-            [class.missed]="!breakdown.targetMet"
-            [class.highlighted]="highlighted() === breakdown.category"
-          >
-            <span class="swatch" [class]="breakdown.category"></span>
-            <div class="legend-text">
-              <div class="legend-header">
-                <span class="name">{{ label(breakdown.category) }}</span>
-                <span class="total">{{ breakdown.monthlyTotal | currency: 'EUR' }}</span>
-              </div>
-              @if (hasUnplanned(breakdown)) {
-                <span class="unplanned">
-                  davon nicht verplant: {{ breakdown.monthlyUnplanned | currency: 'EUR' }}
-                </span>
-              }
-              <span class="ratio">
-                {{ breakdown.actualPercentageOfIncome | number: '1.0-2' }} % von
-                {{ target(breakdown) }} %
-                @if (!breakdown.targetMet) {
-                  · {{ missed(breakdown) }}
-                }
-              </span>
-            </div>
-          </li>
-        }
-      </ul>
-    } @else {
-      @let breakdown = breakdownOf(s.category);
-      <div
-        class="selection-summary"
-        [class.missed]="s.level === 'category' && !breakdown?.targetMet"
-      >
-        <div class="legend-header">
-          <span class="name">{{ shownLabel() }}</span>
-          <span class="total">{{ shownMonthlyTotal() | currency: 'EUR' }}</span>
-        </div>
-        @if (s.level === 'category' && breakdown) {
-          <span class="ratio">
-            {{ breakdown.actualPercentageOfIncome | number: '1.0-2' }} % des Einkommens von
-            {{ target(breakdown) }} %
-            @if (!breakdown.targetMet) {
-              · {{ missed(breakdown) }}
-            }
-          </span>
-        }
-      </div>
-      <ul class="legend">
-        @for (entry of entries(); track entry.key) {
-          <li class="legend-item" [class.highlighted]="highlighted() === entry.key">
-            <span class="swatch" [style.background-color]="entry.fill"></span>
-            <div class="legend-text">
-              <div class="legend-header">
-                <span class="name">{{ entry.label }}</span>
-                <span class="total">
-                  {{ entry.monthly | currency: 'EUR' }} · {{ entry.percentage | number: '1.0-2' }} %
-                </span>
-              </div>
-            </div>
-          </li>
-        }
-      </ul>
-    }
-  `,
+  templateUrl: './category-pie.html',
   styleUrl: './category-pie.scss',
 })
 export class CategoryPieChart {
@@ -558,55 +379,4 @@ function selectionLabel(selection: PieSelection): string {
     case 'group':
       return `${categoryLabel(selection.category)} › ${selection.subcategory}`;
   }
-}
-
-const NAME_COLLATOR = new Intl.Collator('de', { sensitivity: 'base' });
-
-/**
- * The slices in the chosen order (TS-1 to TS-3); the shades follow it (TS-4). Ties keep the order
- * of the entries, since the sort is stable.
- */
-function sorted<T>(
-  values: readonly T[],
-  sort: PieSort,
-  monthly: (value: T) => string,
-  name: (value: T) => string,
-): T[] {
-  if (sort.key === 'entries') {
-    return [...values];
-  }
-  const direction = sort.descending ? -1 : 1;
-  const compare =
-    sort.key === 'amount'
-      ? (a: T, b: T) => Number(monthly(a)) - Number(monthly(b))
-      : (a: T, b: T) => NAME_COLLATOR.compare(name(a), name(b));
-  return [...values].sort((a, b) => direction * compare(a, b));
-}
-
-/** Shades of a color from full strength down to the lightest, mixed into the surface (TK-10). */
-function shades(color: string, count: number): string[] {
-  return Array.from({ length: count }, (_, index) => {
-    const strength =
-      count <= 1 ? 100 : Math.round(100 - ((100 - LIGHTEST_SHADE) * index) / (count - 1));
-    return strength === 100
-      ? color
-      : `color-mix(in srgb, ${color} ${strength}%, var(--mat-sys-surface))`;
-  });
-}
-
-/** Path of a pie slice between two fractions of the full circle, starting at twelve o'clock. */
-function arc(start: number, end: number): string {
-  const [x1, y1] = point(start);
-  const [x2, y2] = point(end);
-  const largeArc = end - start > 0.5 ? 1 : 0;
-  return `M 0 0 L ${x1} ${y1} A ${RADIUS} ${RADIUS} 0 ${largeArc} 1 ${x2} ${y2} Z`;
-}
-
-function point(fraction: number): [number, number] {
-  const angle = fraction * 2 * Math.PI;
-  return [round(RADIUS * Math.sin(angle)), round(-RADIUS * Math.cos(angle))];
-}
-
-function round(value: number): number {
-  return Math.round(value * 1000) / 1000;
 }

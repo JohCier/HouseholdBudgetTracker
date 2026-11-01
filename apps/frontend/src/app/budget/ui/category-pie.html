@@ -1,0 +1,174 @@
+<div class="selection">
+  <mat-form-field class="selection-field" subscriptSizing="dynamic">
+    <mat-label>Ausschnitt</mat-label>
+    <mat-select [value]="shownKey()" (selectionChange)="selectKey($event.value)">
+      <mat-select-trigger>{{ shownLabel() }}</mat-select-trigger>
+      @for (option of options(); track option.key) {
+        <mat-option
+          [value]="option.key"
+          [class.nested-option]="option.nested"
+          [attr.aria-label]="option.fullLabel"
+        >
+          {{ option.label }}
+        </mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  @if (shown().level !== 'rule') {
+    <button mat-button type="button" class="back" (click)="back()">
+      <mat-icon svgIcon="arrow_back" />
+      Zurück
+    </button>
+    <div class="sort">
+      <mat-form-field class="sort-field" subscriptSizing="dynamic">
+        <mat-label>Sortierung</mat-label>
+        <mat-select [value]="sort().key" (selectionChange)="sortBy($event.value)">
+          <mat-option value="entries">Einträge</mat-option>
+          <mat-option value="amount">Betrag</mat-option>
+          <mat-option value="name">Name</mat-option>
+        </mat-select>
+      </mat-form-field>
+      @if (sort().key !== 'entries') {
+        @let direction = sort().descending ? 'absteigend' : 'aufsteigend';
+        <button
+          mat-icon-button
+          type="button"
+          class="direction"
+          [attr.aria-label]="'Richtung: ' + direction"
+          [attr.title]="'Richtung: ' + direction"
+          (click)="reverse()"
+        >
+          <mat-icon [svgIcon]="sort().descending ? 'arrow_downward' : 'arrow_upward'" />
+        </button>
+      }
+    </div>
+  }
+</div>
+<svg viewBox="-100 -100 200 200" class="pie" role="group" aria-label="Tortendiagramm">
+  @for (slice of slices(); track slice.entry.key) {
+    @let e = slice.entry;
+    @let description =
+      e.label +
+      ': ' +
+      (e.monthly | currency: 'EUR') +
+      ' im Monat, ' +
+      (e.percentage | number: '1.0-2') +
+      ' ' +
+      e.percentUnit;
+    @let ariaLabel =
+      e.target ? description + '; ' + targetLabel(e.target) + ' anzeigen' : description;
+    @if (slice.path; as path) {
+      <path
+        class="slice"
+        [class]="e.cssClass"
+        [class.selectable]="e.target"
+        [style.fill]="e.fill"
+        [attr.d]="path"
+        [attr.role]="e.target ? 'button' : 'img'"
+        [attr.tabindex]="e.target ? 0 : null"
+        [attr.aria-label]="ariaLabel"
+        [class.highlighted]="highlighted() === e.key"
+        (click)="open(e)"
+        (keydown.enter)="open(e)"
+        (mouseenter)="highlight(e)"
+        (mouseleave)="unhighlight(e)"
+        (focus)="highlight(e)"
+        (blur)="unhighlight(e)"
+      >
+        <title>{{ description }}</title>
+      </path>
+    } @else {
+      <circle
+        class="slice"
+        [class]="e.cssClass"
+        [class.selectable]="e.target"
+        [style.fill]="e.fill"
+        [attr.r]="radius"
+        [attr.role]="e.target ? 'button' : 'img'"
+        [attr.tabindex]="e.target ? 0 : null"
+        [attr.aria-label]="ariaLabel"
+        [class.highlighted]="highlighted() === e.key"
+        (click)="open(e)"
+        (keydown.enter)="open(e)"
+        (mouseenter)="highlight(e)"
+        (mouseleave)="unhighlight(e)"
+        (focus)="highlight(e)"
+        (blur)="unhighlight(e)"
+      >
+        <title>{{ description }}</title>
+      </circle>
+    }
+  } @empty {
+    <circle class="empty" [attr.r]="radius" />
+  }
+</svg>
+@if (slices().length === 0) {
+  <p class="empty-hint">{{ emptyHint() }}</p>
+}
+@let s = shown();
+@if (s.level === 'rule') {
+  <ul class="legend">
+    @for (breakdown of breakdowns(); track breakdown.category) {
+      <li
+        class="legend-item"
+        [class.missed]="!breakdown.targetMet"
+        [class.highlighted]="highlighted() === breakdown.category"
+      >
+        <span class="swatch" [class]="breakdown.category"></span>
+        <div class="legend-text">
+          <div class="legend-header">
+            <span class="name">{{ label(breakdown.category) }}</span>
+            <span class="total">{{ breakdown.monthlyTotal | currency: 'EUR' }}</span>
+          </div>
+          @if (hasUnplanned(breakdown)) {
+            <span class="unplanned">
+              davon nicht verplant: {{ breakdown.monthlyUnplanned | currency: 'EUR' }}
+            </span>
+          }
+          <span class="ratio">
+            {{ breakdown.actualPercentageOfIncome | number: '1.0-2' }} % von
+            {{ target(breakdown) }} %
+            @if (!breakdown.targetMet) {
+              · {{ missed(breakdown) }}
+            }
+          </span>
+        </div>
+      </li>
+    }
+  </ul>
+} @else {
+  @let breakdown = breakdownOf(s.category);
+  <div
+    class="selection-summary"
+    [class.missed]="s.level === 'category' && !breakdown?.targetMet"
+  >
+    <div class="legend-header">
+      <span class="name">{{ shownLabel() }}</span>
+      <span class="total">{{ shownMonthlyTotal() | currency: 'EUR' }}</span>
+    </div>
+    @if (s.level === 'category' && breakdown) {
+      <span class="ratio">
+        {{ breakdown.actualPercentageOfIncome | number: '1.0-2' }} % des Einkommens von
+        {{ target(breakdown) }} %
+        @if (!breakdown.targetMet) {
+          · {{ missed(breakdown) }}
+        }
+      </span>
+    }
+  </div>
+  <ul class="legend">
+    @for (entry of entries(); track entry.key) {
+      <li class="legend-item" [class.highlighted]="highlighted() === entry.key">
+        <span class="swatch" [style.background-color]="entry.fill"></span>
+        <div class="legend-text">
+          <div class="legend-header">
+            <span class="name">{{ entry.label }}</span>
+            <span class="total">
+              {{ entry.monthly | currency: 'EUR' }} · {{ entry.percentage | number: '1.0-2' }} %
+            </span>
+          </div>
+        </div>
+      </li>
+    }
+  </ul>
+}
