@@ -205,7 +205,7 @@ public final class HouseholdPlan {
     public BudgetItemId addIncome(BudgetItemDescription description, ItemAmount amount,
                                   BudgetItemSubcategory subcategory, BudgetItemNote note, boolean important) {
         BudgetItem item = BudgetItem.income(BudgetItemId.generate(), description, amount,
-                spellingOf(subcategory, null), note).withImportant(important);
+                ItemGroups.spellingOf(items, subcategory, null), note).withImportant(important);
         items.addLast(item);
         record(new IncomeAdded(id, item.id(), Instant.now()));
         return item.id();
@@ -234,7 +234,8 @@ public final class HouseholdPlan {
                                    BudgetItemSubcategory subcategory, BudgetItemNote note, boolean important,
                                    SavingPotential savingPotential) {
         BudgetItem item = BudgetItem.expense(BudgetItemId.generate(), description, amount, category,
-                spellingOf(subcategory, null), note).withImportant(important).withSavingPotential(savingPotential);
+                ItemGroups.spellingOf(items, subcategory, null), note)
+                .withImportant(important).withSavingPotential(savingPotential);
         items.addLast(item);
         record(new ExpenseAdded(id, item.id(), Instant.now()));
         return item.id();
@@ -253,9 +254,10 @@ public final class HouseholdPlan {
      */
     public void changeItem(BudgetItemId itemId, BudgetItemDescription description, ItemAmount amount,
                            ExpenseCategory category, BudgetItemSubcategory subcategory, BudgetItemNote note) {
-        int index = indexOf(itemId);
+        int index = ItemGroups.indexOf(items, itemId);
         BudgetItem current = items.get(index);
-        BudgetItem changed = current.changedTo(description, amount, category, spellingOf(subcategory, itemId), note);
+        BudgetItem changed = current.changedTo(description, amount, category,
+                ItemGroups.spellingOf(items, subcategory, itemId), note);
         if (changed.hasSameValuesAs(current)) {
             return;
         }
@@ -276,7 +278,7 @@ public final class HouseholdPlan {
      * @throws BudgetItemNotFoundException if the item is not part of this plan
      */
     public void markImportant(BudgetItemId itemId, boolean important) {
-        int index = indexOf(itemId);
+        int index = ItemGroups.indexOf(items, itemId);
         BudgetItem current = items.get(index);
         if (current.isImportant() == important) {
             return;
@@ -294,7 +296,7 @@ public final class HouseholdPlan {
      * @throws DomainValidationException   if the item is an income, or the saving potential exceeds its monthly amount (PM-2a)
      */
     public void changeSavingPotential(BudgetItemId itemId, SavingPotential savingPotential) {
-        int index = indexOf(itemId);
+        int index = ItemGroups.indexOf(items, itemId);
         BudgetItem current = items.get(index);
         BudgetItem changed = current.withSavingPotential(savingPotential);
         if (changed.hasSameValuesAs(current)) {
@@ -303,15 +305,6 @@ public final class HouseholdPlan {
         items.set(index, changed);
         record(new BudgetItemMarked(id, itemId, BudgetItemMarked.Mark.SAVING_POTENTIAL, savingPotential != null,
                 Instant.now()));
-    }
-
-    private int indexOf(BudgetItemId itemId) {
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).hasId(itemId)) {
-                return i;
-            }
-        }
-        throw new BudgetItemNotFoundException(itemId);
     }
 
     /**
@@ -334,32 +327,7 @@ public final class HouseholdPlan {
      * @throws DomainValidationException   if the items are not exactly those of one group
      */
     public void reorderItems(List<BudgetItemId> order) {
-        Objects.requireNonNull(order, "order must not be null");
-        if (order.isEmpty()) {
-            throw new DomainValidationException("the order must name the items of a group");
-        }
-        BudgetItem first = items.get(indexOf(order.getFirst()));
-        List<Integer> positions = new ArrayList<>();
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).isInSameGroupAs(first)) {
-                positions.add(i);
-            }
-        }
-        List<BudgetItem> reordered = new ArrayList<>();
-        for (BudgetItemId itemId : order) {
-            BudgetItem item = items.get(indexOf(itemId));
-            if (!item.isInSameGroupAs(first) || reordered.contains(item)) {
-                throw new DomainValidationException("the order must name each item of one group once");
-            }
-            reordered.add(item);
-        }
-        if (reordered.size() != positions.size()) {
-            throw new DomainValidationException("the order must name all items of the group");
-        }
-        boolean changed = false;
-        for (int i = 0; i < positions.size(); i++) {
-            changed |= !items.set(positions.get(i), reordered.get(i)).equals(reordered.get(i));
-        }
+        boolean changed = ItemGroups.reorder(items, order);
         if (changed) {
             record(new BudgetItemsReordered(id, Instant.now()));
         }
@@ -375,7 +343,7 @@ public final class HouseholdPlan {
     public void reorderSubcategories(ItemSection section, List<BudgetItemSubcategory> order) {
         Objects.requireNonNull(section, "section must not be null");
         SubcategoryOrder arranged = new SubcategoryOrder(order);
-        List<BudgetItemSubcategory> groups = groupsOf(section);
+        List<BudgetItemSubcategory> groups = ItemGroups.of(items, section);
         if (groups.size() != arranged.subcategories().size() || !groups.stream().allMatch(arranged::names)) {
             throw new DomainValidationException("the order must name all subcategories of the section");
         }
@@ -386,46 +354,16 @@ public final class HouseholdPlan {
         }
     }
 
-    /** The subcategory groups the section has, each once, in the spelling of its items. */
-    private List<BudgetItemSubcategory> groupsOf(ItemSection section) {
-        List<BudgetItemSubcategory> groups = new ArrayList<>();
-        for (BudgetItem item : items) {
-            if (item.section().equals(section) && groups.stream().noneMatch(item.group()::isSameAs)) {
-                groups.add(item.group());
-            }
-        }
-        return groups;
-    }
-
     /** Drops the groups that have no items any more from the arranged orders, so they count as new should they come back (UK-18). */
     private void forgetVanishedGroups() {
         for (ItemSection section : List.copyOf(subcategoryOrders.keySet())) {
-            SubcategoryOrder remaining = subcategoryOrders.get(section).retainingOnly(groupsOf(section));
+            SubcategoryOrder remaining = subcategoryOrders.get(section).retainingOnly(ItemGroups.of(items, section));
             if (remaining.isEmpty()) {
                 subcategoryOrders.remove(section);
             } else {
                 subcategoryOrders.put(section, remaining);
             }
         }
-    }
-
-    /**
-     * The spelling an item gets for the given subcategory: that of another item of the plan with
-     * the same subcategory if there is one, so a group is spelled alike (UK-5); "Sonstiges" always
-     * as {@link BudgetItemSubcategory#OTHER}.
-     *
-     * @param itemId the item the subcategory is for, which does not count as another; {@code null} for a new one
-     */
-    private BudgetItemSubcategory spellingOf(BudgetItemSubcategory subcategory, BudgetItemId itemId) {
-        if (subcategory == null || subcategory.isOther()) {
-            return subcategory == null ? null : BudgetItemSubcategory.OTHER;
-        }
-        return items.stream()
-                .filter(item -> !item.hasId(itemId))
-                .flatMap(item -> item.subcategory().stream())
-                .filter(subcategory::isSameAs)
-                .findFirst()
-                .orElse(subcategory);
     }
 
     /** Income, expenses per category and balance of all items of this plan. */
