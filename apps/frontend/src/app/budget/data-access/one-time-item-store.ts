@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, firstValueFrom } from 'rxjs';
 import { toMessage } from '../../shared/http-error';
 import { OneTimeItem, OneTimeItemOverview, OneTimeItemRequest, Year } from '../budget.model';
-import { currentYear } from '../year';
+import { currentYear } from '../../shared/year';
 import { OneTimeItemApi } from './one-time-item-api';
 
 /**

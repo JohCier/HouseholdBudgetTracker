@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { toMessage } from '../../shared/http-error';
 import { AmountPeriod, Year, YearlyOverviewEntry } from '../budget.model';
-import { currentYear } from '../year';
+import { currentYear } from '../../shared/year';
 import { BudgetApi } from './budget-api';
 
 /** Where the browser remembers whether the overview shows monthly or yearly amounts (JM-7). */

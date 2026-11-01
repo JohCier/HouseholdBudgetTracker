@@ -9,6 +9,7 @@ import { BudgetItem, HouseholdPlanOverview, YearlyOverviewEntry } from './budget
 import { BudgetApi } from './data-access/budget-api';
 import { BudgetStore } from './data-access/budget-store';
 import { OneTimeItemStore } from './data-access/one-time-item-store';
+import { PlanCopy } from './ui/copy-plan-dialog';
 
 const item: BudgetItem = {
   id: '1',
@@ -431,7 +432,9 @@ describe('BudgetDashboard', () => {
       .find((button) => button.textContent?.includes('Als Vorlage übernehmen'))!
       .click();
 
-    expect(dialog.open).toHaveBeenCalledWith(expect.anything(), { data: { sourceYear: 2026 } });
+    expect(dialog.open).toHaveBeenCalledWith(expect.anything(), {
+      data: { sourceYear: 2026, kind: PlanCopy },
+    });
     await vi.waitFor(() =>
       expect(snackBar.open).toHaveBeenCalledWith('Plan 2026 nach 2027 übernommen.', undefined, {
         duration: 3000,
@@ -529,7 +532,7 @@ describe('BudgetDashboard', () => {
       .click();
 
     expect(dialog.open).toHaveBeenCalledWith(expect.anything(), {
-      data: { targetYear: 2030, sourceYears: [2031, 2025] },
+      data: { targetYear: 2030, sourceYears: [2031, 2025], kind: PlanCopy },
     });
     await vi.waitFor(() =>
       expect(snackBar.open).toHaveBeenCalledWith('Plan 2025 nach 2030 übernommen.', undefined, {

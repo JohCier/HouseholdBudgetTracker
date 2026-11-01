@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Subject, of, throwError } from 'rxjs';
 import { BudgetItem, HouseholdPlanOverview } from '../budget.model';
-import { currentYear } from '../year';
+import { currentYear } from '../../shared/year';
 import { BudgetApi } from './budget-api';
 import { BudgetStore } from './budget-store';
 

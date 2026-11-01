@@ -40,8 +40,7 @@ export type OneTimeItemRequest = Schemas['OneTimeItemRequest'];
 export type CreatedOneTimeItemResponse = Schemas['CreatedOneTimeItemResponse'];
 export type MoveOneTimeItemRequest = Schemas['MoveOneTimeItemRequest'];
 
-/** A calendar year, e.g. 2026. */
-export type Year = number;
+export type { Year } from '../shared/year';
 
 export interface CategoryInfo {
   value: ExpenseCategory;

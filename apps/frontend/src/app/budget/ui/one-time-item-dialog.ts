@@ -20,7 +20,7 @@ import { MatInputModule } from '@angular/material/input';
 import { Observable } from 'rxjs';
 import { ITEM_TYPES, ItemType, OneTimeItem, Year } from '../budget.model';
 import { OneTimeItemStore } from '../data-access/one-time-item-store';
-import { defaultDateIn } from '../year';
+import { defaultDateIn } from '../../shared/year';
 import { NOTE_MAX_LENGTH, maxTwoDecimals, noteOf } from './item-validators';
 
 /** The first and last day a one-time item can have (EP-3). */
