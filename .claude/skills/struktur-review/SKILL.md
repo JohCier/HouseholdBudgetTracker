@@ -35,11 +35,12 @@ Jeweils nur die Ausgabe der Befehle auswerten; Dateien erst lesen, wenn ein Tref
 3. **Verstreute Versionen**:
 
    ```bash
-   git grep -nE 'postgres:[0-9]|temurin:[0-9]|java-version|<java.version>|node:[0-9$]|openjdk-[0-9]+' -- ':!**/package-lock.json'
+   git grep -nE 'postgres:[0-9]|temurin:[0-9]|java-version|<java.version>|node:[0-9$]|NODE_VERSION=[0-9]|openjdk-[0-9]+' -- ':!**/package-lock.json'
    ```
 
-   Jede Version, die an mehr als einer Stelle von Hand steht, melden, mit der Stelle, die Quelle sein sollte. Prüfen,
-   ob `.github/dependabot.yml` alle Stellen erreicht.
+   Mit der Tabelle der Quellen in `.claude/rules/struktur.md` abgleichen: Jede Version, die außerhalb ihrer Quelle von
+   Hand steht und weder von dort gelesen noch von der CI geprüft wird, melden. Prüfen, ob `.github/dependabot.yml` alle
+   Stellen erreicht (jede `package-lock.json`, jedes Dockerfile, jede Compose-Datei).
 4. **Wachsende Aufzählungen**: Klassen mit vielen gleich gebauten Methoden, z. B.
    `grep -c '@ExceptionHandler' $(find apps -name GlobalExceptionHandler.java)`; Listen in CI, compose oder Dependabot,
    die je App einen fast gleichen Block haben.
