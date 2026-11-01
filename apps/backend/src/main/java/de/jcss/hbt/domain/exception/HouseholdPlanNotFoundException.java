@@ -7,13 +7,15 @@ import java.time.Year;
 /**
  * Thrown when a {@code HouseholdPlan} is referenced by an id or a year it does not exist for.
  */
-public class HouseholdPlanNotFoundException extends RuntimeException {
+public class HouseholdPlanNotFoundException extends NotFoundException {
+
+    private static final String CODE = "plan-not-found";
 
     public HouseholdPlanNotFoundException(HouseholdPlanId id) {
-        super("Household plan not found: " + id.value());
+        super(CODE, "Household plan not found: " + id.value());
     }
 
     public HouseholdPlanNotFoundException(Year year) {
-        super("No household plan for " + year);
+        super(CODE, "No household plan for " + year);
     }
 }
