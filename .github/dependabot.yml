@@ -6,7 +6,8 @@ updates:
     schedule:
       interval: daily
   - package-ecosystem: npm
-    directory: /
+    # / is the npm workspace (frontend, shared-types); e2e has its own package-lock.json outside the workspace
+    directories: [/, /e2e]
     schedule:
       interval: daily
     groups:
@@ -14,6 +15,11 @@ updates:
         patterns: ["@angular/*", "@angular-devkit/*"]
   - package-ecosystem: docker
     directories: [/apps/backend, /apps/users, /apps/frontend]
+    schedule:
+      interval: daily
+  # Postgres image in compose.yaml and compose.prod.yaml; the Testcontainers tests read it from compose.yaml
+  - package-ecosystem: docker-compose
+    directory: /
     schedule:
       interval: daily
   - package-ecosystem: github-actions

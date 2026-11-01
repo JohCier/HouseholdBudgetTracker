@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 # Build context: repository root (the build needs the npm workspace and packages/shared-types)
 
-# Node major version; CI passes the value from apps/frontend/.nvmrc.
+# Node major version, source is apps/frontend/.nvmrc. The image build in ci.yml passes it from there; compose.yaml
+# (local stack, E2E tests) uses this default, which the job "frontend" in ci.yml checks against .nvmrc.
 ARG NODE_VERSION=22
 
 # --- Build: Angular-App bauen -------------------------------------------------

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Prepares a Claude Code cloud session so that builds and all tests run:
-# JDK 25 (the image only ships 21), a current Node (the image's is too old for the
+# the JDK from .java-version (the image only ships 21), a current Node (the image's is too old for the
 # Angular CLI), a Docker daemon for Testcontainers, and the npm and Maven dependencies. Idempotent; does nothing outside cloud sessions.
 set -euo pipefail
 
@@ -11,14 +11,15 @@ fi
 cd "$CLAUDE_PROJECT_DIR"
 ENV_FILE="${CLAUDE_ENV_FILE:-/dev/null}"
 
-# JDK 25 for apps/backend and apps/users
-JDK=/usr/lib/jvm/java-25-openjdk-amd64
+# JDK for apps/backend and apps/users, version from .java-version (like the CI)
+JAVA_VERSION="$(cat .java-version)"
+JDK=/usr/lib/jvm/java-$JAVA_VERSION-openjdk-amd64
 if [ ! -x "$JDK/bin/java" ]; then
   export DEBIAN_FRONTEND=noninteractive
-  apt-get install -y -qq openjdk-25-jdk-headless >/dev/null \
-    || { apt-get update -qq && apt-get install -y -qq openjdk-25-jdk-headless >/dev/null; }
+  apt-get install -y -qq "openjdk-$JAVA_VERSION-jdk-headless" >/dev/null \
+    || { apt-get update -qq && apt-get install -y -qq "openjdk-$JAVA_VERSION-jdk-headless" >/dev/null; }
 fi
-# java and javac on the default PATH point to JDK 25 even if JAVA_HOME and PATH below do not reach the Bash tool
+# java and javac on the default PATH point to the JDK even if JAVA_HOME and PATH below do not reach the Bash tool
 update-alternatives --set java "$JDK/bin/java" >/dev/null 2>&1 || true
 update-alternatives --set javac "$JDK/bin/javac" >/dev/null 2>&1 || true
 
@@ -31,7 +32,9 @@ if ! docker info >/dev/null 2>&1; then
   done
 fi
 if docker info >/dev/null 2>&1; then
-  docker image inspect postgres:18-alpine >/dev/null 2>&1 || docker pull -q postgres:18-alpine >/dev/null || true
+  # Postgres image of the Testcontainers tests, read from compose.yaml like TestcontainersConfiguration does
+  PG_IMAGE="$(grep -m1 -oE 'image:[[:space:]]*postgres:[^[:space:]]+' compose.yaml | sed -E 's/image:[[:space:]]*//')"
+  docker image inspect "$PG_IMAGE" >/dev/null 2>&1 || docker pull -q "$PG_IMAGE" >/dev/null || true
 else
   echo "Docker did not start (see /tmp/dockerd.log); only ./mvnw test works, not ./mvnw verify" >&2
 fi

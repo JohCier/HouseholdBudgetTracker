@@ -18,7 +18,8 @@
 #   changes    determines the apps to build
 #   java       Maven (./mvnw verify -pl apps/<app>) for the changed Java apps, incl. Testcontainers and the OpenAPI contract check;
 #              skipped if no Java app changed
-#   frontend   npm: tests and Angular build of the frontend; skipped if the frontend did not change
+#   frontend   npm: tests and Angular build of the frontend, check that the default Node version in the frontend
+#              Dockerfile matches apps/frontend/.nvmrc; skipped if the frontend did not change
 #   e2e        calls the workflow e2e.yml (Playwright against the whole stack from compose.yaml). Not for pull requests,
 #              there e2e.yml runs on its own only with the label "e2e". Otherwise runs only if the frontend or the E2E
 #              tests changed (backend-only changes are not E2E-tested).
@@ -147,14 +148,16 @@ jobs:
           - app: frontend
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      # Defined once here (YAML anchor), reused in the job "cve-scan"; Java version from .java-version
+      - &setup-java
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '25'
+          java-version-file: .java-version
           cache: maven
           cache-dependency-path: |
             pom.xml
-            apps/${{ matrix.app }}/pom.xml
+            apps/*/pom.xml
       # Only this service (-pl), the parent comes from the repository root. Includes Testcontainers (PostgreSQL) and
       # the OpenAPI contract check against packages/shared-types/openapi
       - run: ./mvnw -B verify -pl apps/${{ matrix.app }}
@@ -172,6 +175,10 @@ jobs:
           node-version-file: apps/frontend/.nvmrc
           cache: npm
           cache-dependency-path: package-lock.json
+      # compose.yaml (local stack, E2E tests) builds the frontend image with the default of ARG NODE_VERSION, so it
+      # has to match apps/frontend/.nvmrc
+      - name: Node-Version im Dockerfile wie in .nvmrc
+        run: grep -qx "ARG NODE_VERSION=$(cat apps/frontend/.nvmrc)" apps/frontend/Dockerfile
       - run: npm ci
       # pretest/prebuild generate the API types in packages/shared-types
       - run: npm test --workspace=frontend -- --watch=false
@@ -195,14 +202,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: '25'
-          cache: maven
-          cache-dependency-path: |
-            pom.xml
-            apps/*/pom.xml
+      - *setup-java
       # Trivy reads the transitive Maven dependencies from ~/.m2. Without this step it downloads them itself and
       # gets blocked by Maven Central (429 Too Many Requests).
       - name: Maven-Abhängigkeiten auflösen

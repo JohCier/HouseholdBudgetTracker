@@ -253,4 +253,6 @@ HTTPS einschalten:
 Caddy holt dann ein Zertifikat von Let's Encrypt, verlängert es selbst und leitet HTTP auf HTTPS um. Zertifikate liegen
 im Volume `caddy-data`, damit sie Neustarts überdauern.
 
-Die Node-Version steht ausschließlich in `apps/frontend/.nvmrc`.
+Die Node-Version steht in `apps/frontend/.nvmrc`; den Default im Frontend-Dockerfile prüft die CI dagegen. Die Java-Version
+steht in `.java-version` (CI, Cloud-Sitzung) und in der Parent-POM, die Postgres-Version in `compose.yaml`. Die
+Übersicht aller Quellen steht in `.claude/rules/struktur.md`.

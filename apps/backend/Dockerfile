@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1
 # Build context: repository root (the build needs the parent pom.xml and the Maven wrapper there)
 
+# Java version: same major version as java.version in the parent pom.xml and .java-version (CI); Dependabot
+# updates the image tags, raising the major version means changing all three.
+
 # --- Build: Spring-Boot-JAR bauen und in Schichten zerlegen -------------------
 FROM eclipse-temurin:25-jdk AS build
 WORKDIR /build

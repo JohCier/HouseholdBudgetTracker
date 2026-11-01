@@ -85,7 +85,9 @@ jMolecules) in beiden Apps maschinell. Schlägt `ArchitectureTest` fehl, wird de
   werfen `DomainValidationException` mit einer Meldung, die die verletzte Regel nennt. Eine eigene Exception-Klasse
   gibt es nur, wenn sie einen eigenen HTTP-Status bzw. eine eigene `type`-Kennung bekommt oder gezielt gefangen wird
   (z. B. `…NotFoundException`, `InvalidCredentialsException`). Die Übersetzung in HTTP-Status geschieht ausschließlich
-  im `GlobalExceptionHandler`
+  im `GlobalExceptionHandler`. Im Backend erben „nicht gefunden" und „existiert schon" von `NotFoundException` (404)
+  bzw. `AlreadyExistsException` (409) und geben ihre `type`-Kennung als `code` mit (`plan-not-found` →
+  `urn:hbt:plan-not-found`); dafür braucht es keinen weiteren `@ExceptionHandler`
 
 ### Abläufe
 
