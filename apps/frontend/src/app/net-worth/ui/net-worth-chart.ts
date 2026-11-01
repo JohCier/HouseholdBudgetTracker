@@ -11,7 +11,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { Year } from '../../budget/budget.model';
+import { Year } from '../../shared/year';
 import { changeFullLabel, euro } from '../net-worth-change';
 import { NetWorthHistoryEntry } from '../net-worth.model';
 

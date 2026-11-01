@@ -6,7 +6,8 @@ beim Anlegen geprüft, nicht erst im Review.
 - **Zweites Vorkommen zentralisieren.** Wer eine Datei, Klasse, Komponente oder Konfiguration anlegt, die es in
   ähnlicher Form schon gibt, sucht zuerst danach (`git ls-files | grep`, `diff`) und legt das Gemeinsame an einer
   Stelle ab. Beispiele: Test-Hilfen beider Java-Services gehören nach `libs/test-support`;
-  fast gleiche Dialoge wie `copy-plan-dialog` und `copy-net-worth-dialog`.
+  fast gleiche Dialoge mehrerer Features nach `apps/frontend/src/app/shared` (wie `copy-year-dialog`, siehe
+  `.claude/rules/frontend.md`).
 - **Versionen an genau einer Stelle.** Java-, Node-, Postgres-, Bibliotheks- und Image-Versionen stehen einmal (Parent-POM,
   `.nvmrc`, `compose.yaml` …) und werden von dort gelesen. Wer eine Version ein zweites Mal hinschreibt, verweist auf die
   Quelle oder nennt im PR, warum es nicht anders geht. Dependabot muss jede Stelle erreichen. Die Quellen:

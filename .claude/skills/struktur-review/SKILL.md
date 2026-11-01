@@ -30,8 +30,15 @@ Jeweils nur die Ausgabe der Befehle auswerten; Dateien erst lesen, wenn ein Tref
    `package-info.java` ignorieren. 0 bis 5 abweichende Zeilen: Kandidat für eine gemeinsame Bibliothek
    (Test-Hilfen in die Test-Bibliothek).
 2. **Fast gleiche Dateien im Frontend**: Komponenten mit ähnlichem Namen paarweise vergleichen, z. B.
-   `diff budget/ui/copy-plan-dialog.ts net-worth/ui/copy-net-worth-dialog.ts | grep -c '^[<>]'` im Verhältnis zur Länge.
-   Ab etwa 50 % Übereinstimmung melden.
+   `diff budget/ui/delete-plan-dialog.ts budget/ui/purge-plan-dialog.ts | grep -c '^[<>]'` im Verhältnis zur Länge.
+   Ab etwa 50 % Übereinstimmung melden. Dazu Importe quer über Features (`.claude/rules/frontend.md`):
+
+   ```bash
+   cd apps/frontend/src/app && grep -rnE "from '(\.\./)+(auth|budget|net-worth)/" --include=*.ts . | grep -v '\.spec\.ts:'
+   ```
+
+   Treffer, bei denen ein Feature Hilfen (Funktionen, Validatoren, Typen) eines anderen importiert, melden; eingebettete
+   Komponenten nicht.
 3. **Verstreute Versionen**:
 
    ```bash

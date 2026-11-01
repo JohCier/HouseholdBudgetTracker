@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, firstValueFrom } from 'rxjs';
-import { Year } from '../../budget/budget.model';
-import { FIRST_YEAR, LAST_YEAR, currentYear } from '../../budget/year';
+import { Year } from '../../shared/year';
+import { FIRST_YEAR, LAST_YEAR, currentYear } from '../../shared/year';
 import { toMessage } from '../../shared/http-error';
 import { NetWorthEntryRequest, NetWorthOverview, isRecorded } from '../net-worth.model';
 import { NetWorthApi } from './net-worth-api';

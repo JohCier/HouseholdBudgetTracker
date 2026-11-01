@@ -13,7 +13,7 @@ import {
   Year,
   subcategorySuggestions,
 } from '../budget.model';
-import { FIRST_YEAR, LAST_YEAR, currentYear } from '../year';
+import { FIRST_YEAR, LAST_YEAR, currentYear } from '../../shared/year';
 import { BudgetApi } from './budget-api';
 
 /**

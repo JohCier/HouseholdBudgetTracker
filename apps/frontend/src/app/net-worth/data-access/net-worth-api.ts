@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { Year } from '../../budget/budget.model';
+import { Year } from '../../shared/year';
 import {
   CopyNetWorthRequest,
   NetWorthEntryRequest,

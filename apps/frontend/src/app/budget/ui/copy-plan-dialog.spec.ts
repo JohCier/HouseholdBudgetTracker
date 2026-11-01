@@ -6,12 +6,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, of, throwError } from 'rxjs';
 import { BudgetItem, HouseholdPlanOverview } from '../budget.model';
 import { BudgetApi } from '../data-access/budget-api';
-import {
-  CopyPlanDialog,
-  CopyPlanDialogData,
-  suggestedSourceYear,
-  suggestedTargetYear,
-} from './copy-plan-dialog';
+import { CopyYearDialog } from '../../shared/copy-year-dialog';
+import { CopyPlanDialogData, PlanCopy } from './copy-plan-dialog';
 
 const item: BudgetItem = {
   id: '1',
@@ -52,12 +48,12 @@ function overview(year: number, items: number): HouseholdPlanOverview {
   };
 }
 
-// PU-2, PU-13, PU-14
+// PU-2, PU-13, PU-14: the shared CopyYearDialog with the texts and API of plans
 describe('CopyPlanDialog', () => {
   let plans: Record<number, number>;
   let api: { getOverview: ReturnType<typeof vi.fn>; copyPlan: ReturnType<typeof vi.fn> };
   let dialogRef: { close: ReturnType<typeof vi.fn> };
-  let fixture: ComponentFixture<CopyPlanDialog>;
+  let fixture: ComponentFixture<CopyYearDialog>;
   let element: HTMLElement;
 
   async function open(data: CopyPlanDialogData) {
@@ -70,10 +66,10 @@ describe('CopyPlanDialog', () => {
       providers: [
         { provide: BudgetApi, useValue: api },
         { provide: MatDialogRef, useValue: dialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: data },
+        { provide: MAT_DIALOG_DATA, useValue: { ...data, kind: PlanCopy } },
       ],
     });
-    fixture = TestBed.createComponent(CopyPlanDialog);
+    fixture = TestBed.createComponent(CopyYearDialog);
     element = fixture.nativeElement as HTMLElement;
     await fixture.whenStable();
   }
@@ -197,20 +193,5 @@ describe('CopyPlanDialog', () => {
     await fixture.whenStable();
     expect(api.copyPlan).toHaveBeenCalledWith('plan-2024', { targetYear: 2027, overwrite: false });
     expect(dialogRef.close).toHaveBeenCalledWith({ sourceYear: 2024, targetYear: 2027 });
-  });
-});
-
-describe('suggested years', () => {
-  // PU-2
-  it('suggests the following year as target, the year before for 2200', () => {
-    expect(suggestedTargetYear(2026)).toBe(2027);
-    expect(suggestedTargetYear(2200)).toBe(2199);
-  });
-
-  // PU-13
-  it('suggests the newest plan before the target year as source, otherwise the oldest after it', () => {
-    expect(suggestedSourceYear(2027, [2030, 2025, 2024])).toBe(2025);
-    expect(suggestedSourceYear(2020, [2030, 2025])).toBe(2025);
-    expect(suggestedSourceYear(2020, [])).toBeNull();
   });
 });

@@ -1,4 +1,5 @@
-import { Year } from './budget.model';
+/** A calendar year, e.g. 2026. */
+export type Year = number;
 
 /** The first and last year a household plan can exist for (HP-1). */
 export const FIRST_YEAR: Year = 1900;

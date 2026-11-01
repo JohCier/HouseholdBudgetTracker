@@ -48,7 +48,7 @@ import { OneTimeItemMove, OneTimeItems } from './ui/one-time-items';
 import { SavingPotentialDialog } from './ui/saving-potential-dialog';
 import { SavingPotentialSummary } from './ui/saving-potential-summary';
 import { OverviewSummary } from './ui/overview-summary';
-import { parseYear } from './year';
+import { parseYear } from '../shared/year';
 
 @Component({
   selector: 'app-budget-dashboard',

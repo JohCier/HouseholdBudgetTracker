@@ -8,8 +8,9 @@ import { EMPTY, Subject, of } from 'rxjs';
 import { Router, provideRouter } from '@angular/router';
 import { YearlyOverviewEntry } from './budget.model';
 import { PERIOD_STORAGE_KEY } from './data-access/yearly-overview-store';
-import { currentYear } from './year';
+import { currentYear } from '../shared/year';
 import { YearlyOverviewPage } from './yearly-overview-page';
+import { PlanCopy } from './ui/copy-plan-dialog';
 
 const entry = (year: number, changes: Partial<YearlyOverviewEntry> = {}): YearlyOverviewEntry => ({
   planId: `plan-${year}`,
@@ -190,7 +191,7 @@ describe('YearlyOverviewPage', () => {
       .click();
 
     expect(dialog.open).toHaveBeenCalledWith(expect.anything(), {
-      data: { sourceYear: currentYear() },
+      data: { sourceYear: currentYear(), kind: PlanCopy },
     });
     await vi.waitFor(() =>
       expect(snackBar.open).toHaveBeenCalledWith(

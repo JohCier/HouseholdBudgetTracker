@@ -8,8 +8,8 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { Year } from '../budget/budget.model';
-import { parseYear } from '../budget/year';
+import { Year } from '../shared/year';
+import { parseYear } from '../shared/year';
 import { NetWorthApi } from './data-access/net-worth-api';
 import { NetWorthStore } from './data-access/net-worth-store';
 import {

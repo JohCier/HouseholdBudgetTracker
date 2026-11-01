@@ -7,8 +7,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { Year } from '../../budget/budget.model';
-import { currentYear } from '../../budget/year';
+import { Year } from '../../shared/year';
+import { currentYear } from '../../shared/year';
 import { toMessage } from '../../shared/http-error';
 import { NetWorthApi } from '../data-access/net-worth-api';
 import {
