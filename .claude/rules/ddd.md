@@ -8,7 +8,8 @@ paths:
 
 Der Abschnitt „Konventionen in diesem Projekt“ beschreibt, wie die Bausteine hier konkret gebaut werden; der Abschnitt
 „Regeln je Baustein“ ergänzt nur, was darüber hinaus gilt. Die mit „(ArchUnit)“ markierten Regeln prüft `ArchitectureTest` (ArchUnit,
-jMolecules) in beiden Apps maschinell. Schlägt `ArchitectureTest` fehl, wird der Code angepasst, nicht der Test; eine
+jMolecules) in beiden Apps maschinell; was für beide gilt, steht einmal in `DddArchitectureRules` (`libs/test-support`),
+der `ArchitectureTest` eines Service ergänzt nur seine Besonderheiten. Schlägt `ArchitectureTest` fehl, wird der Code angepasst, nicht der Test; eine
 Änderung am Test nur nach Rückfrage.
 
 ## Konventionen in diesem Projekt
