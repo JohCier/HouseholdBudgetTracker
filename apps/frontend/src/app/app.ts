@@ -10,7 +10,7 @@ import { AuthStore } from './auth/data-access/auth-store';
   imports: [MatButtonModule, MatIconModule, MatToolbarModule, RouterLink, RouterOutlet],
   template: `
     <mat-toolbar>
-      <span>Haushaltsbuch</span>
+      <span>Haushaltsplaner</span>
       @if (auth.user(); as user) {
         <span class="user">{{ user.email }}</span>
         <a matButton routerLink="/passwort" aria-label="Passwort ändern">

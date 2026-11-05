@@ -22,7 +22,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('mat-toolbar')?.textContent).toContain('Haushaltsbuch');
+    expect(compiled.querySelector('mat-toolbar')?.textContent).toContain('Haushaltsplaner');
     expect(compiled.querySelector('mat-toolbar button')).toBeNull();
   });
 

@@ -5,7 +5,7 @@
 
 ## Zweck
 
-Der Household Budget Tracker ist ein Haushaltsbuch, das die geplanten Einnahmen und Ausgaben eines Jahres nach der
+Der Household Budget Tracker (in der Oberfläche „Haushaltsplaner") ist ein Haushaltsbuch, das die geplanten Einnahmen und Ausgaben eines Jahres nach der
 **50/30/20-Regel** bewertet: höchstens 50 % des Einkommens für den Lebensunterhalt, höchstens 30 % für Freizeit & Spaß,
 mindestens 20 % für Sparen & Investieren. Die Anwendung zeigt auf einen Blick, ob der eigene Jahresplan diese Regel
 einhält und ob mehr ausgegeben als eingenommen wird.
